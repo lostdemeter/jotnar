@@ -1,7 +1,9 @@
 # baked/cached artifacts (built locally, never uploaded)
 # NOTE: chain/M.json and chain/CTRL.json are FROZEN doctrine artifacts
 # (calibration + controller fit) and MUST be tracked -- never ignore them.
+# Same for samples/depth/*.npy: gate-depended priors are frozen evidence.
 *.npy
+!samples/depth/*.npy
 *.pth
 *.pt
 *.bin
