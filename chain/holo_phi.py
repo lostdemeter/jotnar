@@ -101,6 +101,35 @@ def tdiv_pure(a, b):
     return s, e, z
 
 
+def neg_trip(t):
+    """Exact sign negate (NOT gate on the sign bit)."""
+    return (-t[0].astype(np.int8), t[1].copy(), t[2].copy())
+
+
+def relu_trip(t, m):
+    """Exact relu via fixed-domain max(.,0): integer compare, no FP.
+    Continuous (small input changes -> small output changes): the v4
+    workhorse for discontinuity-free orientation weights."""
+    q = S.to_fixed(t[0], t[1], t[2], m)
+    return S.from_fixed(np.maximum(q, 0), m)
+
+
+def sigmoid_trip(t):
+    """IR `sigmoid` opcode (EXPACT gather + LUT, any input range, [0,1]
+    output). Mirrors the rife integer sigmoid exactly, in numpy:
+    triples -> 2^-14 via sigx gather -> sig LUT over +-16 (asymptotes exact)
+    -> from_fixed. Transcendentals live in frozen tables, never in ALU."""
+    X = S.sigx_lut()
+    G = S.sig_lut()
+    SPAN = S.SIG_SPAN
+    e = np.clip(t[1].astype(np.int64), 0, 65535)
+    x14 = np.where(t[2].astype(bool), 0, t[0].astype(np.int64) * X[e])
+    idx = x14 + SPAN
+    y14 = np.where(x14 < -SPAN, 0, np.where(
+        x14 > SPAN, 16384, G[np.clip(idx, 0, len(G) - 1)]))
+    return S.from_fixed(y14 * np.int64(16), S.BIAS)
+
+
 def select_mux(trips, bucket):
     """#LIB-009 promoted helper: exact select among N triple-streams by an
     integer bucket mask (mirrors prelu_int sign-select). Exact by
@@ -270,19 +299,25 @@ def enhance_luminance_int(y_lin, beta=0.5, kernel=None, m=None, use_alpha=False,
     y_t = S.encode(np.ascontiguousarray(y_lin, dtype=np.float64))
     a_t = sqrt_trip(y_t)
     diag = None
-    if blur == "splat":
+    if blur in ("splat", "splat_soft"):
         from chain.splat import splat_blur
         from chain.control import load_ctrl
         cthr = coh_thr if coh_thr is not None else load_ctrl()["coh_thr"]
-        as_t, diag = splat_blur(a_t, m_acc, m_cov, coh_thr=cthr)
+        as_t, diag = splat_blur(a_t, m_acc, m_cov, coh_thr=cthr,
+                                soft=(blur == "splat_soft"))
     elif blur == "iso":
         as_t = conv_trip(a_t, kernel, m_acc, m_out=m_cov)
     else:
-        raise ValueError(f"blur must be 'iso'|'splat', got {blur!r}")
+        raise ValueError(f"blur must be 'iso'|'splat'|'splat_soft', got {blur!r}")
     d_t = binop_fixed(a_t, as_t, m_cov, m_cov, op="sub")
-    if ctrl:
-        if blur != "splat" or diag is None:
-            raise ValueError("ctrl=True needs blur='splat' (bucket source)")
+    if ctrl == "soft":
+        if blur not in ("splat", "splat_soft") or diag is None:
+            raise ValueError("ctrl='soft' needs a splat blur (coh source)")
+        from chain.control import beta_field_soft
+        ds_t = tmul(d_t, beta_field_soft(beta, diag["coh_t"], m_cov))
+    elif ctrl:
+        if blur not in ("splat", "splat_soft") or diag is None:
+            raise ValueError("ctrl=True needs a splat blur (bucket source)")
         from chain.control import beta_field
         ds_t = tmul(d_t, beta_field(beta, diag["bucket"], diag["coh_t"],
                                     m_cov, atten=ctrl_atten, mid=ctrl_mid,

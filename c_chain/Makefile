@@ -11,7 +11,7 @@ check: $(BIN) $(XCHG) $(SXCHG)
 	$(BIN)
 
 $(BIN): holo_ops.c test_holo_c.c holo_ops.h
-	$(CC) $(CFLAGS) -o $(BIN) holo_ops.c test_holo_c.c
+	$(CC) $(CFLAGS) -o $(BIN) holo_ops.c test_holo_c.c $(PHICORE)/bridge.c
 
 $(XCHG): holo_ops.c holo_conv.c conv_exchange.c holo_ops.h holo_conv.h
 	$(CC) $(CFLAGS) -o $(XCHG) holo_ops.c holo_conv.c conv_exchange.c $(PHICORE)/bridge.c

@@ -51,7 +51,7 @@ mid beta) + iso atten: params (iso_atten, mid_atten, coh_hi), fitted
 junction: weak coherence + large detail -- the pixels mid_atten exists for;
 without it the fitter couldn't see v2). coh_thr stays at its v1 fit.
 
-## v3: fitted strong level [BUILT this round]
+## v3: fitted strong level [BUILT]
 
 The decision table is complete: (iso_atten, mid_atten, strong_atten, coh_hi)
 = (0.5, 0.4, 1.0, 0.4). The fit verified strong=1.0 rather than changing it
@@ -63,7 +63,20 @@ consumes (#LIB-012). Rotation symmetry kept throughout (no per-direction
 params). Read the rule as a 2-layer decision net: threshold routing
 (coh_thr, coh_hi) + 3-entry table, executed as integer selects.
 
-## Backlog (learned v3)
+## v4: continuous fields (sigmoid beta + relu blur) [BUILT this round]
+
+v3's hard selects cost 28-33dB on uniform noise: a 1-LSB coherence wobble
+flips a whole kernel at large local cost. v4 removes every discrete decision:
+beta blends the three fitted levels by coherence through integer sigmoids
+(`beta_field_soft`, k=30, LUT-based, file levels reused unchanged), and the
+bank blends all four oriented outputs by relu-split tensor magnitudes
+(`_soft_blend`, weights r/sum, true-flat guard only). Both paths reuse the
+v3 fit -- no new params, no refit. Noise parity is BARRED (>=40dB, measured
+40.03dB vs 32.76 pre-gate); real 50dB, structured 53dB. Showcase: v4 sharpens
+harder than v3-hard (1234 vs 1092) while staying continuous -- partial weights
+everywhere beat hard fallback to iso. The v3 suites keep gating the hard path.
+
+## Backlog (learned v5)
 
 Per-pixel predicted fields (sigma bank weights, gain-clip range) from a tiny
 geometric net (1x1/3x3 convs, existing IR ops) trained on the same pairs.

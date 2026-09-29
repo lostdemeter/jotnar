@@ -46,14 +46,26 @@ epsilon + clamps as tuning constants. Not holographic, not geometric.
    coherence) as labeled sheets. Intelligence axis reads 1.83/1.40/0.95 LSB
    mean change: each step restrains itself more.
 
-## v2 (this round)
+## v2/v3 (built): coherence-modulated decision table
 
-Coherence-modulated atten: oriented pixels split by coherence magnitude
-(strong-coh full beta, weak-coh mid beta) + iso atten. Params
-(iso_atten, mid_atten, coh_hi), 27-fit grid on the existing pairs,
-frozen to CTRL.json. See docs/BETA_CTRL.md.
+Oriented pixels split by coherence magnitude + iso atten. Params
+(iso 0.5, mid 0.4, strong 1.0, hi 0.4) fitted on pairs extended with a
+corner fixture (without it the fitter couldn't see mid); the strong=1.0 fit
+verified the analytic default rather than changing it. Whole-dict loader fix
++ cache-parity gate (#LIB-012: parity proves sameness of implementation, not
+of configuration). See docs/BETA_CTRL.md.
 
-## Step 3a (this round): depth composition, L1
+## v4 (this round): continuous fields kill the noise penalty
+
+v3's hard selects cost 28-33dB on uniform noise (1-LSB wobble flips a whole
+kernel). v4 blends instead: sigmoid-weighted beta levels + relu-weighted
+bank outputs, no discrete decision anywhere, no new fitted params (v3 file
+reused). Primitives are integer (`relu_trip` exact, `sigmoid_trip` LUT,
+shared C vectors). Noise parity 40.03dB BARRED (was reported); real 50dB,
+structured 53dB. Showcase: v4 sharpens harder than v3-hard (1234 vs 1092)
+while staying continuous. #LIB-014 banked.
+
+## Step 3a (built): depth composition, L1
 
 DAV2 relative depth as an offline prior (`chain/depthprior.py`, cached with
 input-hash sidecar), median-split near/far modulating beta multiplicatively
@@ -62,15 +74,15 @@ determinism, parity 45.68dB, near p99 0.063 > far 0.017 on f_012. L2
 triple-direct handoff stays backlog; temporal IIR stays spec
 (docs/COMPOSE.md).
 
-## Library ideas banked (#LIB-001..011, docs/LIBRARY_NOTES.md)
+## Library ideas banked (#LIB-001..014, docs/LIBRARY_NOTES.md)
 
-Promoted: `select_mux`, `kernel_triples`. Open: gradient-frontend helper
-(2 users, threshold 3), diagonal v1.1 (closed), fusion (closed, corrected),
-`select` promotion (closed), trap comment-stripping (upstream suggestion).
+Promoted: `select_mux`, `kernel_triples`. Closed this round: diagonals,
+fusion (corrected), v4 continuity primitives. Open: gradient-frontend helper
+(2 users, threshold 3), trap comment-stripping (upstream suggestion),
+continuous-blend stanza promotion (1 use, threshold 3 per #LIB-014).
 Closed entries keep their evidence; open ones name their trigger.
 
 ## What's next
 
-Learned-v3 (tiny geometric net on the same pairs/score/freeze/gates),
-threading/OpenMP headroom in C, step 3 (depth + temporal -- repos checked
-out locally, seam contracts in docs/COMPOSE.md).
+Learned-v5 (per-pixel predicted sigmas/gain-clip on the same scaffolding),
+threading/OpenMP headroom in C, step 3 rest (temporal IIR + L2 depth).

@@ -1,5 +1,7 @@
 /* C lowering of sqrt_trip/tmul -- bit-exact vs numpy (see test_holo_c.c). */
 #include "holo_ops.h"
+#include "bridge.h"
+#include "luts.h"
 
 /* floor((e - BIAS) / 2): numpy // floors; C / truncates toward zero, so
  * negative odd dividends differ by one without this correction. */
@@ -54,5 +56,28 @@ void holo_mux(const trip_t * const *streams, int nstreams,
         if (b < 0) b = 0;
         if (b >= nstreams) b = nstreams - 1;
         out[i] = streams[b][i];
+    }
+}
+
+#define HOLO_SIG_SPAN (16 * 16384)
+
+void holo_sigmoid(const trip_t *in, trip_t *out, int n) {
+    for (int i = 0; i < n; i++) {
+        int64_t e = in[i].e;
+        if (e < 0) e = 0;
+        if (e > 65535) e = 65535;
+        int64_t x14 = in[i].z ? 0 : (int64_t)in[i].s * LUT_SIGX[e];
+        int64_t y14;
+        if (x14 < -HOLO_SIG_SPAN) y14 = 0;
+        else if (x14 > HOLO_SIG_SPAN) y14 = 16384;
+        else {
+            int64_t idx = x14 + HOLO_SIG_SPAN;
+            if (idx < 0) idx = 0;
+            if (idx > 524288) idx = 524288;
+            y14 = LUT_SIG[idx];
+        }
+        int64_t q = y14 * 16;
+        fq_t f = { &q, 1, PHI_BIAS };
+        triples_from_fixed(&f, &out[i]);
     }
 }

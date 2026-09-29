@@ -40,6 +40,12 @@ def main():
     check("c-splat-exchange", r4.returncode == 0, f"exit={r4.returncode}")
     if r4.returncode:
         print(r4.stderr[-1500:])
+    r5 = subprocess.run([sys.executable, os.path.join(root, "test_v4.py")],
+                        capture_output=True, text=True, cwd=root)
+    print(r5.stdout[-1500:])
+    check("v4-gates", r5.returncode == 0, f"exit={r5.returncode}")
+    if r5.returncode:
+        print(r5.stderr[-1500:])
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

@@ -183,6 +183,17 @@ def main():
     check("c-vectors-mux", bool((o[0] == [1, 1]).all() and (o[1] == [33000, 32000]).all()
                                 and (o[2] == [0, 1]).all()),
           "shared table with c_chain")
+    sv = [(-1, 35955, 0, -1, 18756, 1), (-1, 33505, 0, 1, 30506, 0),
+          (-1, 32031, 0, 1, 31731, 0), (1, 0, 0, 1, 32031, 0),
+          (1, 32031, 0, 1, 32264, 0), (1, 33505, 0, 1, 32633, 0),
+          (1, 35955, 0, 1, 32768, 0)]
+    sg_ok = True
+    for s, e, z, es, ee, ez in sv:
+        t = (np.full(1, s, np.int8), np.full(1, e, np.int32), np.full(1, z, np.uint8))
+        o = H.sigmoid_trip(t)
+        if not (int(o[0][0]) == es and int(o[1][0]) == ee and int(o[2][0]) == ez):
+            sg_ok = False
+    check("c-vectors-sig", sg_ok, "shared table with c_chain")
 
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)

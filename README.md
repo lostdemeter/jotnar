@@ -8,13 +8,15 @@ amplitude domain, boosts, and squares back with exact `tmul`.
 
 Check | Result
 ---|---
-`test_core.py` | ALL OK (sqrt-real, tmul, conv-orderfree, rescale-exact, tag-mismatch, hue basis, c-vectors)
+`test_core.py` | ALL OK (sqrt-real, tmul, conv-orderfree, rescale-exact, tag-mismatch, hue basis, c-vectors incl. sig)
 `test_parity.py` | ALL OK (synthetic 68/65dB, foreman 65dB, hue-preserved 0.000, alpha-ablation gated)
-`test_c.py` | ALL OK (shared table + conv + splat file-exchange + float trap)
+`test_c.py` | ALL OK (shared table + conv + splat file-exchange + v4 gates + float trap)
 `test_c_conv.py` | ALL OK (4 cases bit-exact, not dB: fig/flat/corner/noise)
 `test_splat_c.py` | ALL OK (full splat_blur bit-exact incl. buckets, both C modes: 6 compositional + 2 fused cases)
 `test_splat.py` | ALL OK (4 orientations 1.00, halo<=iso, blur parity 41dB, agreement 0.99, e2e 43dB, fusion-exact bit-identical)
 `test_ctrl.py` | ALL OK (file validity, hash, real-frame parity ~43-50dB, rotation-invariant gap 0.04, flat identity)
+`test_depth.py` | ALL OK (cache determinism, parity 45.68dB, near p99 3.6x far, toggle-clean)
+`test_v4.py` | ALL OK (noise 40.03dB BARRED, real 50dB, structured 53dB, flat, sharpens)
 `demo.py --selftest` | GO 68.5dB
 
 ## Quick start
@@ -22,13 +24,16 @@ Check | Result
 ```
 pip install -r requirements.txt
 python3 chain/calibrate.py          # offline, freezes chain/M.json (m_acc + m_cov)
-python3 scripts/fit_ctrl.py --write # offline, freezes chain/CTRL.json (2 params)
+python3 scripts/fit_ctrl.py --write # offline, freezes chain/CTRL.json (5 params)
 python3 test_core.py                # expect ALL OK
 python3 test_parity.py              # expect ALL OK (>=40dB)
-python3 test_c.py                   # expect ALL OK (needs gcc; incl. conv exchange)
+python3 test_c.py                   # expect ALL OK (needs gcc; incl. conv+splat exchange, v4)
 python3 test_splat.py               # expect ALL OK (splats-lite)
 python3 test_ctrl.py                # expect ALL OK (beta-field controller)
+python3 test_depth.py               # expect ALL OK (needs DAV2 checkout + weights)
+python3 test_v4.py                  # expect ALL OK (continuity: noise barred)
 python3 demo.py input.png output.png --beta 0.5 --blur splat --ctrl on
+python3 demo.py input.png output.png --beta 0.5 --blur splat_soft --ctrl soft  # v4
 python3 showcase.py input.png /tmp/showcase  # all modes + internal states
 ```
 
@@ -41,15 +46,16 @@ m_cov -> `tmul` boost -> `tmul` square (`I=|A|^2`) -> `tdiv_trip` gain ->
 at boundaries + offline.
 
 Math executed: `A=sqrt(Y); As=blur(A); Aenh=A+beta_eff*(A-As); Ienh=Aenh^2`,
-where blur is iso-Gaussian or the splat bank and beta_eff is scalar or the
-controller field. Library notes live in docs/LIBRARY_NOTES.md (kept while
-using the library: #LIB-001..009). Specs: docs/SPLAT_OP.md, docs/BETA_CTRL.md,
-docs/COMPOSE.md (step 3: depth + temporal, specified not built).
+where blur is iso-Gaussian, the splat bank (hard mux / fused / relu-blend),
+and beta_eff is scalar, the v3 decision field, or the v4 sigmoid field.
+Library notes live in docs/LIBRARY_NOTES.md (kept while using the library:
+#LIB-001..014). Specs: docs/SPLAT_OP.md, docs/BETA_CTRL.md, docs/COMPOSE.md
+(step 3a depth built L1; temporal + L2 stay spec), docs/PROGRESS.md.
 
 ## Showcase (seeing every state)
 
-`showcase.py` runs iso / splat / splat+ctrl / strong on one image, checks
-parity per mode, asserts the modes actually differ, and saves:
+`showcase.py` runs iso / splat / splat+ctrl / v4-soft / strong on one image,
+checks parity per mode, asserts the modes actually differ, and saves:
 
 * `out_*.png` -- one output per mode,
 * `st_amplitude/structure/detail/buckets/coherence.png` -- internals of the
@@ -57,9 +63,9 @@ parity per mode, asserts the modes actually differ, and saves:
   coherence heat),
 * `sheet_states.png`, `sheet_modes.png` -- labeled contact sheets.
 
-On f_012: input sharp 714 -> iso 1350 -> splat 1178 -> splat+ctrl 1077 ->
-strong 1465, mean change shrinking along the intelligence axis
-(1.83/1.40/0.95 LSB). Each step visibly restrains itself for stated reasons.
+On f_012: input sharp 714 -> iso 1350 -> splat 1178 -> splat+ctrl 1092 ->
+v4-soft 1234 -> strong 1465/1520. v4 sharpens harder than v3-hard while
+staying continuous (partial weights everywhere beat hard fallback to iso).
 
 ## Debt log (addressed earlier rounds)
 

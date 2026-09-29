@@ -130,3 +130,15 @@ sites refactored onto it, gates green), `holo_mux` in c_chain/holo_ops.h
 (+ shared div/mux vectors in test_holo_c.c / test_core.py c-vectors-*).
 Evidence: ALL OK both sides.
 
+## #LIB-014: continuity is a gateable property, via relu + sigmoid [CLOSED]
+
+v4's thesis: hard selects turn 1-LSB quantization into whole-kernel flips
+(28-33dB noise cost, measured). Fix is two continuous primitives, both
+integer: `relu_trip` (fixed-domain max, exact) splits orientation weights
+that sum-normalize by exact division; `sigmoid_trip` (EXPACT + LUT, mirrors
+the rife integer sigmoid, shared vectors both substrates) blends beta levels.
+No new fitted params (v3 file reused); the only remaining select is the
+true-flat guard, invisible since D~=0 there. Noise parity 40.03dB barred
+(was reported). Promotion signal: if a third continuous-blend use appears,
+the (relu-split, normalize, weight) stanza becomes a helper like select_mux.
+

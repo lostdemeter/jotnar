@@ -97,6 +97,32 @@ int main(void) {
         CHECK("mux[3]", mo[3].s == -1 && mo[3].e == 34000 && mo[3].z == 0);
     }
 
+    /* sigmoid vectors: (s,e,z) inputs produced by numpy S.encode on
+     * [-20,-2,-0.5,0,0.5,2,20] (provenance: sigmoid_trip gate run; values
+     * 0.11932/0.37733/0.50023/0.62270/0.88084 + rails). C consumes integers
+     * only (no libm, trap-clean); expectations exact. */
+    struct { int8_t s; int32_t e; uint8_t z;
+             int8_t es; int32_t ee; uint8_t ez; } gv[] = {
+        { -1, 35955, 0,  -1, 18756, 1 },  /* saturating rail -> zero triple */
+        { -1, 33505, 0,   1, 30506, 0 },
+        { -1, 32031, 0,   1, 31731, 0 },
+        {  1,     0, 0,   1, 32031, 0 },  /* encode(0.0): e=0, not z */
+        {  1, 32031, 0,   1, 32264, 0 },
+        {  1, 33505, 0,   1, 32633, 0 },
+        {  1, 35955, 0,   1, 32768, 0 },  /* saturating rail -> one triple */
+    };
+    for (unsigned i = 0; i < sizeof(gv) / sizeof(gv[0]); i++) {
+        trip_t in = { gv[i].s, gv[i].e, gv[i].z };
+        trip_t out = { 0, 0, 0 };
+        holo_sigmoid(&in, &out, 1);
+        char tag[64];
+        snprintf(tag, sizeof(tag), "sig[%u]", i);
+        CHECK(tag, out.s == gv[i].es && out.e == gv[i].ee && out.z == gv[i].ez);
+        if (!(out.s == gv[i].es && out.e == gv[i].ee && out.z == gv[i].ez))
+            printf("    got s=%d e=%d z=%u want s=%d e=%d z=%u\n",
+                   out.s, out.e, out.z, gv[i].es, gv[i].ee, gv[i].ez);
+    }
+
     printf("RESULT: %s\n", fails ? "FAIL" : "ALL OK");
     return fails ? 1 : 0;
 }

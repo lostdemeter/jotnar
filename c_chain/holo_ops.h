@@ -17,3 +17,6 @@ void holo_mul(const trip_t *a, const trip_t *b, trip_t *out, int n);
 void holo_div(const trip_t *a, const trip_t *b, trip_t *out, int n);
 void holo_mux(const trip_t * const *streams, int nstreams,
               const int8_t *bucket, trip_t *out, int n);
+/* IR sigmoid (EXPACT gather + LUT, asymptotes exact). Needs the SIG/SIGX
+ * tables: link with bridge.c (luts.h) like the exchange drivers. */
+void holo_sigmoid(const trip_t *in, trip_t *out, int n);

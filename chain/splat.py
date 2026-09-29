@@ -19,7 +19,8 @@ import phi_core.lattice as S
 from chain import holo_phi as H
 from chain.control import load_ctrl
 from chain.holo_phi import (conv_trip, tmul, binop_fixed, sqrt_trip,
-                            tdiv_trip, clip_fixed)
+                            tdiv_trip, tdiv_pure, clip_fixed, neg_trip,
+                            relu_trip)
 
 COH_THR = 0.25  # analytic init; live value comes from control (fitted)
 
@@ -145,15 +146,21 @@ def coherence_bucket(jxx, jyy, jxy, gx, gy, m_cov, m_acc, coh_thr=None):
     bucket = np.where(~gate, 4,
              np.where(~diag_dom, np.where(vert, 0, 1),
                       np.where(diag_pos, 3, 2))).astype(np.int8)
+    # soft-blend inputs (v4): the signed triples relu splits on. Returned via
+    # audit (documented); the hard path ignores them.
     return coh, bucket, {"gate_frac": float((bucket == 4).mean()),
-                         "diag_frac": float(((bucket == 2) | (bucket == 3)).mean())}
+                         "diag_frac": float(((bucket == 2) | (bucket == 3)).mean()),
+                         "d": d, "s2": s2}
 
 
-def splat_blur(a_t, m_acc, m_cov, bank_k=None, coh_thr=None, fused=False):
+def splat_blur(a_t, m_acc, m_cov, bank_k=None, coh_thr=None, fused=False,
+               soft=False):
     """Bank blur + exact mux. Returns (out_trip, diag).
-    fused=True: single-pass per-pixel kernel gather (same products, same
-    integer sums -> bit-identical to compositional; gated == in test_splat).
-    Default False (compositional mirrors the C compositional lowering)."""
+    fused=True: single-pass per-pixel kernel gather (bit-identical).
+    soft=True (v4): relu-weighted BLEND of all 5 bank outputs instead of the
+    mux -- continuous in the tensor (no bucket flips anywhere). buckets still
+    computed for diag/audit + the v3 beta path. Default False (hard select
+    mirrors the C lowering)."""
     if coh_thr is None:
         coh_thr = load_ctrl()["coh_thr"]
     jxx, jyy, jxy, gx, gy = structure(a_t, m_acc, m_cov)
@@ -164,6 +171,9 @@ def splat_blur(a_t, m_acc, m_cov, bank_k=None, coh_thr=None, fused=False):
     assert len(bank_k) == 5, "bank is 5-way in v1.1"
     if fused:
         out = _fused_blur(a_t, bank_k, bucket, m_acc, m_cov)
+    elif soft:
+        outs = [conv_trip(a_t, k, m_acc, m_out=m_cov) for k in bank_k]
+        out = _soft_blend(outs, audit["d"], audit["s2"], m_cov)
     else:
         outs = [conv_trip(a_t, k, m_acc, m_out=m_cov) for k in bank_k]
         out = H.select_mux(outs, bucket)  # #LIB-009: exact select
@@ -171,6 +181,35 @@ def splat_blur(a_t, m_acc, m_cov, bank_k=None, coh_thr=None, fused=False):
             "coh": S.decode(coh[0], coh[1]) * (1 - coh[2].astype(np.float64)),
             "coh_t": coh}  # triples for the v2 controller (integer path)
     return out, diag
+
+
+def _soft_blend(outs, d, s2, m_cov):
+    """v4 relu-weighted blend (#LIB-014): orientation weights from the signed
+    tensor triples, continuous everywhere (relu is continuous; the only exact
+    select left is the true-flat guard, invisible since D~=0 there):
+      rV=relu(d), rH=relu(-d), rD1=relu(s2), rD2=relu(-s2); w=r/sum;
+      out = sum(w*blur). All triples/integers; division exact (exp-sub)."""
+    rV = relu_trip(d, m_cov)
+    rH = relu_trip(neg_trip(d), m_cov)
+    rD1 = relu_trip(s2, m_cov)
+    rD2 = relu_trip(neg_trip(s2), m_cov)
+    den = binop_fixed(binop_fixed(rV, rH, m_cov, m_cov, op="add"),
+                      binop_fixed(rD1, rD2, m_cov, m_cov, op="add"),
+                      m_cov, m_cov, op="add")
+    wV = tdiv_pure(rV, den)
+    wH = tdiv_pure(rH, den)
+    wD1 = tdiv_pure(rD1, den)
+    wD2 = tdiv_pure(rD2, den)
+    acc = binop_fixed(tmul(wV, outs[0]), tmul(wH, outs[1]),
+                      m_cov, m_cov, op="add")
+    acc = binop_fixed(acc, tmul(wD1, outs[2]), m_cov, m_cov, op="add")
+    acc = binop_fixed(acc, tmul(wD2, outs[3]), m_cov, m_cov, op="add")
+    # true-flat guard (den z-flagged): exact iso, bit-clean flats
+    dz = den[2].astype(bool)
+    iso = outs[4]
+    return (np.where(dz, iso[0], acc[0]).astype(np.int8),
+            np.where(dz, iso[1], acc[1]).astype(np.int32),
+            np.where(dz, iso[2], acc[2]).astype(np.uint8))
 
 
 def _fused_blur(a_t, bank_k, bucket, m_acc, m_cov):

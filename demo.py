@@ -40,7 +40,7 @@ def run(rgb01, beta, sigma, use_alpha, blur="iso", ctrl=False, depth=None):
     out_lin, yenh, info = enhance_image_int(rgb_lin, beta=beta, sigma=sigma,
                                             use_alpha=use_alpha, blur=blur,
                                             ctrl=ctrl, depth=depth)
-    if blur == "splat":
+    if blur in ("splat", "splat_soft"):
         P = load_ctrl()
         att = P["iso_atten"] if ctrl else 1.0
         mid = P.get("mid_atten", 0.6) if ctrl else 1.0
@@ -51,6 +51,8 @@ def run(rgb01, beta, sigma, use_alpha, blur="iso", ctrl=False, depth=None):
                                                   mid_atten=mid,
                                                   coh_hi=P.get("coh_hi", 0.5),
                                                   strong_atten=stg,
+                                                  soft=(ctrl == "soft"),
+                                                  soft_blur=(blur == "splat_soft"),
                                                   depth=depth)
     else:
         oracle_lin, _ = enhance_image_float(rgb_lin, beta=beta, sigma=sigma,
@@ -68,17 +70,18 @@ def main():
     ap.add_argument("--sigma", type=float, default=1.0)
     ap.add_argument("--alpha", action="store_true",
                     help="enable deprecated parabola ablation (default off, Debt 2)")
-    ap.add_argument("--blur", default="iso", choices=["iso", "splat"])
-    ap.add_argument("--ctrl", default="off", choices=["on", "off"],
-                    help="beta-field controller (needs --blur splat)")
+    ap.add_argument("--blur", default="iso", choices=["iso", "splat", "splat_soft"],
+                    help="splat_soft = relu-blended bank (v4, continuous)")
+    ap.add_argument("--ctrl", default="off", choices=["on", "soft", "off"],
+                    help="on = v3 hard field, soft = v4 sigmoid field (needs splat blur)")
     ap.add_argument("--depth", default=None, metavar="TAG",
                     help="depth prior via DAV2 (cached samples/depth/TAG.npy)")
     ap.add_argument("--selftest", action="store_true")
     a = ap.parse_args()
     use_alpha = bool(a.alpha)
-    ctrl = (a.ctrl == "on")
-    if ctrl and a.blur != "splat":
-        ap.error("--ctrl on needs --blur splat")
+    ctrl = {"on": True, "soft": "soft", "off": False}[a.ctrl]
+    if ctrl and a.blur not in ("splat", "splat_soft"):
+        ap.error("--ctrl needs --blur splat or splat_soft")
 
     if a.selftest or (not a.input):
         Hh, Ww = 128, 128
