@@ -1,0 +1,11 @@
+{
+  "m": 33280,
+  "m_acc": 31344,
+  "m_cov": 33280,
+  "pmax": 0.1621028216371266,
+  "amax": 1.0,
+  "paths": [
+    "/home/thorin/Documents/OpenCode/holographic_enhancement/chain/../samples/input_example.png",
+    "/home/thorin/Documents/OpenCode/holographic_enhancement/chain/../samples/output_example_phi_beta05.png"
+  ]
+}

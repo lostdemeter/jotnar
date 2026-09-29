@@ -1,0 +1,10 @@
+{
+  "iso_atten": 0.5,
+  "mid_atten": 0.4,
+  "coh_hi": 0.4,
+  "coh_thr": 0.15,
+  "score": 4.577978203110119,
+  "default": 4.488078217157842,
+  "pairs_hash": "71ba7ccee316cbd1",
+  "note": "v2: coherence-modulated atten (strong-coh full beta, weak-coh mid, iso atten). coh_thr frozen at v1 fit (grid-flat finding stands)."
+}

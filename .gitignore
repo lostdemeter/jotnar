@@ -1,0 +1,16 @@
+# baked/cached artifacts (built locally, never uploaded)
+# NOTE: chain/M.json and chain/CTRL.json are FROZEN doctrine artifacts
+# (calibration + controller fit) and MUST be tracked -- never ignore them.
+*.npy
+*.pth
+*.pt
+*.bin
+weights/
+luts/
+captures/
+mid_*/
+seq*/
+*.log
+__pycache__/
+*.pyc
+.tmp/
