@@ -53,6 +53,15 @@ Coherence-modulated atten: oriented pixels split by coherence magnitude
 (iso_atten, mid_atten, coh_hi), 27-fit grid on the existing pairs,
 frozen to CTRL.json. See docs/BETA_CTRL.md.
 
+## Step 3a (this round): depth composition, L1
+
+DAV2 relative depth as an offline prior (`chain/depthprior.py`, cached with
+input-hash sidecar), median-split near/far modulating beta multiplicatively
+(`--depth TAG`). Hot path stays integer. Gates (`test_depth.py`): cache
+determinism, parity 45.68dB, near p99 0.063 > far 0.017 on f_012. L2
+triple-direct handoff stays backlog; temporal IIR stays spec
+(docs/COMPOSE.md).
+
 ## Library ideas banked (#LIB-001..011, docs/LIBRARY_NOTES.md)
 
 Promoted: `select_mux`, `kernel_triples`. Open: gradient-frontend helper

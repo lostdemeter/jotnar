@@ -34,12 +34,12 @@ def psnr(a, b, peak=1.0):
     return float("inf") if mse == 0 else 10 * np.log10(peak ** 2 / mse)
 
 
-def run(rgb01, beta, sigma, use_alpha, blur="iso", ctrl=False):
+def run(rgb01, beta, sigma, use_alpha, blur="iso", ctrl=False, depth=None):
     from chain.control import load_ctrl
     rgb_lin = srgb_to_linear(rgb01).astype(np.float32)
     out_lin, yenh, info = enhance_image_int(rgb_lin, beta=beta, sigma=sigma,
                                             use_alpha=use_alpha, blur=blur,
-                                            ctrl=ctrl)
+                                            ctrl=ctrl, depth=depth)
     if blur == "splat":
         P = load_ctrl()
         att = P["iso_atten"] if ctrl else 1.0
@@ -48,7 +48,8 @@ def run(rgb01, beta, sigma, use_alpha, blur="iso", ctrl=False):
                                                   iso_atten=att,
                                                   coh_thr=P["coh_thr"],
                                                   mid_atten=mid,
-                                                  coh_hi=P.get("coh_hi", 0.5))
+                                                  coh_hi=P.get("coh_hi", 0.5),
+                                                  depth=depth)
     else:
         oracle_lin, _ = enhance_image_float(rgb_lin, beta=beta, sigma=sigma,
                                             use_alpha=use_alpha)
@@ -68,6 +69,8 @@ def main():
     ap.add_argument("--blur", default="iso", choices=["iso", "splat"])
     ap.add_argument("--ctrl", default="off", choices=["on", "off"],
                     help="beta-field controller (needs --blur splat)")
+    ap.add_argument("--depth", default=None, metavar="TAG",
+                    help="depth prior via DAV2 (cached samples/depth/TAG.npy)")
     ap.add_argument("--selftest", action="store_true")
     a = ap.parse_args()
     use_alpha = bool(a.alpha)
@@ -90,10 +93,14 @@ def main():
         sys.exit(0 if d >= BAR_DB else 1)
 
     rgb01 = np.asarray(Image.open(a.input).convert("RGB"), dtype=np.float64) / 255.0
+    depth = None
+    if a.depth is not None:
+        from chain.depthprior import get_depth
+        depth = get_depth(rgb01, a.depth)
     out, d, info = run(rgb01.astype(np.float32), a.beta, a.sigma, use_alpha,
-                       blur=a.blur, ctrl=ctrl)
+                       blur=a.blur, ctrl=ctrl, depth=depth)
     Image.fromarray(out).save(a.output)
-    print(f"enhanced {a.input} -> {a.output} beta={a.beta} sigma={a.sigma} alpha={use_alpha} blur={a.blur} ctrl={ctrl}")
+    print(f"enhanced {a.input} -> {a.output} beta={a.beta} sigma={a.sigma} alpha={use_alpha} blur={a.blur} ctrl={ctrl} depth={a.depth}")
     print(f"parity int-vs-oracle: {d:.2f}dB (bar {BAR_DB}) -> {'GO' if d >= BAR_DB else 'NO-GO'}")
     print(f"audit={AUDIT}")
     sys.exit(0 if d >= BAR_DB else 1)

@@ -87,6 +87,15 @@ parity between file and cache (`ctrl-cache-parity`). Lesson: parity gates
 prove sameness of implementation, not sameness of configuration -- config
 plumbing needs its own gate.
 
+## #LIB-013: offline priors compose at L1 via hashed cache files [RECIPE]
+
+Depth arrives like calibration data: computed once (any framework), cached
+under samples/depth/<tag>.npy beside an input-hash sidecar, consumed as
+boundary floats. Collision raises instead of reusing. The pattern (compute
+once, hash-key, consume hot as integers) generalizes to any future prior
+(segmentation, noise maps). L2 (triple-direct, no re-encode) is the upgrade
+path with its own parity discipline, not a rewrite.
+
 ## #LIB-007: thresholds want a controller (feeds step 2) [CLOSED by BETA_CTRL]
 
 Frozen constants introduced: coherence gate 0.25, sigmas (1.0 / 1.8 / 0.5),

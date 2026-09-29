@@ -251,14 +251,14 @@ def alpha_gather(y_lin, lut=None):
 def enhance_luminance_int(y_lin, beta=0.5, kernel=None, m=None, use_alpha=False,
                           m_acc=None, m_cov=None, blur="iso", ctrl=False,
                           ctrl_atten=None, coh_thr=None, ctrl_mid=None,
-                          coh_hi=None):
+                          coh_hi=None, depth=None):
     """Integer datapath: Y [0,1] float (boundary) -> Y_enh triples + audits.
     Math actually executed: A=sqrt(Y); As=blur(A); D=A-As;
-    Aenh=A+beta_eff*D (beta_eff scalar, or the v2 controller field);
-    Ienh=Aenh^2. blur/ctrl documented in docs/SPLAT_OP.md, docs/BETA_CTRL.md.
-    ctrl_atten/ctrl_mid/coh_thr/coh_hi override the frozen file (search only).
-    Scales: conv accumulates @ m_acc, everything else @ m_cov; the As
-    handoff calls rescale_ explicitly. Legacy m=... sets both (compat)."""
+    Aenh=A+beta_eff*D (beta_eff scalar, v2 controller field, and/or depth
+    multiplier -- modulations compose multiplicatively); Ienh=Aenh^2.
+    blur/ctrl/depth: docs/SPLAT_OP.md, docs/BETA_CTRL.md, docs/COMPOSE.md.
+    depth=None off, else float depth map at Y geometry (offline prior).
+    Overrides are search-only; scales as documented below."""
     if m_acc is None or m_cov is None:
         if m is not None:
             m_acc = m_cov = m
@@ -293,13 +293,24 @@ def enhance_luminance_int(y_lin, beta=0.5, kernel=None, m=None, use_alpha=False,
     if use_alpha:
         al_t = alpha_gather(y_lin)  # DEPRECATED ablation only (see Debt 2)
         ds_t = tmul(ds_t, al_t)
+    depth_frac = None
+    if depth is not None:
+        from chain.depthprior import near_mask, depth_mult
+        depth = np.ascontiguousarray(depth, dtype=np.float64)
+        assert depth.shape == (H, W), f"depth geometry {depth.shape} vs Y {(H, W)}"
+        near = near_mask(depth)
+        depth_frac = float(near.mean())
+        ds_t = tmul(ds_t, depth_mult((H, W), near))
     aenh_t = binop_fixed(a_t, ds_t, m_cov, m_cov, op="add")
     ienh_t = tmul(aenh_t, aenh_t)  # I = |A|^2
     ienh_t = clip_fixed(ienh_t, 0.0, 1.0, m_cov)
     info = {"m_acc": m_acc, "m_cov": m_cov, "shape": (H, W),
-            "alpha": bool(use_alpha), "blur": blur, "ctrl": bool(ctrl)}
+            "alpha": bool(use_alpha), "blur": blur, "ctrl": bool(ctrl),
+            "depth": depth is not None}
     if diag is not None:
         info["gate_frac"] = diag["gate_frac"]
+    if depth_frac is not None:
+        info["near_frac"] = depth_frac
     return ienh_t, info
 
 
@@ -337,7 +348,7 @@ def apply_gain_int(rgb_lin, y_lin, yenh_trip, m=None, m_cov=None):
 def enhance_image_int(rgb_lin, beta=0.5, sigma=1.0, radius=2, use_alpha=False,
                       m=None, m_acc=None, m_cov=None, blur="iso", ctrl=False,
                       ctrl_atten=None, coh_thr=None, ctrl_mid=None,
-                      coh_hi=None):
+                      coh_hi=None, depth=None):
     """End-to-end integer chain on linear-light RGB float32 [0,1].
     Boundary float in/out; everything between is triples/fixed."""
     if m_acc is None or m_cov is None:
@@ -355,7 +366,7 @@ def enhance_image_int(rgb_lin, beta=0.5, sigma=1.0, radius=2, use_alpha=False,
                                          use_alpha=use_alpha, blur=blur,
                                          ctrl=ctrl, ctrl_atten=ctrl_atten,
                                          coh_thr=coh_thr, ctrl_mid=ctrl_mid,
-                                         coh_hi=coh_hi)
+                                         coh_hi=coh_hi, depth=depth)
     rgb_enh = apply_gain_int(rgb_lin.astype(np.float32), y, yenh_t, m_cov=m_cov)
     yenh = S.decode(yenh_t[0], yenh_t[1]) * (1 - yenh_t[2].astype(np.float64))
     return rgb_enh, np.clip(yenh, 0, 1), info

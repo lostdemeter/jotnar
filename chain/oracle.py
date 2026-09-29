@@ -122,20 +122,27 @@ def splat_blur_float(a, coh_thr=None):
 
 
 def enhance_luminance_float_splat(y, beta=0.5, iso_atten=1.0, coh_thr=None,
-                                  mid_atten=1.0, coh_hi=0.5):
+                                  mid_atten=1.0, coh_hi=0.5, depth=None,
+                                  far_atten=0.5):
     a = np.sqrt(np.maximum(y, 0))
     as_, bucket, coh = splat_blur_float(a, coh_thr=coh_thr)
     beff = np.where(bucket == 4, beta * iso_atten,
                     np.where(coh >= coh_hi, beta, beta * mid_atten))
+    if depth is not None:
+        d = np.ascontiguousarray(depth, dtype=np.float64)
+        n = np.zeros_like(d) if d.max() <= d.min() else (d - d.min()) / (d.max() - d.min())
+        beff = beff * np.where(n <= float(np.median(n)), 1.0, far_atten)
     d = a - as_
     return np.clip((a + beff * d) ** 2, 0, 1)
 
 
 def enhance_image_float_splat(rgb, beta=0.5, iso_atten=1.0, coh_thr=None,
-                              mid_atten=1.0, coh_hi=0.5):
+                              mid_atten=1.0, coh_hi=0.5, depth=None,
+                              far_atten=0.5):
     y = 0.2126 * rgb[:, :, 0] + 0.7152 * rgb[:, :, 1] + 0.0722 * rgb[:, :, 2]
     yenh = enhance_luminance_float_splat(y, beta=beta, iso_atten=iso_atten,
                                          coh_thr=coh_thr, mid_atten=mid_atten,
-                                         coh_hi=coh_hi)
+                                         coh_hi=coh_hi, depth=depth,
+                                         far_atten=far_atten)
     g = np.clip(yenh / np.maximum(y, 1e-12), 0.5, 2.0)
     return np.clip(rgb * g[:, :, None], 0, 1).astype(np.float32), yenh

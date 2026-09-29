@@ -6,20 +6,19 @@ L2 triple-direct handoffs (no decode/re-encode at seams). This doc scopes
 holo-phi's two compositions. Neither is built here; both are specified so
 the wiring, not the math, is the remaining work.
 
-## Depth-aware enhancement (DAV2 codec)
+## Depth-aware enhancement (DAV2 codec) -- L1 BUILT this round
 
-Idea: splat sizes + beta scale with scene depth. Near texture (skin, fabric)
-resolves fine detail; far field (sky, distance haze) is optically softer, so
-boosting it only amplifies haze noise. Rule sketch: `sigma_eff =
-sigma * depth_norm` (far -> wider bank = gentler), `beta_eff *= near_gain`.
-Depth arrives as triples from the DAV2 codec (perception), rescaled to our
-m_cov at the seam (explicit `rescale_`, unified scales where possible = L2
-pointer pass). Toggle: `holo=on:depth=on`. Gate (when built): parity on the
-seam (>=51dB dividend discipline per the pipeline doc) + a depth-ordering
-check (far-field boost < near-field boost on a staged pair).
-
-Status: NOT STARTED. Needs a depth-codec checkout beside this repo; the seam
-contract above is the whole interface.
+Rule: `beta_eff *= near ? 1.0 : 0.5` (median split on per-frame-normalized
+relative depth; DAV2 is scale-ambiguous so only order is consumed).
+`chain/depthprior.py` computes the prior once (torch, offline doctrine),
+caches `samples/depth/<tag>.npy` with an input-hash sidecar (collision
+raises, never silently reuses). Hot path: median mask at encode +
+`select_mux` + `tmul` (integers only). Multiplies onto the controller field
+(modulations compose). Toggle: `--depth TAG` (demo), `depth=array`
+(chain). Gates: `test_depth.py` -- cache determinism, parity 45.68dB,
+near p99 0.063 > far 0.017 (3.6x: foreground person vs background),
+toggle-clean. L2 triple-direct handoff stays backlog (geo_int.py already
+speaks triples; the export path isn't wired).
 
 ## Temporal coherence (RIFE-style codec / warp op)
 
