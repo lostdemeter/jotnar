@@ -251,7 +251,7 @@ def alpha_gather(y_lin, lut=None):
 def enhance_luminance_int(y_lin, beta=0.5, kernel=None, m=None, use_alpha=False,
                           m_acc=None, m_cov=None, blur="iso", ctrl=False,
                           ctrl_atten=None, coh_thr=None, ctrl_mid=None,
-                          coh_hi=None, depth=None):
+                          coh_hi=None, depth=None, ctrl_strong=None):
     """Integer datapath: Y [0,1] float (boundary) -> Y_enh triples + audits.
     Math actually executed: A=sqrt(Y); As=blur(A); D=A-As;
     Aenh=A+beta_eff*D (beta_eff scalar, v2 controller field, and/or depth
@@ -286,7 +286,7 @@ def enhance_luminance_int(y_lin, beta=0.5, kernel=None, m=None, use_alpha=False,
         from chain.control import beta_field
         ds_t = tmul(d_t, beta_field(beta, diag["bucket"], diag["coh_t"],
                                     m_cov, atten=ctrl_atten, mid=ctrl_mid,
-                                    hi=coh_hi))
+                                    hi=coh_hi, strong=ctrl_strong))
     else:
         b_t = S.encode(np.full((H, W), float(beta), dtype=np.float64))
         ds_t = tmul(d_t, b_t)
@@ -348,7 +348,7 @@ def apply_gain_int(rgb_lin, y_lin, yenh_trip, m=None, m_cov=None):
 def enhance_image_int(rgb_lin, beta=0.5, sigma=1.0, radius=2, use_alpha=False,
                       m=None, m_acc=None, m_cov=None, blur="iso", ctrl=False,
                       ctrl_atten=None, coh_thr=None, ctrl_mid=None,
-                      coh_hi=None, depth=None):
+                      coh_hi=None, depth=None, ctrl_strong=None):
     """End-to-end integer chain on linear-light RGB float32 [0,1].
     Boundary float in/out; everything between is triples/fixed."""
     if m_acc is None or m_cov is None:
@@ -366,7 +366,8 @@ def enhance_image_int(rgb_lin, beta=0.5, sigma=1.0, radius=2, use_alpha=False,
                                          use_alpha=use_alpha, blur=blur,
                                          ctrl=ctrl, ctrl_atten=ctrl_atten,
                                          coh_thr=coh_thr, ctrl_mid=ctrl_mid,
-                                         coh_hi=coh_hi, depth=depth)
+                                         coh_hi=coh_hi, depth=depth,
+                                         ctrl_strong=ctrl_strong)
     rgb_enh = apply_gain_int(rgb_lin.astype(np.float32), y, yenh_t, m_cov=m_cov)
     yenh = S.decode(yenh_t[0], yenh_t[1]) * (1 - yenh_t[2].astype(np.float64))
     return rgb_enh, np.clip(yenh, 0, 1), info

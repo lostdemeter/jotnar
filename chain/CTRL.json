@@ -1,10 +1,11 @@
 {
   "iso_atten": 0.5,
   "mid_atten": 0.4,
+  "strong_atten": 1.0,
   "coh_hi": 0.4,
   "coh_thr": 0.15,
   "score": 4.577978203110119,
-  "default": 4.488078217157842,
-  "pairs_hash": "71ba7ccee316cbd1",
-  "note": "v2: coherence-modulated atten (strong-coh full beta, weak-coh mid, iso atten). coh_thr frozen at v1 fit (grid-flat finding stands)."
+  "default": 4.577978203110119,
+  "pairs_hash": "235f647eafecff57",
+  "note": "v3: fitted strong level completes the decision table (iso/mid/strong x coherence bands). Rotation symmetry kept (no per-direction params). coh_thr frozen at v1 fit."
 }

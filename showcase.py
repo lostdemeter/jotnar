@@ -129,12 +129,14 @@ def main():
         dt = time.time() - t
         if kw["blur"] == "splat":
             att = P["iso_atten"] if kw["ctrl"] else 1.0
-            mid = P.get("mid_atten", 1.0) if kw["ctrl"] else 1.0
+            mid = P.get("mid_atten", 0.6) if kw["ctrl"] else 1.0
+            stg = P.get("strong_atten", 1.0) if kw["ctrl"] else 1.0
             ora, _ = enhance_image_float_splat(rgb_lin, beta=beta,
                                                iso_atten=att,
                                                coh_thr=P["coh_thr"],
                                                mid_atten=mid,
-                                               coh_hi=P.get("coh_hi", 0.5))
+                                               coh_hi=P.get("coh_hi", 0.5),
+                                               strong_atten=stg)
         else:
             ora, _ = enhance_image_float(rgb_lin, beta=beta)
         d = psnr(out_lin, ora)

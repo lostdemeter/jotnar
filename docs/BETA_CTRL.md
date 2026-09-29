@@ -43,15 +43,25 @@ Then `tmul(D, beta_eff_field)` as before. Oracle mirrors in float.
 - `CTRL.json` determinism (same pairs -> same file);
 - flat identity preserved.
 
-## v2: coherence-modulated atten [BUILT this round]
+## v2: coherence-modulated atten [BUILT, then extended]
 
 Oriented pixels split by coherence magnitude (strong-coh full beta, weak-coh
 mid beta) + iso atten: params (iso_atten, mid_atten, coh_hi), fitted
 (iso 0.5, mid 0.4, hi 0.4) on pairs extended with a corner fixture (quadrant
 junction: weak coherence + large detail -- the pixels mid_atten exists for;
 without it the fitter couldn't see v2). coh_thr stays at its v1 fit.
-Execution: exact selects on bucket + fixed coherence compares; oracle
-mirrors. The v1 signature evolved honestly with the rule (see test_ctrl.py).
+
+## v3: fitted strong level [BUILT this round]
+
+The decision table is complete: (iso_atten, mid_atten, strong_atten, coh_hi)
+= (0.5, 0.4, 1.0, 0.4). The fit verified strong=1.0 rather than changing it
+(0.75 loses sharpness with no overshoot gain to compensate) -- a fitted
+confirmation of the analytic default, now stated in the file instead of
+assumed in code. Schema completion writes (missing key on tie) are
+content-neutral but required: the file must state every param the runtime
+consumes (#LIB-012). Rotation symmetry kept throughout (no per-direction
+params). Read the rule as a 2-layer decision net: threshold routing
+(coh_thr, coh_hi) + 3-entry table, executed as integer selects.
 
 ## Backlog (learned v3)
 

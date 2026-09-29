@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "scr
 from chain.holo_phi import enhance_image_int
 from chain.oracle import enhance_image_float_splat
 from chain.control import load_ctrl, DEFAULTS
-from fit_ctrl import pairs, GRID_ATTEN, GRID_MID, GRID_HI
+from fit_ctrl import pairs, GRID_ATTEN, GRID_MID, GRID_HI, GRID_STRONG
 
 BAR_DB = 40.0
 FAIL = []
@@ -45,20 +45,21 @@ def boost_of(y):
 def main():
     P = load_ctrl()
     print(f"ctrl file: {P}")
-    # 1. frozen file validity: keys, grid membership (fitter's contract, v2:
-    #    iso/mid/hi fitted; coh_thr frozen at its v1 value)
+    # 1. frozen file validity: keys, grid membership (fitter's contract, v3:
+    #    iso/mid/strong/hi fitted; coh_thr frozen at its v1 value)
     try:
         with open(os.path.join("chain", "CTRL.json")) as fh:
             d = json.load(fh)
-        check("ctrl-keys", set(("iso_atten", "mid_atten", "coh_hi", "coh_thr")) <= set(d),
+        check("ctrl-keys", set(("iso_atten", "mid_atten", "strong_atten", "coh_hi", "coh_thr")) <= set(d),
               f"keys={sorted(d)}")
         check("ctrl-grid", d["iso_atten"] in GRID_ATTEN and d["mid_atten"] in GRID_MID
+              and d["strong_atten"] in GRID_STRONG
               and d["coh_hi"] in GRID_HI and d["coh_thr"] == 0.15,
-              f"file={d['iso_atten']}/{d['mid_atten']}/{d['coh_hi']}/{d['coh_thr']}")
+              f"file={d['iso_atten']}/{d['mid_atten']}/{d['strong_atten']}/{d['coh_hi']}/{d['coh_thr']}")
         # loader returns the WHOLE frozen dict (a past revision dropped new
         # keys here; both sides silently ran different defaults and parity
         # still passed -- weak pixels are rare. Never again: assert key parity).
-        check("ctrl-cache-parity", set(("iso_atten", "mid_atten", "coh_hi", "coh_thr")) <= set(P),
+        check("ctrl-cache-parity", set(("iso_atten", "mid_atten", "strong_atten", "coh_hi", "coh_thr")) <= set(P),
               f"cache={sorted(P)}")
     except FileNotFoundError:
         check("ctrl-keys", True, "no file: analytic defaults in force")
@@ -66,7 +67,8 @@ def main():
     # 2. pairs determinism: recompute the fitter's hash (no fitting, seconds)
     Pr = pairs()
     sig = repr(sorted(((k, round(float(v[0].sum() + v[1].sum()), 6)) for k, v in Pr.items())))
-    h = hashlib.md5((str(GRID_ATTEN) + str(GRID_MID) + str(GRID_HI) + sig).encode()).hexdigest()[:16]
+    h = hashlib.md5((str(GRID_ATTEN) + str(GRID_MID) + str(GRID_STRONG)
+                     + str(GRID_HI) + sig).encode()).hexdigest()[:16]
     try:
         check("ctrl-hash", d["pairs_hash"] == h, f"file={d['pairs_hash']} live={h}")
     except NameError:
@@ -75,16 +77,17 @@ def main():
     #    Gated on a REAL frame: uniform noise maximizes bucket-boundary
     #    straddling (random orientations), so flips dominate there by design;
     #    the noise fixture is reported below as a measured row, not a bar
-    #    (documents the hard-select discontinuity cost -- learned-v2
-    #    continuous fields are the backlog answer).
+    #    (documents the hard-select discontinuity cost -- continuous v4
+    #    fields are the backlog answer).
     from PIL import Image
     cand = "/home/thorin/Documents/OpenCode/rife_reverse/samples/f_012.png"
     rgb_r = (np.asarray(Image.open(cand).convert("RGB"), dtype=np.float64) / 255.0)
     rgb_r = np.power(rgb_r, 2.2).astype(np.float32)
     io, _ = enhance_image_float_splat(rgb_r, beta=0.5, iso_atten=P["iso_atten"],
                                       coh_thr=P["coh_thr"],
-                                      mid_atten=P.get("mid_atten", 1.0),
-                                      coh_hi=P.get("coh_hi", 0.5))
+                                      mid_atten=P.get("mid_atten", 0.6),
+                                      coh_hi=P.get("coh_hi", 0.5),
+                                      strong_atten=P.get("strong_atten", 1.0))
     ii, _, _ = enhance_image_int(rgb_r, beta=0.5, blur="splat", ctrl=True)
     d = psnr(ii, io)
     check("parity-ctrl", d >= BAR_DB, f"{d:.2f}dB (real frame)")
@@ -92,8 +95,9 @@ def main():
     rgb = np.clip(rng.uniform(0, 1, (24, 24, 3)), 0, 1).astype(np.float32)
     io_n, _ = enhance_image_float_splat(rgb, beta=0.5, iso_atten=P["iso_atten"],
                                         coh_thr=P["coh_thr"],
-                                        mid_atten=P.get("mid_atten", 1.0),
-                                        coh_hi=P.get("coh_hi", 0.5))
+                                        mid_atten=P.get("mid_atten", 0.6),
+                                        coh_hi=P.get("coh_hi", 0.5),
+                                        strong_atten=P.get("strong_atten", 1.0))
     ii_n, _, _ = enhance_image_int(rgb, beta=0.5, blur="splat", ctrl=True)
     dn = psnr(ii_n, io_n)
     print(f"    measured (no bar): parity-ctrl-noise {dn:.2f}dB "
