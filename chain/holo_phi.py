@@ -106,6 +106,12 @@ def neg_trip(t):
     return (-t[0].astype(np.int8), t[1].copy(), t[2].copy())
 
 
+def abs_trip(t):
+    """Exact magnitude (force sign +1). No arithmetic; same class as neg_trip
+    (C lowering: sign-byte store -- shared backlog with neg, both trivial)."""
+    return (np.ones(t[0].shape, dtype=np.int8), t[1].copy(), t[2].copy())
+
+
 def relu_trip(t, m):
     """Exact relu via fixed-domain max(.,0): integer compare, no FP.
     Continuous (small input changes -> small output changes): the v4
@@ -280,7 +286,8 @@ def alpha_gather(y_lin, lut=None):
 def enhance_luminance_int(y_lin, beta=0.5, kernel=None, m=None, use_alpha=False,
                           m_acc=None, m_cov=None, blur="iso", ctrl=False,
                           ctrl_atten=None, coh_thr=None, ctrl_mid=None,
-                          coh_hi=None, depth=None, ctrl_strong=None):
+                          coh_hi=None, depth=None, ctrl_strong=None,
+                          ctrl_v5w0=None, ctrl_v5w1=None, ctrl_v5w2=None):
     """Integer datapath: Y [0,1] float (boundary) -> Y_enh triples + audits.
     Math actually executed: A=sqrt(Y); As=blur(A); D=A-As;
     Aenh=A+beta_eff*D (beta_eff scalar, v2 controller field, and/or depth
@@ -310,7 +317,14 @@ def enhance_luminance_int(y_lin, beta=0.5, kernel=None, m=None, use_alpha=False,
     else:
         raise ValueError(f"blur must be 'iso'|'splat'|'splat_soft', got {blur!r}")
     d_t = binop_fixed(a_t, as_t, m_cov, m_cov, op="sub")
-    if ctrl == "soft":
+    if ctrl == "v5":
+        if blur not in ("splat", "splat_soft") or diag is None:
+            raise ValueError("ctrl='v5' needs a splat blur (coh+D source)")
+        from chain.control import beta_field_v5
+        ds_t = tmul(d_t, beta_field_v5(beta, diag["coh_t"], d_t, m_cov,
+                                       w0=ctrl_v5w0, w1=ctrl_v5w1,
+                                       w2=ctrl_v5w2))
+    elif ctrl == "soft":
         if blur not in ("splat", "splat_soft") or diag is None:
             raise ValueError("ctrl='soft' needs a splat blur (coh source)")
         from chain.control import beta_field_soft
@@ -383,7 +397,8 @@ def apply_gain_int(rgb_lin, y_lin, yenh_trip, m=None, m_cov=None):
 def enhance_image_int(rgb_lin, beta=0.5, sigma=1.0, radius=2, use_alpha=False,
                       m=None, m_acc=None, m_cov=None, blur="iso", ctrl=False,
                       ctrl_atten=None, coh_thr=None, ctrl_mid=None,
-                      coh_hi=None, depth=None, ctrl_strong=None):
+                      coh_hi=None, depth=None, ctrl_strong=None,
+                      ctrl_v5w0=None, ctrl_v5w1=None, ctrl_v5w2=None):
     """End-to-end integer chain on linear-light RGB float32 [0,1].
     Boundary float in/out; everything between is triples/fixed."""
     if m_acc is None or m_cov is None:
@@ -402,7 +417,10 @@ def enhance_image_int(rgb_lin, beta=0.5, sigma=1.0, radius=2, use_alpha=False,
                                          ctrl=ctrl, ctrl_atten=ctrl_atten,
                                          coh_thr=coh_thr, ctrl_mid=ctrl_mid,
                                          coh_hi=coh_hi, depth=depth,
-                                         ctrl_strong=ctrl_strong)
+                                         ctrl_strong=ctrl_strong,
+                                         ctrl_v5w0=ctrl_v5w0,
+                                         ctrl_v5w1=ctrl_v5w1,
+                                         ctrl_v5w2=ctrl_v5w2)
     rgb_enh = apply_gain_int(rgb_lin.astype(np.float32), y, yenh_t, m_cov=m_cov)
     yenh = S.decode(yenh_t[0], yenh_t[1]) * (1 - yenh_t[2].astype(np.float64))
     return rgb_enh, np.clip(yenh, 0, 1), info

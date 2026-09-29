@@ -188,7 +188,11 @@ def _soft_blend(outs, d, s2, m_cov):
     tensor triples, continuous everywhere (relu is continuous; the only exact
     select left is the true-flat guard, invisible since D~=0 there):
       rV=relu(d), rH=relu(-d), rD1=relu(s2), rD2=relu(-s2); w=r/sum;
-      out = sum(w*blur). All triples/integers; division exact (exp-sub)."""
+      out = sum(w*blur). All triples/integers; division exact (exp-sub).
+    Diagonal mapping (a swap here shipped once, caught by the rotation gate
+    -- parity CANNOT catch it, both sides mirrored: rD1 is s2>0 = slash edge
+    = outs[3] [rotated(-45)], rD2 is s2<0 = backslash = outs[2]. Cross-check
+    against coherence_bucket's diag_pos rule, not against the oracle."""
     rV = relu_trip(d, m_cov)
     rH = relu_trip(neg_trip(d), m_cov)
     rD1 = relu_trip(s2, m_cov)
@@ -202,8 +206,8 @@ def _soft_blend(outs, d, s2, m_cov):
     wD2 = tdiv_pure(rD2, den)
     acc = binop_fixed(tmul(wV, outs[0]), tmul(wH, outs[1]),
                       m_cov, m_cov, op="add")
-    acc = binop_fixed(acc, tmul(wD1, outs[2]), m_cov, m_cov, op="add")
-    acc = binop_fixed(acc, tmul(wD2, outs[3]), m_cov, m_cov, op="add")
+    acc = binop_fixed(acc, tmul(wD1, outs[3]), m_cov, m_cov, op="add")
+    acc = binop_fixed(acc, tmul(wD2, outs[2]), m_cov, m_cov, op="add")
     # true-flat guard (den z-flagged): exact iso, bit-clean flats
     dz = den[2].astype(bool)
     iso = outs[4]

@@ -118,9 +118,10 @@ def main():
                ("splat", {"blur": "splat", "ctrl": False}),
                ("splat+ctrl", {"blur": "splat", "ctrl": True}),
                ("v4-soft", {"blur": "splat_soft", "ctrl": "soft"}),
+               ("v5-gate", {"blur": "splat_soft", "ctrl": "v5"}),
                ("splat+ctrl-strong", {"blur": "splat", "ctrl": True})]
     betas = {"iso": a.beta, "splat": a.beta, "splat+ctrl": a.beta,
-             "v4-soft": a.beta, "splat+ctrl-strong": 1.0}
+             "v4-soft": a.beta, "v5-gate": a.beta, "splat+ctrl-strong": 1.0}
     outs, panels, metrics = {}, [], []
     t_all = time.time()
     for name, kw in configs:
@@ -132,8 +133,9 @@ def main():
             att = P["iso_atten"] if kw["ctrl"] else 1.0
             mid = P.get("mid_atten", 0.6) if kw["ctrl"] else 1.0
             stg = P.get("strong_atten", 1.0) if kw["ctrl"] else 1.0
-            is_soft = kw["ctrl"] == "soft"
+            is_soft = kw["ctrl"] in ("soft", "v5")
             is_ssoft = kw["blur"] == "splat_soft"
+            is_v5 = kw["ctrl"] == "v5"
             ora, _ = enhance_image_float_splat(rgb_lin, beta=beta,
                                                iso_atten=att,
                                                coh_thr=P["coh_thr"],
@@ -141,7 +143,11 @@ def main():
                                                coh_hi=P.get("coh_hi", 0.5),
                                                strong_atten=stg,
                                                soft=is_soft,
-                                               soft_blur=is_ssoft)
+                                               soft_blur=is_ssoft,
+                                               v5=is_v5,
+                                               v5_w0=P.get("v5_w0", 0.0),
+                                               v5_w1=P.get("v5_w1", 0.0),
+                                               v5_w2=P.get("v5_w2", 0.0))
         else:
             ora, _ = enhance_image_float(rgb_lin, beta=beta)
         d = psnr(out_lin, ora)

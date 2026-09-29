@@ -51,8 +51,12 @@ def run(rgb01, beta, sigma, use_alpha, blur="iso", ctrl=False, depth=None):
                                                   mid_atten=mid,
                                                   coh_hi=P.get("coh_hi", 0.5),
                                                   strong_atten=stg,
-                                                  soft=(ctrl == "soft"),
+                                                  soft=(ctrl in ("soft", "v5")),
                                                   soft_blur=(blur == "splat_soft"),
+                                                  v5=(ctrl == "v5"),
+                                                  v5_w0=P.get("v5_w0", 0.0),
+                                                  v5_w1=P.get("v5_w1", 0.0),
+                                                  v5_w2=P.get("v5_w2", 0.0),
                                                   depth=depth)
     else:
         oracle_lin, _ = enhance_image_float(rgb_lin, beta=beta, sigma=sigma,
@@ -72,16 +76,19 @@ def main():
                     help="enable deprecated parabola ablation (default off, Debt 2)")
     ap.add_argument("--blur", default="iso", choices=["iso", "splat", "splat_soft"],
                     help="splat_soft = relu-blended bank (v4, continuous)")
-    ap.add_argument("--ctrl", default="off", choices=["on", "soft", "off"],
-                    help="on = v3 hard field, soft = v4 sigmoid field (needs splat blur)")
+    ap.add_argument("--ctrl", default="off", choices=["on", "soft", "v5", "off"],
+                    help="on = v3 hard field, soft = v4 sigmoid field, "
+                         "v5 = learned detail gate (needs splat_soft blur)")
     ap.add_argument("--depth", default=None, metavar="TAG",
                     help="depth prior via DAV2 (cached samples/depth/TAG.npy)")
     ap.add_argument("--selftest", action="store_true")
     a = ap.parse_args()
     use_alpha = bool(a.alpha)
-    ctrl = {"on": True, "soft": "soft", "off": False}[a.ctrl]
+    ctrl = {"on": True, "soft": "soft", "v5": "v5", "off": False}[a.ctrl]
     if ctrl and a.blur not in ("splat", "splat_soft"):
         ap.error("--ctrl needs --blur splat or splat_soft")
+    if ctrl == "v5" and a.blur != "splat_soft":
+        ap.error("--ctrl v5 needs --blur splat_soft (coh+D source)")
 
     if a.selftest or (not a.input):
         Hh, Ww = 128, 128

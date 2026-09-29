@@ -44,7 +44,10 @@ gate/diag fractions, coherence stats for audits.
    frozen formulas: `rotated_kernel`). Each accumulates @ m_acc, rescales
    to m_cov -- same contract as `conv_trip`.
 9. **Mux** (exact select, `select_mux` #LIB-009): per-pixel pick of the 5
-   outputs by bucket index.
+   outputs by bucket index. v4 alternative: `_soft_blend` (relu-weighted
+   average, continuous; diagonal mapping rD1->outs[3], rD2->outs[2] per the
+   bucket rule -- a swap shipped once and parity stayed green while rotation
+   failed, see #LIB-014 postscript).
 
 ## Edge semantics
 

@@ -55,15 +55,29 @@ verified the analytic default rather than changing it. Whole-dict loader fix
 + cache-parity gate (#LIB-012: parity proves sameness of implementation, not
 of configuration). See docs/BETA_CTRL.md.
 
-## v4 (this round): continuous fields kill the noise penalty
+## v4 (built): continuous fields kill the noise penalty
 
 v3's hard selects cost 28-33dB on uniform noise (1-LSB wobble flips a whole
 kernel). v4 blends instead: sigmoid-weighted beta levels + relu-weighted
 bank outputs, no discrete decision anywhere, no new fitted params (v3 file
 reused). Primitives are integer (`relu_trip` exact, `sigmoid_trip` LUT,
 shared C vectors). Noise parity 40.03dB BARRED (was reported); real 50dB,
-structured 53dB. Showcase: v4 sharpens harder than v3-hard (1234 vs 1092)
-while staying continuous. #LIB-014 banked.
+structured 53dB. A diagonal-weight swap shipped in `_soft_blend` mirrored in
+both sides -- parity green, rotation 5x broken -- caught by the rotation
+gate and fixed; rotation coverage now exists on all three blur paths.
+#LIB-014 banked.
+
+## v5 (this round): the tiny net
+
+`beff = beff_v4 * (0.5 + sigmoid(w0 + w1*coh + w2*dhat))`: one 1x1 layer on
+two rotation-invariant features, all existing IR ops (composition only, no
+new C). Zeros ~= v4 (sigmoid(0)=0.50023 LUT), so the 27-fit grid had to beat
+v4: (0, 4, 8) at 4.992 vs 4.588 (+9%). w1 plateaus from 4.0 (interior
+optimum); w2 climbs to the edge but flattening (asymptote-bounded, stated).
+Two-tier noise doctrine (#LIB-015): grain barred (47.95dB), white noise
+measured (37.10dB, distributed); an unreachable veto in the objective was
+tried, caught distorting, and reverted. Showcase: v5 1294 sharp at 1.36 LSB
+-- harder than v4 (1108) with less change than iso (1.83).
 
 ## Step 3a (built): depth composition, L1
 
@@ -74,15 +88,17 @@ determinism, parity 45.68dB, near p99 0.063 > far 0.017 on f_012. L2
 triple-direct handoff stays backlog; temporal IIR stays spec
 (docs/COMPOSE.md).
 
-## Library ideas banked (#LIB-001..014, docs/LIBRARY_NOTES.md)
+## Library ideas banked (#LIB-001..015, docs/LIBRARY_NOTES.md)
 
 Promoted: `select_mux`, `kernel_triples`. Closed this round: diagonals,
-fusion (corrected), v4 continuity primitives. Open: gradient-frontend helper
+fusion (corrected), v4 continuity primitives, mirrored-bug rotation coverage,
+unreachable-veto doctrine. Open: gradient-frontend helper
 (2 users, threshold 3), trap comment-stripping (upstream suggestion),
-continuous-blend stanza promotion (1 use, threshold 3 per #LIB-014).
+continuous-blend stanza promotion (1 use, threshold 3 per #LIB-014),
+soft-blend + abs/neg C lowerings (compositions only so far).
 Closed entries keep their evidence; open ones name their trigger.
 
 ## What's next
 
-Learned-v5 (per-pixel predicted sigmas/gain-clip on the same scaffolding),
+Learned-v6 (sigmoid temperature, trace feature, corner-pair weight),
 threading/OpenMP headroom in C, step 3 rest (temporal IIR + L2 depth).

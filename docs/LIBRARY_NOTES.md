@@ -142,3 +142,26 @@ true-flat guard, invisible since D~=0 there. Noise parity 40.03dB barred
 (was reported). Promotion signal: if a third continuous-blend use appears,
 the (relu-split, normalize, weight) stanza becomes a helper like select_mux.
 
+Postscript (v5 round): parity mirrors bugs it cannot see. `_soft_blend`
+mapped diagonal weights to the SWAPPED kernels (rD1->outs[2] instead of
+outs[3]) in BOTH numpy and oracle -- parity stayed green while rotation
+failed 5x (0.0018 vs 0.0090). v4 shipped without rotation coverage on its
+own blur path (test_v4 gated hard-mux rotation only). Fixed + covered:
+rotation gates now exist on hard (test_ctrl), soft (test_v4, added late),
+and v5 (test_v5) paths. Lesson: every blur/mux variant needs its own
+rotation gate; cross-check orientation mappings against the bucket rule
+(coherence_bucket's diag_pos), never against the mirror.
+
+## #LIB-015: price unreachable bars in gates, not in objectives [DOCTRINE]
+
+A max(0,40-npsnr) veto inside the v5 fit objective was tried and reverted:
+nothing on the grid clears 40 (best 37.8 -- adaptive blends disagree with
+themselves exactly where content is random: bank outputs spread wide on
+white noise, so small weight disagreements cost decibels by gain). An
+unreachable veto is pure drag: it elected (0,0,4), killing the coherence
+term the rule exists for. Doctrine: verify a veto's reachability (one probe
+run) before adding it to an objective. Bars that can't be met live in the
+gate suite as measured rows with stated mechanisms (white noise: reported,
+share ~11x, distributed) while reachable siblings stay barred (grain sigma
+0.02: 47.95dB). The fitter prices tradeoffs; the suite prices honesty.
+

@@ -76,9 +76,39 @@ v3 fit -- no new params, no refit. Noise parity is BARRED (>=40dB, measured
 harder than v3-hard (1234 vs 1092) while staying continuous -- partial weights
 everywhere beat hard fallback to iso. The v3 suites keep gating the hard path.
 
-## Backlog (learned v5)
+## Backlog (learned v5) -- BUILT below
 
-Per-pixel predicted fields (sigma bank weights, gain-clip range) from a tiny
-geometric net (1x1/3x3 convs, existing IR ops) trained on the same pairs.
-The v1/v2 scaffolding (pairs, score, freeze, gates) is reused unchanged; only
-the rule body grows.
+## v5: learned detail gate (the tiny net) [BUILT this round]
+
+Rule: `beff = beff_v4 * scale`, `scale = 0.5 + sigmoid(w0 + w1*coh + w2*dhat)`,
+`dhat = clip(|D|*4, 0, 1)`. One 1x1 layer on two rotation-invariant features
+(coherence magnitude, detail magnitude -- no orientation enters, so rotation
+symmetry holds by construction) plus sigmoid, all existing IR ops
+(tmul/binop/sigmoid/clip/abs: composition only, no new C needed). Zero
+weights give scale~=1 (sigmoid(0)=0.50023 to LUT precision), so the base IS
+v4: the 27-fit grid ((w0,w1,w2) over [-2..0]x[0,2,4]x[4,6,8]) had to beat v4
+to rewrite. It did: (0, 4, 8) at 4.992 vs 4.588 (+9%). w1 saturates from 4.0
+on (identical scores at 6/8: sigmoid-saturated interior optimum); w2 climbs
+to the grid edge but flattening (+0.05/+0.03: sigmoid asymptote bounds
+further gains, stated not chased).
+
+Noise doctrine is two-tier (#LIB-015): realistic grain (sigma 0.02, the
+pairs' own degradation level) is BARRED parity (v5: 47.95dB); adversarial
+white noise at full amplitude is MEASURED (37.10dB, distributed
+gain-on-spread, share ~11x -- same ladder as v3/v4, no flips). A veto term
+inside the fit objective was tried and reverted: nothing clears 40, so an
+unreachable veto is pure drag that elected (0,0,4) and killed the coherence
+term. Verify veto reachability before adding it.
+
+Gates (`test_v5.py`): file validity + grid + beat + cache-parity + hash,
+grain/real/structured barred, flat, rotation re-run (gap 0.04 -- the swap
+fix restored it), detail-ordering (corner >> flat: the signature w2 exists
+for). Showcase: v5 sharpens harder than v4 (1294 vs 1108) with less mean
+change than iso (1.36 vs 1.83 LSB).
+
+## Backlog (learned v6)
+
+Per-pixel predicted sigmas / gain-clip range from a tiny geometric net
+(1x1/3x3 convs, existing IR ops) on the same pairs/score/freeze/gates.
+First candidates: fitted sigmoid temperature (today folded into weights),
+trace-magnitude feature, or the corner-pair weight in the objective.

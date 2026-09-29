@@ -74,7 +74,28 @@ def main():
     fout, _, _ = enhance_image_int(flat, beta=0.5, blur="splat_soft", ctrl="soft")
     check("v4-flat", float(np.abs(fout - 0.5).mean()) < 0.01,
           f"{float(np.abs(fout - 0.5).mean()):.2e}")
-    # 5. sanity: v4 sharpens the real frame (Laplacian variance up)
+    # 5. rotation invariance on the SOFT blur path (added late: v4 shipped
+    #    with rotation gated only on the hard-mux path, which is how the
+    #    diagonal-weight swap survived -- parity mirrors bugs it can't see.
+    #    Smooth fixtures, same doctrine as test_ctrl/test_v5.)
+    N = 96
+    yy, xx = np.meshgrid(np.linspace(0, 1, N), np.linspace(0, 1, N))
+    sig = lambda t: 0.15 + 0.7 / (1 + np.exp(-t / 0.02))
+    bar_s = sig(np.tile(np.linspace(0, 1, N), (N, 1)) - 0.5)
+    diag_s = sig((xx + yy - 1.0) / np.sqrt(2))
+
+    def boost4(y):
+        rgb = np.stack([y] * 3, -1).astype(np.float32)
+        out, _, _ = enhance_image_int(rgb, beta=0.5, blur="splat_soft",
+                                      ctrl="soft")
+        return float(np.percentile(np.abs(out[:, :, 0] - y), 99))
+
+    bb, dd = boost4(bar_s), boost4(diag_s)
+    flat_r = boost4(np.full((N, N), 0.5))
+    gap = abs(bb - dd) / max(bb, dd, 1e-9)
+    check("v4-rotation", gap < 0.30 and min(bb, dd) > 5 * flat_r,
+          f"bar={bb:.4f} diag={dd:.4f} gap={gap:.2f} flat={flat_r:.2e}")
+    # 6. sanity: v4 sharpens the real frame (Laplacian variance up)
     from scipy.ndimage import laplace
 
     def sharp(im):

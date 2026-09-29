@@ -126,7 +126,10 @@ def splat_blur_float(a, coh_thr=None, soft=False):
         with np.errstate(divide="ignore", invalid="ignore"):
             w = [np.where(den > 0, r / np.maximum(den, 1e-300), 0)
                  for r in (rV, rH, rD1, rD2)]
-        out = w[0] * outs[0] + w[1] * outs[1] + w[2] * outs[2] + w[3] * outs[3]
+        # mapping mirrors _soft_blend (rD1 = s2>0 = slash = outs[3]);
+        # a swap here once mirrored the numpy bug -- parity stayed green
+        # while rotation failed. Cross-check vs coherence_bucket, not parity.
+        out = w[0] * outs[0] + w[1] * outs[1] + w[3] * outs[2] + w[2] * outs[3]
         out = np.where(den > 0, out, outs[4])
         return out, bucket, coh
     out = outs[4]
@@ -142,7 +145,8 @@ def _sigmoid(x):
 def enhance_luminance_float_splat(y, beta=0.5, iso_atten=1.0, coh_thr=None,
                                   mid_atten=1.0, coh_hi=0.5, depth=None,
                                   far_atten=0.5, strong_atten=1.0, soft=False,
-                                  soft_k=30.0, soft_blur=False):
+                                  soft_k=30.0, soft_blur=False, v5=False,
+                                  v5_w0=0.0, v5_w1=0.0, v5_w2=0.0):
     a = np.sqrt(np.maximum(y, 0))
     as_, bucket, coh = splat_blur_float(a, coh_thr=coh_thr, soft=soft_blur)
     if soft:
@@ -153,6 +157,11 @@ def enhance_luminance_float_splat(y, beta=0.5, iso_atten=1.0, coh_thr=None,
         beff = np.where(bucket == 4, beta * iso_atten,
                         np.where(coh >= coh_hi, beta * strong_atten,
                                  beta * mid_atten))
+    if v5:
+        d = a - as_
+        dhat = np.clip(np.abs(d) * 4.0, 0, 1)
+        scale = 0.5 + _sigmoid(v5_w0 + v5_w1 * coh + v5_w2 * dhat)
+        beff = beff * scale
     if depth is not None:
         d = np.ascontiguousarray(depth, dtype=np.float64)
         n = np.zeros_like(d) if d.max() <= d.min() else (d - d.min()) / (d.max() - d.min())
@@ -164,13 +173,16 @@ def enhance_luminance_float_splat(y, beta=0.5, iso_atten=1.0, coh_thr=None,
 def enhance_image_float_splat(rgb, beta=0.5, iso_atten=1.0, coh_thr=None,
                               mid_atten=1.0, coh_hi=0.5, depth=None,
                               far_atten=0.5, strong_atten=1.0, soft=False,
-                              soft_blur=False):
+                              soft_blur=False, v5=False,
+                              v5_w0=0.0, v5_w1=0.0, v5_w2=0.0):
     y = 0.2126 * rgb[:, :, 0] + 0.7152 * rgb[:, :, 1] + 0.0722 * rgb[:, :, 2]
     yenh = enhance_luminance_float_splat(y, beta=beta, iso_atten=iso_atten,
                                          coh_thr=coh_thr, mid_atten=mid_atten,
                                          coh_hi=coh_hi, depth=depth,
                                          far_atten=far_atten,
                                          strong_atten=strong_atten, soft=soft,
-                                         soft_blur=soft_blur)
+                                         soft_blur=soft_blur, v5=v5,
+                                         v5_w0=v5_w0, v5_w1=v5_w1,
+                                         v5_w2=v5_w2)
     g = np.clip(yenh / np.maximum(y, 1e-12), 0.5, 2.0)
     return np.clip(rgb * g[:, :, None], 0, 1).astype(np.float32), yenh

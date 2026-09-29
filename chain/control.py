@@ -1,12 +1,15 @@
-"""Beta-field controller (step 2, v3): per-pixel effective beta, fitted offline.
+"""Beta-field controller (step 2, v5): per-pixel effective beta, fitted offline.
 
-Rule v3: three fitted levels selected by (bucket, coherence band) -- iso
-fallback gets iso_atten; oriented pixels split by coh_hi into strong
-(strong_atten) and mid (mid_atten). Rotation symmetry is the inductive
-bias: all four orientations share levels (no per-direction params). Read as
-a 2-layer decision net (threshold routing + table); executed as exact
-integer selects + tmul. Stated reasons in docs/BETA_CTRL.md. Fitting lives
-in scripts/fit_ctrl.py; this module loads the frozen result.
+Rule v5: v4 soft field times a learned detail gate --
+  beff = beff_v4 * scale, scale = 0.5 + sigmoid(w0 + w1*coh + w2*dhat),
+  dhat = clip(|D|*4, 0, 1).
+Zero weights give gate=0.5, scale=1.0, i.e. exactly v4: the fitter must beat
+v4 to rewrite (same must-beat doctrine as every round). Rotation symmetry
+kept (features are rotation-invariant: coherence magnitude, detail
+magnitude -- no orientation enters). One 1x1 layer + sigmoid: the tiny net,
+executed as tmul/binop/sigmoid_trip (all already-lowered IR ops, so v5 needs
+no new C -- composition only). Stated reasons in docs/BETA_CTRL.md. Fitting
+lives in scripts/fit_v5.py; this module loads the frozen result.
 """
 import json
 import os
@@ -21,7 +24,8 @@ CHAIN_DIR = os.path.dirname(os.path.abspath(__file__))
 CTRL_PATH = os.path.join(CHAIN_DIR, "CTRL.json")
 
 DEFAULTS = {"iso_atten": 0.5, "coh_thr": 0.25,
-            "mid_atten": 0.6, "coh_hi": 0.5, "strong_atten": 1.0}
+            "mid_atten": 0.6, "coh_hi": 0.5, "strong_atten": 1.0,
+            "v5_w0": 0.0, "v5_w1": 0.0, "v5_w2": 0.0}
 
 _cache = None
 
@@ -37,7 +41,7 @@ def load_ctrl():
                 d = json.load(fh)
             m = dict(DEFAULTS)
             for k in ("iso_atten", "coh_thr", "mid_atten", "coh_hi",
-                        "strong_atten"):
+                        "strong_atten", "v5_w0", "v5_w1", "v5_w2"):
                 if k in d:
                     m[k] = float(d[k])
             _cache = m
@@ -106,3 +110,33 @@ def beta_field_soft(beta, coh_t, m_cov, k=30.0):
     w = binop_fixed(w, tmul(ds, s2), m_cov, m_cov, op="add")
     b = S.encode(np.full(shape, float(beta), dtype=np.float64))
     return tmul(b, w)
+
+
+def beta_field_v5(beta, coh_t, d_t, m_cov, w0=None, w1=None, w2=None):
+    """v5 learned detail gate: beff_v4 * scale, scale in [0.5, 1.5].
+    logit = w0 + w1*coh + w2*dhat (tmul scalars + same-scale binop adds);
+    gate = sigmoid_trip(logit); scale = 0.5 + gate. dhat = clip(|D|*4,0,1):
+    |D| via exact abs_trip, x4 via exact tmul, clip via clip_fixed.
+    Overrides search-only; missing file keys fall back to zeros (= v4).
+    Continuous (sigmoid of triples): noise parity stays barred."""
+    from chain.holo_phi import (sigmoid_trip, tmul, binop_fixed, abs_trip,
+                                clip_fixed)
+    p = load_ctrl()
+    a0 = float(w0) if w0 is not None else p.get("v5_w0", 0.0)
+    a1 = float(w1) if w1 is not None else p.get("v5_w1", 0.0)
+    a2 = float(w2) if w2 is not None else p.get("v5_w2", 0.0)
+    shape = coh_t[0].shape
+    base = beta_field_soft(beta, coh_t, m_cov)
+    # detail feature in [0,1]
+    four = S.encode(np.full(shape, 4.0, dtype=np.float64))
+    dhat = clip_fixed(tmul(abs_trip(d_t), four), 0.0, 1.0, m_cov)
+    # logit terms (scalar triples exact via encode)
+    t0 = S.encode(np.full(shape, a0, dtype=np.float64))
+    t1 = tmul(S.encode(np.full(shape, a1, dtype=np.float64)), coh_t)
+    t2 = tmul(S.encode(np.full(shape, a2, dtype=np.float64)), dhat)
+    logit = binop_fixed(binop_fixed(t0, t1, m_cov, m_cov, op="add"),
+                        t2, m_cov, m_cov, op="add")
+    gate = sigmoid_trip(logit)
+    half = S.encode(np.full(shape, 0.5, dtype=np.float64))
+    scale = binop_fixed(half, gate, m_cov, m_cov, op="add")
+    return tmul(base, scale)

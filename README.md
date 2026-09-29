@@ -16,7 +16,8 @@ Check | Result
 `test_splat.py` | ALL OK (4 orientations 1.00, halo<=iso, blur parity 41dB, agreement 0.99, e2e 43dB, fusion-exact bit-identical)
 `test_ctrl.py` | ALL OK (file validity, hash, real-frame parity ~43-50dB, rotation-invariant gap 0.04, flat identity)
 `test_depth.py` | ALL OK (cache determinism, parity 45.68dB, near p99 3.6x far, toggle-clean)
-`test_v4.py` | ALL OK (noise 40.03dB BARRED, real 50dB, structured 53dB, flat, sharpens)
+`test_v4.py` | ALL OK (noise 40.27dB BARRED, real 52dB, structured 55dB, rotation 0.04, flat, sharpens)
+`test_v5.py` | ALL OK (grain 47.95dB barred, real 47.61, structured 50.43, rotation 0.04, detail-order, noise measured 37.10)
 `demo.py --selftest` | GO 68.5dB
 
 ## Quick start
@@ -32,8 +33,10 @@ python3 test_splat.py               # expect ALL OK (splats-lite)
 python3 test_ctrl.py                # expect ALL OK (beta-field controller)
 python3 test_depth.py               # expect ALL OK (needs DAV2 checkout + weights)
 python3 test_v4.py                  # expect ALL OK (continuity: noise barred)
+python3 test_v5.py                  # expect ALL OK (learned gate, grain barred)
 python3 demo.py input.png output.png --beta 0.5 --blur splat --ctrl on
 python3 demo.py input.png output.png --beta 0.5 --blur splat_soft --ctrl soft  # v4
+python3 demo.py input.png output.png --beta 0.5 --blur splat_soft --ctrl v5    # v5
 python3 showcase.py input.png /tmp/showcase  # all modes + internal states
 ```
 
@@ -47,15 +50,16 @@ at boundaries + offline.
 
 Math executed: `A=sqrt(Y); As=blur(A); Aenh=A+beta_eff*(A-As); Ienh=Aenh^2`,
 where blur is iso-Gaussian, the splat bank (hard mux / fused / relu-blend),
-and beta_eff is scalar, the v3 decision field, or the v4 sigmoid field.
+and beta_eff is scalar, the v3 decision field, the v4 sigmoid field, or the
+v5 learned gate (1x1 on coh + detail magnitude, fitted offline, frozen).
 Library notes live in docs/LIBRARY_NOTES.md (kept while using the library:
-#LIB-001..014). Specs: docs/SPLAT_OP.md, docs/BETA_CTRL.md, docs/COMPOSE.md
+#LIB-001..015). Specs: docs/SPLAT_OP.md, docs/BETA_CTRL.md, docs/COMPOSE.md
 (step 3a depth built L1; temporal + L2 stay spec), docs/PROGRESS.md.
 
 ## Showcase (seeing every state)
 
-`showcase.py` runs iso / splat / splat+ctrl / v4-soft / strong on one image,
-checks parity per mode, asserts the modes actually differ, and saves:
+`showcase.py` runs iso / splat / splat+ctrl / v4-soft / v5-gate / strong on
+one image, checks parity per mode, asserts the modes actually differ, and saves:
 
 * `out_*.png` -- one output per mode,
 * `st_amplitude/structure/detail/buckets/coherence.png` -- internals of the
@@ -64,8 +68,9 @@ checks parity per mode, asserts the modes actually differ, and saves:
 * `sheet_states.png`, `sheet_modes.png` -- labeled contact sheets.
 
 On f_012: input sharp 714 -> iso 1350 -> splat 1178 -> splat+ctrl 1092 ->
-v4-soft 1234 -> strong 1465/1520. v4 sharpens harder than v3-hard while
-staying continuous (partial weights everywhere beat hard fallback to iso).
+v4-soft 1108 -> v5-gate 1294 -> strong 1520. v5 recovers sharpness selectively
+(1.36 LSB mean change vs iso's 1.90): the detail gate spends boost where
+detail lives.
 
 ## Debt log (addressed earlier rounds)
 
