@@ -216,3 +216,13 @@ exists to navigate). Switches are seamless by construction (still ignores
 state; state always refreshes so memory never lies -- the store uses the
 SAME detail the output used, threaded explicitly, gated by seamless-static).
 Per-tile routing is the stated backlog; the pattern transfers unchanged.
+## #LIB-020: prior modulation, two forms one family [CLOSED]
+
+depth_mult (bool-mask select) and flow_scale (continuous affine blend) are
+one structure: multiplicative caution from offline priors, exact identity
+on the unaffected subset (ones triples: tmul identity is exp-add exact).
+Promoted to chain/prior.py with select() + affine() sharing the contract
+docstring; both call sites refactored 0-diff (depth/motion/parity suites
+green). No new C (composition of already-lowered ops -- stated, not missing).
+Family splits are normal (cf replicate/zero): the split is gated, not hidden.
+phi-core staging follows the decide precedent (branch, not main).

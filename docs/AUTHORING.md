@@ -43,6 +43,12 @@ decide-helper (due), prior_mult (2 uses), per-tile routing (backlog).
   phi-core as branch `ai/verdict-helper` (module + gates, pushed, merge
   pending owner review) -- shared-repo coordination rules followed throughout
   (branch, claim check, no main push, base gates green).
+- `prior` modulation (chain/prior.py): multiplicative caution from offline
+  priors, two forms one family -- select(mask) for binary priors (depth),
+  affine(field) with exact-ones-on-static for continuous ones (flow).
+  Contract: unaffected subset takes exact identity; caution never invents.
+  2 uses refactored 0-diff (suites prove it); no new C (composition of
+  select_mux/tmul/binop/encode). Staging for phi-core next.
 
 ## Assembly view (read a pipeline as structure invocations)
 

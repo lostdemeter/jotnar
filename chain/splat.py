@@ -199,14 +199,8 @@ def coherence_bucket(jxx, jyy, jxy, gx, gy, m_cov, m_acc, coh_thr=None,
     opened = np.where(~gate_f, 4,
                       np.where(strong | agree, direction, 4)).astype(np.int8)
     final = np.where(static_m, bucket, opened).astype(np.int8)
-    # flow_scale = 1-(1-FLOW_ATTEN)*norm; exact ones on static (tmul by
-    # encode(1.0) is the identity: exp-add of BIAS-BIAS, sign*1 -- exact)
-    ka = S.encode(np.full(shape, 1.0 - FLOW_ATTEN, dtype=np.float64))
-    one = S.encode(np.ones(shape, dtype=np.float64))
-    dec = binop_fixed(one, tmul(ka, norm_t), m_cov, m_cov, op="sub")
-    flow_scale = (np.where(static_m, one[0], dec[0]).astype(np.int8),
-                  np.where(static_m, one[1], dec[1]).astype(np.int32),
-                  np.where(static_m, one[2], dec[2]).astype(np.uint8))
+    from chain.prior import affine as _prior_affine
+    flow_scale = _prior_affine(norm_t, static_m, FLOW_ATTEN, m_cov)
     out_audit["gate_frac"] = float((final == 4).mean())
     out_audit["flow_scale"] = flow_scale
     out_audit["tensor_bucket"] = bucket

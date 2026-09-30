@@ -211,6 +211,31 @@ def main():
     except ValueError:
         check("verdict-refuses", True, "unknown op fails loud")
 
+    # 11. prior modulation (#LIB-020 promotion): select identity on the
+    #     unaffected subset; affine endpoints exact (static->1.0, norm=1 ->
+    #     atten). Both forms compose multiplicatively onto boost (tmul).
+    from chain.prior import select as prior_select, affine as prior_affine
+    m = np.zeros((6, 6), bool)
+    m[:3] = True
+    ps = prior_select((6, 6), m, 0.5, m_cov=m_cov)
+    one_t = S.encode(np.ones((6, 6)))
+    att_t = S.encode(np.full((6, 6), 0.5))
+    check("prior-select", bool((ps[0][m] == one_t[0][0, 0]).all()
+                               and (ps[1][m] == one_t[1][0, 0]).all()
+                               and (ps[0][~m] == att_t[0][0, 0]).all()
+                               and (ps[1][~m] == att_t[1][0, 0]).all()),
+          "mask-True->1.0 exact, False->atten")
+    nt = S.encode(np.full((6, 6), 0.6))
+    st = np.zeros((6, 6), bool)
+    st[0, 0] = True
+    pa = prior_affine(nt, st, 0.5, m_cov)
+    ex = S.encode(np.full((6, 6), 1.0 - 0.5 * 0.6))
+    dv = S.decode(pa[0], pa[1]) * (1 - pa[2].astype(np.float64))
+    ref = S.decode(ex[0], ex[1]) * (1 - ex[2].astype(np.float64))
+    check("prior-affine", bool((pa[0][0, 0] == 1) and (pa[2][0, 0] == 0))
+          and float(np.abs(dv[1:, :] - ref[1:, :]).max() / ref[1:, :].max()) < 5e-3,
+          "static->ones exact; affine ~= 1-0.5*norm")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

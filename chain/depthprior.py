@@ -73,14 +73,7 @@ def near_mask(depth):
 
 
 def depth_mult(mult_shape, near, atten=FAR_ATTEN):
-    """Per-pixel depth multiplier triples via exact select (select_mux
-    pattern, nth use -- promotion already closed in #LIB-009)."""
-    import sys
-    sys.path.insert(0, "/home/thorin/Documents/OpenCode/phi-core")
-    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-    import phi_core.lattice as S
-    from chain.holo_phi import select_mux
-    near_t = S.encode(np.ones(mult_shape, np.float64))
-    far_t = S.encode(np.full(mult_shape, float(atten), np.float64))
-    bucket = np.where(np.ascontiguousarray(near, bool), 0, 1).astype(np.int8)
-    return select_mux([near_t, far_t], bucket)
+    """Per-pixel depth multiplier triples: near -> 1.0, far -> atten.
+    Select form of chain/prior.py (0-diff refactor -- suites prove it)."""
+    from chain.prior import select
+    return select(mult_shape, near, atten)
