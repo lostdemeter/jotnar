@@ -209,6 +209,46 @@ def main():
     print("--- full sweep ---")
     for row in ROWS[-9:]:
         print("    %-12s %-5s %7.2fdB %6.2f    %-18s %s" % row)
+    # WIDER: stabilize listing. First prediction (WRONG -- kept as the
+    # record): W-zero under static flow was predicted EXACT. Measured:
+    # identical outputs under BOTH flows. The listing header already said
+    # why ("moving pixels trust the current frame bit-clean"): MIXDYAD
+    # mixes memory into STATIC pixels and passes moving pixels direct --
+    # the exact inverse of the prediction. Corrected bands below: static
+    # is the MEASURED row (memory's share on still content), motion is
+    # PREDICTED EXACT (moving trust bit-clean).
+    import numpy as _np2
+    _r = _np2.random.default_rng(4)
+    _rgb = (_r.random((12, 12, 3)) * 255).astype(_np2.uint8)
+    _dp = S.encode((_r.random((12, 12)) - 0.5) * 0.4)
+    _stext = open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               "programs", "stabilize_mgd.asm")).read()
+    _sdir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "programs")
+
+    def _srun(flow, ov=None):
+        return ASM.run_text(_stext, REGISTRY,
+                            {"rgb": _rgb, "dprev": _dp, "flow": flow},
+                            sigs=SIGS, basedir=_sdir,
+                            overrides=ov)["OUT"]
+
+    _fstatic = np.zeros((12, 12, 2))
+    _base_s = _srun(_fstatic)
+    _wz = S.encode(np.zeros((12, 12)))
+    _got_s = _srun(_fstatic, {"W": _wz})
+    _ds = psnr8(_got_s, _base_s)
+    ROWS.append(("W@stab-static", "zero", _ds, 0.0, "MEASURED (was: EXACT)",
+                 "reported"))
+    print(f"probe-stab-static-measured: {_ds:.2f}dB (memory's share on still content)")
+    _fmotion = np.full((12, 12, 2), [1.5, -0.5])
+    _base_m = _srun(_fmotion)
+    _got_m = _srun(_fmotion, {"W": _wz})
+    check("probe-stab-motion-exact", bool((_got_m == _base_m).all()),
+          "W-zero under motion flow bit-exact (moving trust bit-clean)")
+    ROWS.append(("W@stab-motion", "zero", float("inf"), 0.0, "EXACT PREDICTED",
+                 "CONFIRMED"))
+    print("--- stabilize rows ---")
+    for row in ROWS[-2:]:
+        print("    %-14s %-5s %7.2fdB %6.2f    %-18s %s" % row)
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

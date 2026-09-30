@@ -44,28 +44,42 @@ ACCESS = {
 def census_text(text, registry, sigs=None, basedir=".", stdlib=None):
     """Static access census of a listing. Returns report dict:
     streams: {name: {producer: (op, line) | None (source), consumers:
-    [(op, line)], fanout}, ops: [{op, line, class, reads, writes}],
+    [(op, line, version)], fanout}, ops: [{op, line, class, reads, writes}],
     shared: {name: fanout} for fanout >= 2 (reuse made visible),
-    classes: {class: count}. Literals never appear as streams."""
-    config, inp, bound, _ = ASM.assemble(text, registry, sigs, basedir,
-                                         stdlib)
+    classes: {class: count}, state: [STATE names], shadowed: [IN names
+    reassigned as OUT -- seed vs carried versions differ, see versions].
+    Versions (v1.1 of this instrument ignored them): IN seeds read at v0,
+    each OUT assignment bumps (non-IN streams start at v0 on first assign).
+    Single-assign streams behave exactly as before (producer tuple +
+    fan-out counts unchanged)."""
+    config, inp, bound, state = ASM.assemble(text, registry, sigs, basedir,
+                                           stdlib)
     producers, consumers = {}, defaultdict(list)
     ops = []
+    in_names = {n for n, _ in inp}
+    ver = {n: 0 for n, _ in inp}  # IN seeds read at v0
+    versions = defaultdict(set)
+    for n in in_names:
+        versions[n].add(0)
     for outs, mn, fn, args, ln, sig in bound:
         reads = [a for a in args if not ASM._is_literal(a)]
         for a in reads:
-            consumers[a].append((mn, ln))
+            consumers[a].append((mn, ln, ver.get(a, 0)))
+            versions[a].add(ver.get(a, 0))
         for o in outs:
+            ver[o] = ver.get(o, -1) + 1
             producers[o] = (mn, ln)
+            versions[o].add(ver[o])
         ops.append({"op": mn, "line": ln, "class": ACCESS.get(mn, "unknown"),
                     "reads": reads, "writes": list(outs)})
-    in_names = {n for n, _ in inp}
     streams = {}
     for name in set(producers) | set(consumers):
         streams[name] = {"producer": producers.get(name),
                          "consumers": consumers.get(name, []),
                          "fanout": len(consumers.get(name, [])),
-                         "source": name in in_names}
+                         "source": name in in_names,
+                         "versions": sorted(versions.get(name, set()))}
+    shadowed = sorted(n for n in in_names if n in producers)
     shared = {n: s["fanout"] for n, s in streams.items() if s["fanout"] >= 2}
     classes = defaultdict(int)
     for o in ops:
@@ -73,4 +87,5 @@ def census_text(text, registry, sigs=None, basedir=".", stdlib=None):
     uncovered = sorted({o["op"] for o in ops if o["class"] == "unknown"})
     return {"streams": streams, "ops": ops, "shared": shared,
             "classes": dict(classes), "uncovered": uncovered,
-            "n_streams": len(streams), "n_ops": len(ops)}
+            "n_streams": len(streams), "n_ops": len(ops),
+            "state": list(state), "shadowed": shadowed}

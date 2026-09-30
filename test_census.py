@@ -76,6 +76,28 @@ def main():
           f"normed streams fanned ({x['shared']})")
     check("census-xfblock-classes", x["classes"].get("reduce", 0) >= 10,
           f"attention block is reduction-heavy ({x['classes']})")
+    # wider: stabilize listing (STATE stream dprev is both IN-seed and
+    # SUB-carried -- versions distinguish what v1 conflated).
+    st = CS.census_text(open(os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "programs",
+        "stabilize_mgd.asm")).read(), REGISTRY, SIGS,
+        basedir=os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             "programs"))
+    check("census-stabilize-state", st["state"] == ["dprev"]
+          and st["shadowed"] == ["dprev"],
+          "STATE + shadowing declared")
+    dd = st["streams"]["dprev"]
+    check("census-stabilize-versions", dd["versions"] == [0, 1]
+          and dd["producer"][0] == "SUB" and dd["fanout"] == 3,
+          f"seed v0 + carried v1 ({dd['versions']})")
+    warp_reads = [c for c in dd["consumers"] if c[0] == "WARP"]
+    late_reads = [c for c in dd["consumers"] if c[0] in ("MIXDYAD", "BETA")]
+    check("census-stabilize-order", all(c[2] == 0 for c in warp_reads)
+          and all(c[2] == 1 for c in late_reads),
+          "WARP reads seed, MIXDYAD/BETA read carried")
+    check("census-stabilize-shared",
+          st["shared"].get("dprev") == 3 and st["shared"].get("flow") == 2,
+          f"{st['shared']}")
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

@@ -359,7 +359,7 @@ MATMUL-family + ADD/SUB threaded (same one-line pattern; RMSNORM/SOFTMAX/
 SILU-family need none — normalizing, BIAS-structural, scaleless, each
 stated). Demo (test_xf_block.py): attention-small (scores 0.39,
 frozen-fine) + MLP-big (products over frozen m_acc) in ONE listing —
-frozen 24.0dB, CONFIG m_acc 35492 recovers 65.1dB (41dB swing, bar 40).
+ frozen 24.0dB, CONFIG m_acc 35492 recovers 65.1dB (41dB swing, bar 40).
  Honest scopes, all stated: (1) the sweep proved single-scale-up CANNOT
  separate the walls (matmul and softmax saturation arrive together,
  both ~w²) — the split works because attention is CONTRACT-bound
@@ -369,6 +369,7 @@ frozen 24.0dB, CONFIG m_acc 35492 recovers 65.1dB (41dB swing, bar 40).
  blocks; per-DEF `@scale` stays the end-state for the drowning case
  (phi-core GRN evidence); (3) two syntax slips caught by the suites
  (dropped `"""`, joined lines) — the gates earn their keep again.
+
 ## #LIB-032: matmul C lowering (roadmap gate 2) [CLOSED]
 
  `holo_matmul` (+ exchange driver, Makefile target, test_matmul_c.py):
@@ -474,7 +475,7 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  most informative row: killing the blur reference = full A as detail.
  Standing rule: probe every stream of a listing before calling it
  understood (the sweep is the unit of "known").
- ## #LIB-041: information round — xf rows, S11 hunt, L4 entries [OPEN]
+ ## #LIB-041: information round — xf rows, S11 hunt, L4 entries [CLOSED]
 
  Probe table grows at STRUCTURE granularity (O/DOWN outputs, never
  mangled sub-wires — the assembly-view doctrine applied to probing):
@@ -488,6 +489,21 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  names and you inherit expansion counters (attn_core#1.P renumbers when
  listings change) — probe STRUCTURE outputs (O, DOWN), which are stable
  by the composition-contracts discipline.
+## #LIB-043: wider — census versions + inverted stabilize prediction [CLOSED]
+
+ Census v1.1: per-stream VERSIONS (IN seeds read at v0, each OUT bumps;
+ single-assign streams behave exactly as before — all prior gates green
+ unchanged). Stabilize's dprev is the forcing case: seed v0 read by WARP,
+ carried v1 read by MIXDYAD/BETA, producer SUB, fan-out 3, shadowed IN
+ declared. Without versions the census conflated seed with carried memory.
+ Probe side: predicted W-zero EXACT under static flow; measured identical
+ outputs under BOTH flows instead. The listing header already contained
+ the answer ("moving pixels trust the current frame bit-clean"): MIXDYAD
+ mixes memory into STATIC pixels, passes moving pixels direct — the exact
+ inverse. Corrected: static 27.34dB MEASURED (memory's real share on still
+ content), motion EXACT (moving trust bit-clean, gated). Kept as the
+ record, not edited away. Debugging took 2 minutes because the versioned
+ census showed the read order directly.
  ## #LIB-036: elementwise CUDA batch (v1.2 gate 2b) [CLOSED]
 
  9 kernels (holo_elem.cu: sqrt/tmul/tdiv/binop/square-clip/sigmoid/abs/
@@ -509,12 +525,3 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  Method note: negatives get the same writeup standard as positives
  (evidence, reasons, residue) — an unrecorded parse is a rumor; a recorded
  negative is a result. Time-box honored: static parse only, no code run.
-Honest scopes, all stated: (1) the sweep proved single-scale-up CANNOT
-separate the walls (matmul and softmax saturation arrive together,
-both ~w²) — the split works because attention is CONTRACT-bound
-(scores ≤1.0, no m fixes it) while MLP is COVERAGE-bound (bigger m
-fixes it); (2) big-m doesn't hurt small values here (4.5e-4 both —
-error is lattice-encode-dominated), so one CONFIG key serves both
-blocks; per-DEF `@scale` stays the end-state for the drowning case
-(phi-core GRN evidence); (3) two syntax slips caught by the suites
-(dropped `"""`, joined lines) — the gates earn their keep again.

@@ -128,3 +128,20 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      reference is what restrains enhancement — restraint, not boost,
      is the flagship's main content. A finding about the DESIGN, from
      subtraction alone.
+
+## 2026-09-30: wider — census versions + stabilize (CLOCKED, interrupted)
+
+- Census v1.1 (per-stream versions) + stabilize census gates + stabilize
+  probe rows (static MEASURED, motion EXACT) + LIB-043.
+- Wall time: active work 19:23:01Z -> 19:50Z with one interruption
+  mid-round (session resume; the interruption cost a re-read of LIB
+  numbering, which is why LIB-043 exists instead of a duplicated LIB-042
+  — recorded honestly). Active effort ~15 min across the gap.
+- Surprises:
+  1. Inverted prediction, kept as the record: W-zero predicted EXACT
+     under static, measured identical under BOTH flows — MIXDYAD mixes
+     memory into STATIC pixels (header already said so). Wrong with a
+     mechanism beats right without one.
+  2. Census versions made debugging a 2-minute read (WARP@v0 vs
+     MIXDYAD/BETA@v1) instead of a probe hunt — instruments paying for
+     instruments.
