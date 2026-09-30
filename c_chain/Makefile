@@ -4,10 +4,11 @@ PHICORE = ../../phi-core/c_core
 BIN = /tmp/holo_c_test
 XCHG = /tmp/holo_conv_exchange
 SXCHG = /tmp/holo_splat_exchange
+MXCHG = /tmp/holo_matmul_exchange
 
 all: check
 
-check: $(BIN) $(XCHG) $(SXCHG)
+check: $(BIN) $(XCHG) $(SXCHG) $(MXCHG)
 	$(BIN)
 
 $(BIN): holo_ops.c test_holo_c.c holo_ops.h
@@ -19,10 +20,13 @@ $(XCHG): holo_ops.c holo_conv.c conv_exchange.c holo_ops.h holo_conv.h
 $(SXCHG): holo_ops.c holo_conv.c splat_exchange.c holo_ops.h holo_conv.h
 	$(CC) $(CFLAGS) -o $(SXCHG) holo_ops.c holo_conv.c splat_exchange.c $(PHICORE)/bridge.c
 
+$(MXCHG): holo_matmul.c matmul_exchange.c holo_matmul.h
+	$(CC) $(CFLAGS) -o $(MXCHG) holo_matmul.c matmul_exchange.c $(PHICORE)/bridge.c
+
 trap:
 	for f in *.c *.h; do sed -e 's|//.*||' "$$f"; done | grep -nE "math\.h|[^_a-zA-Z](float|double)[ \t*(]|(float|double)\(" && echo FLOAT-FOUND && exit 1 || echo "no float in c_chain sources"
 
 clean:
-	rm -f $(BIN) $(XCHG) $(SXCHG)
+	rm -f $(BIN) $(XCHG) $(SXCHG) $(MXCHG)
 
 .PHONY: all check trap clean

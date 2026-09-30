@@ -40,6 +40,12 @@ def main():
     check("c-splat-exchange", r4.returncode == 0, f"exit={r4.returncode}")
     if r4.returncode:
         print(r4.stderr[-1500:])
+    r6 = subprocess.run([sys.executable, os.path.join(root, "test_matmul_c.py")],
+                        capture_output=True, text=True, cwd=root)
+    print(r6.stdout[-1500:])
+    check("c-matmul-exchange", r6.returncode == 0, f"exit={r6.returncode}")
+    if r6.returncode:
+        print(r6.stderr[-1500:])
     r5 = subprocess.run([sys.executable, os.path.join(root, "test_v4.py")],
                         capture_output=True, text=True, cwd=root)
     print(r5.stdout[-1500:])

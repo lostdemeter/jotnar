@@ -360,6 +360,26 @@ SILU-family need none — normalizing, BIAS-structural, scaleless, each
 stated). Demo (test_xf_block.py): attention-small (scores 0.39,
 frozen-fine) + MLP-big (products over frozen m_acc) in ONE listing —
 frozen 24.0dB, CONFIG m_acc 35492 recovers 65.1dB (41dB swing, bar 40).
+ Honest scopes, all stated: (1) the sweep proved single-scale-up CANNOT
+ separate the walls (matmul and softmax saturation arrive together,
+ both ~w²) — the split works because attention is CONTRACT-bound
+ (scores ≤1.0, no m fixes it) while MLP is COVERAGE-bound (bigger m
+ fixes it); (2) big-m doesn't hurt small values here (4.5e-4 both —
+ error is lattice-encode-dominated), so one CONFIG key serves both
+ blocks; per-DEF `@scale` stays the end-state for the drowning case
+ (phi-core GRN evidence); (3) two syntax slips caught by the suites
+ (dropped `"""`, joined lines) — the gates earn their keep again.
+## #LIB-032: matmul C lowering (roadmap gate 2) [CLOSED]
+
+ `holo_matmul` (+ exchange driver, Makefile target, test_matmul_c.py):
+ per-product tmul + to_fixed@m_acc inline (holo_conv form), int64 acc
+ with 2^62 fail-loud (mirrors _assert_bound), from_fixed via gated
+ bridge.c, B-batch-1 broadcast, m_acc as PARAMETER (v1.1 scale path in
+ C too). 5/5 file-exchange cases bit-exact first run (small, batched,
+ broadcast, big-m 35492 on ±4 values, zeros edge). Row chunking
+ (n_chunk=32) deliberately NOT mirrored (tiling only, same sums).
+ Stated divergence (holo_conv precedent): from_fixed extremes —
+ numpy asserts, C clamps; fixtures stay in-range.
 Honest scopes, all stated: (1) the sweep proved single-scale-up CANNOT
 separate the walls (matmul and softmax saturation arrive together,
 both ~w²) — the split works because attention is CONTRACT-bound

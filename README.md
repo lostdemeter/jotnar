@@ -12,6 +12,7 @@ Check | Result
 `test_parity.py` | ALL OK (synthetic 68/65dB, foreman 65dB, hue-preserved 0.000, alpha-ablation gated)
 `test_c.py` | ALL OK (shared table + conv + splat file-exchange + v4 gates + float trap)
 `test_c_conv.py` | ALL OK (4 cases bit-exact, not dB: fig/flat/corner/noise)
+`test_matmul_c.py` | ALL OK (5 cases bit-exact: small/batched/broadcast/big-m/zeros)
 `test_splat_c.py` | ALL OK (full splat_blur bit-exact incl. buckets, both C modes: 6 compositional + 2 fused cases)
 `test_splat.py` | ALL OK (4 orientations 1.00, halo<=iso, blur parity 41dB, agreement 0.99, e2e 43dB, fusion-exact bit-identical)
 `test_ctrl.py` | ALL OK (file validity, hash, real-frame parity ~43-50dB, rotation-invariant gap 0.04, flat identity)
