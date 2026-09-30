@@ -51,3 +51,27 @@ France, 32 -> capital (28.7dB). Selectivity itself spreads ~29dB.
 4. Correlation note (LIB-046 comment): dir-dB tracks sval partly
    algebraically (removed energy). The spread and the ranking are the
    content; the correlation is the sanity.
+
+## Cross-context stability (second prompt, same 112 dirs)
+
+Prompt 2 (different domain, subword tokens):
+`Quant/um/computers/manipulate/q/ubits/using/super`. Same readout,
+112 runs, 115s. Comparison (measured rows, no bars yet per LIB-015):
+
+| measure | geo | quantum | stability |
+|---|---|---|---|
+| global range | [22.1, 58.1] | [22.0, 54.9] | same scale |
+| giant dir0 | 22.1 | 22.0 | identical to 0.1dB |
+| global-dB rank Spearman | — | — | **0.55** |
+| top-10 causal overlap | — | — | **6/10** |
+| selectivity rank Spearman | — | — | **0.25** |
+| dead shelves (>55) | 864, 872 | none (max 54.9) | near-miss, not overlap |
+
+Reading: HOW MUCH a direction matters is partly context-stable (giants
+stay giants; 0.55 rank correlation across domains); WHICH token it lands
+on is contextual (0.25 — expected: fingerprints are positional, and the
+positions hold different tokens). This mirrors the fixed-weights /
+varying-inputs separation from the route trials: stable WHAT (weight
+property) + contextual WHERE (input property). The labeling loop's input
+just got its second column: stable magnitudes to track across contexts,
+contextual fingerprints to match within them.

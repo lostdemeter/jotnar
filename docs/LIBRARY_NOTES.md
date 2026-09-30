@@ -592,6 +592,15 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  prompt). Standing point: the read is a TABLE, searches are QUERIES --
  information retrieval over weights, and the labeling loop's input is now
  a concrete artifact instead of a wish.
+## #LIB-051: stability splits on the predicted seam (second prompt) [CLOSED]
+
+ Same 112 directions, quantum-domain prompt: global-dB rank Spearman 0.55
+ (giant dir0 identical at 22.0-22.1dB, top-10 overlap 6/10) vs selectivity
+ rank Spearman 0.25. HOW MUCH is partly stable (weight property), WHICH
+ TOKEN is contextual (input property) -- the positional caveat from
+ LIB-050 calling its own shot. No gate (measured rows per LIB-015; bands
+ when the claim hardens). The labeling loop now has two columns to join
+ on: stable magnitudes across contexts, fingerprints within them.
  ## #LIB-036: elementwise CUDA batch (v1.2 gate 2b) [CLOSED]
 
  9 kernels (holo_elem.cu: sqrt/tmul/tdiv/binop/square-clip/sigmoid/abs/

@@ -32,8 +32,10 @@ def main():
     sd = load_file(os.path.join(QWEN, "model.safetensors"), device="cpu")
     g = lambda n: sd[n].float().double().numpy()
     tok = AutoTokenizer.from_pretrained(QWEN)
-    ids = tok("The capital of France is Paris, and the capital of Germany is",
-              return_tensors="pt")["input_ids"][0][:8].numpy()
+    prompt = sys.argv[1] if len(sys.argv) > 1 else "The capital of France is Paris, and the capital of Germany is"
+    out = sys.argv[2] if len(sys.argv) > 2 else "/tmp/qwen0_readout.npz"
+    ids = tok(prompt, return_tensors="pt")["input_ids"][0][:8].numpy()
+    assert len(ids) == 8, f"prompt gives {len(ids)} tokens, need 8"
     toks = tok.convert_ids_to_tokens(ids)
     print("tokens:", toks)
     E = sd["model.embed_tokens.weight"][torch.tensor(ids)].float().double().numpy()
@@ -117,12 +119,13 @@ def main():
                      tokdb))
         if len(rows) % 28 == 0:
             print(f"  {len(rows)}/{len(idx)} ({time.time()-t0:.0f}s)", flush=True)
-    np.savez("/tmp/qwen0_readout.npz",
+    np.savez(out,
+             toks=np.array(toks),
              idx=np.array([r[0] for r in rows]),
              sval=np.array([r[1] for r in rows]),
              gdb=np.array([r[2] for r in rows]),
              tokdb=np.stack([r[3] for r in rows]))
-    print(f"done {len(rows)} dirs in {time.time()-t0:.0f}s -> /tmp/qwen0_readout.npz")
+    print(f"done {len(rows)} dirs in {time.time()-t0:.0f}s -> {out}")
 
 
 if __name__ == "__main__":

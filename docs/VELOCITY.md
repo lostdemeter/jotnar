@@ -266,3 +266,20 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   3. 116 seconds for 112 directions: reads are CHEAP. The labeling loop
      is no longer blocked on instruments -- only on the cross-context
      stability question, which is now askable.
+
+## 2026-09-30: cross-context stability (CLOCKED)
+
+- Same 112 dirs, second (quantum-subword) prompt: readout 115s +
+  rank/selectivity comparison + MODEL_READ section (#LIB-051).
+- Wall time: clock 23:11:59Z -> 23:15Z (~3 min: second readout 115s +
+  comparison + docs; no new gates -- measured rows per LIB-015).
+- Surprises:
+  1. The split landed EXACTLY on the predicted seam (stable WHAT 0.55,
+     contextual WHERE 0.25) -- a caveat calling its own shot is a
+     theory with predictive power, not humility theater.
+  2. Giant dir0 identical to 0.1dB across domains: the top of the
+     causal hierarchy is context-invariant. Shelves for the labeling
+     loop to stand on.
+  3. Dead-shelf non-overlap (2 vs 0, max 54.9 just under bar) counsels
+     against thresholding storage on one context -- shelves need
+     multi-context reads. Stated, not tuned (bar left at 55).
