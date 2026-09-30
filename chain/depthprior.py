@@ -59,11 +59,17 @@ def get_depth(rgb01, tag):
 
 def near_mask(depth):
     """Median split on relative depth (order only -- scale-ambiguous input).
-    Returns bool array True=near. Boundary float compare (prior doctrine)."""
+    Returns bool array True=near. Verdict via the shared helper (#LIB-019);
+    identical computation to before, routed through one conversion (0-diff
+    refactor -- the suites prove it). NOTE: comparing raw depth against the
+    raw median would skip a roundtrip (median commutes with monotone maps)
+    but differs by up to 1ulp on even-sized arrays -- NOT done here; that
+    optimization needs its own gate if anyone wants it."""
+    from chain.verdict import verdict_mask
     d = np.ascontiguousarray(depth, dtype=np.float64)
     lo, hi = float(d.min()), float(d.max())
     n = np.zeros_like(d) if hi <= lo else (d - lo) / (hi - lo)
-    return n <= float(np.median(n))
+    return verdict_mask(n, float(np.median(n)), "<=")
 
 
 def depth_mult(mult_shape, near, atten=FAR_ATTEN):

@@ -40,8 +40,10 @@ def decide(flow, flow_ref=8.0):
         return "still", 0.0
     flow = np.ascontiguousarray(flow, dtype=np.float64)
     assert flow.ndim == 3 and flow.shape[2] == 2, f"flow geometry {flow.shape}"
+    from chain.verdict import verdict_mask
     E = float(np.sqrt(flow[:, :, 0] ** 2 + flow[:, :, 1] ** 2).mean() / flow_ref)
-    return ("temporal" if E >= ROUTE_THR else "still"), E
+    go = bool(verdict_mask(np.asarray(E), ROUTE_THR, ">=")[()])
+    return ("temporal" if go else "still"), E
 
 
 def run_sequence(ys, flows, beta=0.5, blur="iso", router_on=True, motions=None,

@@ -195,6 +195,22 @@ def main():
             sg_ok = False
     check("c-vectors-sig", sg_ok, "shared table with c_chain")
 
+    # 10. verdict helper (#LIB-019 promotion): ops, boundary inclusivity,
+    #     invalid-op refusal. >= engages AT equality (router boundary gate
+    #     depends on this); == is exact (static-mask path depends on this).
+    from chain.verdict import verdict_mask
+    x = np.array([-1.0, 0.0, 0.25, 1.0])
+    check("verdict-ge", bool((verdict_mask(x, 0.25, ">=") == [False, False, True, True]).all()),
+          "inclusivity at equality")
+    check("verdict-le", bool((verdict_mask(x, 0.25, "<=") == [True, True, True, False]).all()), "")
+    check("verdict-eq", bool((verdict_mask(x, 0.0, "==") == [False, True, False, False]).all()),
+          "exact-zero static detection")
+    try:
+        verdict_mask(x, 0.0, "!=")
+        check("verdict-refuses", False, "no error raised")
+    except ValueError:
+        check("verdict-refuses", True, "unknown op fails loud")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

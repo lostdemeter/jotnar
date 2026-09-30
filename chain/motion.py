@@ -75,7 +75,8 @@ def quantize(flow):
     assert flow.ndim == 3 and flow.shape[2] == 2, f"flow geometry {flow.shape}"
     dy, dx = flow[:, :, 0], flow[:, :, 1]
     mag = np.sqrt(dy * dy + dx * dx)
-    static = (mag == 0.0)
+    from chain.verdict import verdict_mask
+    static = verdict_mask(mag, 0.0, "==")
     norm = np.clip(mag / FLOW_REF, 0, 1)
     ang = np.degrees(np.arctan2(dy, dx)) % 360.0
     # octant table, vectorized (must match _perp_of exactly; the diagonal
