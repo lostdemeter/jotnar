@@ -25,6 +25,7 @@ Check | Result
 `test_temporal.py` | ALL OK (mix-frozen, warp-parity 73dB, warp-identity, static-converged + firststep bounds, firstframe-still, memory, step-settles, seq 64dB)
 `test_router.py` | ALL OK (decisions incl. boundary, seamless-static exact, flicker-wins, sharpness-bounded, routed parity 60-63dB)
 `test_xf_block.py` | ALL OK (v1.0 Gate 1: whole-block 84dB vs torch in-contract S=8/D=16/Dff=32; out-of-contract measured 14.6dB, mechanism stated)
+`test_stranger.py` | ALL OK (v1.0 Gate 6: docs-only 5-line listing green first try + self-rescue errors; frictions -> docs/V1_1_BACKLOG.md)
 `demo.py --selftest` | GO 68.5dB
 
 ## Quick start
