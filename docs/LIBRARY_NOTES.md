@@ -380,6 +380,22 @@ frozen 24.0dB, CONFIG m_acc 35492 recovers 65.1dB (41dB swing, bar 40).
  (n_chunk=32) deliberately NOT mirrored (tiling only, same sums).
  Stated divergence (holo_conv precedent): from_fixed extremes —
  numpy asserts, C clamps; fixtures stay in-range.
+ ## #LIB-034: matmul CUDA kernel, 3-way parity (v1.2 gate 1) [CLOSED]
+
+ `k_matmul` (c_chain/matmul_cuda.cu): one thread per output, k loop with
+ the exact holo_matmul product law, int64 register acc with device assert
+ at 2^62, from_fixed on device via cuda_dev.cuh mirrors, LUTs as int
+ globals (conv.cu precedent), m_acc parameterized. 5/5 exchange cases
+ bit-exact vs numpy FIRST RUN (small/batched/broadcast/big-m/zeros) —
+ transitively C == CUDA. Reduction-order risk from the roadmap CANNOT
+ fire here: single-thread accumulate per output means no cross-thread
+ reduction exists (stronger than commuted). Notes: (1) same in.bin format
+ as the C driver — one harness gates both sides, no format fork;
+ (2) `make cuda` is NOT in default check (GPU-less boxes stay green;
+ missing nvcc SKIPs like the other needs-hardware gates);
+ (3) `-arch=native` (build+run same box; comment records the cross-build
+ override); (4) trap now scans *.cu too (FPU-free held, incl. the word
+ "float" ban in kernel comments).
  ## #LIB-033: recognition-first parse, negative result recorded [CLOSED]
 
  Roadmap gate 3 (S19 bet): parsed diffusion DDIM sampling into INVENTORY

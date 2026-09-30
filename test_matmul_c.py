@@ -55,13 +55,13 @@ def read_out(path, shape):
     return s, e, z
 
 
-def one_case(tag, a_f, b_f, m_acc):
+def one_case(tag, a_f, b_f, m_acc, binary=XCHG):
     a_t = S.encode(np.ascontiguousarray(a_f, np.float64))
     b_t = S.encode(np.ascontiguousarray(b_f, np.float64))
     ref = N.matmul_int(a_t, b_t, m_acc)
     pin, pout = "/tmp/holo_matmul_in.bin", "/tmp/holo_matmul_out.bin"
     write_in(pin, a_t, b_t, m_acc)
-    r = subprocess.run([XCHG, pin, pout], capture_output=True, text=True)
+    r = subprocess.run([binary, pin, pout], capture_output=True, text=True)
     if r.returncode != 0:
         check(tag, False, f"binary exit={r.returncode} {r.stderr[-500:]}")
         return
