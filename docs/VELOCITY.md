@@ -43,7 +43,6 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   lacks `environ` — portability means `os.environ` only, caught by suites.
 
 ## 2026-09-30: v1.2 substrate builds (NOT CLOCKED — see header)
-
 - k_matmul + 3-way parity (5/5 first run). Surprise: reduction-order risk
   designed out (single-thread accumulate per output — stronger than
   commuted, no gate needed where no mechanism exists).
@@ -58,3 +57,21 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   concern, not a CONFIG key (listings stay machine-independent); builder
   moved into chain/ (chain owns building, tests own gating); one Makefile
   edit silently didn't land (verify writes by read-back).
+
+## 2026-09-30: access-shape census (~5 min, CLOCKED — process fix working)
+
+- Instrument: chain/census.py (static producer/consumer/fan-out + access
+  classes) + 9 gates in test_census.py.
+- Wall time: ~4 min. Clock 19:01:48Z -> ~19:05Z (instrument + planted
+  gates + real maps + docs + full verify incl.).
+- Gates: planted fan-out exact, sharing-free control empty, 42/42
+  coverage, flagship/xf maps pinned (A×3, XN×3).
+- Surprises:
+  1. The reframe WAS the finding: statistics (distributions) vs access
+     shape (topology + geometry + class) are different instruments —
+     census complements ranges.py, subsumes nothing.
+  2. Reuse made visible: promotion-rule evidence (3 uses → promote) is
+     now measurable per listing instead of argued from code reading.
+  3. One miss on first probe (RESCALE unclassified) — caught by the
+     coverage gate, which exists precisely for this. Gates earning keep
+     is now routine enough to note only in passing.

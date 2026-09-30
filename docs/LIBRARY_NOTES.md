@@ -437,6 +437,18 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  layering); (3) one Makefile vars edit silently didn't land (caught by
  read-back, fixed directly — verify writes, don't trust return codes).
  Wired into test_c.py (c-emit-matrix).
+ ## #LIB-039: access-shape census (v1.3 gate 1, spatial not statistical)
+ [CLOSED]
+
+ chain/census.py: static producer/consumer/fan-out per stream + access
+ class per op (elementwise/moves/gather/reduce/select/stencil/broadcast),
+ zero execution. Real maps: flagship A×3 (SPLAT/SUB/ADD), xf XN×3 (QKV) —
+ reuse made visible (the promotion rule's raw material, measured not
+ argued). One miss on first probe: RESCALE unclassified (42nd mnemonic —
+ the coverage gate exists precisely for this; table now 42/42).
+ Doctrine: census answers HOW data moves (topology + geometry + access
+ class); ranges.py answers what VALUES span — complementary instruments,
+ neither subsumes the other.
  ## #LIB-036: elementwise CUDA batch (v1.2 gate 2b) [CLOSED]
 
  9 kernels (holo_elem.cu: sqrt/tmul/tdiv/binop/square-clip/sigmoid/abs/
