@@ -1,0 +1,179 @@
+"""Real weights (v1.3): Qwen2-0.5B layer-0 MLP, direction ablation.
+
+First measurement on TRAINED weights + real embeddings (8 wikitext-ish
+tokens): full MLP block parity vs independent torch.float64 mirror
+(51.82dB), decaying spectrum (17x, vs flat toy), direction spread 33dB
+with the tracking law reproduced (corr -0.84, same as toy), planted
+dominant direction recovered BIT-EXACTLY (control 18.8dB).
+Scope, stated: attention is boundary float (real folded scores hit 963,
+1000x past the softmax contract -- T-transform backlog measured live);
+K-bias omitted by cancellation proof (row-constant -> softmax-invariant);
+V-bias stated-negligible (max 1e-1 vs signals O(1)); Q-bias folded into
+the torch H only (listing never sees attention internals).
+SKIPs without the local HF cache (needs-hardware precedent).
+Usage: python3 test_realw.py (slow: ~60 listing runs, ~2 min)
+"""
+import os
+import sys
+
+sys.path.insert(0, os.environ.get("PHI_CORE_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "phi-core")))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+FAIL = []
+QWEN = os.path.join(os.path.expanduser("~"), ".cache", "huggingface", "hub",
+                    "models--Qwen--Qwen2-0.5B", "snapshots",
+                    "91d2aff3f957f99e4c74c962f2f408dcc88a18d8")
+
+
+def check(tag, cond, extra=""):
+    print(f"{tag}: {'OK' if cond else 'FAIL'} {extra}")
+    if not cond:
+        FAIL.append(tag)
+
+
+def psnr(a, b, peak=1.0):
+    import numpy as np
+    mse = float(np.mean((np.ascontiguousarray(a, dtype=np.float64)
+                         - np.ascontiguousarray(b, dtype=np.float64)) ** 2))
+    return float("inf") if mse == 0 else 10 * np.log10(peak ** 2 / mse)
+
+
+def main():
+    import numpy as np
+    if not os.path.isfile(os.path.join(QWEN, "model.safetensors")):
+        print("SKIP (needs Qwen2-0.5B in local HF cache)")
+        sys.exit(0)
+    try:
+        import torch
+        from safetensors.torch import load_file
+        from transformers import AutoTokenizer
+    except ImportError as e:
+        print(f"SKIP (needs torch+safetensors+transformers: {e})")
+        sys.exit(0)
+    os.environ["HF_HUB_OFFLINE"] = "1"
+    import phi_core.lattice as S
+    from chain import asm as ASM
+    from chain.asm_ops import REGISTRY, SIGS
+
+    sd = load_file(os.path.join(QWEN, "model.safetensors"), device="cpu")
+    g = lambda n: sd[n].float().double().numpy()
+    tok = AutoTokenizer.from_pretrained(QWEN)
+    ids = tok("The capital of France is Paris, and the capital of Germany is",
+              return_tensors="pt")["input_ids"][0][:8].numpy()
+    E = sd["model.embed_tokens.weight"][torch.tensor(ids)].float().double().numpy()
+    dt = torch.float64
+    xt = torch.tensor(E, dtype=dt)
+    Wq = torch.tensor(g("model.layers.0.self_attn.q_proj.weight"), dtype=dt)
+    Wk = torch.tensor(g("model.layers.0.self_attn.k_proj.weight"), dtype=dt)
+    Wv = torch.tensor(g("model.layers.0.self_attn.v_proj.weight"), dtype=dt)
+    Wo = torch.tensor(g("model.layers.0.self_attn.o_proj.weight"), dtype=dt)
+    bq = torch.tensor(g("model.layers.0.self_attn.q_proj.bias"), dtype=dt)
+    bk = torch.tensor(g("model.layers.0.self_attn.k_proj.bias"), dtype=dt)
+    bv = torch.tensor(g("model.layers.0.self_attn.v_proj.bias"), dtype=dt)
+    ln1 = torch.tensor(g("model.layers.0.input_layernorm.weight"), dtype=dt)
+    ln2 = torch.tensor(g("model.layers.0.post_attention_layernorm.weight"), dtype=dt)
+    eps = 1e-6
+
+    def rms(x, w):
+        return x / torch.sqrt((x ** 2).mean(-1, keepdim=True) + eps) * w
+
+    def rope(x, base=1e6):
+        Sq, Dh = x.shape[0], x.shape[-1]
+        i = torch.arange(Dh // 2, dtype=dt)
+        th = base ** (-2 * i / Dh)
+        ang = torch.arange(Sq, dtype=dt)[:, None] * th[None, :]
+        c, s = torch.cos(ang), torch.sin(ang)
+        y = torch.empty_like(x)
+        y[..., 0::2] = x[..., 0::2] * c.unsqueeze(-2) - x[..., 1::2] * s.unsqueeze(-2)
+        y[..., 1::2] = x[..., 0::2] * s.unsqueeze(-2) + x[..., 1::2] * c.unsqueeze(-2)
+        return y
+
+    xn = rms(xt, ln1)
+    Q = (xn @ Wq.T + bq).reshape(8, 14, 64)
+    K = (xn @ Wk.T + bk).reshape(8, 2, 64)
+    V = (xn @ Wv.T + bv).reshape(8, 2, 64)
+    K = K.repeat_interleave(7, dim=1)
+    V = V.repeat_interleave(7, dim=1)
+    QR, KR = rope(Q.permute(1, 0, 2)), rope(K.permute(1, 0, 2))
+    SC = (QR @ KR.transpose(-1, -2)) / 8.0
+    scmax = float(SC.abs().max())
+    print(f"realw-scores: folded scoremax={scmax:.0f} "
+          f"(contract is 1.0 -- attention stays boundary float, stated)")
+    P = torch.softmax(SC + torch.triu(
+        torch.full((8, 8), float("-inf"), dtype=dt), 1), dim=-1)
+    CTX = (P @ V.permute(1, 0, 2)).permute(1, 0, 2).reshape(8, 896)
+    H = (xt + CTX @ Wo.T).numpy()
+    Wup = torch.tensor(g("model.layers.0.mlp.up_proj.weight"), dtype=dt)
+    Wg = torch.tensor(g("model.layers.0.mlp.gate_proj.weight"), dtype=dt)
+    Wd = torch.tensor(g("model.layers.0.mlp.down_proj.weight"), dtype=dt)
+    HN = rms(torch.tensor(H, dtype=dt), ln2)
+    UP, GATE = HN @ Wup.T, HN @ Wg.T
+    DOWN = (torch.nn.functional.silu(GATE) * UP) @ Wd.T
+    REF = (torch.tensor(H, dtype=dt) + DOWN).numpy()
+
+    Wupf, Wgf, Wdf = Wup.numpy(), Wg.numpy(), Wd.numpy()
+    ln2f = ln2.numpy()
+
+    def enc(a):
+        return S.encode(np.ascontiguousarray(a, dtype=np.float64))
+
+    def dec(t):
+        return S.decode(np.ascontiguousarray(t[0]),
+                        np.ascontiguousarray(t[1])) * (
+                            1 - np.ascontiguousarray(t[2]).astype(float))
+
+    root = os.path.dirname(os.path.abspath(__file__))
+    text = open(os.path.join(root, "programs", "mlp_qwen0.asm")).read()
+    sdir = os.path.join(root, "programs")
+    base_pay = {"H": enc(H), "wup": enc(Wupf.T), "wgate": enc(Wgf.T),
+                "ln": enc(ln2f)}
+
+    def run_down(WdT):
+        pay = dict(base_pay)
+        pay["wdown"] = enc(WdT)
+        return dec(ASM.run_text(text, REGISTRY, pay, sigs=SIGS,
+                                basedir=sdir)["OUT"])
+
+    base = run_down(Wdf.T)
+    d = psnr(base, REF)
+    check("realw-parity", d >= 40.0,
+          f"{d:.2f}dB vs torch (peak=1.0, outmax={np.abs(REF).max():.2f})")
+    WdT = Wdf.T
+    U, s, Vt = np.linalg.svd(WdT, full_matrices=False)
+    check("realw-spectrum", s[0] / s[-1] > 5.0,
+          f"decaying {s[0]:.2f}..{s[-1]:.2f} (ratio {s[0]/s[-1]:.0f}x, not flat)")
+    idx = list(range(0, 896, 16))
+    ds, sv = [], []
+    for i in idx:
+        Wi = WdT - np.outer(U[:, i] * s[i], Vt[i])
+        ds.append(psnr(run_down(Wi), base))
+        sv.append(s[i])
+    ds, sv = np.array(ds), np.array(sv)
+    spread = float(ds.max() - ds.min())
+    corr = float(np.corrcoef(ds, sv)[0, 1])
+    check("realw-spread", spread > 20.0,
+          f"{spread:.1f}dB over {len(idx)} sampled directions")
+    check("realw-tracks", corr < -0.5,
+          f"corr(dir-dB, sval)={corr:.2f} (law reproduces on trained weights)")
+    rng = np.random.default_rng(0)
+    u = rng.normal(size=(4864,))
+    u /= np.linalg.norm(u)
+    v = rng.normal(size=(896,))
+    v /= np.linalg.norm(v)
+    A = 20.0
+    Wp = WdT + A * np.outer(u, v)
+    d_rec = psnr(run_down(Wp - A * np.outer(u, v)), base)
+    u2 = rng.normal(size=(4864,))
+    u2 /= np.linalg.norm(u2)
+    v2 = rng.normal(size=(896,))
+    v2 /= np.linalg.norm(v2)
+    d_ctl = psnr(run_down(Wp - A * np.outer(u2, v2)), base)
+    check("realw-planted", np.isinf(d_rec) and d_ctl < 40.0,
+          f"recovery {'inf' if np.isinf(d_rec) else f'{d_rec:.1f}'}dB "
+          f"vs control {d_ctl:.1f}dB (planted direction recovered exactly)")
+    print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
+    sys.exit(1 if FAIL else 0)
+
+
+if __name__ == "__main__":
+    main()

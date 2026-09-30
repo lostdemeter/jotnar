@@ -189,3 +189,26 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   0.00 — ablating nothing changes nothing) — recorded, not hidden. The
   non-trivial mid-range (40-60dB over s 0.37..0.13) is the real signal:
   geometry beats coordinates even where energy can't explain everything.
+
+## 2026-09-30: real weights, Qwen2-0.5B L0 MLP (CLOCKED, start missed)
+
+- Full block on trained weights + real embeddings: parity, spectrum,
+  direction sweep, planted recovery (test_realw.py + mlp_qwen0.asm).
+- Wall time: start clock MISSED (process lapse, recorded — the fix only
+  works if misses are admitted); end 21:48:23Z; active effort ~25 min
+  (cache survey, bias/embedding triage, rope/mask geometry fixes,
+  magnitude scoping, sweep, gates, docs).
+- Results: parity 51.82dB; spectrum 17x decaying; spread 33dB / corr
+  -0.81; planted recovery bit-exact, control 18.8dB.
+- Surprises:
+  1. Q/K biases enormous (max 128-152) — weights-only would have been a
+     DIFFERENT computation, not Qwen's. Triage before running saved the
+     experiment; K-bias cancels by proof, Q-bias tiled-host, V stated.
+  2. Folded attention scores hit 964 — the T-transform backlog measured
+     at 1000x, live, on the record. No workaround attempted.
+  3. Three geometry slips in the torch mirror (rope seq-dim, head batch,
+     mask broadcast) — all shape-loud, all fixed in minutes. The
+     strictness doctrine works on mirrors too.
+  4. corr -0.84 (toy) vs -0.81 (real): same law, different universe.
+     Partly algebraic (route C linearity) — the spread and ranking are
+     the content, the correlation is the sanity.

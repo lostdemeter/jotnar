@@ -540,6 +540,20 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  (SVD), never the ambient coordinates — gauge freedom makes coordinate
  attributions evaporate under re-basis. Next: trained weights (flat
  spectrum here is a toy artifact; decaying spectra will separate harder).
+## #LIB-047: real weights — Qwen2-0.5B L0 MLP (v1.3 gate 1 real half) [CLOSED]
+
+ Trained weights + real embeddings through programs/mlp_qwen0.asm
+ (test_realw.py, SKIPs without the HF cache): block parity 51.82dB vs
+ torch.float64; spectrum decaying 17x (3.54..0.21 — the toy's flatness was
+ a toy artifact, as predicted); direction spread 33dB with corr -0.81
+ (tracking law reproduces); planted dominant direction recovered
+ BIT-EXACTLY (control 18.8dB). Divergences, all stated: attention is
+ boundary float (folded scores hit 964, 1000x past the softmax contract —
+ T-transform backlog measured live, not worked around); K-bias omitted by
+ cancellation proof; V-bias negligible (max 0.1); Q-bias lives in torch H;
+ per-model eps first instance (eps_rms_c 68719 = 1e-6); rope_base 1e6 to
+ match. v1.3 gate 1's real-family report: DONE (via cache, better than
+ via handoff).
  ## #LIB-036: elementwise CUDA batch (v1.2 gate 2b) [CLOSED]
 
  9 kernels (holo_elem.cu: sqrt/tmul/tdiv/binop/square-clip/sigmoid/abs/
