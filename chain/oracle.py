@@ -214,3 +214,44 @@ def enhance_image_float_splat(rgb, beta=0.5, iso_atten=1.0, coh_thr=None,
                                          v5_w2=v5_w2, motion=motion)
     g = np.clip(yenh / np.maximum(y, 1e-12), 0.5, 2.0)
     return np.clip(rgb * g[:, :, None], 0, 1).astype(np.float32), yenh
+
+
+# ---- temporal IIR float mirror (parity basis for chain/temporal.py) ----
+def warp_float_nihui(img, flow):
+    """rife_ref.warp_nihui form, HW single-channel: sample = p + flow, floor
+    UNclamped for alphas, indices clamped (replicate). flow (H,W,2) pixels."""
+    H, W = img.shape
+    assert flow.shape == (H, W, 2)
+    gx, gy = np.meshgrid(np.arange(W, dtype=np.float64),
+                         np.arange(H, dtype=np.float64))
+    sx = gx + flow[:, :, 1].astype(np.float64)
+    sy = gy + flow[:, :, 0].astype(np.float64)
+    x0 = np.floor(sx).astype(np.int64)
+    y0 = np.floor(sy).astype(np.int64)
+    ax = np.clip(sx - x0, 0, 1)
+    ay = np.clip(sy - y0, 0, 1)
+    x0c = np.clip(x0, 0, W - 1)
+    x1c = np.clip(x0 + 1, 0, W - 1)
+    y0c = np.clip(y0, 0, H - 1)
+    y1c = np.clip(y0 + 1, 0, H - 1)
+    return (img[y0c, x0c] * (1 - ax) * (1 - ay)
+            + img[y0c, x1c] * ax * (1 - ay)
+            + img[y1c, x0c] * (1 - ax) * ay
+            + img[y1c, x1c] * ax * ay)
+
+
+def temporal_frames_float(ys, flows, beta=0.5, kernel=None, a_mix=0.5):
+    """Float mirror of the temporal chain with blur='iso', scalar beta:
+    A=sqrt(Y); As=gauss_blur(A); D=A-As; Dmix=(1-a)*D+a*warp(Dprev);
+    Ienh=clip((A+beta*Dmix)^2,0,1). flows[0] unused (may be None)."""
+    if kernel is None:
+        kernel = gauss_kernel()
+    outs, d_prev = [], None
+    for y, fl in zip(ys, flows):
+        a = np.sqrt(np.maximum(y, 0))
+        as_ = blur_replicate(a, kernel)
+        d = a - as_
+        dm = d if d_prev is None else (1 - a_mix) * d + a_mix * warp_float_nihui(d_prev, fl)
+        outs.append(np.clip((a + beta * dm) ** 2, 0, 1))
+        d_prev = d
+    return outs

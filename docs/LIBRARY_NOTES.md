@@ -191,3 +191,14 @@ assigned before gating (gating first lets corroboration only ever remove).
 The pan-e2e ratio gate (0.504 ~= FLOW_ATTEN exactly) is the template for
 quantitative modulation gates: don't just assert "changed", assert the
 stated factor.
+## #LIB-018: feedback needs the seam convention checked, not assumed [CLOSED]
+
+Temporal warp port found a live convention split by reading, not by failing:
+our seam is (dy,dx) while rife's warp_fixed reads [...,0] as X. Warp-parity
+(73dB) confirms the mapping; a transposed mapping scored 11dB (measured
+during development -- wrong-index bugs fail LOUD in warp, which is a mercy).
+Lesson: when reusing a foreign op, gate the index convention explicitly
+(subpixel random flow + parity does it); "same formula" is not "same mapping".
+Refactor note: the still path split into luminance_detail/finish with 0-diff
+proven by the existing parity suites (no mirror to drift, cf #LIB-014) --
+the temporal path reuses both with mixed D. Single source, two callers.

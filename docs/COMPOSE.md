@@ -20,19 +20,27 @@ near p99 0.063 > far 0.017 (3.6x: foreground person vs background),
 toggle-clean. L2 triple-direct handoff stays backlog (geo_int.py already
 speaks triples; the export path isn't wired).
 
-## Temporal coherence (RIFE-style codec / warp op)
+## Temporal coherence (feedback #2): IIR on the detail field [BUILT this round]
 
-Idea: video enhancement must not shimmer. Detail boost computed per-frame
-flickers on noise. Rule sketch: warp the previous frame's amplitude detail
-field to the current frame (IR `warp` op, nihui-exact, already specified)
-and temporally IIR the boost: `D_t = (1-a)*D + a*warp(D_{t-1})`. All integer
-(fixed add + warp + tdiv for the mix). Toggle: `holo=on:temporal=on`.
-Gate (when built): static-video identity (no shimmer on frozen frames:
-frame-to-frame diff of enhanced static clip ~= input diff) + parity on the
-warp seam.
-
-Status: NOT STARTED. IR `warp` exists in phi-core with lowerings; the holo
-side needs a detail-field delay line + the mix op + a static-clip fixture.
+The first recurrent edge: `D_t = 0.5*D + 0.5*warp(D_{t-1})` (chain/temporal.py).
+Warp is nihui-form (unclamped-floor alphas, clamped indices, replicate),
+ported to integer fixed-point (flow float pixels -> 2^-14 at the boundary;
+weights 2^-28, floor sums matching rife torch >>28). One deliberate
+convention split, documented: OUR seam is (dy,dx) while rife's warp_fixed
+reads [...,0] as X -- the cross-check gate (test_substitute pattern) would
+catch any confusion, and warp-parity (73dB) confirms the mapping.
+Mix weight frozen dyadic 0.5 (an add + trunc-halve; non-dyadic a is a
+LOWERING ERROR per the interp doctrine -- no fixed-mult mix op exists).
+State carries triples; first frame == still output bit-exactly.
+Gates (test_temporal.py, 10 checks): mix-frozen, warp-parity 73dB,
+warp-identity (fixed counts), static-converged (frames 1+ mutually exact) +
+static-firststep (measured bounds max Δe<=3, <=8px -- the mix roundtrip's
+honest quantization cost, calibrated over 6 seeds, not shimmer),
+firstframe-still exact, memory-carries, step-settles geometrically,
+sequence parity 64-65dB on a translating bar with exact flow.
+Demo: demo_temporal.py (PNG sequence + uniform flow; selftest GO 58dB).
+Per-pixel RIFE flows + L2 depth-direct stay backlog (same producer pattern
+as motion Phase 2).
 
 ## What ships now
 

@@ -283,21 +283,13 @@ def alpha_gather(y_lin, lut=None):
     return S.encode(a)
 
 
-def enhance_luminance_int(y_lin, beta=0.5, kernel=None, m=None, use_alpha=False,
-                          m_acc=None, m_cov=None, blur="iso", ctrl=False,
-                          ctrl_atten=None, coh_thr=None, ctrl_mid=None,
-                          coh_hi=None, depth=None, ctrl_strong=None,
-                          ctrl_v5w0=None, ctrl_v5w1=None, ctrl_v5w2=None,
-                          motion=None):
-    """Integer datapath: Y [0,1] float (boundary) -> Y_enh triples + audits.
-    Math actually executed: A=sqrt(Y); As=blur(A); D=A-As;
-    Aenh=A+beta_eff*D (beta_eff scalar, controller fields, depth and/or motion
-    multipliers -- modulations compose multiplicatively); Ienh=Aenh^2.
-    blur/ctrl/depth/motion: docs/SPLAT_OP.md, docs/BETA_CTRL.md, docs/COMPOSE.md,
-    docs/MOTION.md. depth=None off, else float depth map at Y geometry
-    (offline prior). motion=None off, else float (H,W,2) forward flow in
-    pixels at Y geometry (side-channel, chain/motion.py). Overrides are
-    search-only; scales as documented below."""
+def luminance_detail(y_lin, kernel=None, m=None, m_acc=None, m_cov=None,
+                     blur="iso", coh_thr=None, motion=None):
+    """Detail computation, shared by still + temporal paths (single source --
+    no mirror to drift, cf #LIB-014): encode -> sqrt -> blur -> D, with the
+    splat diag (buckets/coh/flow_scale for downstream). Returns
+    (a_t, d_t, diag, m_acc, m_cov, H, W). Behavior identical to the inline
+    block this was extracted from (existing parity suites prove 0-diff)."""
     if m_acc is None or m_cov is None:
         if m is not None:
             m_acc = m_cov = m
@@ -326,6 +318,20 @@ def enhance_luminance_int(y_lin, beta=0.5, kernel=None, m=None, use_alpha=False,
     else:
         raise ValueError(f"blur must be 'iso'|'splat'|'splat_soft', got {blur!r}")
     d_t = binop_fixed(a_t, as_t, m_cov, m_cov, op="sub")
+    return a_t, d_t, diag, m_acc, m_cov, H, W
+
+
+def luminance_finish(a_t, d_t, diag, y_lin, H, W, m_acc, m_cov, beta=0.5,
+                     use_alpha=False, ctrl=False, blur="iso",
+                     ctrl_atten=None, coh_thr=None, ctrl_mid=None,
+                     coh_hi=None, depth=None, ctrl_strong=None,
+                     ctrl_v5w0=None, ctrl_v5w1=None, ctrl_v5w2=None,
+                     motion=None):
+    """Enhancement tail, shared by still + temporal paths: beta/controller
+    boost, deprecated alpha, depth + motion caution, square back. Returns
+    (ienh_t, info). The temporal path calls this with MIXED detail. Behavior
+    identical to the inline block this was extracted from (existing parity
+    suites prove 0-diff)."""
     if ctrl == "v5":
         if blur not in ("splat", "splat_soft") or diag is None:
             raise ValueError("ctrl='v5' needs a splat blur (coh+D source)")
@@ -374,6 +380,27 @@ def enhance_luminance_int(y_lin, beta=0.5, kernel=None, m=None, use_alpha=False,
     if depth_frac is not None:
         info["near_frac"] = depth_frac
     return ienh_t, info
+
+
+def enhance_luminance_int(y_lin, beta=0.5, kernel=None, m=None, use_alpha=False,
+                          m_acc=None, m_cov=None, blur="iso", ctrl=False,
+                          ctrl_atten=None, coh_thr=None, ctrl_mid=None,
+                          coh_hi=None, depth=None, ctrl_strong=None,
+                          ctrl_v5w0=None, ctrl_v5w1=None, ctrl_v5w2=None,
+                          motion=None):
+    """Still-image entry: detail + finish composed (see luminance_detail /
+    luminance_finish for the pieces; temporal.py reuses them with mixed D)."""
+    a_t, d_t, diag, m_acc, m_cov, H, W = luminance_detail(
+        y_lin, kernel=kernel, m=m, m_acc=m_acc, m_cov=m_cov, blur=blur,
+        coh_thr=coh_thr, motion=motion)
+    return luminance_finish(
+        a_t, d_t, diag,
+        np.ascontiguousarray(y_lin, dtype=np.float64), H, W, m_acc, m_cov,
+        beta=beta, use_alpha=use_alpha, ctrl=ctrl, blur=blur,
+        ctrl_atten=ctrl_atten, coh_thr=coh_thr, ctrl_mid=ctrl_mid,
+        coh_hi=coh_hi, depth=depth, ctrl_strong=ctrl_strong,
+        ctrl_v5w0=ctrl_v5w0, ctrl_v5w1=ctrl_v5w1, ctrl_v5w2=ctrl_v5w2,
+        motion=motion)
 
 
 def apply_gain_int(rgb_lin, y_lin, yenh_trip, m=None, m_cov=None):
