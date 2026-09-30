@@ -674,6 +674,94 @@ def main():
     except ASM.AsmError as e:
         check("asm-gelu-listing", False, str(e)[:70])
 
+    # v1.0 Gates 3+4: dogfooded stdlib + search order. Bare IMPORT names
+    # resolve stdlib-first (shared listings addressable by name from any
+    # basedir); explicit paths (`./x`, `sub/x`) stay relative-only.
+    import tempfile as _tf3
+    import shutil as _sh3
+    d3 = _tf3.mkdtemp()
+    try:
+        # shadow: tmpdir/mlp.asm defines something ELSE -- stdlib must win.
+        open(os.path.join(d3, "mlp.asm"), "w").write(
+            "DEF otherdef(x) -> (y)\n  y = ADD(x, x)\nEND\n")
+        errs, rep = ASM.verify('IMPORT "mlp.asm"\nIN a\nOUT = CALL swiglu_block(a, a, a, a)\n',
+                               REGISTRY, SIGS, basedir=d3)
+        check("asm-import-stdlib-first",
+              "swiglu_block" in rep["defs"]
+              and "stdlib" in rep["defs"]["swiglu_block"]["origin"],
+              f"stdlib wins over basedir shadow ({rep['defs'].get('swiglu_block', {}).get('origin', 'MISSING')})")
+        # explicit relative path bypasses stdlib (no shadowing surprises).
+        open(os.path.join(d3, "local.asm"), "w").write(
+            "DEF localinc(x) -> (y)\n  y = ADD(x, x)\nEND\n")
+        r7 = ASM.run_text('IMPORT "./local.asm"\nIN a\nOUT = CALL localinc(a)\n',
+                          REGISTRY, {"a": S.encode(np.full(2, 0.25))},
+                          sigs=SIGS, basedir=d3)
+        check("asm-import-relative", True, "explicit ./ path stays relative")
+    except ASM.AsmError as e:
+        check("asm-import-stdlib-first", False, str(e)[:80])
+    finally:
+        _sh3.rmtree(d3, ignore_errors=True)
+    # dogfood: programs/xf_block.asm (IMPORTs + CALLs onto stdlib) is
+    # bit-exact vs the original spelled-out listing (embedded here, the
+    # pre-Gate-3 body). Refactoring shared prologues must not move values.
+    _inline_xf = """CONFIG heads 8
+IN x AS T:SEQ
+IN pos AS I:SEQ
+IN wq AS T:SEQ
+IN wk
+IN wv
+IN wo
+IN wup
+IN wgate
+IN wdown
+IN rms_w1
+IN rms_w2
+XN = RMSNORM(x, rms_w1)
+Q = MATMUL(XN, wq)
+K = MATMUL(XN, wk)
+V = MATMUL(XN, wv)
+QR = ROTARY(Q, pos)
+KR = ROTARY(K, pos)
+KT = TRANSPOSE(KR)
+SCORES = BATCH_MATMUL(QR, KT)
+P = SOFTMAX(SCORES)
+CTX = BATCH_MATMUL(P, V)
+O = MATMUL(CTX, wo)
+H = ADD(x, O)
+HN = RMSNORM(H, rms_w2)
+UP = MATMUL(HN, wup)
+GATE = MATMUL(HN, wgate)
+GS = SILU(GATE)
+MID = MUL(GS, UP)
+DOWN = MATMUL(MID, wdown)
+OUT = ADD(H, DOWN)
+"""
+    _xdog = np.random.default_rng(7)
+    _Sq, _D, _Df = 4, 8, 16
+    _xd = S.encode((_xdog.random((_Sq, _D)) - 0.5) * 0.3)
+    _posd = np.arange(_Sq, dtype=np.int64)
+
+    def _wd(sh):
+        return S.encode((_xdog.random(sh) - 0.5) * 0.3)
+    _payd = {"x": _xd, "pos": _posd, "wq": _wd((_D, _D)),
+             "wk": _wd((_D, _D)), "wv": _wd((_D, _D)),
+             "wo": _wd((_D, _D)), "wup": _wd((_D, _Df)),
+             "wgate": _wd((_D, _Df)), "wdown": _wd((_Df, _D)),
+             "rms_w1": _wd((_D,)), "rms_w2": _wd((_D,))}
+    try:
+        _fprod = ASM.run_text(
+            open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                              "programs", "xf_block.asm")).read(),
+            REGISTRY, _payd, sigs=SIGS,
+            basedir=os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                 "programs"))
+        _finline = ASM.run_text(_inline_xf, REGISTRY, _payd, sigs=SIGS)
+        check("asm-dogfood-xf", all(
+            bool((_fprod["OUT"][k] == _finline["OUT"][k]).all())
+            for k in (0, 1, 2)), "IMPORT-refactored == spelled-out, exact")
+    except ASM.AsmError as e:
+        check("asm-dogfood-xf", False, str(e)[:80])
+
     # v1.0 Gate 2: LANGUAGE.md covers every mnemonic (drift gate -- the
     # reference must not silently fall behind the registry).
     _lang = open(os.path.join(os.path.dirname(os.path.abspath(__file__)),

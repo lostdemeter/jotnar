@@ -10,7 +10,14 @@
 # path, backlog) and matmul products inside m_acc coverage (frozen holo
 # scales, chain/M.json). The gate's measured row pins the out-of-contract
 # behavior; recalibrated scales + 1/sqrt(d) scaling are backlog.
+#
+# v1.0 Gate 3: dogfooded procedures -- the attention + MLP bodies live in
+# stdlib/ (attention.asm, mlp.asm) and are shared via IMPORT (no
+# copy-pasted prologues). Bare names resolve stdlib-first (Gate 4).
 CONFIG heads 8
+
+IMPORT "attention.asm"
+IMPORT "mlp.asm"
 
 IN x AS T:SEQ
 IN pos AS I:SEQ
@@ -26,23 +33,10 @@ IN rms_w2
 
 # --- attention path ---
 XN = RMSNORM(x, rms_w1)
-Q = MATMUL(XN, wq)
-K = MATMUL(XN, wk)
-V = MATMUL(XN, wv)
-QR = ROTARY(Q, pos)
-KR = ROTARY(K, pos)
-KT = TRANSPOSE(KR)
-SCORES = BATCH_MATMUL(QR, KT)
-P = SOFTMAX(SCORES)
-CTX = BATCH_MATMUL(P, V)
-O = MATMUL(CTX, wo)
+O = CALL attn_core(XN, wq, wk, wv, wo, pos)
 H = ADD(x, O)
 
 # --- MLP path (SwiGLU) ---
 HN = RMSNORM(H, rms_w2)
-UP = MATMUL(HN, wup)
-GATE = MATMUL(HN, wgate)
-GS = SILU(GATE)
-MID = MUL(GS, UP)
-DOWN = MATMUL(MID, wdown)
+DOWN = CALL swiglu_block(HN, wup, wgate, wdown)
 OUT = ADD(H, DOWN)

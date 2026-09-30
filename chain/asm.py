@@ -36,7 +36,28 @@ def _head_of(line):
     return toks[0].upper() if toks else ""
 
 
-def expand(text, basedir=".", origin="<?>", defs=None, stack=()):
+def _default_stdlib():
+    """Repo stdlib dir if it exists, else None (old behavior exactly)."""
+    cand = os.path.normpath(os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "..", "stdlib"))
+    return cand if os.path.isdir(cand) else None
+
+
+def _resolve_import(target, basedir, stdlib):
+    """IMPORT search order (v1.0 Gate 4): stdlib FIRST (bare names only),
+    then basedir-relative. Bare `IMPORT "mlp.asm"` addresses shared
+    listings by name from anywhere; `./x.asm` or `sub/x.asm` forces
+    relative (stdlib never shadows an explicit path)."""
+    import os as _os
+    if (stdlib and "/" not in target and "\\" not in target
+            and not target.startswith(".")):
+        cand = _os.path.normpath(_os.path.join(stdlib, target))
+        if _os.path.isfile(cand):
+            return cand
+    return _os.path.normpath(_os.path.join(basedir, target))
+
+
+def expand(text, basedir=".", origin="<?>", defs=None, stack=(), stdlib=None):
     """Pre-pass: IMPORT splicing + DEF collection + CALL expansion.
     Returns (flat_lines, defs) where flat_lines = [(text, origin_str)] and
     origin_str names the source ("file:12" or "file:12 via CALL@site:5").
@@ -48,6 +69,8 @@ def expand(text, basedir=".", origin="<?>", defs=None, stack=()):
     import os as _os
     if defs is None:
         defs = {}
+    if stdlib is None:
+        stdlib = _default_stdlib()
     raw = [(l, f"{origin}:{i}") for i, l in enumerate(text.splitlines(), 1)]
     flat, i, counter = [], 0, [0]
     # Pre-scan current-file IN declarations so CALL-site contract checks see
@@ -189,7 +212,7 @@ def expand(text, basedir=".", origin="<?>", defs=None, stack=()):
             if not target:
                 raise AsmError(f"{org}: IMPORT needs a path")
             import os as _os2
-            path = _os2.path.normpath(_os2.path.join(basedir, target))
+            path = _resolve_import(target, basedir, stdlib)
             real = _os2.path.realpath(path)
             if real in stack:
                 raise AsmError(f"{org}: IMPORT cycle ({real})")
@@ -199,7 +222,7 @@ def expand(text, basedir=".", origin="<?>", defs=None, stack=()):
             except OSError as e:
                 raise AsmError(f"{org}: IMPORT cannot read {path}: {e}")
             flat.extend(expand(sub, _os2.path.dirname(path), path, defs,
-                               stack + (real,))[0])
+                               stack + (real,), stdlib)[0])
         elif head == "DEF":
             import re as _re3
             m = _re3.match(r"DEF\s+(\w+)\s*\((.*)\)\s*->\s*\((.*)\)\s*$", code)
@@ -267,12 +290,13 @@ def expand(text, basedir=".", origin="<?>", defs=None, stack=()):
     return flat, defs
 
 
-def parse(text, basedir="."):
+def parse(text, basedir=".", stdlib=None):
     """text -> (config dict, [(name, layout|None)], [(outs, mn, args, ln)], [state]).
     DEF/IMPORT/CALL expand first (origins tracked); the listing below sees
-    flat lines with origin strings ("file:12", "file:12 via CALL@site:5")."""
+    flat lines with origin strings ("file:12", "file:12 via CALL@site:5").
+    stdlib=None auto-detects the repo stdlib dir (Gate 4 search order)."""
     config, inp, prog, state = {}, [], [], []
-    flat, _ = expand(text, basedir, origin=basedir)
+    flat, _ = expand(text, basedir, origin=basedir, stdlib=stdlib)
     for raw, org, pre_stripped in flat:
         ln = org
         line = raw if pre_stripped else raw.split("#", 1)[0].strip()
@@ -353,7 +377,7 @@ def parse(text, basedir="."):
     return config, inp, prog, state
 
 
-def assemble(text, registry, sigs=None, basedir="."):
+def assemble(text, registry, sigs=None, basedir=".", stdlib=None):
     """Bind mnemonics + check arity/inputs statically (before any execution).
     Returns (config, inp, bound, state) with bound entries
     (outs, mn, fn, args, ln, sig). Unknown mnemonic / arity mismatch /
@@ -362,7 +386,7 @@ def assemble(text, registry, sigs=None, basedir="."):
     for parse-time conflicts. Full verifier with scales+geometry is backlog:
     range estimator + seam chart."""
     sigs = sigs or {}
-    config, inp, prog, state = parse(text, basedir)
+    config, inp, prog, state = parse(text, basedir, stdlib)
     bound, defined = [], set(n for n, _ in inp)
     for outs, mn, args, ln in prog:
         if mn not in registry:
@@ -442,14 +466,14 @@ def _check_layouts(outs, mn, args, ln, sig, layouts):
     return dict(zip(outs, out_lays))
 
 
-def verify(text, registry, sigs=None, basedir="."):
+def verify(text, registry, sigs=None, basedir=".", stdlib=None):
     """Static layout pass (no payloads, no execution): replays unification
     over DECLARED layouts only (IN AS + concrete sig patterns). Returns
     (errors, report): errors = list of conflict strings derivable without
     values; report has resolved/total coverage counts (gradual typing means
     absence of proof -- verify() reports coverage honestly) plus the DEF
     interface table (composition contracts visible in one place)."""
-    config, inp, bound, _ = assemble(text, registry, sigs, basedir)
+    config, inp, bound, _ = assemble(text, registry, sigs, basedir, stdlib)
     layouts = {n: (l or _UNKNOWN) for n, l in inp}
     errors = []
     for outs, mn, fn, args, ln, sig in bound:
@@ -461,7 +485,7 @@ def verify(text, registry, sigs=None, basedir="."):
                 layouts[o] = _UNKNOWN
     total = len(layouts)
     resolved = sum(1 for v in layouts.values() if v != _UNKNOWN)
-    _, defs = expand(text, basedir, origin=basedir)
+    _, defs = expand(text, basedir, origin=basedir, stdlib=stdlib)
     iface = {n: {"formals": [(f, d["fin_lay"].get(f)) for f in d["fins"]],
                  "returns": [(f, d["fout_lay"].get(f)) for f in d["fouts"]],
                  "origin": d["origin"]} for n, d in defs.items()}
@@ -616,9 +640,10 @@ def format_trace(log):
     return lines
 
 
-def run_text(text, registry, payload, sigs=None, trace=None, basedir="."):
+def run_text(text, registry, payload, sigs=None, trace=None, basedir=".",
+             stdlib=None):
     """Parse + assemble + execute. Returns feeds (trace list filled if given)."""
-    config, inp, bound, _ = assemble(text, registry, sigs, basedir)
+    config, inp, bound, _ = assemble(text, registry, sigs, basedir, stdlib)
     return run((config, inp, bound), config, inp, payload, trace=trace)
 
 
@@ -693,7 +718,8 @@ def _check_shapes(mn, vals, ln):
                     f"line {ln} ({mn}): ids out of range [0,{w[0]})")
 
 
-def repeat(text, registry, payload, n, sigs=None, grow=(), basedir="."):
+def repeat(text, registry, payload, n, sigs=None, grow=(), basedir=".",
+           stdlib=None):
     """Run a listing n times threading STATE streams (loop-carried state).
     Non-STATE IN streams take LISTS of length n (one payload per iteration;
     strict -- no implicit broadcasting, length bugs fail loud). STATE streams
@@ -706,7 +732,8 @@ def repeat(text, registry, payload, n, sigs=None, grow=(), basedir="."):
     Dynamic shapes beyond append-only, and data-dependent termination
     (WHILE), are out of scope -- stated, see GAPS.md. Returns
     (per-iteration OUT feeds list, final feeds)."""
-    config, inp, bound, state = assemble(text, registry, sigs, basedir)
+    config, inp, bound, state = assemble(text, registry, sigs, basedir,
+                                          stdlib)
     in_names = [nm for nm, _ in inp]
     if not isinstance(payload, dict):
         raise AsmError("repeat needs dict payload")

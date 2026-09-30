@@ -167,9 +167,15 @@ time). `verify()` also reports the DEF interface table (all composition
 contracts in one place).
 
 Shared listings: put `DEF`s in a file, `IMPORT` it (see the IMPORT gate in
-`test_asm.py`: spliced-file execution + cycle refusal). Search order today:
-basedir-relative only (stdlib search paths are v1.0 Gates 3+4 — backlog,
-stated here so nobody depends on the missing feature).
+`test_asm.py`: spliced-file execution + cycle refusal). The `stdlib/` dir
+ships two seed blocks (`attention.asm: attn_core`, `mlp.asm: swiglu_block`),
+shared by `programs/xf_block.asm` — no copy-pasted prologues in shipped
+programs (v1.0 Gate 3, dogfood-proven bit-exact in `asm-dogfood-xf`).
+Search order (v1.0 Gate 4): bare names (`IMPORT "mlp.asm"`) resolve
+STDLIB FIRST, then basedir-relative, so shared listings are addressable by
+name from any directory; explicit paths (`./x.asm`, `sub/x.asm`) stay
+relative-only and are never shadowed by stdlib. A basedir file with a
+stdlib name loses to stdlib (gated) — name local files distinctly.
 
 ## 6. Loops and state
 

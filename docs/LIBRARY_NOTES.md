@@ -328,3 +328,15 @@ numbers are fixture-dependent -- report fixture with number; (4) shoulder
 imprecision documented-not-gated (x=10 -> 9.99; exact only beyond +/-16).
 Next candidates from the same handoff: SCAN (fills ITERATE gap #4),
 GRN joint exercise (reference on request).
+## #LIB-029: stdlib search order (stdlib-first, explicit-paths-exempt) [CLOSED]
+
+v1.0 Gates 3+4: `stdlib/` seed (attention.asm + mlp.asm, factored out of
+xf_block, dogfood-proven bit-exact) + IMPORT search order in
+`_resolve_import` (new kwargs on expand/parse/assemble/verify/run_text/
+repeat, all defaulted — backward compatible, every suite green unchanged).
+Doctrines: (1) bare names search stdlib FIRST so shared listings are
+addressable by name from anywhere (a basedir shadow LOSES, gated —
+name local files distinctly); (2) explicit paths (`./`, `sub/`) bypass
+stdlib entirely (no shadowing surprises); (3) refactor-onto-stdlib must
+be 0-diff by gate (`asm-dogfood-xf` embeds the pre-refactor body —
+comparing against HEAD would go vacuous the commit it lands).
