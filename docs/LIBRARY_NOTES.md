@@ -153,7 +153,6 @@ rotation gate; cross-check orientation mappings against the bucket rule
 (coherence_bucket's diag_pos), never against the mirror.
 
 ## #LIB-015: price unreachable bars in gates, not in objectives [DOCTRINE]
-
 A max(0,40-npsnr) veto inside the v5 fit objective was tried and reverted:
 nothing on the grid clears 40 (best 37.8 -- adaptive blends disagree with
 themselves exactly where content is random: bank outputs spread wide on
@@ -165,3 +164,15 @@ gate suite as measured rows with stated mechanisms (white noise: reported,
 share ~11x, distributed) while reachable siblings stay barred (grain sigma
 0.02: 47.95dB). The fitter prices tradeoffs; the suite prices honesty.
 
+## #LIB-016: identical columns substitute; the gate must prove it live [CLOSED]
+
+First cross-model substitution proven, not just used: holo `sigmoid_trip`
+(numpy) vs RIFE `sigmoid_int` (torch/CUDA) agree bit-exactly on 2007 shared
+triples, and a holo chain with its sigmoid swapped for RIFE's produces
+bit-identical Y-enh triples (`test_substitute.py`). Two doctrine points:
+(1) the chain-swap gate carries a tripwire asserting the substitute was
+actually INVOKED (2x) -- a swap gate that passes without exercising the seam
+is green wallpaper; (2) the negative control: replicate-pad vs zero-pad convs
+MUST differ at borders and agree interiorly, characterizing the divergence
+contract. A substitution framework that can't say no is just aliasing. This
+is the L3 architectures claim made concrete: same column, same behavior.
