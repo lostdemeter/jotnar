@@ -188,6 +188,73 @@ def op_silu(vals, config, feeds):
     return N.silu_int(t)
 
 
+_rope_cache = {}
+
+
+def rope_tables(max_pos, dim, base=10000.0):
+    """Frozen sin/cos tables (max_pos, dim/2), deterministic build (same
+    load-or-freeze discipline as kernels: formula is the source of truth).
+    theta_i = base^(-2i/dim), angle = pos * theta_i."""
+    key = (int(max_pos), int(dim), float(base))
+    if key not in _rope_cache:
+        i = np.arange(dim // 2, dtype=np.float64)
+        theta = np.power(float(base), -2.0 * i / dim)
+        pos = np.arange(int(max_pos), dtype=np.float64)[:, None]
+        ang = pos * theta[None, :]
+        _rope_cache[key] = (np.cos(ang), np.sin(ang))
+    return _rope_cache[key]
+
+
+def op_rotary(vals, config, feeds):
+    """RoPE rotation (first genuinely-new structure at assembly level):
+    frozen sin/cos tables + 4 tmuls + 2 binops per pair -- all existing ops,
+    no new C needed (composition). X triples (..., D) with even D; POS int
+    array broadcastable to X.shape[:-1] (positions are structural metadata,
+    carried as integers until TYPED STREAMS formalizes them).
+    out[2i] = x[2i]*c - x[2i+1]*s; out[2i+1] = x[2i]*s + x[2i+1]*c.
+    base frozen via CONFIG rope_base (default 10000.0)."""
+    from chain.holo_phi import tmul, binop_fixed
+    x, pos = vals
+    _, m_cov = _scales()
+    base = float(config.get("rope_base", 10000.0))
+    D = x[0].shape[-1]
+    assert D % 2 == 0, f"head dim must be even, got {D}"
+    P = int(np.ascontiguousarray(pos, dtype=np.int64).max(initial=0)) + 1
+    cos_t, sin_t = rope_tables(P, D, base)
+    pidx = np.ascontiguousarray(pos, dtype=np.int64)
+    c = S.encode(cos_t[pidx])
+    s = S.encode(sin_t[pidx])
+    x0 = (x[0][..., 0::2], x[1][..., 0::2], x[2][..., 0::2])
+    x1 = (x[0][..., 1::2], x[1][..., 1::2], x[2][..., 1::2])
+    y0 = binop_fixed(tmul(x0, c), tmul(x1, s), m_cov, m_cov, op="sub")
+    y1 = binop_fixed(tmul(x0, s), tmul(x1, c), m_cov, m_cov, op="add")
+    out_s = np.empty_like(x[0])
+    out_e = np.empty_like(x[1])
+    out_z = np.empty_like(x[2])
+    out_s[..., 0::2], out_s[..., 1::2] = y0[0], y1[0]
+    out_e[..., 0::2], out_e[..., 1::2] = y0[1], y1[1]
+    out_z[..., 0::2], out_z[..., 1::2] = y0[2], y1[2]
+    return out_s.astype(np.int8), out_e.astype(np.int32), out_z.astype(np.uint8)
+
+
+def op_batch_matmul(vals, config, feeds):
+    """Batched triples matmul (phi-core matmul_int handles batch dims +
+    B-broadcast natively -- verified shapes (2,3,5); 0-diff: wrapper adds
+    nothing). m_acc from frozen scales."""
+    N, _S = _phi_ops()
+    m_acc, _ = _scales()
+    return N.matmul_int(vals[0], vals[1], m_acc)
+
+
+def op_transpose(vals, config, feeds):
+    """Last-two-axes swap (IR move family). Exact: no arithmetic, only layout.
+    Needed wherever scores need K^T (attention) -- the probe demanded it."""
+    (t,) = vals
+    return (np.swapaxes(t[0], -1, -2).astype(np.int8, copy=False),
+            np.swapaxes(t[1], -1, -2).astype(np.int32, copy=False),
+            np.swapaxes(t[2], -1, -2).astype(np.uint8, copy=False))
+
+
 def op_mixdyad(vals, config, feeds):
     """Motion-gated dyadic memory: static ? (D+3W)/4 : D. W=None (no
     history) -> D directly (feed convention, same doctrine as temporal
@@ -233,4 +300,7 @@ REGISTRY = {
     "SOFTMAX": (op_softmax, 1, 1),
     "RMSNORM": (op_rmsnorm, 2, 1),
     "SILU": (op_silu, 1, 1),
+    "ROTARY": (op_rotary, 2, 1),
+    "BATCH_MATMUL": (op_batch_matmul, 2, 1),
+    "TRANSPOSE": (op_transpose, 1, 1),
 }

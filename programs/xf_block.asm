@@ -8,6 +8,7 @@
 CONFIG heads 8
 
 IN x
+IN pos
 IN wq
 IN wk
 IN wv
@@ -23,9 +24,10 @@ XN = RMSNORM(x, rms_w1)
 Q = MATMUL(XN, wq)
 K = MATMUL(XN, wk)
 V = MATMUL(XN, wv)
-QR = ROTARY(Q)
-KR = ROTARY(K)
-SCORES = BATCH_MATMUL(QR, KR)
+QR = ROTARY(Q, pos)
+KR = ROTARY(K, pos)
+KT = TRANSPOSE(KR)
+SCORES = BATCH_MATMUL(QR, KT)
 P = SOFTMAX(SCORES)
 CTX = BATCH_MATMUL(P, V)
 O = MATMUL(CTX, wo)

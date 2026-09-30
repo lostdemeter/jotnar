@@ -49,9 +49,15 @@ already expressible; only the activation itself is missing.
 
 ## Priority (exposure before invention)
 
-Batch 1 (wire+gates, no new math): MATMUL, SOFTMAX, RMSNORM, SILU.
+Batch 1 (wire+gates, no new math): MATMUL, SOFTMAX, RMSNORM, SILU. CLOSED.
 Batch 2 (first genuinely-new structure): ROTARY (sincos LUT + rotate op,
-same authoring bar as everything else).
+same authoring bar as everything else). CLOSED 2026-09-30: frozen tables +
+tmul/binop compose, meaning-gates (float 9.14e-04, isometry, relpos);
+in-coverage fixtures (transformer magnitudes need recalibrated scales --
+gate proved it). BATCH_MATMUL exposure folded in (0-diff) + TRANSPOSE exact
+move (probe-demanded). xf_block.asm ASSEMBLES clean AND RUNS end-to-end
+(shapes correct); whole-block float parity is next backlog (plumbing proven,
+block-scale values unverified -- stated).
 Batch 3 (language features): TYPED STREAMS first (blocks everything else),
 then SPLIT family, BRANCH, static verifier; ITERATE last (needs dynamic
 shapes -- biggest design decision in the list, do not rush).

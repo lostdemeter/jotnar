@@ -99,6 +99,51 @@ def main():
     check("asm-softmax-saturates", float(np.abs(vb[0] - clip).max()) < 1e-3,
           "out-of-contract inputs saturate to softmax([1,-1,0]) (pinned)")
 
+    # Batch 2: ROTARY (first genuinely-new structure) + BATCH_MATMUL exposure.
+    # ROTARY gates prove the MEANING, not just the math: vs float RoPE,
+    # norm preservation (rotation is an isometry -- geometric invariant),
+    # relative-position property (dot depends on p-q only). Fixtures stay
+    # inside frozen m_cov coverage (values in [-1,1]: holo calibrated
+    # amax=1.0; transformer magnitudes need RECALIBRATED scales via the
+    # defined procedure, not a code change -- the gate below proved the
+    # current data doesn't cover transformers, which is scales doctrine
+    # working, not an op bug).
+    from chain.asm_ops import rope_tables
+    rng2 = np.random.default_rng(1)
+    D, NP = 16, 24
+    xr = S.encode((rng2.random((NP, D)) - 0.5) * 2.0)
+    pos = np.arange(NP, dtype=np.int64)
+    got = REGISTRY["ROTARY"][0]([xr, pos], {}, {})
+    gv = S.decode(got[0], got[1]) * (1 - got[2].astype(np.float64))
+    xv = S.decode(xr[0], xr[1]) * (1 - xr[2].astype(np.float64))
+    cos_t, sin_t = rope_tables(NP, D)
+    ref = np.empty_like(xv)
+    ref[:, 0::2] = xv[:, 0::2] * cos_t - xv[:, 1::2] * sin_t
+    ref[:, 1::2] = xv[:, 0::2] * sin_t + xv[:, 1::2] * cos_t
+    check("asm-rotary", float(np.abs(gv - ref).max() / max(np.abs(ref).max(), 1e-9)) < 5e-3,
+          f"maxrelerr={float(np.abs(gv - ref).max() / max(np.abs(ref).max(), 1e-9)):.2e} vs float RoPE")
+    n0 = np.sqrt((xv ** 2).sum(-1))
+    n1 = np.sqrt((gv ** 2).sum(-1))
+    check("asm-rotary-norm", float(np.abs(n1 - n0).max() / max(n0.max(), 1e-9)) < 5e-3,
+          "rotation preserves norms (isometry)")
+    d1 = float((gv[5] * gv[9]).sum())
+    d2 = float((ref[5] * ref[9]).sum())
+    check("asm-rotary-relpos", abs(d1 - d2) / max(abs(d2), 1e-9) < 5e-3,
+          "cross-position dots match (relative geometry)")
+    A2 = S.encode((rng2.random((2, 4, 8)) - 0.5) * 6)
+    B2 = S.encode((rng2.random((8, 6)) - 0.5) * 2)
+    check("asm-batch-matmul", all(bool((a == b).all()) for a, b in zip(
+        REGISTRY["BATCH_MATMUL"][0]([A2, B2], {}, {}), N.matmul_int(A2, B2, ma))),
+        "0-diff batched+broadcast (same m_acc)")
+    tp = S.encode((rng2.random((2, 4, 8)) - 0.5) * 2)
+    gtp = REGISTRY["TRANSPOSE"][0]([tp], {}, {})
+    check("asm-transpose", bool((gtp[0] == np.swapaxes(tp[0], -1, -2)).all()
+                                and gtp[0].shape == (2, 8, 4)),
+          "exact last-two-axes swap")
+    gtt = REGISTRY["TRANSPOSE"][0]([gtp], {}, {})
+    check("asm-transpose-involution", all(bool((a == b).all()) for a, b in zip(gtt, tp)),
+          "transpose twice == identity (exact move)")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 
