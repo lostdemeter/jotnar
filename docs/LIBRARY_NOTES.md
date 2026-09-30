@@ -449,6 +449,20 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  Doctrine: census answers HOW data moves (topology + geometry + access
  class); ranges.py answers what VALUES span — complementary instruments,
  neither subsumes the other.
+ ## #LIB-040: causal probes via run overrides (v1.3 gate 2) [CLOSED]
+
+ ASM.run/run_text take overrides={stream: value} (replaced post-compute,
+ pre-consume; trace shows downstream truth; dead names fail loud).
+ Results (flagship listing, test_probe.py): D-zero 38.46dB in predicted
+ [20,45] (mean 1.35 LSB ~= the full enhancement -- the boost IS the detail
+ path); COH-zero 44.23dB FALSIFIED a predicted [3,40] upper bound (0.46
+ LSB -- coherence decides WHERE, iso/atten carry HOW MUCH); revised band
+ [38,50] confirmed on held-out content (42.66dB) with D holding too.
+ Two catches: (1) flipped-frame "held-out" proved nothing (pipeline is
+ flip-equivariant -- identical decimals gave it away; different images
+ only); (2) probe TABLE is the representation (one row per intervention,
+ growing into the content map). Methods aren't structures, so no
+ INVENTORY entry (stated) -- the pattern lives here + LANGUAGE.md §8.
  ## #LIB-036: elementwise CUDA batch (v1.2 gate 2b) [CLOSED]
 
  9 kernels (holo_elem.cu: sqrt/tmul/tdiv/binop/square-clip/sigmoid/abs/

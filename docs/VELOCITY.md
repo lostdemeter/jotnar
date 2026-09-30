@@ -58,7 +58,7 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   moved into chain/ (chain owns building, tests own gating); one Makefile
   edit silently didn't land (verify writes by read-back).
 
-## 2026-09-30: access-shape census (~5 min, CLOCKED — process fix working)
+## 2026-09-30: access-shape census (~4 min, CLOCKED — process fix working)
 
 - Instrument: chain/census.py (static producer/consumer/fan-out + access
   classes) + 9 gates in test_census.py.
@@ -75,3 +75,21 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   3. One miss on first probe (RESCALE unclassified) — caught by the
      coverage gate, which exists precisely for this. Gates earning keep
      is now routine enough to note only in passing.
+
+## 2026-09-30: causal probes (~4 min, CLOCKED)
+
+- Instrument: ASM overrides (interventions as a run feature) + 6 gates
+  in test_probe.py + probe TABLE representation.
+- Wall time: ~4 min. Clock 19:06:59Z -> ~19:10Z (override support +
+  sham/typo guards + two probes + held-out rerun + docs + verify incl.).
+- Results: D-zero 38.46dB CONFIRMED in predicted [20,45]; COH-zero
+  44.23dB FALSIFIED a predicted [3,40] upper bound; revised [38,50]
+  CONFIRMED on held-out content (42.66dB).
+- Surprises:
+  1. Falsification is the finding: coherence decides WHERE, iso/atten
+     carry HOW MUCH — the threshold miss taught more than a pass would.
+  2. Flipped-frame held-out proved nothing (flip-equivariance → identical
+     decimals BY CONSTRUCTION). Caught by reading the numbers, not by a
+     gate — held-out means different CONTENT, now stated in LANGUAGE.md.
+  3. D-zero mean change (1.35 LSB) ~= the full enhancement: the boost IS
+     the detail path, no other contributor. Subtraction as identification.

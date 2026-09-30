@@ -544,7 +544,7 @@ def _kind_of(v):
     return _UNKNOWN
 
 
-def run(bound, config, inp, payload, trace=None):
+def run(bound, config, inp, payload, trace=None, overrides=None):
     """Execute bound program over a feeds dict. Returns feeds (all streams).
     Convention: an op with arity_out==1 produces ONE stream (even when the
     value is itself a tuple, e.g. triples); arity_out>1 must return a tuple
@@ -552,8 +552,15 @@ def run(bound, config, inp, payload, trace=None):
     untouched): concrete-vs-concrete mismatch fails naming op+line+stream.
     trace: None (default, old behavior exactly) or a list to append per-op
     records {line, op, in: {stream: summary}, out: {...}, sec}. Summaries
-    are best-effort and never affect values (see _summarize)."""
+    are best-effort and never affect values (see _summarize).
+    overrides: {stream: value} causal interventions (v1.3 probes) -- after
+    the producing instruction runs, the named OUT is REPLACED before any
+    consumer reads it (trace records post-override values: downstream
+    truth). Unknown names (never assigned) fail loud at the end -- a probe
+    that overrides nothing is green wallpaper, refused here."""
     _, _, prog = bound
+    overrides = dict(overrides or {})
+    pending = set(overrides)
     # single-IN listings take a bare payload (backward compat); multi-IN
     # listings take {name: value}. Unknown payload keys fail loud.
     if isinstance(inp, str):
@@ -608,6 +615,10 @@ def run(bound, config, inp, payload, trace=None):
         for name, val in zip(outs, out):
             feeds[name] = val
             layouts[name] = out_lays[name]
+        for name in outs:
+            if name in overrides:
+                feeds[name] = overrides[name]
+                pending.discard(name)
         if trace is not None:
             rec = trace[-1]
             rec["out"] = {}
@@ -616,6 +627,9 @@ def run(bound, config, inp, payload, trace=None):
                 ssum["layout"] = out_lays[name]
                 rec["out"][name] = ssum
             rec["sec"] = time.perf_counter() - rec.pop("_t0")
+    if pending:
+        raise AsmError(f"overrides never assigned: {sorted(pending)} "
+                       f"(typo, or stream optimized out -- probes must bite)")
     return feeds
 
 
@@ -641,10 +655,11 @@ def format_trace(log):
 
 
 def run_text(text, registry, payload, sigs=None, trace=None, basedir=".",
-             stdlib=None):
+             stdlib=None, overrides=None):
     """Parse + assemble + execute. Returns feeds (trace list filled if given)."""
     config, inp, bound, _ = assemble(text, registry, sigs, basedir, stdlib)
-    return run((config, inp, bound), config, inp, payload, trace=trace)
+    return run((config, inp, bound), config, inp, payload, trace=trace,
+               overrides=overrides)
 
 
 def _shapes_of(v):

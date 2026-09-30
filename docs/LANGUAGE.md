@@ -234,6 +234,18 @@ per-op seconds + total). Summaries show SYMPTOMS (shapes/layouts/means
 catch the broadcast/transpose classes in minutes); gates prove CAUSES.
 The profiler falls out free (per-op wall time).
 
+## Interventions (causal probes)
+
+`run_text(..., overrides={"COH": zeros})` REPLACES a computed stream
+before consumers read it (trace records post-override values: downstream
+truth). Unknown names fail loud at the end -- a probe that overrides
+nothing is green wallpaper, refused here. Pattern (test_probe.py): sham
+override (same value back -- must be bit-exact, proves the machinery adds
+nothing), real intervention vs a band stated BEFOREHAND, falsified bands
+become measured rows (never silently re-barred), forward bands go onto
+held-out CONTENT (note: flipped frames prove nothing -- the pipeline is
+flip-equivariant, so deltas match by construction; use different images).
+
 ## 9. Contribution process
 
 New structures (mnemonics AND authored patterns) clear ONE bar
