@@ -64,6 +64,12 @@ def main():
     check("c-cuda-flagship", r9.returncode == 0, f"exit={r9.returncode}")
     if r9.returncode:
         print(r9.stderr[-1500:])
+    r10 = subprocess.run([sys.executable, os.path.join(root, "test_emit.py")],
+                         capture_output=True, text=True, cwd=root)
+    print(r10.stdout[-1500:])
+    check("c-emit-matrix", r10.returncode == 0, f"exit={r10.returncode}")
+    if r10.returncode:
+        print(r10.stderr[-1500:])
     r5 = subprocess.run([sys.executable, os.path.join(root, "test_v4.py")],
                         capture_output=True, text=True, cwd=root)
     print(r5.stdout[-1500:])

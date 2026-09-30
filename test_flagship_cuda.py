@@ -42,38 +42,9 @@ def const_plane(v, shape):
 
 
 def write_in(path, y, m_acc, m_cov):
-    P = C.load_ctrl()
-    Hh, Ww = y.shape
-    N = Hh * Ww
-    a_t = H.sqrt_trip(S.encode(np.ascontiguousarray(y, dtype=np.float64)))
-    thr = P["coh_thr"]
-    tq = int(S.to_fixed(*S.encode(np.array([thr])), m_cov)[0])
-    qs1 = S.encode(np.array([1.0]))
-    qhi1 = int(S.to_fixed(qs1[0], qs1[1], qs1[2], m_cov)[0])
-    att = P.get("iso_atten", 0.5)
-    md = P.get("mid_atten", 0.6)
-    st = P.get("strong_atten", 1.0)
-    hi = P.get("coh_hi", 0.4)
-    consts = [const_plane(BETA, (Hh, Ww)), const_plane(att, (Hh, Ww)),
-              const_plane(md - att, (Hh, Ww)), const_plane(st - md, (Hh, Ww)),
-              const_plane(thr, (Hh, Ww)), const_plane(hi, (Hh, Ww)),
-              const_plane(30.0, (Hh, Ww)), const_plane(P.get("v5_w0", 0.0), (Hh, Ww)),
-              const_plane(P.get("v5_w1", 0.0), (Hh, Ww)), const_plane(P.get("v5_w2", 0.0), (Hh, Ww)),
-              const_plane(4.0, (Hh, Ww)), const_plane(0.5, (Hh, Ww)),
-              (np.zeros((Hh, Ww), np.int8), np.zeros((Hh, Ww), np.int32),
-               np.ones((Hh, Ww), np.uint8))]
-    kernels = [H.kernel_triples(SP.SOBEL_X), H.kernel_triples(SP.SOBEL_Y),
-               H.kernel_triples(SP.tensor_smooth_kernel())]
-    kernels += [H.kernel_triples(k) for k in SP.bank()]
+    from chain.substrate import build_flagship_inbin
     with open(path, "wb") as f:
-        f.write(struct.pack("<4i", Hh, Ww, m_acc, m_cov))
-        f.write(struct.pack("<q", tq))
-        f.write(struct.pack("<q", qhi1))
-        for t in [a_t] + kernels + consts:
-            for plane, dt in ((t[0].reshape(-1), np.int8),
-                              (t[1].reshape(-1), np.int32),
-                              (t[2].reshape(-1), np.uint8)):
-                f.write(np.ascontiguousarray(plane, dt).tobytes())
+        f.write(build_flagship_inbin(y, m_acc, m_cov, BETA))
 
 
 def read_yenh(path, shape):

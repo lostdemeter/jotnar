@@ -21,6 +21,7 @@ Check | Result
 `test_matmul_cuda.py` | ALL OK (3-way numpy/C/CUDA bit-exact, same 5 cases; SKIPs without nvcc)
 `test_units_cuda.py` | ALL OK (k_conv_rep 4 cases + k_mux/clamp bit-exact vs C twins; SKIPs without nvcc)
 `test_flagship_cuda.py` | ALL OK (full splat_soft+v5 A->YENH on CUDA bit-exact: synth/real/big-m)
+`test_emit.py` | ALL OK (substrate matrix: flagship numpy/C/CUDA exact + dispatch log; xf numpy + loud C/CUDA refusals; bogus names refused)
 `test_splat_c.py` | ALL OK (full splat_blur bit-exact incl. buckets, both C modes: 6 compositional + 2 fused cases)
 `test_splat.py` | ALL OK (4 orientations 1.00, halo<=iso, blur parity 41dB, agreement 0.99, e2e 43dB, fusion-exact bit-identical)
 `test_ctrl.py` | ALL OK (file validity, hash, real-frame parity ~43-50dB, rotation-invariant gap 0.04, flat identity)

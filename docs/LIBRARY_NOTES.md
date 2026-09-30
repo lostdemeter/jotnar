@@ -420,6 +420,23 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  40dB). Supporting kernels (neg/wherez/rescale/bucket) covered
  compositionally; had the row failed, per-kernel bisection was the plan
  (unneeded). Wired into test_c.py (c-cuda-flagship).
+ ## #LIB-038: emission driver + substrate matrix (v1.2 gate 3) [CLOSED]
+
+ chain/substrate.py: whole-program emission per (program, substrate) —
+ numpy executes text, C/CUDA run exchange binaries from ONE shared builder
+ (same in.bin format both sides). flagship_c_exchange (full C flagship,
+ orchestration mirroring CUDA launch-for-launch from proven C fns +
+ driver-local statics) bit-exact FIRST RUN. Matrix (test_emit.py): 3/3
+ flagship cells exact + dispatch proven via run_log (agreement alone
+ would also match a silent fallback) + xf numpy standing cell + xf C/CUDA
+ loud refusals (missing cells refuse, never fall back — refusals flip to
+ numbers as lowerings land) + bogus names refused. Decisions: (1) substrate
+ is a RUN concern, deliberately NOT a CONFIG key (CONFIG travels with the
+ program; listings stay machine-independent); (2) test_flagship_cuda's
+ builder moved into substrate (chain owns building, tests own gating —
+ layering); (3) one Makefile vars edit silently didn't land (caught by
+ read-back, fixed directly — verify writes, don't trust return codes).
+ Wired into test_c.py (c-emit-matrix).
  ## #LIB-036: elementwise CUDA batch (v1.2 gate 2b) [CLOSED]
 
  9 kernels (holo_elem.cu: sqrt/tmul/tdiv/binop/square-clip/sigmoid/abs/
