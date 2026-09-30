@@ -463,6 +463,20 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  only); (2) probe TABLE is the representation (one row per intervention,
  growing into the content map). Methods aren't structures, so no
  INVENTORY entry (stated) -- the pattern lives here + LANGUAGE.md §8.
+ ## #LIB-041: information round — xf rows, S11 hunt, L4 entries [OPEN]
+
+ Probe table grows at STRUCTURE granularity (O/DOWN outputs, never
+ mangled sub-wires — the assembly-view doctrine applied to probing):
+ O-zero 36dB, DOWN-zero 43dB, both deterministic to 0.01dB, MEASURED not
+ barred (toy weights; bands form later per LIB-015). S11 hunt (coh vs
+ DAV2 depth-edges, shared f_012): pearson 0.27, top-decile overlap 0.29
+ (~3x chance) — method works, not evidence; NOT a second instance
+ (texture-without-depth and depth-without-texture both exist).
+ INVENTORY gains L4 (content motifs) with S21/S22 PREDICTED + canonical
+ sketches + matrix rows. Standing rule, earned twice now: probe INTERNAL
+ names and you inherit expansion counters (attn_core#1.P renumbers when
+ listings change) — probe STRUCTURE outputs (O, DOWN), which are stable
+ by the composition-contracts discipline.
  ## #LIB-036: elementwise CUDA batch (v1.2 gate 2b) [CLOSED]
 
  9 kernels (holo_elem.cu: sqrt/tmul/tdiv/binop/square-clip/sigmoid/abs/

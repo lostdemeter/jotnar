@@ -93,3 +93,20 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      gate — held-out means different CONTENT, now stated in LANGUAGE.md.
   3. D-zero mean change (1.35 LSB) ~= the full enhancement: the boost IS
      the detail path, no other contributor. Subtraction as identification.
+
+## 2026-09-30: information round (~4 min, CLOCKED)
+
+- Probe table +2 rows (xf O/DOWN at structure granularity), S11 hunt
+  measurement, INVENTORY L4 with S21/S22 PREDICTED + matrix rows.
+- Wall time: ~4 min. Clock 19:13:55Z -> ~19:18Z (probes + hunt +
+  entries + verify incl.).
+- Surprises:
+  1. Probe STRUCTURE outputs, never mangled sub-wires: internal names
+     carry expansion counters (attn_core#1.P) that renumber when listings
+     change — composition contracts decide probe granularity, not
+     curiosity. The doctrine keeps paying.
+  2. S11 hunt returned 0.27, not an instance: texture-without-depth and
+     depth-without-texture both exist, so covariance caps low BY
+     MECHANISM. Negative with a reason beats positive without one.
+  3. Information-first works: measured rows accumulate without pretense
+     of bands; bands form later (LIB-015). The table is the map.

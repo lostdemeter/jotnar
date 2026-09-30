@@ -115,9 +115,54 @@ def main():
     ROWS.append(("D@variant", "zero", vd_d, vm_d, "[20,45]dB PREDICTED",
                  "CONFIRMED" if ok_vd else "FALSIFIED"))
     check("probe-D-forward", ok_vd, f"{vd_d:.2f}dB in [20,45] (held-out)")
-    print("--- probe table (stream | intervention | delta-dB | meanLSB | band | verdict) ---")
+    print("--- probe table (stream | intervention | delta-dB | mean|d| | band | verdict) ---")
+    print("    (mean|d| in LSB for u8 rows, activation units for xf rows)")
     for row in ROWS:
-        print("    %-12s %-5s %7.2fdB %6.2fLSB %-18s %s" % row)
+        print("    %-12s %-5s %7.2fdB %6.2f    %-18s %s" % row)
+    # xf_block structure-level rows (MEASURED, not barred -- information
+    # first, bands later: toy-scale weights, everything subtle here).
+    # Interventions address STRUCTURE outputs (O, DOWN), not mangled
+    # sub-structure wires (attn_core#1.P etc.) -- the assembly-view
+    # doctrine: pipelines read as structure invocations.
+    import test_xf_block as XB
+    xf, posf, wf, r1f, r2f = XB.fixture()
+    xtext = open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                              "programs", "xf_block.asm")).read()
+    xpay = {"x": XB.enc(xf), "pos": posf, "wq": XB.enc(wf[0]),
+            "wk": XB.enc(wf[1]), "wv": XB.enc(wf[2]), "wo": XB.enc(wf[3]),
+            "wup": XB.enc(wf[4]), "wgate": XB.enc(wf[5]),
+            "wdown": XB.enc(wf[6]), "rms_w1": XB.enc(r1f),
+            "rms_w2": XB.enc(r2f)}
+    xb0 = XB.dec(ASM.run_text(xtext, REGISTRY, xpay, sigs=SIGS,
+                              basedir=os.path.join(
+                                  os.path.dirname(os.path.abspath(__file__)),
+                                  "programs"))["OUT"])
+
+    def xprobe(nm):
+        z = S.encode(np.zeros(
+            ASM.run_text(xtext, REGISTRY, xpay, sigs=SIGS,
+                         basedir=os.path.join(
+                             os.path.dirname(os.path.abspath(__file__)),
+                             "programs"))[nm][0].shape))
+        g = XB.dec(ASM.run_text(xtext, REGISTRY, xpay, sigs=SIGS,
+                                basedir=os.path.join(
+                                    os.path.dirname(os.path.abspath(__file__)),
+                                    "programs"),
+                                overrides={nm: z})["OUT"])
+        mse = float(np.mean((g - xb0) ** 2))
+        m = float(np.abs(g - xb0).mean())
+        return (10 * np.log10(1.0 / mse) if mse > 0 else float("inf")), m
+
+    for tag, nm in (("O (attn kill)", "O"), ("DOWN (mlp kill)", "DOWN")):
+        d1, m1 = xprobe(nm)
+        d2, _ = xprobe(nm)
+        ROWS.append((nm + "@xf", "zero", d1, m1, "MEASURED",
+                     "deterministic" if abs(d1 - d2) < 0.01 else "UNSTABLE"))
+    check("probe-xf-deterministic", all(r[5] == "deterministic" for r in ROWS[-2:]),
+          "rerun matches to 0.01dB")
+    print("--- xf rows ---")
+    for row in ROWS[-2:]:
+        print("    %-12s %-5s %7.2fdB %6.2f    %-18s %s" % row)
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 
