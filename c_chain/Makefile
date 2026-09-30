@@ -22,7 +22,7 @@ cuda: $(CXCHG) $(UCXCHG)
 $(CXCHG): matmul_cuda.cu
 	$(NVCC) $(NVFLAGS) -o $(CXCHG) matmul_cuda.cu
 
-$(UCXCHG): holo_units.cu
+$(UCXCHG): holo_units.cu holo_elem.cu
 	$(NVCC) $(NVFLAGS) -o $(UCXCHG) holo_units.cu
 
 $(BIN): holo_ops.c test_holo_c.c holo_ops.h

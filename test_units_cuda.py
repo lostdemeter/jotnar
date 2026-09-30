@@ -74,6 +74,32 @@ def run_bin(path_in, path_out):
     return r
 
 
+def write_elem(path, task, ints, q64s, *trips):
+    with open(path, "wb") as f:
+        f.write(struct.pack("<i", task))
+        f.write(struct.pack("<%di" % len(ints), *ints))
+        for q in q64s:
+            f.write(struct.pack("<q", int(q)))
+        for t in trips:
+            for plane, dt in ((t[0].reshape(-1), np.int8),
+                              (t[1].reshape(-1), np.int32),
+                              (t[2].reshape(-1), np.uint8)):
+                f.write(np.ascontiguousarray(plane, dt).tobytes())
+
+
+def one_elem(tag, task, ints, q64s, trips, ref):
+    pin, pout = "/tmp/holo_units_elem_in.bin", "/tmp/holo_units_elem_out.bin"
+    write_elem(pin, task, ints, q64s, *trips)
+    r = run_bin(pin, pout)
+    if r.returncode != 0:
+        check(tag, False, f"binary exit={r.returncode} {r.stderr[-500:]}")
+        return
+    got = read_planar(pout, trips[0][0].shape)
+    same = bool((got[0] == ref[0]).all() and (got[1] == ref[1]).all()
+                and (got[2] == ref[2]).all())
+    check(tag, same, "bit-exact" if same else "MISMATCH")
+
+
 def one_conv(tag, img, kernel):
     m_acc, m_cov = H._load_scales()
     kh = kernel.shape[0]
@@ -142,6 +168,35 @@ def main():
            np.stack([streams2[bc[0, i]][1][0, i] for i in range(6)]).reshape(1, 6).astype(np.int32),
            np.stack([streams2[bc[0, i]][2][0, i] for i in range(6)]).reshape(1, 6).astype(np.uint8))
     one_mux("units-cuda-mux-clamp", streams2, b_oob, ref)
+    # elementwise batch (kernels in holo_elem.cu) vs proven numpy fns.
+    # Fixture spans signs + exact zeros (zero-or paths) at two magnitudes.
+    _, m_cov = H._load_scales()
+    re = np.random.default_rng(21)
+    ta = S.encode(re.uniform(-2, 2, (4, 8)))
+    tb = S.encode(re.uniform(-2, 2, (4, 8)))
+    tz = S.encode(np.array([[-3.0, -0.0, 0.0, 1.5, -1.5, 0.5, 2.5, -2.5]] * 4))
+    n8 = 32
+    one_elem("units-cuda-sqrt", 2, [n8], [], (ta,), H.sqrt_trip(ta))
+    one_elem("units-cuda-sqrt-zero", 2, [n8], [], (tz,), H.sqrt_trip(tz))
+    one_elem("units-cuda-tmul", 3, [n8], [], (ta, tb), H.tmul(ta, tb))
+    one_elem("units-cuda-tdiv", 10, [n8], [], (ta, tb), H.tdiv_pure(ta, tb))
+    one_elem("units-cuda-binadd", 4, [n8, m_cov, 0], [], (ta, tb),
+             H.binop_fixed(ta, tb, m_cov, m_cov, op="add"))
+    one_elem("units-cuda-binsub", 4, [n8, m_cov, 1], [], (ta, tb),
+             H.binop_fixed(ta, tb, m_cov, m_cov, op="sub"))
+    q1 = S.to_fixed(*S.encode(np.array([1.0])), m_cov)[0]
+    one_elem("units-cuda-square", 5, [n8, m_cov], [int(q1)], (ta,),
+             H.clip_fixed(H.tmul(ta, ta), 0.0, 1.0, m_cov))
+    one_elem("units-cuda-sigmoid", 6, [n8], [], (ta,), H.sigmoid_trip(ta))
+    one_elem("units-cuda-sigmoid-wide", 6, [n8], [], (tz,), H.sigmoid_trip(tz))
+    one_elem("units-cuda-abs", 7, [n8], [], (ta,), H.abs_trip(ta))
+    one_elem("units-cuda-relu", 8, [n8, m_cov], [], (ta,),
+             H.relu_trip(ta, m_cov))
+    qs, qe, qz = S.encode(np.array([-1.0, 1.0]))
+    qlo = S.to_fixed(qs[0:1], qe[0:1], qz[0:1], m_cov)[0]
+    qhi = S.to_fixed(qs[1:2], qe[1:2], qz[1:2], m_cov)[0]
+    one_elem("units-cuda-clip", 9, [n8, m_cov], [int(qlo), int(qhi)], (ta,),
+             H.clip_fixed(ta, -1.0, 1.0, m_cov))
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

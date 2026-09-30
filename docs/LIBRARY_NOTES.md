@@ -407,7 +407,19 @@ Two slips, both mine: (1) nvcc is C++ — void* needs casts (xmalloc macro);
 (conv passed, mux failed — format bugs fail LOUD, not silent).
 Doctrine refined: one harness format per driver, writer and reader
 reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
-direct C-vs-CUDA byte compares. Wired into test_c.py (c-cuda-units).
+ direct C-vs-CUDA byte compares. Wired into test_c.py (c-cuda-units).
+ ## #LIB-036: elementwise CUDA batch (v1.2 gate 2b) [CLOSED]
+
+ 9 kernels (holo_elem.cu: sqrt/tmul/tdiv/binop/square-clip/sigmoid/abs/
+ relu/clip) + tasks 2..10 on the units driver, each vs its proven numpy
+ fn — 12/12 bit-exact incl. zeros/negatives and a wide-range sigmoid row.
+ Three slips: (1) phi-core's ".cuh comment says LUTs fit 32 bits" is FALSE
+ for SIGX (3.9e17 — int64 device pointer, measured not assumed);
+ (2) stale-binary false failure (tests skip rebuild when the binary
+ exists — Makefile now tracks holo_elem.cu); (3) my own fixture size
+ slip (caught by reshape, not by values). Encode stays HOST-side
+ (S.encode needs float log — the float→int seam lives at the boundary
+ by doctrine, same values, conversion location documented).
  ## #LIB-033: recognition-first parse, negative result recorded [CLOSED]
 
  Roadmap gate 3 (S19 bet): parsed diffusion DDIM sampling into INVENTORY

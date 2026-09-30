@@ -19,6 +19,9 @@
 #include "cuda_dev.cuh"
 #include "luts.h"
 
+/* elementwise kernels live in holo_elem.cu (compiled in below) */
+#include "holo_elem.cu"
+
 #define ACC_BOUND ((int64_t)1 << 62)
 
 __global__ void k_conv_rep(
@@ -185,8 +188,7 @@ int main(int argc, char **argv) {
         fclose(g);
         printf("units_cuda_exchange: conv %dx%d KH=%d m_acc=%d m_out=%d done\n",
                H, W, KH, m_acc, m_out);
-    } else if (task == 1) {
-        int32_t hd[2];
+    } else if (task == 1) {        int32_t hd[2];
         if (fread(hd, sizeof(hd), 1, f) != 1) die("read header");
         int n = hd[0], ns = hd[1];
         if (n < 1 || ns < 1) die("bad header");
@@ -223,8 +225,83 @@ int main(int argc, char **argv) {
         write_planar(g, h_os, h_oe, h_oz, (size_t)n, "write out");
         fclose(g);
         printf("units_cuda_exchange: mux n=%d ns=%d done\n", n, ns);
+    } else if (task >= 2 && task <= 10) {
+        /* elementwise tasks (kernels in holo_elem.cu):
+         * 2=sqrt[n]+in 3=tmul[n]+A+B 10=tdiv[n]+A+B 4=binop[n,m,is_sub]+A+B
+         * 5=square_clip[n,m]+int64 qhi+in 6=sigmoid[n]+in 7=abs[n]+in
+         * 8=relu[n,m]+in 9=clip[n,m]+int64 qlo,qhi+in */
+        int32_t hd[3];
+        int need = (task == 4) ? 3 : (task == 5 || task == 8) ? 2
+            : (task == 9) ? 2 : 1;
+        if (fread(hd, sizeof(int32_t), (size_t)need, f) != (size_t)need) die("read header");
+        int n = hd[0];
+        if (n < 1) die("bad header");
+        size_t un = (size_t)n;
+        int64_t qlo = 0, qhi = 0;
+        if (task == 5) {
+            if (fread(&qhi, sizeof(qhi), 1, f) != 1) die("read qhi");
+        } else if (task == 9) {
+            if (fread(&qlo, sizeof(qlo), 1, f) != 1) die("read qlo");
+            if (fread(&qhi, sizeof(qhi), 1, f) != 1) die("read qhi");
+        }
+        int two = (task == 3 || task == 4 || task == 10);
+        int8_t *h_as = xmalloc(int8_t, un), *h_bs = two ? xmalloc(int8_t, un) : NULL;
+        int *h_ae = xmalloc(int, un), *h_be = two ? xmalloc(int, un) : NULL;
+        uint8_t *h_az = xmalloc(uint8_t, un), *h_bz = two ? xmalloc(uint8_t, un) : NULL;
+        read_planar(f, h_as, h_ae, h_az, un, "read A");
+        if (two) read_planar(f, h_bs, h_be, h_bz, un, "read B");
+        fclose(f);
+        int8_t *d_as, *d_bs = NULL, *d_os;
+        int *d_ae, *d_be = NULL, *d_oe;
+        uint8_t *d_az, *d_bz = NULL, *d_oz;
+        CUDA_CHECK(cudaMalloc(&d_as, un)); CUDA_CHECK(cudaMalloc(&d_ae, sizeof(int) * un));
+        CUDA_CHECK(cudaMalloc(&d_az, un));
+        CUDA_CHECK(cudaMalloc(&d_os, un)); CUDA_CHECK(cudaMalloc(&d_oe, sizeof(int) * un));
+        CUDA_CHECK(cudaMalloc(&d_oz, un));
+        CUDA_CHECK(cudaMemcpy(d_as, h_as, un, cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMemcpy(d_ae, h_ae, sizeof(int) * un, cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMemcpy(d_az, h_az, un, cudaMemcpyHostToDevice));
+        if (two) {
+            CUDA_CHECK(cudaMalloc(&d_bs, un)); CUDA_CHECK(cudaMalloc(&d_be, sizeof(int) * un));
+            CUDA_CHECK(cudaMalloc(&d_bz, un));
+            CUDA_CHECK(cudaMemcpy(d_bs, h_bs, un, cudaMemcpyHostToDevice));
+            CUDA_CHECK(cudaMemcpy(d_be, h_be, sizeof(int) * un, cudaMemcpyHostToDevice));
+            CUDA_CHECK(cudaMemcpy(d_bz, h_bz, un, cudaMemcpyHostToDevice));
+        }
+        int *d_sigx32 = NULL, *d_sig = NULL;
+        int64_t *d_sigx = NULL;
+        if (task == 6) {
+            CUDA_CHECK(cudaMalloc(&d_sigx, sizeof(int64_t) * 65536));
+            CUDA_CHECK(cudaMemcpy(d_sigx, LUT_SIGX, sizeof(int64_t) * 65536,
+                                  cudaMemcpyHostToDevice));
+            d_sig = dev_int(to_int_lut(LUT_SIG, 524289, "SIG"), 524289);
+        }
+        int blocks = (int)((un + (size_t)threads - 1) / (size_t)threads);
+        int m = (need >= 2) ? hd[1] : 0;
+        if (task == 2) k_sqrt<<<blocks, threads>>>(d_as, d_ae, d_az, n, d_os, d_oe, d_oz);
+        else if (task == 3) k_tmul<<<blocks, threads>>>(d_as, d_ae, d_az, d_bs, d_be, d_bz, n, d_os, d_oe, d_oz);
+        else if (task == 10) k_tdiv<<<blocks, threads>>>(d_as, d_ae, d_az, d_bs, d_be, d_bz, n, d_os, d_oe, d_oz);
+        else if (task == 4) k_binop<<<blocks, threads>>>(d_as, d_ae, d_az, d_bs, d_be, d_bz, n, m, hd[2], d_frac, d_coarse, d_fine, d_os, d_oe, d_oz);
+        else if (task == 5) k_square_clip<<<blocks, threads>>>(d_as, d_ae, d_az, n, m, qhi, d_frac, d_coarse, d_fine, d_os, d_oe, d_oz);
+        else if (task == 6) k_sigmoid<<<blocks, threads>>>(d_as, d_ae, d_az, n, d_sigx, d_sig, d_coarse, d_fine, d_os, d_oe, d_oz);
+        else if (task == 7) k_abs<<<blocks, threads>>>(d_as, d_ae, d_az, n, d_os, d_oe, d_oz);
+        else if (task == 8) k_relu<<<blocks, threads>>>(d_as, d_ae, d_az, n, m, d_frac, d_coarse, d_fine, d_os, d_oe, d_oz);
+        else k_clip<<<blocks, threads>>>(d_as, d_ae, d_az, n, m, qlo, qhi, d_frac, d_coarse, d_fine, d_os, d_oe, d_oz);
+        CUDA_CHECK(cudaGetLastError());
+        CUDA_CHECK(cudaDeviceSynchronize());
+        int8_t *h_os = xmalloc(int8_t, un);
+        int *h_oe = xmalloc(int, un);
+        uint8_t *h_oz = xmalloc(uint8_t, un);
+        CUDA_CHECK(cudaMemcpy(h_os, d_os, un, cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(h_oe, d_oe, sizeof(int) * un, cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(h_oz, d_oz, un, cudaMemcpyDeviceToHost));
+        FILE *g = fopen(argv[2], "wb");
+        if (!g) die("open out");
+        write_planar(g, h_os, h_oe, h_oz, un, "write out");
+        fclose(g);
+        printf("units_cuda_exchange: elem task=%d n=%d done\n", task, n);
     } else {
-        die("bad task (want 0=conv, 1=mux)");
+        die("bad task (want 0=conv, 1=mux, 2..10=elem)");
     }
     return 0;
 }
