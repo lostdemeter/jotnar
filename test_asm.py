@@ -771,6 +771,46 @@ OUT = ADD(H, DOWN)
           f"{len(REGISTRY) - len(_missing)}/{len(REGISTRY)} mnemonics documented"
           + ("" if not _missing else f" (missing {_missing})"))
 
+    # v1.1 per-block spike (prototype): MATMUL honors CONFIG `m_acc`.
+    # Large-magnitude fixture rails at the frozen scale (-10dB) and holds
+    # 55dB one scale up -- the 66dB swing is the per-block win, measured.
+    # Default path stays 0-diff (every suite below passing unchanged is
+    # the proof); bad overrides fail loud.
+    _sc = np.random.default_rng(3)
+    _sA = S.encode((_sc.random((4, 8)) - 0.5) * 4)
+    _sB = S.encode((_sc.random((8, 6)) - 0.5) * 4)
+    _sAv = S.decode(_sA[0], _sA[1]) * (1 - _sA[2].astype(np.float64))
+    _sBv = S.decode(_sB[0], _sB[1]) * (1 - _sB[2].astype(np.float64))
+    _sref = _sAv @ _sBv
+    _ma, _ = H._load_scales()
+    _same = REGISTRY["MATMUL"][0]([_sA, _sB], {"m_acc": str(_ma)}, {})
+    _dflt = REGISTRY["MATMUL"][0]([_sA, _sB], {}, {})
+    check("asm-scale-default", all(bool((a == b).all()) for a, b in zip(_same, _dflt)),
+          "explicit frozen value == default, exact (default untouched)")
+    _big = REGISTRY["MATMUL"][0]([_sA, _sB], {"m_acc": "35492"}, {})
+    _bigv = S.decode(_big[0], _big[1]) * (1 - _big[2].astype(np.float64))
+    _dfltv = S.decode(_dflt[0], _dflt[1]) * (1 - _dflt[2].astype(np.float64))
+    _mse_big = float(np.mean((_bigv - _sref) ** 2))
+    _mse_dflt = float(np.mean((_dfltv - _sref) ** 2))
+    _db_big = 10 * np.log10(1.0 / _mse_big)
+    _db_dflt = 10 * np.log10(1.0 / _mse_dflt) if _mse_dflt > 0 else 999
+    check("asm-scale-override", _db_big >= 40.0 and _db_dflt < 40.0,
+          f"override {_db_big:.1f}dB vs default {_db_dflt:.1f}dB (row non-vacuous)")
+    try:
+        _inlist = ASM.run_text("CONFIG m_acc 35492\nIN a\nIN b\nOUT = MATMUL(a, b)\n",
+                               REGISTRY, {"a": _sA, "b": _sB}, sigs=SIGS)
+        check("asm-scale-listing", all(
+            bool((_inlist["OUT"][k] == _big[k]).all()) for k in (0, 1, 2)),
+            "in-listing CONFIG override == direct call, exact")
+    except ASM.AsmError as e:
+        check("asm-scale-listing", False, str(e)[:70])
+    for _bad, _tag in [("1.5", "frac"), ("70000", "range"), ("abc", "nonnum")]:
+        try:
+            REGISTRY["MATMUL"][0]([_sA, _sB], {"m_acc": _bad}, {})
+            check(f"asm-scale-bad-{_tag}", False, "accepted bad scale")
+        except ValueError as e:
+            check(f"asm-scale-bad-{_tag}", True, f"fails loud ({str(e)[:40]})")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

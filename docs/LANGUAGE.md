@@ -48,8 +48,10 @@ A declared kind must also match the VALUE (`T`-declared holding floats
 fails — triple-ops on float arrays used to compute garbage silently).
 
 **Config.** `CONFIG key value` — frozen choices (e.g. `beta 0.5`,
-`rope_base 10000.0`, `eps_rms_c 4514`). Unknown keys don't fail; ops read
-what they need with documented defaults.
+`rope_base 10000.0`, `eps_rms_c 4514`). MATMUL also honors `CONFIG m_acc`
+/ `m_cov` scale overrides (v1.1 per-block spike: integral 0..65535, same
+rule as RESCALE; absent keys take the frozen values). Unknown keys don't
+fail; ops read what they need with documented defaults.
 
 **Literals.** Bare numbers in arg position are `F:SCALAR` floats. Shape
 literals (axes, radii, counts) must be INTEGRAL — `1.5` fails loud, never

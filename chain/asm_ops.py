@@ -19,8 +19,26 @@ from chain import splat as SP
 from chain import control as C
 
 
-def _scales():
-    return H._load_scales()
+def _scales(config=None):
+    """Frozen scales with CONFIG overrides (v1.1 per-block spike): `m_acc`
+    / `m_cov` keys, integral 0..65535 (same rule as RESCALE); absent keys
+    take the frozen M.json values, so the default path is 0-diff by
+    construction (gated). Only MATMUL honors overrides so far (prototype;
+    BATCH_MATMUL + the arithmetic core follow the same line)."""
+    m_acc, m_cov = H._load_scales()
+    if config is not None:
+        if "m_acc" in config:
+            m_acc = _checked_scale(config["m_acc"], "m_acc")
+        if "m_cov" in config:
+            m_cov = _checked_scale(config["m_cov"], "m_cov")
+    return m_acc, m_cov
+
+
+def _checked_scale(v, what):
+    m = _int_arg(v, f"CONFIG {what}")
+    if not (0 <= m < 65536):
+        raise ValueError(f"CONFIG {what}: scale out of range: {m}")
+    return m
 
 
 def _beta(config):
@@ -175,9 +193,10 @@ def _phi_ops():
 
 def op_matmul(vals, config, feeds):
     """Batched triples matmul (phi-core matmul_int, 0-diff: wrapper adds
-    nothing). m_acc from frozen scales."""
+    nothing). m_acc from frozen scales, or CONFIG `m_acc` override
+    (per-block spike: large-magnitude blocks bridge at their own scale)."""
     N, _S = _phi_ops()
-    m_acc, _ = _scales()
+    m_acc, _ = _scales(config)
     return N.matmul_int(vals[0], vals[1], m_acc)
 
 

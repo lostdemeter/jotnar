@@ -340,3 +340,16 @@ name local files distinctly); (2) explicit paths (`./`, `sub/`) bypass
 stdlib entirely (no shadowing surprises); (3) refactor-onto-stdlib must
 be 0-diff by gate (`asm-dogfood-xf` embeds the pre-refactor body —
 comparing against HEAD would go vacuous the commit it lands).
+## #LIB-030: scale-context prototype (CONFIG override on MATMUL) [SPIKE]
+
+v1.1 spine item 1, first cut: `_scales(config)` + MATMUL-only override
+(other ops defaulted — blast radius one line). Measured: U(-2,2) matmul
+rails at frozen m_acc (-10.4dB, max|q|/2^18 == 1.0 = the auditable rail)
+and holds 55.6dB at m_of(8)=35492 (66dB swing = the per-block win).
+Gates: explicit-frozen == default exact + override ≥40dB with default
+<40dB on the same fixture (non-vacuous) + in-listing CONFIG exact + 3
+bad-scale refusals. Structural finding: RESCALE alone cannot give
+per-block regimes (downstream ops re-bridge at global m) — scale context
+must thread into execution; DEF-header `@scale` is the end-state.
+Next: BATCH_MATMUL + arithmetic core follow the same line, then a
+two-regime listing with RESCALE at the seam (roadmap gate 1).
