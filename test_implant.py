@@ -149,6 +149,37 @@ def main():
               f"token {t} moves at {d[t]:.1f}dB")
         check(f"implant-{tag}-gap", gap > 6.0,
               f"target leads field by {gap:.1f}dB (specific, not smear)")
+    # Transfer: the SAME functional implant as structure (mlp_qwen0_implant
+    # listing, IMPL DEF from stdlib) vs weight surgery. Predicted >=60dB,
+    # measured 36.8dB -- FALSIFIED, mechanism found by bisection: the gap
+    # is small-vector ENCODE quantum, not rounding or saturation. The
+    # listing materializes u (entries +-0.009 after the A/32 gauge split)
+    # and c through triples at ~0.2% relative quantum each; surgery keeps
+    # everything in ONE matmul (W' encoded once at +-0.44, 50x bigger).
+    # Gauge tension, stated: the fold must balance ENCODE quantum (want
+    # u,v LARGE) against ENVELOPE (want intermediates SMALL); at ||MID||~8
+    # vs U=8 no fold satisfies both (f<1 vs f>3.5). Release valve (untested):
+    # m_acc headroom (bigger U admits bigger f). Same lesson as LIB-006
+    # fusion: materialization pays quantum tax per hop.
+    # Bar: >=30dB (transfer proven within quantum-tax bounds, not exact).
+    u_builtin = MID[TARGET] / np.linalg.norm(MID[TARGET])
+    rng2 = np.random.default_rng(1)
+    v_builtin = rng2.normal(size=(896,))
+    v_builtin /= np.linalg.norm(v_builtin)
+    uu = (u_builtin * (A_WRITE / 32.0)).reshape(-1, 1)
+    vv = (v_builtin * 32.0).reshape(1, -1)
+    payL = {"H": enc(H), "wup": enc(Wupf.T), "wgate": enc(Wgf.T),
+            "wdown": enc(Wdf.T), "ln": enc(ln2f),
+            "u": enc(uu), "v": enc(vv)}
+    var_text = open(os.path.join(root, "programs",
+                                 "mlp_qwen0_implant.asm")).read()
+    gotL = dec(ASM.run_text(var_text, REGISTRY, payL, sigs=SIGS,
+                            basedir=sdir)["OUT"])
+    gotS, _ = run_down(Wdf.T + A_WRITE * np.outer(u_builtin, v_builtin))
+    mseL = float(np.mean((gotL - gotS) ** 2))
+    dL = float("inf") if mseL == 0 else 10 * np.log10(1.0 / mseL)
+    check("implant-listing-transfer", dL >= 30.0,
+          f"{dL:.1f}dB structure-vs-surgery (quantum-tax bounds, stated)")
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

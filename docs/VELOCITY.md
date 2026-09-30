@@ -227,3 +227,24 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   REWRITES it (change exceeds peak). Writes are stronger than the
   framing ("edit") suggested; the primitive is a local overwrite with
   26dB+ containment. Specificity was the risk; strength is the news.
+
+## 2026-09-30: directional stores as structure (CLOCKED)
+
+- implant_apply DEF + 2 variant listings + test_store.py (toy) +
+  transfer row in test_implant.py (real) + gauge doctrine (#LIB-049).
+- Wall time: clock 21:59:05Z -> 22:03Z (~4 min: DEF + variants + toy
+  gates + transfer falsification + bisection + gauge cycle + docs).
+  Two falsifications in one round: (1) sham predicted bit-exact,
+  measured 99.8dB parity (ADD re-bridges -- roundtrip quantum, now
+  stated); (2) transfer predicted >=60dB, measured 36.8dB, and the
+  gauge "fix" made it worse (36.8<38.6).
+- Surprises:
+  1. The binding constraint is ENCODE quantum on small vectors, not
+     envelope saturation -- found by bisection (C 41dB, IMPL 17dB,
+     DOWN bit-exact), after the wrong mechanism cost a full gauge
+     cycle. Bisection before theorizing, stated as process.
+  2. A=2.0 saturates each side differently (16dB); A=0.2 holds 91.2dB.
+     Envelope discipline applies to BOTH forms independently -- parity
+     needs both in-envelope, not just the mechanism right.
+  3. Materialization pays quantum tax per hop -- LIB-006's fusion
+     lesson generalized to the store abstraction. The road rhymes.

@@ -182,9 +182,11 @@ contracts in one place).
 
 Shared listings: put `DEF`s in a file, `IMPORT` it (see the IMPORT gate in
 `test_asm.py`: spliced-file execution + cycle refusal). The `stdlib/` dir
-ships two seed blocks (`attention.asm: attn_core`, `mlp.asm: swiglu_block`),
-shared by `programs/xf_block.asm` — no copy-pasted prologues in shipped
-programs (v1.0 Gate 3, dogfood-proven bit-exact in `asm-dogfood-xf`).
+ships three blocks (`attention.asm: attn_core`, `mlp.asm: swiglu_block`,
+`dirstore.asm: implant_apply` — rank-1 directional stores, #LIB-049),
+shared by `programs/xf_block.asm` and the implant variants — no
+copy-pasted prologues in shipped programs (v1.0 Gate 3, dogfood-proven
+bit-exact in `asm-dogfood-xf`).
 Search order (v1.0 Gate 4): bare names (`IMPORT "mlp.asm"`) resolve
 STDLIB FIRST, then basedir-relative, so shared listings are addressable by
 name from any directory; explicit paths (`./x.asm`, `sub/x.asm`) stay
