@@ -48,7 +48,9 @@ decide-helper (due), prior_mult (2 uses), per-tile routing (backlog).
   affine(field) with exact-ones-on-static for continuous ones (flow).
   Contract: unaffected subset takes exact identity; caution never invents.
   2 uses refactored 0-diff (suites prove it); no new C (composition of
-  select_mux/tmul/binop/encode). Staging for phi-core next.
+  select_mux/tmul/binop/encode). STAGED for phi-core as branch
+  `ai/prior-mult` (ported onto lattice+numpy_ops, gates green, pushed,
+  merge pending alongside ai/verdict-helper).
 
 ## Assembly view (read a pipeline as structure invocations)
 
