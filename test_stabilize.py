@@ -24,7 +24,7 @@ sys.path.insert(0, "/home/thorin/Documents/OpenCode/phi-core")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from chain import asm as ASM
-from chain.asm_ops import REGISTRY
+from chain.asm_ops import REGISTRY, SIGS, SIGS
 from chain import oracle as O
 from chain.holo_phi import enhance_image_int
 
@@ -60,7 +60,8 @@ def run_seq(text, frames8, flows):
     outs, dprev = [], None
     for rgb, fl in zip(frames8, flows):
         feeds = ASM.run_text(text, REGISTRY,
-                             {"rgb": rgb, "dprev": dprev, "flow": fl})
+                             {"rgb": rgb, "dprev": dprev, "flow": fl},
+                             sigs=SIGS)
         outs.append(feeds["OUT"])
         dprev = feeds["D"]
     return outs
@@ -129,7 +130,8 @@ def main():
     dprev = None
     for i, (rgb, y, fli) in enumerate(zip(frames, ys, flows)):
         feeds = ASM.run_text(text, REGISTRY,
-                             {"rgb": rgb, "dprev": dprev, "flow": fli})
+                             {"rgb": rgb, "dprev": dprev, "flow": fli},
+                             sigs=SIGS)
         dprev = feeds["D"]
         Y = feeds["YENH"]
         yv = np.clip(S.decode(Y[0], Y[1]) * (1 - Y[2].astype(np.float64)), 0, 1)
@@ -142,9 +144,11 @@ def main():
     zf = np.zeros((N, N, 2))
     uf = np.full((N, N, 2), [0.0, 3.0])
     feeds_z = ASM.run_text(text, REGISTRY,
-                           {"rgb": frames[0], "dprev": None, "flow": zf})
+                           {"rgb": frames[0], "dprev": None, "flow": zf},
+                           sigs=SIGS)
     feeds_u = ASM.run_text(text, REGISTRY,
-                           {"rgb": frames[0], "dprev": None, "flow": uf})
+                           {"rgb": frames[0], "dprev": None, "flow": uf},
+                           sigs=SIGS)
     check("static-exact", bool(feeds_z["S"].all()) and not bool(feeds_u["S"].any()),
           "zero flow -> all-static; uniform flow -> none-static")
     lin0s = np.power(frames[0].astype(np.float64) / 255.0, 2.2).astype(np.float32)

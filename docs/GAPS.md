@@ -40,7 +40,14 @@ already expressible; only the activation itself is missing.
 1. TYPED STREAMS: layouts (HWC vs seq×dim vs heads) unchecked anywhere.
    compose.Stream HAS metadata; assembly ignores it. Needed before MATMUL
    means anything.
-2. SPLIT/RESHAPE/TRANSPOSE mnemonics (IR has them as moves; heads need them).
+   CLOSED v1 2026-09-30: layouts "KIND:GEOM" on IN, per-op sigs with
+   $VAR/$VAR^T/*, parallel layout dict (values untouched), concrete
+   mismatches fail naming op+line+stream, UNKNOWN unifies silently (all
+   suites pass with partial annotations = backward compat proven).
+   Negative gates + gradual gate in test_asm.py. Stated limits: no rank
+   arithmetic (MATMUL wildcard; phi-core asserts fail loud inside), checks
+   at execute time (layouts ride payloads), POS/metadata as "*".
+2. SPLIT/RESHAPE mnemonics (TRANSPOSE done; heads need SPLIT).
 3. BRANCH: general verdict-gated select (MIXDYAD hardcodes the pattern).
 4. ITERATE + loop-carried state + dynamic shapes (KV-cache needs all three;
    driver loops today, language can't).
@@ -58,6 +65,6 @@ gate proved it). BATCH_MATMUL exposure folded in (0-diff) + TRANSPOSE exact
 move (probe-demanded). xf_block.asm ASSEMBLES clean AND RUNS end-to-end
 (shapes correct); whole-block float parity is next backlog (plumbing proven,
 block-scale values unverified -- stated).
-Batch 3 (language features): TYPED STREAMS first (blocks everything else),
-then SPLIT family, BRANCH, static verifier; ITERATE last (needs dynamic
+Batch 3 (language features): TYPED STREAMS first -- CLOSED v1 (see above).
+Next: SPLIT family, BRANCH, static verifier; ITERATE last (needs dynamic
 shapes -- biggest design decision in the list, do not rush).

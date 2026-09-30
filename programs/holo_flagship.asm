@@ -7,7 +7,7 @@
 # hand-written chain path.
 CONFIG beta 0.5
 
-IN rgb
+IN rgb AS U8:HWC
 
 LIN = SRGB_DECODE(rgb)
 Y = LUMA(LIN)

@@ -17,7 +17,7 @@ sys.path.insert(0, "/home/thorin/Documents/OpenCode/phi-core")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from chain import asm as ASM
-from chain.asm_ops import REGISTRY
+from chain.asm_ops import REGISTRY, SIGS
 from chain.holo_phi import enhance_image_int
 
 FAIL = []
@@ -35,7 +35,7 @@ def main():
                            "programs", "holo_flagship.asm")) as fh:
         text = fh.read()
     rgb = np.asarray(Image.open(CAND).convert("RGB"))
-    feeds = ASM.run_text(text, REGISTRY, rgb)
+    feeds = ASM.run_text(text, REGISTRY, rgb, sigs=SIGS)
     got = feeds["OUT"]
 
     # hand-written flagship path (demo.py --blur splat_soft --ctrl v5)
@@ -54,7 +54,7 @@ def main():
         ("OUT = LUMA(x)\n", "missing-in"),
     ]:
         try:
-            ASM.run_text(bad, REGISTRY, np.zeros((2, 2, 3), np.uint8))
+            ASM.run_text(bad, REGISTRY, np.zeros((2, 2, 3), np.uint8), sigs=SIGS)
             check(f"asm-{tag}", False, "assembled without error")
         except ASM.AsmError as e:
             check(f"asm-{tag}", True, f"fails loud ({str(e)[:60]})")
@@ -143,6 +143,36 @@ def main():
     gtt = REGISTRY["TRANSPOSE"][0]([gtp], {}, {})
     check("asm-transpose-involution", all(bool((a == b).all()) for a, b in zip(gtt, tp)),
           "transpose twice == identity (exact move)")
+
+    # Batch 3 open: TYPED STREAMS v1. Concrete-vs-concrete mismatches fail
+    # naming op+line+stream; UNKNOWN (unannotated) unifies silently
+    # (gradual typing -- backward compat proven by every suite above passing
+    # with partial annotations). The motivating incidents: float-vs-triples
+    # confusion (SUB on floats would silently numpy-subtract!) and the
+    # (16,16)-vs-(16,3) broadcast class.
+    for bad, tag, want in [
+        ("IN x AS F:HW\nIN y AS T:HW\nOUT = SUB(x, y)\n",
+         "layout-conflict", "SUB"),
+        ("IN x AS F:HW\nOUT = SQRT(x)\nOUT2 = GAIN(x, x, x)\n",
+         "layout-gain", "GAIN"),
+    ]:
+        try:
+            ASM.run_text(bad, REGISTRY, {"x": np.zeros((4, 4)),
+                                         "y": (np.zeros((4, 4), np.int8),
+                                               np.zeros((4, 4), np.int32),
+                                               np.zeros((4, 4), np.uint8))},
+                         sigs=SIGS)
+            check(f"asm-{tag}", False, "ran without error")
+        except ASM.AsmError as e:
+            check(f"asm-{tag}", "line" in str(e) and want in str(e),
+                  f"fails loud ({str(e)[:80]})")
+    # gradual: fully-unannotated listings behave exactly as v0.1 (no checks).
+    try:
+        ASM.run_text("IN x\nOUT = ADD(x, x)\n", REGISTRY,
+                     {"x": np.zeros(3)}, sigs=SIGS)
+        check("asm-gradual", True, "unknown layouts never fail")
+    except ASM.AsmError as e:
+        check("asm-gradual", False, str(e)[:60])
 
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)

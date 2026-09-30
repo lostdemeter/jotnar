@@ -7,9 +7,9 @@
 # that failure is the instrument reading, do NOT "fix" the listing.
 CONFIG heads 8
 
-IN x
-IN pos
-IN wq
+IN x AS T:SEQ
+IN pos AS I:SEQ
+IN wq AS T:SEQ
 IN wk
 IN wv
 IN wo

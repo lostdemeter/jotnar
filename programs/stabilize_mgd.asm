@@ -18,9 +18,9 @@
 # feeds["D"] forward as next frame's dprev.
 CONFIG beta 0.5
 
-IN rgb
+IN rgb AS U8:HWC
 IN dprev
-IN flow
+IN flow AS F:HW2
 
 LIN = SRGB_DECODE(rgb)
 Y = LUMA(LIN)

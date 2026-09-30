@@ -1,19 +1,22 @@
-"""Assembly v0.1: structure listings as executable text (stage-1 demo).
+"""Assembly v0.2: structure listings as executable text + typed streams.
 
 Format (minimal, linear, fail-loud):
   # comment / blank lines ignored
   CONFIG key value        # frozen config (beta, file paths); unknown keys fail
-  IN name                 # declares the program input stream
+  IN name [AS layout]     # declares program input streams, optionally typed
+                          # (one AS applies to all names on the line)
   OUT [, OUT2] = MNEMONIC(arg, ...)   # one structure invocation; arity checked
-Mnemonics resolve against REGISTRY (structure name -> python impl).
-Unknown mnemonic, wrong arity, or missing input stream fails LOUD at
-assemble time (never mid-run): the listing fully specifies the computation,
-no hidden Python. Multi-output (AS, COH = SPLAT_BLUR(A)) is explicit --
-no implicit registers, no magic feeds (v0.1 discipline).
-
-This is stage 1 of the assembly program: the level is proven FAITHFUL
-(listing output == hand-written chain output, bit-exact). Stage 2 proves it
-GENERATIVE (new micro-AI written blind in listings). See docs/ASSEMBLY.md.
+Layouts "KIND:GEOM" (kinds F float / T triples / I integer-exact / U8 bytes;
+geom vocabulary open: HW/HWC/SEQ/HEADS/HW2/SCALAR...). Mnemonics resolve
+against REGISTRY (structure name -> python impl); per-op layout signatures
+live in SIGS (missing entry = all-wildcard, backward compatible).
+Gradual typing: unannotated streams are UNKNOWN (unify with anything, never
+fail); concrete-vs-concrete mismatches fail LOUD naming op+line+stream.
+Literals have layout F:SCALAR. "$VAR" unifies whole layout strings;
+"$VAR^T" derives (transpose rule); "*" matches anything, binds nothing.
+Limits (stated, Batch 3): no rank arithmetic (MATMUL is wildcard; phi-core
+asserts inside fail loud), no dynamic shapes, checks run at execute time
+(layouts ride payloads, unknown until then).
 """
 import os
 
@@ -25,7 +28,7 @@ class AsmError(Exception):
 
 
 def parse(text):
-    """text -> (config dict, input names, [(outs, mnemonic, args)])."""
+    """text -> (config dict, [(name, layout|None)], [(outs, mn, args, ln)])."""
     config, inp, prog = {}, [], []
     for ln, raw in enumerate(text.splitlines(), 1):
         line = raw.split("#", 1)[0].strip()
@@ -39,13 +42,21 @@ def parse(text):
                 raise AsmError(f"line {ln}: CONFIG needs key+value")
             config[kv[0]] = kv[1]
         elif head == "IN":
-            names = [n.strip() for n in toks[1].split(",") if n.strip()]
+            rest = toks[1]
+            up = rest.upper()
+            if " AS " in up:
+                idx = up.index(" AS ")
+                names = [n.strip() for n in rest[:idx].split(",") if n.strip()]
+                lay = rest[idx + 4:].strip() or None
+            else:
+                names = [n.strip() for n in rest.split(",") if n.strip()]
+                lay = None
             if not names:
                 raise AsmError(f"line {ln}: IN needs a name")
             for nm in names:
-                if nm in inp:
+                if nm in [n for n, _ in inp]:
                     raise AsmError(f"line {ln}: duplicate IN {nm}")
-                inp.append(nm)
+                inp.append((nm, lay))
         elif "=" in line:
             left, right = line.split("=", 1)
             outs = [o.strip() for o in left.split(",") if o.strip()]
@@ -64,7 +75,7 @@ def parse(text):
                 args = [a for a in args if a]
             if not outs or not mn:
                 raise AsmError(f"line {ln}: bad instruction")
-            prog.append((outs, mn, args))
+            prog.append((outs, mn, args, ln))
         else:
             raise AsmError(f"line {ln}: unparseable: {raw!r}")
     if not inp:
@@ -72,14 +83,17 @@ def parse(text):
     return config, inp, prog
 
 
-def assemble(text, registry):
+def assemble(text, registry, sigs=None):
     """Bind mnemonics + check arity/inputs statically (before any execution).
-    Returns (config, inp, bound prog). Unknown mnemonic / arity mismatch /
-    use-before-def fails here -- the static verifier stub (full verifier with
-    scales+geometry is backlog item: range estimator + seam chart)."""
+    Returns (config, inp, bound prog) with bound entries (outs, fn, args, ln).
+    Unknown mnemonic / arity mismatch / use-before-def fails here. Layouts
+    check at run time (payloads unknown until then); sigs maps mnemonic ->
+    (in_layouts, out_layouts) with $VAR / $VAR^T / *, missing = all-wildcard.
+    Full verifier with scales+geometry is backlog: range estimator + seam chart."""
+    sigs = sigs or {}
     config, inp, prog = parse(text)
-    bound, defined = [], set(inp)
-    for outs, mn, args in prog:
+    bound, defined = [], set(n for n, _ in inp)
+    for outs, mn, args, ln in prog:
         if mn not in registry:
             raise AsmError(f"unknown mnemonic: {mn} "
                            f"(known: {sorted(registry)})")
@@ -91,7 +105,7 @@ def assemble(text, registry):
         for a in args:
             if a not in defined and not _is_literal(a):
                 raise AsmError(f"{mn}: input stream '{a}' not defined yet")
-        bound.append((outs, fn, args))
+        bound.append((outs, mn, fn, args, ln, sigs.get(mn)))
         defined.update(outs)
     return config, inp, bound
 
@@ -104,40 +118,92 @@ def _is_literal(a):
         return False
 
 
+_UNKNOWN = "UNKNOWN"
+
+
+def _resolve(pat, actual, bindings):
+    """Unify one layout pattern against an actual layout. Returns the
+    resulting layout (concrete or UNKNOWN). Raises AsmError on concrete
+    mismatch (reported with op context by the caller)."""
+    if pat == "*":
+        return actual
+    if actual == _UNKNOWN:
+        return pat if not pat.startswith("$") else _UNKNOWN
+    if pat.startswith("$"):
+        base, derived = (pat[:-2], True) if pat.endswith("^T") else (pat, False)
+        if base in bindings:
+            if bindings[base] != _UNKNOWN and bindings[base] != actual:
+                raise AsmError(f"layout conflict: {base} is {bindings[base]}, got {actual}")
+            got = bindings[base] if bindings[base] != _UNKNOWN else actual
+        else:
+            got = actual
+        bindings[base] = got
+        if got == _UNKNOWN:
+            return _UNKNOWN
+        return got + "^T" if derived else got
+    if pat != actual:
+        raise AsmError(f"layout mismatch: want {pat}, got {actual}")
+    return pat
+
+
 def run(bound, config, inp, payload):
     """Execute bound program over a feeds dict. Returns feeds (all streams).
     Convention: an op with arity_out==1 produces ONE stream (even when the
     value is itself a tuple, e.g. triples); arity_out>1 must return a tuple
-    of that length."""
+    of that length. Layouts check per instruction (parallel dict; values
+    untouched): concrete-vs-concrete mismatch fails naming op+line+stream."""
     _, _, prog = bound
     # single-IN listings take a bare payload (backward compat); multi-IN
     # listings take {name: value}. Unknown payload keys fail loud.
     if isinstance(inp, str):
-        inp = [inp]
-    if len(inp) == 1 and not isinstance(payload, dict):
-        feeds = {inp[0]: payload, "CONFIG": config}
+        inp = [(inp, None)]
+    in_names = [n for n, _ in inp]
+    in_lay = {n: (l or _UNKNOWN) for n, l in inp}
+    if len(in_names) == 1 and not isinstance(payload, dict):
+        feeds = {in_names[0]: payload, "CONFIG": config}
+        layouts = {in_names[0]: in_lay[in_names[0]]}
     else:
         if not isinstance(payload, dict):
             raise AsmError(f"multi-IN program needs dict payload, got {type(payload)}")
-        missing = [n for n in inp if n not in payload]
+        missing = [n for n in in_names if n not in payload]
         if missing:
             raise AsmError(f"payload missing streams: {missing}")
-        feeds = {n: payload[n] for n in inp}
+        feeds = {n: payload[n] for n in in_names}
         feeds["CONFIG"] = config
-    for outs, fn, args in prog:
+        layouts = dict(in_lay)
+    for outs, mn, fn, args, ln, sig in prog:
         vals = [feeds[a] if a in feeds else float(a) for a in args]
+        in_pats, out_pats = sig if sig is not None else (["*"] * len(args), ["*"] * len(outs))
+        bindings = {}
+        try:
+            for a, pat in zip(args, in_pats):
+                actual = layouts.get(a, "F:SCALAR" if _is_literal(a) else _UNKNOWN)
+                _resolve(pat, actual, bindings)
+            out_lays = []
+            for pat in out_pats:
+                if pat == "*":
+                    out_lays.append(_UNKNOWN)
+                elif pat.startswith("$"):
+                    base = pat[:-2] if pat.endswith("^T") else pat
+                    got = bindings.get(base, _UNKNOWN)
+                    out_lays.append(_UNKNOWN if got == _UNKNOWN else (got + "^T" if pat.endswith("^T") else got))
+                else:
+                    out_lays.append(pat)
+        except AsmError as e:
+            raise AsmError(f"line {ln} ({mn}): {e}")
         out = fn(vals, config, feeds)
         # arity was checked at assemble time: one declared output takes the
         # whole return value (even a triples-tuple); N outputs take an N-tuple.
         out = (out,) if len(outs) == 1 else tuple(out)
         if len(out) != len(outs):
-            raise AsmError(f"runtime arity break: {outs}")
-        for name, val in zip(outs, out):
+            raise AsmError(f"line {ln} ({mn}): runtime arity break: {outs}")
+        for name, val, lay in zip(outs, out, out_lays):
             feeds[name] = val
+            layouts[name] = lay
     return feeds
 
 
-def run_text(text, registry, payload):
+def run_text(text, registry, payload, sigs=None):
     """Parse + assemble + execute. Returns feeds."""
-    config, inp, bound = assemble(text, registry)
+    config, inp, bound = assemble(text, registry, sigs)
     return run((config, inp, bound), config, inp, payload)

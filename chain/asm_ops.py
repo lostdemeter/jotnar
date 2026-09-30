@@ -304,3 +304,35 @@ REGISTRY = {
     "BATCH_MATMUL": (op_batch_matmul, 2, 1),
     "TRANSPOSE": (op_transpose, 1, 1),
 }
+
+# Layout signatures (TYPED STREAMS v1): (in_layouts, out_layouts) per
+# mnemonic. "$VAR" unifies whole layout strings; "$VAR^T" derives;
+# "*" matches anything, binds nothing; missing entry = all-wildcard.
+# Layouts "KIND:GEOM" (F float / T triples / I integer-exact / U8 bytes).
+# v1 limits (stated): no rank arithmetic (MATMUL wildcard; phi-core asserts
+# inside fail loud), POS/metadata carried as "*" (structural, pre-formal).
+SIGS = {
+    "SRGB_DECODE": (["U8:HWC"], ["F:HWC"]),
+    "LUMA": (["F:HWC"], ["F:HW"]),
+    "SQRT": (["F:HW"], ["T:HW"]),
+    "SPLAT_BLUR": (["T:HW"], ["T:HW", "T:HW"]),
+    "SUB": (["$A", "$A"], ["$A"]),
+    "BETA_V5": (["T:HW", "T:HW"], ["T:HW"]),
+    "BETA": (["$A"], ["$A"]),
+    "MUL": (["$A", "$A"], ["$A"]),
+    "ADD": (["$A", "$A"], ["$A"]),
+    "SQUARE": (["$A"], ["$A"]),
+    "GAIN": (["F:HWC", "F:HW", "T:HW"], ["F:HWC"]),
+    "SRGB_ENCODE": (["F:HWC"], ["U8:HWC"]),
+    "ISO_BLUR": (["T:HW"], ["T:HW"]),
+    "WARP": (["T:HW", "F:HW2"], ["T:HW"]),
+    "STATIC": (["F:HW2"], ["I:HW"]),
+    "MIXDYAD": (["T:HW", "T:HW", "I:HW"], ["T:HW"]),
+    "MATMUL": (["*", "*"], ["*"]),
+    "SOFTMAX": (["$A"], ["$A"]),
+    "RMSNORM": (["$X", "$W"], ["$X"]),
+    "SILU": (["$A"], ["$A"]),
+    "ROTARY": (["$X", "*"], ["$X"]),
+    "BATCH_MATMUL": (["*", "*"], ["*"]),
+    "TRANSPOSE": (["$A"], ["$A^T"]),
+}
