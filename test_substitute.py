@@ -29,16 +29,17 @@ import sys
 
 import numpy as np
 
-sys.path.insert(0, "/home/thorin/Documents/OpenCode/phi-core")
+sys.path.insert(0, os.environ.get("PHI_CORE_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "phi-core")))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, "/home/thorin/Documents/OpenCode/rife_reverse")
+_RIFE = os.environ.get("RIFE_REVERSE_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "rife_reverse"))
+sys.path.insert(0, _RIFE)
 
 import phi_core.lattice as S
 from chain import holo_phi as H
 
 FAIL = []
 
-RIFE = "/home/thorin/Documents/OpenCode/rife_reverse"
+RIFE = _RIFE
 
 
 def check(tag, cond, extra=""):
@@ -54,7 +55,11 @@ def rife_sigmoid():
 
 
 def main():
-    torch, R = rife_sigmoid()
+    try:
+        torch, R = rife_sigmoid()
+    except ImportError as e:
+        print(f"SKIP (needs torch + rife_reverse checkout: {e})")
+        sys.exit(0)
     dev = R.DEV
     print(f"rife backend: {dev} (integer ops exact on both)")
 
@@ -102,7 +107,8 @@ def main():
 
     # ---- Gate 2: pipeline-level swap, bit-identical Y-enh triples ----
     from PIL import Image
-    cand = "/home/thorin/Documents/OpenCode/rife_reverse/samples/f_012.png"
+    _cand_ext = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "rife_reverse", "samples", "f_012.png")
+    cand = _cand_ext if os.path.isfile(_cand_ext) else os.path.join(os.path.dirname(os.path.abspath(__file__)), "samples", "input_example.png")
     rgb01 = np.asarray(Image.open(cand).convert("RGB"), dtype=np.float64) / 255.0
     rgb_lin = np.power(rgb01, 2.2).astype(np.float32)
     y = (0.2126 * rgb_lin[:, :, 0] + 0.7152 * rgb_lin[:, :, 1]

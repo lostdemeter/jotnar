@@ -6,13 +6,14 @@ Copy everything below the line into a new chat. It is self-contained.
 
 You are working on the phi-core geometric AI program. Two repos matter:
 
-- LIBRARY (where your changes go): `/home/thorin/Documents/OpenCode/phi-core`
+- LIBRARY (where your changes go): `../phi-core` (sibling checkout; or set
+  `PHI_CORE_DIR`)
   The shared integer substrate: phi-lattice codec (`phi_core/lattice.py`),
   opcode spec (`IR.md`), calibration, C/SIMD/CUDA lowerings (`c_core/`),
   repo stamper (`phi_core/stamp.py`). Has its own `FRAMEWORK_NOTES.md`,
   `ROADMAP.md`, `tests/`. Check `git log` first; it moves.
 - PROVING GROUND (test consumer, must stay green):
-  `/home/thorin/Documents/OpenCode/holographic_enhancement`
+  `.` (this repo, sibling of phi-core)
   A true-amplitude holographic image enhancer built on phi-core (sqrt-amplitude
   datapath, 5-way splat bank, fitted beta-field controller v5, DAV2 depth
   composition). It exercises every library pattern and holds the evidence for
@@ -43,18 +44,18 @@ their hard-earned work. Rules, no exceptions:
    gates (library + proving ground). If the rebase conflicts: resolve
    carefully, re-gate, and REPORT every conflicted hunk in your final
    summary. Never leave the tree dirty: commit or stash with a clear message.
-7. The proving ground repo (holographic_enhancement) is single-worker; its
+7. The proving ground repo (jotnar) is single-worker; its
    normal workflow applies there. This section is about phi-core.
 
 ## Mandatory reading, in order (do not skip)
 
-1. `/home/thorin/Documents/OpenCode/phi-core/IR.md` — the opcode spec, type
+1. `../phi-core/IR.md` — the opcode spec, type
    system, doctrine. This is law.
-2. `/home/thorin/Documents/OpenCode/phi-core/FRAMEWORK_NOTES.md` — existing
+2. `../phi-core/FRAMEWORK_NOTES.md` — existing
    improvement notes. Extend, don't duplicate.
-3. `/home/thorin/Documents/OpenCode/holographic_enhancement/docs/PROGRESS.md`
+3. `docs/PROGRESS.md`
    — what was built and measured.
-4. `/home/thorin/Documents/OpenCode/holographic_enhancement/docs/LIBRARY_NOTES.md`
+4. `docs/LIBRARY_NOTES.md`
    — #LIB-001..015: every item below has its evidence here. Read all of it.
 
 ## Philosophy in six lines (violating these fails review)

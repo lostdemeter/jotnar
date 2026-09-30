@@ -14,7 +14,7 @@ import numpy as np
 from PIL import Image
 from scipy.ndimage import gaussian_filter
 
-sys.path.insert(0, "/home/thorin/Documents/OpenCode/phi-core")
+sys.path.insert(0, os.environ.get("PHI_CORE_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "phi-core")))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import phi_core.lattice as S
@@ -26,7 +26,8 @@ from chain.motion import quantize, _perp_of, FLOW_REF, FLOW_ATTEN
 
 BAR_DB = 40.0
 FAIL = []
-CAND = "/home/thorin/Documents/OpenCode/rife_reverse/samples/f_012.png"
+_CAND_EXT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "rife_reverse", "samples", "f_012.png")
+CAND = _CAND_EXT if os.path.isfile(_CAND_EXT) else os.path.join(os.path.dirname(os.path.abspath(__file__)), "samples", "input_example.png")
 N = 48
 
 

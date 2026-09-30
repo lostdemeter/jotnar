@@ -16,7 +16,11 @@ import os
 import numpy as np
 from PIL import Image
 
-DAV2 = "/home/thorin/Documents/OpenCode/dav2_revisited/dav2_reverse"
+DAV2 = os.environ.get("DAV2_DIR", os.path.normpath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..",
+    "dav2_revisited", "dav2_reverse")))
+if not os.path.isdir(DAV2):
+    DAV2 = None  # no local checkout: cache-hit paths still work, misses raise
 CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..",
                      "samples", "depth")
 
@@ -25,6 +29,9 @@ FAR_ATTEN = 0.5  # analytic v1; fitted ownership moves to v3 (see note above)
 
 def _model():
     import sys
+    if DAV2 is None:
+        raise ImportError("DAV2 checkout needed for cache miss: set DAV2_DIR "
+                          "or check out dav2_revisited as a sibling of this repo")
     sys.path.insert(0, DAV2)
     from geo_depth import GeometricDepthAnythingV2
     return GeometricDepthAnythingV2()

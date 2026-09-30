@@ -9,7 +9,7 @@ import sys
 
 import numpy as np
 
-sys.path.insert(0, "/home/thorin/Documents/OpenCode/phi-core")
+sys.path.insert(0, os.environ.get("PHI_CORE_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "phi-core")))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "scripts"))
 
@@ -80,7 +80,8 @@ def main():
     #    (documents the hard-select discontinuity cost -- continuous v4
     #    fields are the backlog answer).
     from PIL import Image
-    cand = "/home/thorin/Documents/OpenCode/rife_reverse/samples/f_012.png"
+    _cand_ext = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "rife_reverse", "samples", "f_012.png")
+    cand = _cand_ext if os.path.isfile(_cand_ext) else os.path.join(os.path.dirname(os.path.abspath(__file__)), "samples", "input_example.png")
     rgb_r = (np.asarray(Image.open(cand).convert("RGB"), dtype=np.float64) / 255.0)
     rgb_r = np.power(rgb_r, 2.2).astype(np.float32)
     io, _ = enhance_image_float_splat(rgb_r, beta=0.5, iso_atten=P["iso_atten"],

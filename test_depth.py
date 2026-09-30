@@ -11,7 +11,7 @@ import sys
 import numpy as np
 from PIL import Image
 
-sys.path.insert(0, "/home/thorin/Documents/OpenCode/phi-core")
+sys.path.insert(0, os.environ.get("PHI_CORE_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "phi-core")))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from chain.holo_phi import enhance_image_int
@@ -21,7 +21,8 @@ from chain.depthprior import get_depth, near_mask, FAR_ATTEN
 
 BAR_DB = 40.0
 FAIL = []
-CAND = "/home/thorin/Documents/OpenCode/rife_reverse/samples/f_012.png"
+_CAND_EXT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "rife_reverse", "samples", "f_012.png")
+CAND = _CAND_EXT if os.path.isfile(_CAND_EXT) else os.path.join(os.path.dirname(os.path.abspath(__file__)), "samples", "input_example.png")
 
 
 def check(tag, cond, extra=""):
@@ -40,8 +41,12 @@ def main():
     rgb01 = np.asarray(Image.open(CAND).convert("RGB"), dtype=np.float64) / 255.0
     rgb_lin = np.power(rgb01, 2.2).astype(np.float32)
     # 1. prior determinism: same tag+bytes -> same file, no recompute
-    d1 = get_depth(rgb01, "f_012")
-    d2 = get_depth(rgb01, "f_012")
+    try:
+        d1 = get_depth(rgb01, "f_012")
+        d2 = get_depth(rgb01, "f_012")
+    except (ImportError, OSError) as e:
+        print(f"SKIP (needs DAV2 checkout + weights for cache miss: {e})")
+        sys.exit(0)
     check("depth-cache", bool((d1 == d2).all()), f"shape={d1.shape}")
     check("depth-range", bool(np.isfinite(d1).all() and d1.max() > d1.min()),
           f"[{d1.min():.2f},{d1.max():.2f}]")

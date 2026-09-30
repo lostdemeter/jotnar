@@ -11,7 +11,7 @@ import sys
 
 import numpy as np
 
-sys.path.insert(0, "/home/thorin/Documents/OpenCode/phi-core")
+sys.path.insert(0, os.environ.get("PHI_CORE_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "phi-core")))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import phi_core.lattice as S
 from chain import holo_phi as H
@@ -186,7 +186,7 @@ def op_static(vals, config, feeds):
 def _phi_ops():
     """phi-core numpy ops (lazy import: keeps holo import light)."""
     import sys as _sys
-    _sys.path.insert(0, "/home/thorin/Documents/OpenCode/phi-core")
+    _sys.path.insert(0, os.environ.get("PHI_CORE_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "phi-core")))
     from phi_core import numpy_ops as _N
     from phi_core import lattice as _S
     return _N, _S

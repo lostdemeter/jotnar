@@ -13,7 +13,7 @@ import sys
 import numpy as np
 from PIL import Image
 
-sys.path.insert(0, "/home/thorin/Documents/OpenCode/phi-core")
+sys.path.insert(0, os.environ.get("PHI_CORE_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "phi-core")))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from chain import asm as ASM
@@ -21,7 +21,8 @@ from chain.asm_ops import REGISTRY, SIGS
 from chain.holo_phi import enhance_image_int
 
 FAIL = []
-CAND = "/home/thorin/Documents/OpenCode/rife_reverse/samples/f_012.png"
+_CAND_EXT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "rife_reverse", "samples", "f_012.png")
+CAND = _CAND_EXT if os.path.isfile(_CAND_EXT) else os.path.join(os.path.dirname(os.path.abspath(__file__)), "samples", "input_example.png")
 
 
 def check(tag, cond, extra=""):

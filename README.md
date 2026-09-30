@@ -1,6 +1,11 @@
-# holo-phi: true-amplitude holographic enhancement on the phi lattice
+# Jotnar: geometric assembly for bespoke AI on the phi lattice
 
-One-line: old `holographic_enhancement` claimed `A=sqrt(I)` but never took a
+Jotnar grew out of `holographic_enhancement` (true-amplitude holographic
+enhancement, below) into an assembly language for composing geometric AI
+structures — every operation an explicit integer op on lattice values or
+a frozen LUT built offline, every program a listing, every claim a gate.
+
+One-line history: old `holographic_enhancement` claimed `A=sqrt(I)` but never took a
 square root; this repo actually does `A=sqrt(Y)` via exponent-halve, blurs in
 amplitude domain, boosts, and squares back with exact `tmul`.
 

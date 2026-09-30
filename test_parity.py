@@ -55,8 +55,9 @@ def main():
     io0, _ = enhance_image_float(synth, beta=0.0)
     d0 = psnr(io0, synth)
     check("oracle-identity", d0 >= BAR_DB, f"{d0:.2f}dB")
-    # real sample if present
-    cand = "/home/thorin/Documents/OpenCode/rife_reverse/samples/f_012.png"
+    # real sample if present (sibling checkout, else in-repo sample)
+    _cand_ext = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "rife_reverse", "samples", "f_012.png")
+    cand = _cand_ext if os.path.isfile(_cand_ext) else os.path.join(os.path.dirname(os.path.abspath(__file__)), "samples", "input_example.png")
     if os.path.exists(cand):
         rgb = load_rgb01(cand)
         io, _ = enhance_image_float(rgb, beta=0.5)

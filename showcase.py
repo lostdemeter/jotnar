@@ -16,7 +16,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, "/home/thorin/Documents/OpenCode/phi-core")
+sys.path.insert(0, os.environ.get("PHI_CORE_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "phi-core")))
 import phi_core.lattice as S
 from chain.holo_phi import (enhance_image_int, enhance_luminance_int,
                             sqrt_trip, apply_gain_int)
@@ -102,7 +102,7 @@ def sheet(panels, cols, path):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("input", nargs="?",
-                    default="/home/thorin/Documents/OpenCode/rife_reverse/samples/f_012.png")
+                    default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "samples", "input_example.png"))
     ap.add_argument("outdir", nargs="?", default="/tmp/showcase")
     ap.add_argument("--beta", type=float, default=0.5)
     a = ap.parse_args()

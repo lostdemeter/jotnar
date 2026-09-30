@@ -26,7 +26,7 @@ import numpy as np
 
 import sys
 import os
-sys.path.insert(0, "/home/thorin/Documents/OpenCode/phi-core")
+sys.path.insert(0, os.environ.get("PHI_CORE_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "phi-core")))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 ROUTE_THR = 0.25  # frozen v1: mean motion >= 2px engages memory

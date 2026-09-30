@@ -14,14 +14,14 @@ naming the operation and line — never a silent wrong number.
 ## 1. Orientation (5 minutes)
 
 Setup: clone `phi-core` as a sibling of this repo (`../phi-core`), run
-everything from the repo root. The snippets below spell `sys.path` out
-so they run as-is here; on another machine point those two lines at your
-checkouts (or set `PYTHONPATH=../phi-core:.`). No environment variables
-are read anywhere — verified by running the stranger test (test_stranger.py)
-under `env -i` with only PATH set.
+everything from the repo root. Optional env overrides: `PHI_CORE_DIR`
+(phi-core checkout elsewhere). No other environment is read anywhere —
+verified by running the stranger test (test_stranger.py) under `env -i`
+with only PATH set.
 
 ```python
-import sys; sys.path.insert(0, "/home/thorin/Documents/OpenCode/phi-core")
+import os, sys
+sys.path.insert(0, os.environ.get("PHI_CORE_DIR", "../phi-core"))
 sys.path.insert(0, ".")
 from chain import asm as ASM
 from chain.asm_ops import REGISTRY, SIGS

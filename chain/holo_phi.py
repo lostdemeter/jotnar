@@ -35,7 +35,7 @@ import os
 import numpy as np
 
 import sys
-sys.path.insert(0, "/home/thorin/Documents/OpenCode/phi-core")
+sys.path.insert(0, os.environ.get("PHI_CORE_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "phi-core")))
 import phi_core.lattice as S
 
 CHAIN_DIR = os.path.dirname(os.path.abspath(__file__))
