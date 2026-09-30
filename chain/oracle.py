@@ -264,3 +264,23 @@ def temporal_frames_float(ys, flows, beta=0.5, kernel=None, a_mix=0.5,
         outs.append(np.clip((a + beta * dm) ** 2, 0, 1))
         d_prev = d
     return outs
+
+
+# ---- assembly denoiser float mirror (parity basis for programs/denoise_mgd.asm)
+def denoise_frame_float(y, dprev, flow, beta=0.5, kernel=None):
+    """One frame of the motion-gated denoiser in float: iso blur, dyadic mix
+    gated by exact static verdict, beta boost, square. dprev None (frame 0)
+    -> direct D (feed convention, mirrors MIXDYAD). Returns (yenh, d)."""
+    if kernel is None:
+        kernel = gauss_kernel()
+    a = np.sqrt(np.maximum(y, 0))
+    as_ = _corr_replicate(a, kernel)
+    d = a - as_
+    mag = np.sqrt(flow[:, :, 0] ** 2 + flow[:, :, 1] ** 2)
+    static = (mag == 0.0)
+    if dprev is None:
+        dm = d
+    else:
+        w = warp_float_nihui(dprev, flow)
+        dm = np.where(static, (d + 3 * w) / 4.0, d)
+    return np.clip((a + beta * dm) ** 2, 0, 1), d

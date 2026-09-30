@@ -25,8 +25,8 @@ class AsmError(Exception):
 
 
 def parse(text):
-    """text -> (config dict, input name, [(outs, mnemonic, args)])."""
-    config, inp, prog = {}, None, []
+    """text -> (config dict, input names, [(outs, mnemonic, args)])."""
+    config, inp, prog = {}, [], []
     for ln, raw in enumerate(text.splitlines(), 1):
         line = raw.split("#", 1)[0].strip()
         if not line:
@@ -39,9 +39,13 @@ def parse(text):
                 raise AsmError(f"line {ln}: CONFIG needs key+value")
             config[kv[0]] = kv[1]
         elif head == "IN":
-            if inp is not None:
-                raise AsmError(f"line {ln}: duplicate IN")
-            inp = toks[1].strip()
+            names = [n.strip() for n in toks[1].split(",") if n.strip()]
+            if not names:
+                raise AsmError(f"line {ln}: IN needs a name")
+            for nm in names:
+                if nm in inp:
+                    raise AsmError(f"line {ln}: duplicate IN {nm}")
+                inp.append(nm)
         elif "=" in line:
             left, right = line.split("=", 1)
             outs = [o.strip() for o in left.split(",") if o.strip()]
@@ -63,7 +67,7 @@ def parse(text):
             prog.append((outs, mn, args))
         else:
             raise AsmError(f"line {ln}: unparseable: {raw!r}")
-    if inp is None:
+    if not inp:
         raise AsmError("no IN declared")
     return config, inp, prog
 
@@ -74,7 +78,7 @@ def assemble(text, registry):
     use-before-def fails here -- the static verifier stub (full verifier with
     scales+geometry is backlog item: range estimator + seam chart)."""
     config, inp, prog = parse(text)
-    bound, defined = [], {inp}
+    bound, defined = [], set(inp)
     for outs, mn, args in prog:
         if mn not in registry:
             raise AsmError(f"unknown mnemonic: {mn} "
@@ -106,7 +110,20 @@ def run(bound, config, inp, payload):
     value is itself a tuple, e.g. triples); arity_out>1 must return a tuple
     of that length."""
     _, _, prog = bound
-    feeds = {inp: payload, "CONFIG": config}
+    # single-IN listings take a bare payload (backward compat); multi-IN
+    # listings take {name: value}. Unknown payload keys fail loud.
+    if isinstance(inp, str):
+        inp = [inp]
+    if len(inp) == 1 and not isinstance(payload, dict):
+        feeds = {inp[0]: payload, "CONFIG": config}
+    else:
+        if not isinstance(payload, dict):
+            raise AsmError(f"multi-IN program needs dict payload, got {type(payload)}")
+        missing = [n for n in inp if n not in payload]
+        if missing:
+            raise AsmError(f"payload missing streams: {missing}")
+        feeds = {n: payload[n] for n in inp}
+        feeds["CONFIG"] = config
     for outs, fn, args in prog:
         vals = [feeds[a] if a in feeds else float(a) for a in args]
         out = fn(vals, config, feeds)

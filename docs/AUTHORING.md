@@ -52,6 +52,13 @@ decide-helper (due), prior_mult (2 uses), per-tile routing (backlog).
   `ai/prior-mult` (ported onto lattice+numpy_ops, gates green, pushed,
   merge pending alongside ai/verdict-helper).
 
+- `stabilize` listing (programs/stabilize_mgd.asm): first GENERATIVE proof --
+  designed on paper as a denoiser, falsified on flats (see #LIB-021), renamed
+  to what it is (temporal stabilizer: flicker -26%, no smear, parity 64dB).
+  Four new mnemonics (ISO_BLUR, WARP, STATIC, MIXDYAD), all thin wrappers.
+  Test: test_stabilize.py. The paper-first loop closed in one round: predict,
+  run, falsify-or-confirm, rename-or-ship.
+
 ## Assembly view (read a pipeline as structure invocations)
 
 The holo flagship today, at assembly level (cf chain/ for the machine code):

@@ -88,10 +88,72 @@ def op_gain(vals, config, feeds):
                             np.ascontiguousarray(y, dtype=np.float64), yenh)
 
 
+def op_beta(vals, config, feeds):
+    """Beta triples from CONFIG at the reference stream's shape (keeps the
+    value frozen-named, never a magic literal in listings). Takes the
+    reference triples as input purely for geometry."""
+    (ref,) = vals
+    import phi_core.lattice as S
+    return S.encode(np.full(ref[0].shape, _beta(config), dtype=np.float64))
+
+
 def op_srgb_encode(vals, config, feeds):
     (lin,) = vals
     return np.clip(np.power(np.clip(lin, 0, 1), 1.0 / 2.2) * 255.0,
                    0, 255).astype(np.uint8)
+
+
+def op_iso_blur(vals, config, feeds):
+    """Wide gaussian structure extraction (denoising wants smoothing over
+    orientation analysis; no tensor, no buckets)."""
+    (a,) = vals
+    m_acc, m_cov = _scales()
+    return H.conv_trip(a, H.gaussian_kernel(), m_acc, m_out=m_cov)
+
+
+def op_warp(vals, config, feeds):
+    """Warp detail triples by float flow. dprev=None passes through as None
+    (feed convention: no history on frame 0; MIXDYAD handles None)."""
+    from chain.temporal import warp_trips
+    dprev, flow = vals
+    if dprev is None:
+        return None
+    _, m_cov = _scales()
+    return warp_trips(dprev, np.ascontiguousarray(flow, dtype=np.float64),
+                      m_cov)
+
+
+def op_static(vals, config, feeds):
+    """Flow -> exact static mask (verdict: |flow| == 0)."""
+    from chain.verdict import verdict_mask
+    (flow,) = vals
+    flow = np.ascontiguousarray(flow, dtype=np.float64)
+    mag = np.sqrt(flow[:, :, 0] ** 2 + flow[:, :, 1] ** 2)
+    return verdict_mask(mag, 0.0, "==")
+
+
+def op_mixdyad(vals, config, feeds):
+    """Motion-gated dyadic memory: static ? (D+3W)/4 : D. W=None (no
+    history) -> D directly (feed convention, same doctrine as temporal
+    step's state-None rule). Adds + trunc-halve only: dyadic by
+    construction, no multiplier. Moving trust is bit-clean (no arithmetic
+    on the False branch)."""
+    from chain.holo_phi import binop_fixed
+    d, w, s = vals
+    _, m_cov = _scales()
+    if w is None:
+        return d
+    import phi_core.lattice as S
+    acc = binop_fixed(d, w, m_cov, m_cov, op="add")
+    acc = binop_fixed(acc, w, m_cov, m_cov, op="add")
+    acc = binop_fixed(acc, w, m_cov, m_cov, op="add")
+    mixed = S.from_fixed(S.tdiv(
+        S.to_fixed(acc[0], acc[1], acc[2], m_cov), 4), m_cov)
+    m = np.ascontiguousarray(s, dtype=bool)
+    assert m.shape == d[0].shape, f"mask geometry {m.shape}"
+    return (np.where(m, mixed[0], d[0]).astype(np.int8),
+            np.where(m, mixed[1], d[1]).astype(np.int32),
+            np.where(m, mixed[2], d[2]).astype(np.uint8))
 
 
 REGISTRY = {
@@ -106,4 +168,9 @@ REGISTRY = {
     "SQUARE": (op_square, 1, 1),
     "GAIN": (op_gain, 3, 1),
     "SRGB_ENCODE": (op_srgb_encode, 1, 1),
+    "BETA": (op_beta, 1, 1),
+    "ISO_BLUR": (op_iso_blur, 1, 1),
+    "WARP": (op_warp, 2, 1),
+    "STATIC": (op_static, 1, 1),
+    "MIXDYAD": (op_mixdyad, 3, 1),
 }

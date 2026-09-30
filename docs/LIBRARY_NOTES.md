@@ -226,3 +226,15 @@ docstring; both call sites refactored 0-diff (depth/motion/parity suites
 green). No new C (composition of already-lowered ops -- stated, not missing).
 Family splits are normal (cf replicate/zero): the split is gated, not hidden.
 phi-core staging follows the decide precedent (branch, not main).
+## #LIB-021: paper-first falsification + parity-basis doctrine [CLOSED]
+
+Stage 2 was designed as a denoiser on paper, ran, and measured WORSE than
+input on flats (25.1 vs 26.3dB): A + beta*D keeps the noisy base, so NO boost
+architecture can denoise (output-domain averaging or As-output would be
+needed -- backlog, explicitly unclaimed). Renamed denoise->stabilize; the
+surviving true claim (flicker -26% on static runs) gates green. Falsification
+at full resolution is the paper-first discipline working -- report, don't tune.
+Companion finding: parity belongs at the chain boundary (linear, like every
+other gate); comparing sRGB bytes holds the chain accountable for gamma's
+shadow expansion (0.002 linear reads 25 LSB in deep shadow). Perceptual
+claims (flicker) stay in sRGB. Machine-metrics vs experience-metrics, stated.
