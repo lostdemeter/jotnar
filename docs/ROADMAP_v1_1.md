@@ -58,3 +58,14 @@ tutorial; F3 SELECT float-coercion decision (refuse vs document, with gate
 
 Full CUDA emission, WHILE + dynamic shapes, per-tile routing, rank
 arithmetic beyond v1 layouts, phi-core merges (owner action).
+
+## Declared 2026-09-30 (all four gates hold)
+
+1. Mixed-scale listing parity: 65.1dB vs 24.0dB frozen (test_xf_block.py
+   block-mixed-*, #LIB-031).
+2. Matmul C bit-exact: 5/5 exchange cases + trap clean (test_matmul_c.py,
+   wired into test_c.py, #LIB-032).
+3. F1–F4 closed with evidence (docs/V1_1_BACKLOG.md; SELECT refusal +
+   env -i stranger rerun).
+4. VELOCITY.md continued (GELU entry; drill cadence established).
+19/19 suites green. v1.1 is done; the deferred list above seeds v1.2.
