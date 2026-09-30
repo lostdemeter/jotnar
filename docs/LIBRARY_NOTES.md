@@ -514,6 +514,21 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  — listings are editable artifacts, not frozen text. Standing rule: every
  variant carries its own exactness gate (meaning preserved) plus a differs
  gate (edit bites) plus a census check (structure visible).
+## #LIB-045: weight-edit routes — what responds, what doesn't [CLOSED]
+
+ Four routes tried on xf_block toy weights (test_edits.py): A. whole-matrix
+ zero orders V/O 36dB > MLP 43dB > Q/K 50dB (mechanism: small scores ->
+ softmax near-uniform, V carries signal); B. channel zero spreads 15.6dB
+ across 16 wv channels, ch3 dead across held inputs with fixed weights
+ (partly weight-property, partly input — the separation method IS the
+ finding); C. scale-x2 == zero in dB (36.40 vs 36.43: |2O-O|==|O-0|,
+ linearity check, not new info); D. rank truncation hits flat spectrum
+ (0.37..0.00, random weights) — no low-rank structure TO exploit, route
+ meaningful only on trained weights (deferred with reason, not missing).
+ Standard process: whole-matrix ordering -> channel sweep (fixed weights
+ x N inputs, stable-important channels) -> rank spectrum -> candidate edit
+ with predicted band + held-out confirm. Method gates: ordering, spread
+ exists, scale-linearity, rank-monotonicity (all deterministic, seed 0).
  ## #LIB-036: elementwise CUDA batch (v1.2 gate 2b) [CLOSED]
 
  9 kernels (holo_elem.cu: sqrt/tmul/tdiv/binop/square-clip/sigmoid/abs/

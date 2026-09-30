@@ -158,3 +158,21 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   already gated — modifiability falls out of composition + gates, no
   extra machinery. Editable structures were the destination all along;
   the road built itself.
+
+## 2026-09-30: weight-edit routes (~2 min, CLOCKED)
+
+- Four routes tried live (matrix/channel/scale/rank) + method gates in
+  test_edits.py + standard process (#LIB-045).
+- Wall time: ~2 min. Clock 20:37:48Z -> 20:39:35Z (route probes A-D +
+  stability separation + gates + docs + full 27-suite verify incl.).
+  Tiny fixtures run in seconds; the analysis is the work.
+- Surprises:
+  1. Channel importance splits: ch3 dead across held inputs with FIXED
+     weights (weight-property) while rankings reshuffle with new weights
+     (input-property) — the separation method (fix one, vary the other)
+     is what makes channel edits attributable at all.
+  2. Scale-x2 == zero to 0.03dB: the algebra predicts its own
+     consistency checks — linearity falls out of |2O-O|==|O-0|, free.
+  3. Rank is a non-route on random weights (flat spectrum) — correctly
+     defers to trained weights instead of manufacturing signal. Knowing
+     which routes DON'T respond is information too.
