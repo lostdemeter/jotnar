@@ -143,6 +143,46 @@ def main():
     gtt = REGISTRY["TRANSPOSE"][0]([gtp], {}, {})
     check("asm-transpose-involution", all(bool((a == b).all()) for a, b in zip(gtt, tp)),
           "transpose twice == identity (exact move)")
+    # SPLIT family v1: reshape/permute exact moves (N-way split deferred: no
+    # demand -- heads need reshape+permute only, stated).
+    import numpy as _np
+    tr = S.encode((rng2.random((2, 12)) - 0.5) * 2)
+    gr = REGISTRY["RESHAPE3"][0]([tr, 2.0, 3.0, 4.0], {}, {})
+    check("asm-reshape3", gr[0].shape == (2, 3, 4) and bool(
+        (gr[0].reshape(2, 12) == tr[0]).all()), "exact unflatten")
+    gb = REGISTRY["RESHAPE2"][0]([gr, 6.0, 4.0], {}, {})
+    check("asm-reshape2", gb[0].shape == (6, 4) and bool(
+        (gb[0].reshape(2, 12) == tr[0]).all()), "roundtrip exact")
+    gp = REGISTRY["PERMUTE3"][0]([gr, 1.0, 0.0, 2.0], {}, {})
+    check("asm-permute3", gp[0].shape == (3, 2, 4) and bool(
+        (gp[0] == _np.transpose(gr[0], (1, 0, 2))).all()), "exact reorder")
+    for badop, badargs, tag in [
+        ("RESHAPE3", [tr, 2.0, 2.0, 2.0], "reshape-count"),
+        ("RESHAPE2", [tr, 2.0, 1.5], "reshape-frac"),
+        ("PERMUTE3", [gr, 1.0, 1.0, 2.0], "permute-dup"),
+    ]:
+        try:
+            REGISTRY[badop][0](badargs, {}, {})
+            check(f"asm-{tag}", False, "accepted bad shape")
+        except (ValueError, AssertionError) as e:
+            check(f"asm-{tag}", True, f"fails loud ({str(e)[:50]})")
+    # BRANCH: general verdict-gated select (MIXDYAD's hardcoded pattern,
+    # generalized). Exact; shape mismatch fails loud.
+    ma2 = S.encode(np.full((4, 4), 0.7))
+    mb2 = S.encode(np.full((4, 4), 0.2))
+    mm = np.zeros((4, 4), bool)
+    mm[:2] = True
+    gs = REGISTRY["SELECT"][0]([mm, ma2, mb2], {}, {})
+    va = S.decode(ma2[0], ma2[1])
+    vb = S.decode(mb2[0], mb2[1])
+    vg = S.decode(gs[0], gs[1]) * (1 - gs[2].astype(np.float64))
+    check("asm-select", bool((vg[mm] == va[mm]).all() and (vg[~mm] == vb[~mm]).all()),
+          "picks A/B by mask, exact")
+    try:
+        REGISTRY["SELECT"][0]([mm, ma2, S.encode(np.full((4, 5), 0.2))], {}, {})
+        check("asm-select-shape", False, "accepted mismatched branches")
+    except ValueError as e:
+        check("asm-select-shape", True, f"fails loud ({str(e)[:50]})")
 
     # Batch 3 open: TYPED STREAMS v1. Concrete-vs-concrete mismatches fail
     # naming op+line+stream; UNKNOWN (unannotated) unifies silently
@@ -173,6 +213,43 @@ def main():
         check("asm-gradual", True, "unknown layouts never fail")
     except ASM.AsmError as e:
         check("asm-gradual", False, str(e)[:60])
+    # LOOP: repeat() threads STATE; equals manual unroll bit-exactly.
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                           "programs", "stabilize_mgd.asm")) as fh:
+        stext = fh.read()
+    rng3 = np.random.default_rng(2)
+    fr4 = [(np.clip(rng3.uniform(0, 1, (12, 12, 3)), 0, 1) * 255).astype(np.uint8)
+           for _ in range(3)]
+    fl4 = [np.zeros((12, 12, 2)) for _ in range(3)]
+    hists, _ = ASM.repeat(stext, REGISTRY,
+                          {"rgb": fr4, "dprev": None, "flow": fl4},
+                          3, sigs=SIGS)
+    man, dp = [], None
+    for rgb, fl in zip(fr4, fl4):
+        f = ASM.run_text(stext, REGISTRY,
+                         {"rgb": rgb, "dprev": dp, "flow": fl}, sigs=SIGS)
+        man.append(f)
+        dp = f["dprev"]
+    same = all(bool((hists[i]["OUT"] == man[i]["OUT"]).all()) for i in range(3))
+    check("asm-repeat-unroll", same, "repeat == manual threading, exact")
+    # STATE discipline violations fail loud.
+    for bad, tag in [
+        ("IN x\nSTATE ghost\nOUT = ADD(x, x)\n", "state-undeclared"),
+        ("IN x\nIN g\nSTATE g\nOUT = ADD(x, x)\n", "state-unassigned"),
+    ]:
+        try:
+            ASM.assemble(bad, REGISTRY, SIGS)
+            check(f"asm-{tag}", False, "assembled without error")
+        except ASM.AsmError as e:
+            check(f"asm-{tag}", True, f"fails loud ({str(e)[:60]})")
+    # shape change across iterations refused (dynamic shapes out of scope).
+    try:
+        ASM.repeat(stext, REGISTRY,
+                   {"rgb": [fr4[0], np.zeros((8, 8, 3), np.uint8), fr4[2]],
+                    "dprev": None, "flow": fl4}, 3, sigs=SIGS)
+        check("asm-state-shape", False, "accepted geometry change")
+    except ASM.AsmError as e:
+        check("asm-state-shape", True, f"fails loud ({str(e)[:60]})")
 
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)

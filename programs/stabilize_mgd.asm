@@ -21,16 +21,17 @@ CONFIG beta 0.5
 IN rgb AS U8:HWC
 IN dprev
 IN flow AS F:HW2
+STATE dprev
 
 LIN = SRGB_DECODE(rgb)
 Y = LUMA(LIN)
 A = SQRT(Y)
 AS = ISO_BLUR(A)
-D = SUB(A, AS)
 W = WARP(dprev, flow)
 S = STATIC(flow)
-DM = MIXDYAD(D, W, S)
-B = BETA(D)
+dprev = SUB(A, AS)
+DM = MIXDYAD(dprev, W, S)
+B = BETA(dprev)
 BD = MUL(DM, B)
 AE = ADD(A, BD)
 YENH = SQUARE(AE)

@@ -255,6 +255,65 @@ def op_transpose(vals, config, feeds):
             np.swapaxes(t[2], -1, -2).astype(np.uint8, copy=False))
 
 
+def _int_arg(v, what):
+    """Structural literal: must be integral (fail loud on 1.5, never silent
+    truncation -- shape bugs must not hide behind float casting)."""
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        raise ValueError(f"{what}: shape literal must be integral, got {v!r}")
+    if not f.is_integer():
+        raise ValueError(f"{what}: shape literal must be integral, got {v!r}")
+    return int(f)
+
+
+def op_reshape2(vals, config, feeds):
+    """Reshape any stream to 2D (d0, d1) literals. Exact move; element count
+    must match (fail loud). Covers flatten + head-merge; 4D+ needs RESHAPEN
+    (backlog, stated -- no demand yet)."""
+    (t,) = vals[:1]
+    d0, d1 = (_int_arg(vals[1], "RESHAPE2 d0"), _int_arg(vals[2], "RESHAPE2 d1"))
+    n = t[0].size
+    if d0 * d1 != n:
+        raise ValueError(f"RESHAPE2: {d0}x{d1}={d0*d1} != {n} elements")
+    return (t[0].reshape(d0, d1), t[1].reshape(d0, d1), t[2].reshape(d0, d1))
+
+
+def op_reshape3(vals, config, feeds):
+    """Reshape any stream to 3D (d0, d1, d2) literals. Exact move; count must
+    match. Covers unflatten-to-heads (S,H,Dh)."""
+    (t,) = vals[:1]
+    d = [_int_arg(v, f"RESHAPE3 d{i}") for i, v in enumerate(vals[1:4])]
+    n = t[0].size
+    if d[0] * d[1] * d[2] != n:
+        raise ValueError(f"RESHAPE3: {d} != {n} elements")
+    return (t[0].reshape(*d), t[1].reshape(*d), t[2].reshape(*d))
+
+
+def op_permute3(vals, config, feeds):
+    """Reorder axes of a 3D stream (o0, o1, o2) literals, a permutation of
+    (0,1,2). Exact move; covers seq<->heads layout swaps."""
+    (t,) = vals[:1]
+    o = [_int_arg(v, f"PERMUTE3 o{i}") for i, v in enumerate(vals[1:4])]
+    if sorted(o) != [0, 1, 2] or t[0].ndim != 3:
+        raise ValueError(f"PERMUTE3: need a permutation of (0,1,2) on 3D input, got {o} ndim={t[0].ndim}")
+    return (np.transpose(t[0], o), np.transpose(t[1], o), np.transpose(t[2], o))
+
+
+def op_select(vals, config, feeds):
+    """General verdict-gated branch: per-element pick of A/B by bool MASK.
+    Exact (np.where chains on integer masks, no arithmetic) -- generalizes
+    MIXDYAD's hardcoded pattern and select_mux to arbitrary streams.
+    Layouts: mask I anything, both branches same $A."""
+    m, a, b = vals
+    m = np.ascontiguousarray(m, dtype=bool)
+    if not (m.shape == a[0].shape == b[0].shape):
+        raise ValueError(f"SELECT: shape mismatch {m.shape} vs {a[0].shape} vs {b[0].shape}")
+    return (np.where(m, a[0], b[0]).astype(np.int8),
+            np.where(m, a[1], b[1]).astype(np.int32),
+            np.where(m, a[2], b[2]).astype(np.uint8))
+
+
 def op_mixdyad(vals, config, feeds):
     """Motion-gated dyadic memory: static ? (D+3W)/4 : D. W=None (no
     history) -> D directly (feed convention, same doctrine as temporal
@@ -303,6 +362,10 @@ REGISTRY = {
     "ROTARY": (op_rotary, 2, 1),
     "BATCH_MATMUL": (op_batch_matmul, 2, 1),
     "TRANSPOSE": (op_transpose, 1, 1),
+    "RESHAPE2": (op_reshape2, 3, 1),
+    "RESHAPE3": (op_reshape3, 4, 1),
+    "PERMUTE3": (op_permute3, 4, 1),
+    "SELECT": (op_select, 3, 1),
 }
 
 # Layout signatures (TYPED STREAMS v1): (in_layouts, out_layouts) per
@@ -335,4 +398,8 @@ SIGS = {
     "ROTARY": (["$X", "*"], ["$X"]),
     "BATCH_MATMUL": (["*", "*"], ["*"]),
     "TRANSPOSE": (["$A"], ["$A^T"]),
+    "RESHAPE2": (["*", "F:SCALAR", "F:SCALAR"], ["*"]),
+    "RESHAPE3": (["*", "F:SCALAR", "F:SCALAR", "F:SCALAR"], ["*"]),
+    "PERMUTE3": (["*", "F:SCALAR", "F:SCALAR", "F:SCALAR"], ["*"]),
+    "SELECT": (["I:*", "$A", "$A"], ["$A"]),
 }

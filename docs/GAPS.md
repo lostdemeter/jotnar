@@ -65,6 +65,11 @@ gate proved it). BATCH_MATMUL exposure folded in (0-diff) + TRANSPOSE exact
 move (probe-demanded). xf_block.asm ASSEMBLES clean AND RUNS end-to-end
 (shapes correct); whole-block float parity is next backlog (plumbing proven,
 block-scale values unverified -- stated).
-Batch 3 (language features): TYPED STREAMS first -- CLOSED v1 (see above).
-Next: SPLIT family, BRANCH, static verifier; ITERATE last (needs dynamic
-shapes -- biggest design decision in the list, do not rush).
+Batch 3 (language features): TYPED STREAMS v1 CLOSED (see above). SPLIT
+family CLOSED as RESHAPE2/RESHAPE3/PERMUTE3 exact moves (+TRANSPOSE; N-way
+split deferred -- no demand, heads need reshape+permute only, stated).
+BRANCH CLOSED as SELECT (verdict-gated general select; MIXDYAD's hardcoded
+pattern generalized). LOOP CLOSED v1 as STATE + repeat() (fixed geometry
+refused loudly upfront; STATE must be IN-seeded and OUT-assigned, both
+gated; repeat == manual unroll bit-exact). Remaining: static verifier
+(scales at parse time) + ITERATE with dynamic shapes (still last, biggest).

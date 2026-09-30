@@ -6,6 +6,10 @@ Format (minimal, linear, fail-loud):
   IN name [AS layout]     # declares program input streams, optionally typed
                           # (one AS applies to all names on the line)
   OUT [, OUT2] = MNEMONIC(arg, ...)   # one structure invocation; arity checked
+  STATE name [, ...]            # loop-carried streams (repeat() only): must be
+                                # IN-declared (seed) AND assigned as OUT every
+                                # iteration; shapes fixed across iterations
+                                # (dynamic shapes refused loudly -- ITERATE limit).
 Layouts "KIND:GEOM" (kinds F float / T triples / I integer-exact / U8 bytes;
 geom vocabulary open: HW/HWC/SEQ/HEADS/HW2/SCALAR...). Mnemonics resolve
 against REGISTRY (structure name -> python impl); per-op layout signatures
@@ -28,8 +32,8 @@ class AsmError(Exception):
 
 
 def parse(text):
-    """text -> (config dict, [(name, layout|None)], [(outs, mn, args, ln)])."""
-    config, inp, prog = {}, [], []
+    """text -> (config dict, [(name, layout|None)], [(outs, mn, args, ln)], [state])."""
+    config, inp, prog, state = {}, [], [], []
     for ln, raw in enumerate(text.splitlines(), 1):
         line = raw.split("#", 1)[0].strip()
         if not line:
@@ -41,6 +45,14 @@ def parse(text):
             if len(kv) != 2:
                 raise AsmError(f"line {ln}: CONFIG needs key+value")
             config[kv[0]] = kv[1]
+        elif head == "STATE":
+            names = [n.strip() for n in toks[1].split(",") if n.strip()]
+            if not names:
+                raise AsmError(f"line {ln}: STATE needs a name")
+            for nm in names:
+                if nm in state:
+                    raise AsmError(f"line {ln}: duplicate STATE {nm}")
+                state.append(nm)
         elif head == "IN":
             rest = toks[1]
             up = rest.upper()
@@ -80,7 +92,14 @@ def parse(text):
             raise AsmError(f"line {ln}: unparseable: {raw!r}")
     if not inp:
         raise AsmError("no IN declared")
-    return config, inp, prog
+    for nm in state:
+        if nm not in [n for n, _ in inp]:
+            raise AsmError(f"STATE {nm} must also be IN-declared (seed)")
+    assigned = set(o for outs, _, _, _ in prog for o in outs)
+    for nm in state:
+        if nm not in assigned:
+            raise AsmError(f"STATE {nm} is never assigned as OUT (no carry)")
+    return config, inp, prog, state
 
 
 def assemble(text, registry, sigs=None):
@@ -91,7 +110,7 @@ def assemble(text, registry, sigs=None):
     (in_layouts, out_layouts) with $VAR / $VAR^T / *, missing = all-wildcard.
     Full verifier with scales+geometry is backlog: range estimator + seam chart."""
     sigs = sigs or {}
-    config, inp, prog = parse(text)
+    config, inp, prog, state = parse(text)
     bound, defined = [], set(n for n, _ in inp)
     for outs, mn, args, ln in prog:
         if mn not in registry:
@@ -107,7 +126,7 @@ def assemble(text, registry, sigs=None):
                 raise AsmError(f"{mn}: input stream '{a}' not defined yet")
         bound.append((outs, mn, fn, args, ln, sigs.get(mn)))
         defined.update(outs)
-    return config, inp, bound
+    return config, inp, bound, state
 
 
 def _is_literal(a):
@@ -205,5 +224,73 @@ def run(bound, config, inp, payload):
 
 def run_text(text, registry, payload, sigs=None):
     """Parse + assemble + execute. Returns feeds."""
-    config, inp, bound = assemble(text, registry, sigs)
+    config, inp, bound, _ = assemble(text, registry, sigs)
     return run((config, inp, bound), config, inp, payload)
+
+
+def _shapes_of(v):
+    """Structural shape of a feed value (triples tuple -> first plane shape;
+    None -> None). For STATE shape-stability checks."""
+    if v is None:
+        return None
+    if isinstance(v, tuple) and len(v) == 3 and hasattr(v[0], "shape"):
+        return tuple(v[0].shape)
+    if hasattr(v, "shape"):
+        return tuple(v.shape)
+    return None
+
+
+def repeat(text, registry, payload, n, sigs=None):
+    """Run a listing n times threading STATE streams (loop-carried state).
+    Non-STATE IN streams take LISTS of length n (one payload per iteration;
+    strict -- no implicit broadcasting, length bugs fail loud). STATE streams
+    take a single seed from payload and update from outputs each iteration;
+    every STATE name must be assigned every iteration (else fail loud), and
+    shapes must stay fixed across iterations (dynamic shapes refused loudly
+    -- ITERATE limit, stated). Returns (per-iteration OUT feeds list, final
+    feeds). OUT feeds = full feeds dicts (all streams inspectable)."""
+    config, inp, bound, state = assemble(text, registry, sigs)
+    in_names = [nm for nm, _ in inp]
+    if not isinstance(payload, dict):
+        raise AsmError("repeat needs dict payload")
+    seqs = {}
+    for nm in in_names:
+        if nm not in payload:
+            raise AsmError(f"payload missing streams: {[nm]}")
+        v = payload[nm]
+        if nm in state:
+            seqs[nm] = v
+        else:
+            if not isinstance(v, list) or len(v) != n:
+                raise AsmError(f"non-STATE stream '{nm}' needs a list of {n} payloads")
+            seqs[nm] = v
+    # v1 fixed-geometry doctrine: every list payload shares spatial (H, W).
+    # Varying geometry across frames is refused loudly here (dynamic shapes
+    # are out of scope) rather than dying inside an op's broadcast.
+    geoms = set()
+    for nm, v in seqs.items():
+        if nm in state or not isinstance(v, list):
+            continue
+        for i, item in enumerate(v):
+            sh = _shapes_of(item)
+            if sh is not None and len(sh) >= 2:
+                geoms.add(sh[:2])
+    if len(geoms) > 1:
+        raise AsmError(f"sequence geometry varies across frames: {sorted(geoms)} (fixed geometry only)")
+    histories, carry, shapes = [], {}, {}
+    for it in range(n):
+        feeds = {nm: (seqs[nm][it] if nm not in state else seqs[nm] if it == 0 else carry[nm])
+                 for nm in in_names}
+        feeds["CONFIG"] = config
+        got = run((config, inp, bound), config, inp, feeds)
+        for nm in state:
+            if nm not in got:
+                raise AsmError(f"iteration {it}: STATE '{nm}' not assigned")
+            sh = _shapes_of(got[nm])
+            if nm in shapes and shapes[nm] is not None and sh is not None and sh != shapes[nm]:
+                raise AsmError(f"iteration {it}: STATE '{nm}' shape changed {shapes[nm]} -> {sh} (dynamic shapes refused)")
+            if sh is not None:
+                shapes[nm] = sh
+            carry[nm] = got[nm]
+        histories.append(got)
+    return histories, histories[-1]

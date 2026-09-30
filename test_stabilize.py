@@ -56,14 +56,14 @@ def load_prog():
 def run_seq(text, frames8, flows):
     """frames8: uint8 sRGB frames (quantized ONCE upstream -- listing and
     oracle both consume the same bytes; input mismatch is a test bug, not
-    a result). Threads feeds['D'] as next dprev."""
+    a result). Threads feeds['dprev'] as next dprev (STATE stream)."""
     outs, dprev = [], None
     for rgb, fl in zip(frames8, flows):
         feeds = ASM.run_text(text, REGISTRY,
                              {"rgb": rgb, "dprev": dprev, "flow": fl},
                              sigs=SIGS)
         outs.append(feeds["OUT"])
-        dprev = feeds["D"]
+        dprev = feeds["dprev"]
     return outs
 
 
@@ -132,7 +132,7 @@ def main():
         feeds = ASM.run_text(text, REGISTRY,
                              {"rgb": rgb, "dprev": dprev, "flow": fli},
                              sigs=SIGS)
-        dprev = feeds["D"]
+        dprev = feeds["dprev"]
         Y = feeds["YENH"]
         yv = np.clip(S.decode(Y[0], Y[1]) * (1 - Y[2].astype(np.float64)), 0, 1)
         yo, dprev_o = O.denoise_frame_float(y, dprev_o, fli, beta=0.5)
