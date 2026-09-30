@@ -640,6 +640,40 @@ def main():
     finally:
         _sh2.rmtree(d2, ignore_errors=True)
 
+    # v1.0 Gate 5 drill: GELU (first stranger-supplied structure, via
+    # phi-core ASM_HANDOFF.md). Thin wrapper: 0-diff vs phi-core fn;
+    # parity vs independent torch gelu (peak=1.0 basis, bar 40dB);
+    # in-listing use proves the mnemonic works in-language (not just as
+    # a direct registry call). Fixture spans the activation shape:
+    # saturation (large neg -> 0), dip (~-1), zero, linear (large pos).
+    import torch as _torch
+    tg = S.encode(rng2.uniform(-4, 4, (4, 32)))
+    check("asm-gelu-0diff", all(bool((a == b).all()) for a, b in zip(
+        REGISTRY["GELU"][0]([tg], {}, {}), _N.gelu_erf_int(tg))),
+        "0-diff vs phi-core (wrapper adds nothing)")
+    gg = REGISTRY["GELU"][0]([tg], {}, {})
+    gv = S.decode(gg[0], gg[1]) * (1 - gg[2].astype(np.float64))
+    gref = _torch.nn.functional.gelu(
+        _torch.tensor(S.decode(tg[0], tg[1])
+                      * (1 - tg[2].astype(np.float64)))).numpy()
+    gmse = float(np.mean((gv - gref) ** 2))
+    check("asm-gelu-torch", 10 * np.log10(1.0 / gmse) >= 40.0,
+          f"{10 * np.log10(1.0 / gmse):.1f}dB vs torch gelu (peak=1.0)")
+    ge = S.encode(np.array([-10.0, -1.0, 0.0, 10.0]))
+    ge2 = REGISTRY["GELU"][0]([ge], {}, {})
+    gev = S.decode(ge2[0], ge2[1]) * (1 - ge2[2].astype(np.float64))
+    check("asm-gelu-edges", abs(gev[0]) < 1e-6 and abs(gev[2]) < 1e-6
+          and abs(gev[3] - 10.0) < 0.05 and gev[1] < 0,
+          f"saturate/dip/zero/linear {np.round(gev, 4)}")
+    try:
+        gl = ASM.run_text("IN x AS T:SEQ\nOUT = GELU(x)\n", REGISTRY,
+                          {"x": tg}, sigs=SIGS)
+        check("asm-gelu-listing", all(
+            bool((gl["OUT"][k] == gg[k]).all()) for k in (0, 1, 2)),
+            "in-listing GELU == direct call, exact")
+    except ASM.AsmError as e:
+        check("asm-gelu-listing", False, str(e)[:70])
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

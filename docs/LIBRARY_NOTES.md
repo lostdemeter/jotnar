@@ -313,3 +313,18 @@ supplies caller layouts (IMPORTed INs stay UNKNOWN -- documented limit, not
 a hole: post-expansion machinery covers them). First use found nothing to
 fix (all suites green pre-existing) -- discipline that changes nothing
 existing is safe discipline.
+
+## #LIB-028: extension drill (GELU, v1.0 Gate 5) [CLOSED]
+
+First stranger-supplied structure (phi-core ASM_HANDOFF.md): GELU exact-
+form via `gelu_erf_int` (EXPACT + PHI LUT, any input range). Thin wrapper,
+0-diff; 4 gates (0-diff, 60dB vs torch, edge shapes, in-listing exact).
+Drill wall time ~3 min, logged in docs/VELOCITY.md (the log IS the v1.0
+extensibility answer). Lessons: (1) drill time measures handoff quality
+as much as our velocity (sig + gate pattern + rejected tanh-alternative
+supplied -- zero design decisions our side); (2) LUT-with-exact-asymptotes
+is the cheap mnemonic kind (no scale contract, unlike SOFTMAX); (3) parity
+numbers are fixture-dependent -- report fixture with number; (4) shoulder
+imprecision documented-not-gated (x=10 -> 9.99; exact only beyond +/-16).
+Next candidates from the same handoff: SCAN (fills ITERATE gap #4),
+GRN joint exercise (reference on request).

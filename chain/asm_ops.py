@@ -220,6 +220,16 @@ def op_silu(vals, config, feeds):
     return N.silu_int(t)
 
 
+def op_gelu(vals, config, feeds):
+    """GELU exact-form x*Phi(x) (phi-core gelu_erf_int: EXPACT + PHI LUT,
+    any input range, 0-diff). v1.0 Gate 5 drill mnemonic: first stranger-
+    supplied structure (phi-core ASM_HANDOFF.md), thin wrapper, no new math.
+    GELU_SPAN asymptotes (x<=-16 -> 0, x>=16 -> x) are exact by construction."""
+    N, _S = _phi_ops()
+    (t,) = vals
+    return N.gelu_erf_int(t)
+
+
 _rope_cache = {}
 
 
@@ -582,6 +592,7 @@ REGISTRY = {
     "SOFTMAX": (op_softmax, 1, 1),
     "RMSNORM": (op_rmsnorm, 2, 1),
     "SILU": (op_silu, 1, 1),
+    "GELU": (op_gelu, 1, 1),
     "ROTARY": (op_rotary, 2, 1),
     "BATCH_MATMUL": (op_batch_matmul, 2, 1),
     "TRANSPOSE": (op_transpose, 1, 1),
@@ -632,6 +643,7 @@ SIGS = {
     "SOFTMAX": (["$A"], ["$A"]),
     "RMSNORM": (["$X", "$W"], ["$X"]),
     "SILU": (["$A"], ["$A"]),
+    "GELU": (["$A"], ["$A"]),
     "ROTARY": (["$X", "*"], ["$X"]),
     "BATCH_MATMUL": (["*", "*"], ["*"]),
     "TRANSPOSE": (["$A"], ["$A^T"]),
