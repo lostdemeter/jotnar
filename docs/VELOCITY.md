@@ -283,3 +283,21 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   3. Dead-shelf non-overlap (2 vs 0, max 54.9 just under bar) counsels
      against thresholding storage on one context -- shelves need
      multi-context reads. Stated, not tuned (bar left at 55).
+
+## 2026-09-30: shelf map + labeling-loop draft (CLOCKED)
+
+- Third-prompt readout (code, 116s) + shelf_map instrument + gates +
+  MODEL_READ section + docs/LABELING_LOOP.md draft v0.1 (#LIB-052).
+- Wall time: clock 23:17:27Z -> 23:20:30Z (~3 min: code readout 116s +
+  shelf_map + gates + MODEL_READ + loop draft + verify).
+- Surprises:
+  1. Empty intersection: nothing dead everywhere at 55dB. The map bit
+     back -- "free shelves" don't exist for this matrix at this bar,
+     and the honest output is a design consequence (union + budgets),
+     not a lowered bar.
+  2. The loop draft wrote itself from existing parts (readouts in,
+     implant verifier already gated, INVENTORY close already process):
+     four steps, each with its gate, each falsifiable. Design as
+     composition of proven primitives -- the Jotnar way.
+  3. Giant dir0 at 22-23dB on all three domains: the causal hierarchy
+     has a context-invariant top. Whatever "important" means, dir0 is it.

@@ -75,6 +75,23 @@ def main():
     sel = RD.selectivity(ro)
     check("read-selectivity", len(sel) == 16 and all(len(r) == 3 for r in sel),
           "per-direction (spread, argmin-token) triples")
+    # shelf-map logic (synthetic readouts, no runs): intersection is dead-
+    # everywhere, union dead-somewhere, grid mismatch fails loud.
+    def _fake(dead, n=8):
+        idx = np.arange(n)
+        return {"idx": idx, "sval": np.ones(n),
+                "gdb": np.array([60.0 if i in dead else 30.0 for i in idx]),
+                "tokdb": np.full((n, 4), 40.0)}
+    sm = RD.shelf_map([_fake({1, 3}), _fake({3, 5}), _fake({3})])
+    check("read-shelf-map", sm["intersection"] == [3]
+          and sm["union"] == [1, 3, 5]
+          and sm["per_context"] == [[1, 3], [3, 5], [3]],
+          f"inter {sm['intersection']} union {sm['union']}")
+    try:
+        RD.shelf_map([_fake({1}), _fake({1}, n=6)])
+        check("read-shelf-grid", False, "accepted mismatched grids")
+    except ValueError:
+        check("read-shelf-grid", True, "grid mismatch fails loud")
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

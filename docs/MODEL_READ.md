@@ -75,3 +75,26 @@ varying-inputs separation from the route trials: stable WHAT (weight
 property) + contextual WHERE (input property). The labeling loop's input
 just got its second column: stable magnitudes to track across contexts,
 contextual fingerprints to match within them.
+
+## Multi-context shelf map (third prompt: code)
+
+Prompt 3 (`def/fibonacci/(n/):/return/n/if/n`, code domain): range
+[23.0, 54.4], giant dir0 at 23.0 (invariant to ~1dB across all three).
+Pairwise global Spearman: 0.55 / 0.46 / 0.47 (consistent moderate).
+Shelf map at 55dB (chain/read.py shelf_map):
+
+| context | dead (>55) |
+|---|---|
+| geo | 864, 872 |
+| quantum | none (max 54.9) |
+| code | none (max 54.4) |
+| **intersection (safe everywhere)** | **empty** |
+| union (dead somewhere) | 864, 872 |
+
+The empty intersection is a finding, not a failure: at 55dB NOTHING is
+dead on all three contexts (both near-misses sit just under bar). Shelves
+are threshold-fragile -- storage claims need multi-context reads (the fix
+LIB-051 prescribed, now built), and "free shelves" at 55dB do not exist
+for this matrix. The tail (864/872) remains the closest thing to free
+storage. Design consequence, recorded: writes should TARGET the union
+with per-context disturbance budgets, not assume a safe intersection.

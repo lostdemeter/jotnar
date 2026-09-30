@@ -592,6 +592,20 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  prompt). Standing point: the read is a TABLE, searches are QUERIES --
  information retrieval over weights, and the labeling loop's input is now
  a concrete artifact instead of a wish.
+## #LIB-052: shelf map + labeling-loop draft (both) [CLOSED]
+
+ shelf_map (chain/read.py: intersection/union over readout grids, mismatch
+ fails loud; toy-gated): three contexts give per-context dead
+ [864,872]/[]/[] with EMPTY intersection at 55dB -- no direction is dead
+ everywhere (near-misses 54.9/54.4). Threshold-fragility stated, bar left
+ untuned; design consequence: target the union with per-context budgets,
+ never assume a safe intersection. docs/LABELING_LOOP.md (draft v0.1):
+ hypothesize (d,P) -> match P at new positions -> verify BY IMPLANT
+ (labels predicting interventions are knowledge; the rest stories) ->
+ close in INVENTORY. The loop's verifier already exists (26-35dB implant
+ gaps); its inputs exist (readouts + stability columns); only the first
+ hypothesis is missing. Giant dir0 invariant to ~1dB across all three
+ domains (22.1/22.0/23.0) -- shelves for the loop to stand on.
 ## #LIB-051: stability splits on the predicted seam (second prompt) [CLOSED]
 
  Same 112 directions, quantum-domain prompt: global-dB rank Spearman 0.55

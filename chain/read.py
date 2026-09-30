@@ -56,3 +56,20 @@ def selectivity(ro):
     t = ro["tokdb"]
     return [(int(idx), float(v.max() - v.min()), int(np.argmin(v)))
             for idx, v in zip(ro["idx"], t)]
+
+
+def shelf_map(readouts, thresh=55.0):
+    """Multi-context shelves over a list of readout dicts: per-context dead
+    sets + the intersection (dead EVERYWHERE = safe shelves) + union.
+    Same idx grid required (mismatched grids fail loud -- shelf identity
+    across contexts is the whole point). Single-context thresholding is
+    how the 54.9 near-miss happens (LIB-051); intersection is the fix."""
+    grids = [tuple(int(i) for i in ro["idx"]) for ro in readouts]
+    if any(g != grids[0] for g in grids):
+        raise ValueError("shelf_map needs identical idx grids across readouts")
+    sets = [set(int(i) for i, d in zip(ro["idx"], ro["gdb"]) if d > thresh)
+            for ro in readouts]
+    inter = sorted(set.intersection(*sets)) if sets else []
+    union = sorted(set.union(*sets)) if sets else []
+    return {"per_context": [sorted(s) for s in sets], "intersection": inter,
+            "union": union, "thresh": thresh}
