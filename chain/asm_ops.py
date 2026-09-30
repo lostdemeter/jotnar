@@ -326,6 +326,28 @@ def op_select(vals, config, feeds):
             np.where(m, a[2], b[2]).astype(np.uint8))
 
 
+def op_concat(vals, config, feeds):
+    """Concatenate two same-kind streams along an axis literal (append-only
+    growth primitive for KV-style caches). Exact move; all dims except the
+    axis must match (fail loud). Triples concatenate plane-wise (the three
+    planes stay aligned by construction -- gated); plain arrays concatenate
+    directly."""
+    a, b, ax = vals
+    axis = _int_arg(ax, "CONCAT axis")
+
+    def cat(x, y):
+        if not (0 <= axis < x.ndim == y.ndim):
+            raise ValueError(f"CONCAT: bad axis {axis} for ndim {x.ndim}/{y.ndim}")
+        dx, dy = list(x.shape), list(y.shape)
+        if [d for i, d in enumerate(dx) if i != axis] != [d for i, d in enumerate(dy) if i != axis]:
+            raise ValueError(f"CONCAT: non-axis dims differ {dx} vs {dy}")
+        return np.concatenate([x, y], axis=axis)
+
+    if isinstance(a, tuple) and isinstance(b, tuple):
+        return (cat(a[0], b[0]), cat(a[1], b[1]), cat(a[2], b[2]))
+    return cat(np.ascontiguousarray(a), np.ascontiguousarray(b))
+
+
 def op_mixdyad(vals, config, feeds):
     """Motion-gated dyadic memory: static ? (D+3W)/4 : D. W=None (no
     history) -> D directly (feed convention, same doctrine as temporal
@@ -379,6 +401,7 @@ REGISTRY = {
     "RESHAPE3": (op_reshape3, 4, 1),
     "PERMUTE3": (op_permute3, 4, 1),
     "SELECT": (op_select, 3, 1),
+    "CONCAT": (op_concat, 3, 1),
 }
 
 # Layout signatures (TYPED STREAMS v1): (in_layouts, out_layouts) per
@@ -416,4 +439,5 @@ SIGS = {
     "RESHAPE3": (["*", "F:SCALAR", "F:SCALAR", "F:SCALAR"], ["*"]),
     "PERMUTE3": (["*", "F:SCALAR", "F:SCALAR", "F:SCALAR"], ["*"]),
     "SELECT": (["I:*", "$A", "$A"], ["$A"]),
+    "CONCAT": (["$A", "$A", "F:SCALAR"], ["$A"]),
 }

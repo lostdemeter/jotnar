@@ -252,3 +252,13 @@ checks to T:* layouts); (3) hulls cannot see precision loss inside spanning
 ranges (tensor_disc pins the boundary -- the estimator's stated limit, not a
 failure); (4) estimator rules must mirror op semantics exactly (SQUARE rule
 forgot the op's own clip -- caught by its own flagship-clean gate).
+## #LIB-023: ITERATE v1 = append-only growth (KV pattern); WHILE deferred [CLOSED]
+
+CONCAT exact move (triples plane-wise + plain arrays; non-axis mismatch fails
+loud) + repeat(grow=[...]) with append-only-along-axis-0 discipline, growth
+logged per iteration, off-axis/shrink refused. Demo gate: 4-row KV cache
+contents exact vs manual concat + growth log [(1,6)..(4,6)]. WHILE
+(data-dependent termination) explicitly deferred with reason: termination
+semantics + verdict integration need a design conversation, and every current
+iteration need (diffusion N-steps, IIR warmup, cache fill) is bounded --
+no demand, no build (the process working: stated, not missing).

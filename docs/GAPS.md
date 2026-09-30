@@ -77,5 +77,7 @@ verify() replays unification over declared layouts with zero execution
 RANGE declarations, M.json coverage; asymmetric doctrine -- saturation flags
 on any exceedance, underflow only whole-range-below; tensor_disc pins the
 hull limit: precision loss inside spanning ranges stays with unit gates).
-Remaining: ITERATE with dynamic shapes (still last, biggest) + estimator
-extensions (per-op m override, typical-magnitude reasoning -- stated limits).
+Remaining: static verifier extensions (per-op m override, typical-magnitude
+reasoning -- stated limits) + WHILE (data-dependent termination: needs a
+termination semantics + verdict integration design conversation first; all
+current iteration needs are bounded, so no demand yet -- stated, not missing).

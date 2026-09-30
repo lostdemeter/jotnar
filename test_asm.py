@@ -221,9 +221,9 @@ def main():
     fr4 = [(np.clip(rng3.uniform(0, 1, (12, 12, 3)), 0, 1) * 255).astype(np.uint8)
            for _ in range(3)]
     fl4 = [np.zeros((12, 12, 2)) for _ in range(3)]
-    hists, _ = ASM.repeat(stext, REGISTRY,
-                          {"rgb": fr4, "dprev": None, "flow": fl4},
-                          3, sigs=SIGS)
+    hists, _, growth = ASM.repeat(stext, REGISTRY,
+                                  {"rgb": fr4, "dprev": None, "flow": fl4},
+                                  3, sigs=SIGS)
     man, dp = [], None
     for rgb, fl in zip(fr4, fl4):
         f = ASM.run_text(stext, REGISTRY,
@@ -232,6 +232,8 @@ def main():
         dp = f["dprev"]
     same = all(bool((hists[i]["OUT"] == man[i]["OUT"]).all()) for i in range(3))
     check("asm-repeat-unroll", same, "repeat == manual threading, exact")
+    check("asm-repeat-growthlog", growth.get("dprev", []) == [],
+          "fixed STATE logs no growth (append-only log stays empty)")
     # STATE discipline violations fail loud.
     for bad, tag in [
         ("IN x\nSTATE ghost\nOUT = ADD(x, x)\n", "state-undeclared"),
@@ -250,6 +252,37 @@ def main():
         check("asm-state-shape", False, "accepted geometry change")
     except ASM.AsmError as e:
         check("asm-state-shape", True, f"fails loud ({str(e)[:60]})")
+    # ITERATE v1: append-only growth (KV pattern). Cache accumulates rows
+    # across iterations; contents exact vs manual concat; growth logged.
+    kv_text = ("IN row\nIN cache\nSTATE cache\n"
+               "cache = CONCAT(cache, row, 0)\n")
+    import phi_core.lattice as S
+    rng5 = np.random.default_rng(5)
+    rows = [S.encode(rng5.uniform(-1, 1, (1, 6))) for _ in range(4)]
+    seed = (np.empty((0, 6), np.int8), np.empty((0, 6), np.int32),
+            np.empty((0, 6), np.uint8))
+    hists, _, growth = ASM.repeat(kv_text, REGISTRY,
+                                  {"row": rows, "cache": seed}, 4,
+                                  sigs=SIGS, grow=["cache"])
+    final = hists[-1]["cache"]
+    ref_s = np.concatenate([r[0] for r in rows], axis=0)
+    ref_e = np.concatenate([r[1] for r in rows], axis=0)
+    ref_z = np.concatenate([r[2] for r in rows], axis=0)
+    check("asm-kv-contents", final[0].shape == (4, 6) and bool(
+        (final[0] == ref_s).all() and (final[1] == ref_e).all()
+        and (final[2] == ref_z).all()), "cache rows exact vs manual concat")
+    check("asm-kv-growth", growth.get("cache") == [(1, 6), (2, 6), (3, 6), (4, 6)],
+          f"growth logged {growth.get('cache')}")
+    # off-axis growth refused (append-only along axis 0). Here the op
+    # itself fails first (non-axis dims differ) -- also loud, also accepted;
+    # repeat()'s own off-axis check is defense for looser future ops.
+    try:
+        ASM.repeat("IN row\nIN cache\nSTATE cache\ncache = CONCAT(cache, row, 1)\n",
+                   REGISTRY, {"row": rows, "cache": seed}, 4,
+                   sigs=SIGS, grow=["cache"])
+        check("asm-kv-offaxis", False, "accepted off-axis growth")
+    except (ASM.AsmError, ValueError) as e:
+        check("asm-kv-offaxis", True, f"fails loud ({str(e)[:60]})")
 
     # Batch 3 continued: static verifier v1 (verify() layouts above +
     # ranges.estimate below). Estimator scope, stated: hull intervals catch

@@ -282,19 +282,27 @@ def _shapes_of(v):
     return None
 
 
-def repeat(text, registry, payload, n, sigs=None):
+def repeat(text, registry, payload, n, sigs=None, grow=()):
     """Run a listing n times threading STATE streams (loop-carried state).
     Non-STATE IN streams take LISTS of length n (one payload per iteration;
     strict -- no implicit broadcasting, length bugs fail loud). STATE streams
     take a single seed from payload and update from outputs each iteration;
-    every STATE name must be assigned every iteration (else fail loud), and
-    shapes must stay fixed across iterations (dynamic shapes refused loudly
-    -- ITERATE limit, stated). Returns (per-iteration OUT feeds list, final
-    feeds). OUT feeds = full feeds dicts (all streams inspectable)."""
+    every STATE name must be assigned every iteration (else fail loud).
+    grow: subset of STATE names allowed APPEND-ONLY growth along axis 0
+    (the KV pattern: cache rows accumulate; all other streams keep fixed
+    geometry, refused loudly on change). Growth is logged per iteration and
+    reported (no silent shape drift -- the ITERATE discipline).
+    Dynamic shapes beyond append-only, and data-dependent termination
+    (WHILE), are out of scope -- stated, see GAPS.md. Returns
+    (per-iteration OUT feeds list, final feeds)."""
     config, inp, bound, state = assemble(text, registry, sigs)
     in_names = [nm for nm, _ in inp]
     if not isinstance(payload, dict):
         raise AsmError("repeat needs dict payload")
+    grow = set(grow)
+    for nm in grow:
+        if nm not in state:
+            raise AsmError(f"grow stream '{nm}' is not a STATE stream")
     seqs = {}
     for nm in in_names:
         if nm not in payload:
@@ -319,7 +327,7 @@ def repeat(text, registry, payload, n, sigs=None):
                 geoms.add(sh[:2])
     if len(geoms) > 1:
         raise AsmError(f"sequence geometry varies across frames: {sorted(geoms)} (fixed geometry only)")
-    histories, carry, shapes = [], {}, {}
+    histories, carry, shapes, growth = [], {}, {}, {nm: [] for nm in grow}
     for it in range(n):
         feeds = {nm: (seqs[nm][it] if nm not in state else seqs[nm] if it == 0 else carry[nm])
                  for nm in in_names}
@@ -329,10 +337,18 @@ def repeat(text, registry, payload, n, sigs=None):
             if nm not in got:
                 raise AsmError(f"iteration {it}: STATE '{nm}' not assigned")
             sh = _shapes_of(got[nm])
-            if nm in shapes and shapes[nm] is not None and sh is not None and sh != shapes[nm]:
-                raise AsmError(f"iteration {it}: STATE '{nm}' shape changed {shapes[nm]} -> {sh} (dynamic shapes refused)")
+            if nm in shapes and shapes[nm] is not None and sh is not None:
+                if sh != shapes[nm] and nm not in grow:
+                    raise AsmError(f"iteration {it}: STATE '{nm}' shape changed {shapes[nm]} -> {sh} (dynamic shapes refused)")
+                if nm in grow:
+                    if len(sh) != len(shapes[nm]) or sh[1:] != shapes[nm][1:]:
+                        raise AsmError(f"iteration {it}: STATE '{nm}' grew off-axis {shapes[nm]} -> {sh} (append-only along axis 0)")
+                    if sh[0] < shapes[nm][0]:
+                        raise AsmError(f"iteration {it}: STATE '{nm}' shrank {shapes[nm]} -> {sh} (append-only)")
             if sh is not None:
                 shapes[nm] = sh
+                if nm in grow:
+                    growth[nm].append(sh)
             carry[nm] = got[nm]
         histories.append(got)
-    return histories, histories[-1]
+    return histories, histories[-1], growth
