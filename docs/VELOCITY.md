@@ -212,3 +212,18 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   4. corr -0.84 (toy) vs -0.81 (real): same law, different universe.
      Partly algebraic (route C linearity) — the spread and ranking are
      the content, the correlation is the sanity.
+
+## 2026-09-30: rank-1 implant (CLOCKED, start missed again)
+
+- Functional-aim write (u = target's own MID direction) + 4 gates in
+  test_implant.py (#LIB-048).
+- Wall time: start clock MISSED twice running (lapse pattern, not bad
+  luck — clock discipline slips on question-led turns vs build-led ones;
+  fix: read the clock when the QUESTION lands, not when the build
+  starts). End 21:55:18Z; active effort ~10 min.
+- Results: target at negative dB (-14.3, -10.7), gaps 35.4 / 26.2dB,
+  both bands confirmed with wide margins.
+- Surprise: negative dB — the implant doesn't nudge the token, it
+  REWRITES it (change exceeds peak). Writes are stronger than the
+  framing ("edit") suggested; the primitive is a local overwrite with
+  26dB+ containment. Specificity was the risk; strength is the news.

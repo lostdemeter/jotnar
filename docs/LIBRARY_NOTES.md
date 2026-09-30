@@ -554,6 +554,18 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  per-model eps first instance (eps_rms_c 68719 = 1e-6); rope_base 1e6 to
  match. v1.3 gate 1's real-family report: DONE (via cache, better than
  via handoff).
+## #LIB-048: rank-1 implant with functional aim (targeted writes) [CLOSED]
+
+ W += A·u·vᵀ with u = MID[t]/||MID[t]|| concentrates on token t by
+ Cauchy-Schwarz (test_implant.py): target rewritten at NEGATIVE dB
+ (-14.3 t1, -10.7 t4 — change exceeds the signal, local rewrite) leading
+ the field by 35.4dB / 26.2dB on target + held-out tokens. No semantics
+ used — aim is functional (the token's own activation direction), which
+ is exactly why this works WITHOUT the labeling loop and exactly why the
+ loop is all that remains for meaningful writes. Standing distinction:
+ graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
+ plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
+ different aim, both gated.
  ## #LIB-036: elementwise CUDA batch (v1.2 gate 2b) [CLOSED]
 
  9 kernels (holo_elem.cu: sqrt/tmul/tdiv/binop/square-clip/sigmoid/abs/

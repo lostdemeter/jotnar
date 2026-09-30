@@ -1,0 +1,157 @@
+"""Rank-1 implant (v1.3): write with functional aim + specificity.
+
+A write W += A·u·vᵀ with u = MID[t]/||MID[t]|| (the target token's own
+MLP-intermediate direction) concentrates its effect on token t BY
+CONSTRUCTION (Cauchy-Schwarz: |MID[i]·u| is maximal at i=t). No semantics
+needed -- aim is functional, not labeled. That is the whole point: the
+machinery for targeted writes exists; only the labeling loop is missing.
+Bands stated BEFORE running (paper-first): target moves (<35dB) AND leads
+the field by >6dB; same pattern on a held-out target token (t=4).
+SKIPs without the local HF cache (needs-hardware precedent).
+Usage: python3 test_implant.py
+"""
+import os
+import sys
+
+sys.path.insert(0, os.environ.get("PHI_CORE_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "phi-core")))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+FAIL = []
+QWEN = os.path.join(os.path.expanduser("~"), ".cache", "huggingface", "hub",
+                    "models--Qwen--Qwen2-0.5B", "snapshots",
+                    "91d2aff3f957f99e4c74c962f2f408dcc88a18d8")
+A_WRITE = 20.0
+TARGET, HELDOUT = 1, 4
+
+
+def check(tag, cond, extra=""):
+    print(f"{tag}: {'OK' if cond else 'FAIL'} {extra}")
+    if not cond:
+        FAIL.append(tag)
+
+
+def tok_db(got, base):
+    import numpy as np
+    d = (np.ascontiguousarray(got, dtype=np.float64)
+         - np.ascontiguousarray(base, dtype=np.float64)) ** 2
+    m = d.mean(-1)
+    return np.array([float("inf") if v == 0 else 10 * np.log10(1.0 / v)
+                     for v in m])
+
+
+def main():
+    import numpy as np
+    if not os.path.isfile(os.path.join(QWEN, "model.safetensors")):
+        print("SKIP (needs Qwen2-0.5B in local HF cache)")
+        sys.exit(0)
+    try:
+        import torch
+        from safetensors.torch import load_file
+        from transformers import AutoTokenizer
+    except ImportError as e:
+        print(f"SKIP (needs torch+safetensors+transformers: {e})")
+        sys.exit(0)
+    os.environ["HF_HUB_OFFLINE"] = "1"
+    import phi_core.lattice as S
+    from chain import asm as ASM
+    from chain.asm_ops import REGISTRY, SIGS
+
+    sd = load_file(os.path.join(QWEN, "model.safetensors"), device="cpu")
+    g = lambda n: sd[n].float().double().numpy()
+    tok = AutoTokenizer.from_pretrained(QWEN)
+    ids = tok("The capital of France is Paris, and the capital of Germany is",
+              return_tensors="pt")["input_ids"][0][:8].numpy()
+    E = sd["model.embed_tokens.weight"][torch.tensor(ids)].float().double().numpy()
+    dt = torch.float64
+    xt = torch.tensor(E, dtype=dt)
+    ln1 = torch.tensor(g("model.layers.0.input_layernorm.weight"), dtype=dt)
+    eps = 1e-6
+
+    def rms(x, w):
+        return x / torch.sqrt((x ** 2).mean(-1, keepdim=True) + eps) * w
+
+    # H via the same full-attention boundary as test_realw (condensed:
+    # identical formulas, reference the realw gate for the parity claim)
+    Wq = torch.tensor(g("model.layers.0.self_attn.q_proj.weight"), dtype=dt)
+    Wk = torch.tensor(g("model.layers.0.self_attn.k_proj.weight"), dtype=dt)
+    Wv = torch.tensor(g("model.layers.0.self_attn.v_proj.weight"), dtype=dt)
+    Wo = torch.tensor(g("model.layers.0.self_attn.o_proj.weight"), dtype=dt)
+    bq = torch.tensor(g("model.layers.0.self_attn.q_proj.bias"), dtype=dt)
+    bk = torch.tensor(g("model.layers.0.self_attn.k_proj.bias"), dtype=dt)
+    bv = torch.tensor(g("model.layers.0.self_attn.v_proj.bias"), dtype=dt)
+    xn = rms(xt, ln1)
+
+    def rope(x, base=1e6):
+        Sq, Dh = x.shape[0], x.shape[-1]
+        i = torch.arange(Dh // 2, dtype=dt)
+        th = base ** (-2 * i / Dh)
+        ang = torch.arange(Sq, dtype=dt)[:, None] * th[None, :]
+        c, s = torch.cos(ang), torch.sin(ang)
+        y = torch.empty_like(x)
+        y[..., 0::2] = x[..., 0::2] * c.unsqueeze(-2) - x[..., 1::2] * s.unsqueeze(-2)
+        y[..., 1::2] = x[..., 0::2] * s.unsqueeze(-2) + x[..., 1::2] * c.unsqueeze(-2)
+        return y
+
+    Q = (xn @ Wq.T + bq).reshape(8, 14, 64)
+    K = (xn @ Wk.T + bk).reshape(8, 2, 64)
+    V = (xn @ Wv.T + bv).reshape(8, 2, 64)
+    K = K.repeat_interleave(7, dim=1)
+    V = V.repeat_interleave(7, dim=1)
+    QR, KR = rope(Q.permute(1, 0, 2)), rope(K.permute(1, 0, 2))
+    SC = (QR @ KR.transpose(-1, -2)) / 8.0
+    P = torch.softmax(SC + torch.triu(
+        torch.full((8, 8), float("-inf"), dtype=dt), 1), dim=-1)
+    CTX = (P @ V.permute(1, 0, 2)).permute(1, 0, 2).reshape(8, 896)
+    H = (xt + CTX @ Wo.T).numpy()
+    Wupf = g("model.layers.0.mlp.up_proj.weight")
+    Wgf = g("model.layers.0.mlp.gate_proj.weight")
+    Wdf = g("model.layers.0.mlp.down_proj.weight")
+    ln2f = g("model.layers.0.post_attention_layernorm.weight")
+
+    def enc(a):
+        return S.encode(np.ascontiguousarray(a, dtype=np.float64))
+
+    def dec(t):
+        return S.decode(np.ascontiguousarray(t[0]),
+                        np.ascontiguousarray(t[1])) * (
+                            1 - np.ascontiguousarray(t[2]).astype(float))
+
+    root = os.path.dirname(os.path.abspath(__file__))
+    text = open(os.path.join(root, "programs", "mlp_qwen0.asm")).read()
+    sdir = os.path.join(root, "programs")
+    pay0 = {"H": enc(H), "wup": enc(Wupf.T), "wgate": enc(Wgf.T),
+            "ln": enc(ln2f)}
+
+    def run_down(WdT):
+        pay = dict(pay0)
+        pay["wdown"] = enc(WdT)
+        feeds = ASM.run_text(text, REGISTRY, pay, sigs=SIGS, basedir=sdir)
+        return dec(feeds["OUT"]), feeds
+
+    base, feeds0 = run_down(Wdf.T)
+    MID = dec(feeds0["MID"])
+    rng = np.random.default_rng(1)  # fresh vectors (held-out directions)
+
+    def implant(t):
+        u = MID[t] / np.linalg.norm(MID[t])
+        v = rng.normal(size=(896,))
+        v /= np.linalg.norm(v)
+        return Wdf.T + A_WRITE * np.outer(u, v)
+
+    for tag, t in (("target", TARGET), ("heldout", HELDOUT)):
+        got, _ = run_down(implant(t))
+        d = tok_db(got, base)
+        others = [d[i] for i in range(8) if i != t]
+        gap = float(np.mean(others) - d[t])
+        print(f"implant-{tag}-t{t}: per-token dB {np.round(d, 1)} "
+              f"(gap {gap:.1f}dB)")
+        check(f"implant-{tag}-moves", d[t] < 35.0,
+              f"token {t} moves at {d[t]:.1f}dB")
+        check(f"implant-{tag}-gap", gap > 6.0,
+              f"target leads field by {gap:.1f}dB (specific, not smear)")
+    print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
+    sys.exit(1 if FAIL else 0)
+
+
+if __name__ == "__main__":
+    main()
