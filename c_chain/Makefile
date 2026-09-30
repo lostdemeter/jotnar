@@ -10,16 +10,20 @@ XCHG = /tmp/holo_conv_exchange
 SXCHG = /tmp/holo_splat_exchange
 MXCHG = /tmp/holo_matmul_exchange
 CXCHG = /tmp/holo_matmul_cuda_exchange
+UCXCHG = /tmp/holo_units_cuda_exchange
 
 all: check
 
 check: $(BIN) $(XCHG) $(SXCHG) $(MXCHG)
 	$(BIN)
 
-cuda: $(CXCHG)
+cuda: $(CXCHG) $(UCXCHG)
 
 $(CXCHG): matmul_cuda.cu
 	$(NVCC) $(NVFLAGS) -o $(CXCHG) matmul_cuda.cu
+
+$(UCXCHG): holo_units.cu
+	$(NVCC) $(NVFLAGS) -o $(UCXCHG) holo_units.cu
 
 $(BIN): holo_ops.c test_holo_c.c holo_ops.h
 	$(CC) $(CFLAGS) -o $(BIN) holo_ops.c test_holo_c.c $(PHICORE)/bridge.c
@@ -37,6 +41,6 @@ trap:
 	for f in *.c *.h *.cu; do sed -e 's|//.*||' "$$f"; done | grep -nE "math\.h|[^_a-zA-Z](float|double)[ \t*(]|(float|double)\(" && echo FLOAT-FOUND && exit 1 || echo "no float in c_chain C/CUDA sources"
 
 clean:
-	rm -f $(BIN) $(XCHG) $(SXCHG) $(MXCHG) $(CXCHG)
+	rm -f $(BIN) $(XCHG) $(SXCHG) $(MXCHG) $(CXCHG) $(UCXCHG)
 
 .PHONY: all check trap clean cuda

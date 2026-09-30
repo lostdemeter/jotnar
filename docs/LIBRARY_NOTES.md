@@ -396,6 +396,18 @@ frozen 24.0dB, CONFIG m_acc 35492 recovers 65.1dB (41dB swing, bar 40).
  (3) `-arch=native` (build+run same box; comment records the cross-build
  override); (4) trap now scans *.cu too (FPU-free held, incl. the word
  "float" ban in kernel comments).
+## #LIB-035: CUDA units vs C twins (v1.2 gate 2a) [CLOSED]
+
+`k_conv_rep` + `k_mux` (c_chain/holo_units.cu) mirror holo_conv.c /
+holo_mux line-for-line; the C layer is the reference for the CUDA port.
+6/6 bit-exact (conv fig/flat/corner/noise vs numpy ref; mux vs promoted
+select_mux in-range + documented clamp contract out-of-range).
+Two slips, both mine: (1) nvcc is C++ — void* needs casts (xmalloc macro);
+(2) writer interleaved per-stream planes while the driver reads planar
+(conv passed, mux failed — format bugs fail LOUD, not silent).
+Doctrine refined: one harness format per driver, writer and reader
+reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
+direct C-vs-CUDA byte compares. Wired into test_c.py (c-cuda-units).
  ## #LIB-033: recognition-first parse, negative result recorded [CLOSED]
 
  Roadmap gate 3 (S19 bet): parsed diffusion DDIM sampling into INVENTORY

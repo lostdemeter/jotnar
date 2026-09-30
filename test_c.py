@@ -52,6 +52,12 @@ def main():
     check("c-cuda-exchange", r7.returncode == 0, f"exit={r7.returncode}")
     if r7.returncode:
         print(r7.stderr[-1500:])
+    r8 = subprocess.run([sys.executable, os.path.join(root, "test_units_cuda.py")],
+                        capture_output=True, text=True, cwd=root)
+    print(r8.stdout[-1500:])
+    check("c-cuda-units", r8.returncode == 0, f"exit={r8.returncode}")
+    if r8.returncode:
+        print(r8.stderr[-1500:])
     r5 = subprocess.run([sys.executable, os.path.join(root, "test_v4.py")],
                         capture_output=True, text=True, cwd=root)
     print(r5.stdout[-1500:])
