@@ -518,6 +518,7 @@ def run(bound, config, inp, payload, trace=None):
             trace.append({"line": ln, "op": mn,
                           "in": in_sum,
                           "out": {}, "sec": 0.0, "_t0": time.perf_counter()})
+        _check_shapes(mn, vals, ln)
         out = fn(vals, config, feeds)
         # arity was checked at assemble time: one declared output takes the
         # whole return value (even a triples-tuple); N outputs take an N-tuple.
@@ -575,6 +576,65 @@ def _shapes_of(v):
     if hasattr(v, "shape"):
         return tuple(v.shape)
     return None
+
+
+def _check_shapes(mn, vals, ln):
+    """Per-op stream-geometry rules (run time: shapes are KNOWN here, unlike
+    layouts which may stay UNKNOWN -- this pass needs no annotations).
+    Strictness is deliberate: silent numpy broadcasting across streams hid
+    real bugs (the (16,16)-vs-(16,3) class); every legitimate exception is
+    an explicit rule below, not an accident. Rules keyed by mnemonic read
+    positional stream values (literals skipped). Raises AsmError."""
+    import numpy as _np
+
+    def _sh(v):
+        if isinstance(v, tuple) and len(v) == 3 and hasattr(v[0], "shape"):
+            return tuple(v[0].shape)
+        if hasattr(v, "shape"):
+            return tuple(v.shape)
+        return None
+
+    def _same(*vs, what):
+        have = [(i, _sh(v)) for i, v in enumerate(vs) if _sh(v) is not None]
+        shapes = {s for _, s in have}
+        if len(shapes) > 1:
+            raise AsmError(
+                f"line {ln} ({mn}): {what} shape mismatch "
+                + ", ".join(f"arg{i}={s}" for i, s in have))
+
+    if mn in ("ADD", "SUB", "MUL", "DIV"):
+        _same(*vals, what="elementwise")
+    elif mn == "SELECT":
+        _same(vals[1], vals[2], what="SELECT branches")
+        ms = _sh(vals[0])
+        bs = _sh(vals[1])
+        if ms is not None and bs is not None and ms != bs:
+            raise AsmError(
+                f"line {ln} ({mn}): mask {ms} vs branches {bs}")
+    elif mn in ("MATMUL", "BATCH_MATMUL"):
+        a, b = _sh(vals[0]), _sh(vals[1])
+        if a is not None and b is not None:
+            if len(a) < 2 or len(b) < 2 or a[-1] != b[-2]:
+                raise AsmError(
+                    f"line {ln} ({mn}): inner dims {a} vs {b} (did you forget TRANSPOSE?)")
+    elif mn == "WARP":
+        f, fl = _sh(vals[0]), _sh(vals[1])
+        if f is not None and fl is not None and f != fl[:2]:
+            raise AsmError(
+                f"line {ln} ({mn}): feature {f} vs flow {fl} spatial mismatch")
+    elif mn == "ARGMAX":
+        t = _sh(vals[0])
+        if t is not None and not (0 <= int(float(vals[1])) < len(t)):
+            raise AsmError(
+                f"line {ln} ({mn}): axis {vals[1]} out of range for shape {t}")
+    elif mn == "GATHER":
+        w, ids = _sh(vals[0]), vals[1]
+        if w is not None and hasattr(ids, "max"):
+            import numpy as _nn
+            ids_a = _nn.ascontiguousarray(ids)
+            if ids_a.size and (int(ids_a.min()) < 0 or int(ids_a.max()) >= w[0]):
+                raise AsmError(
+                    f"line {ln} ({mn}): ids out of range [0,{w[0]})")
 
 
 def repeat(text, registry, payload, n, sigs=None, grow=(), basedir="."):

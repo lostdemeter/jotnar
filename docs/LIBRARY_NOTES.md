@@ -291,3 +291,13 @@ refused twice (layout-kind cross-check centrally + _need_triples on the
 arithmetic core), and the procedure tests run on triples. Debugging
 multilingual stacks (text->expansion->parse->values): instrument the seam,
 not the symptom.
+## #LIB-026: shape rules (strictness as doctrine, positives prove it) [CLOSED]
+
+Stream-geometry checks per mnemonic at run time (shapes are KNOWN there --
+no annotations needed): elementwise identical shapes, matmul inner dims
+(with the TRANSPOSE hint: most common cause, measured), warp spatial match,
+argmax axis range, gather id bounds, SELECT branch+mask agreement. Strict on
+purpose: silent numpy broadcasting hid real bugs. The positives matter more
+than the negatives: every existing suite passes WITH checks active, proving
+no legitimate broadcasting broke. Doctrine: strictness must be EARNED by a
+green full-suite, never assumed safe.

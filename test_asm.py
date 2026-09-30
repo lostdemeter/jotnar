@@ -541,6 +541,51 @@ def main():
     finally:
         _sh.rmtree(d, ignore_errors=True)
 
+    # shape rules (structural): silent numpy broadcasting across streams hid
+    # real bugs (the (16,16)-vs-(16,3) class). Every rule below fails naming
+    # op+line; the transpose hint on K-mismatch is deliberate (most common
+    # cause, measured). Positives above (all suites green with checks active)
+    # prove no legitimate broadcasting broke.
+    _a44 = S.encode(np.zeros((4, 4)))
+    _a43 = S.encode(np.zeros((4, 3)))
+    _a36 = S.encode(np.zeros((3, 6)))
+    for prog, tag, want in [
+        ("IN a\nIN b\nOUT = ADD(a, b)\n", "shape-add", "mismatch"),
+        ("IN a\nIN b\nOUT = SUB(a, b)\n", "shape-sub", "mismatch"),
+        ("IN a\nIN b\nOUT = MUL(a, b)\n", "shape-mul", "mismatch"),
+        ("IN a\nIN b\nOUT = DIV(a, b)\n", "shape-div", "mismatch"),
+        ("IN m\nIN a\nIN b\nOUT = SELECT(m, a, b)\n", "shape-select-branch", "mismatch"),
+        ("IN a\nIN b\nOUT = MATMUL(a, b)\n", "shape-matmul", "TRANSPOSE"),
+        ("IN a\nIN b\nOUT = BATCH_MATMUL(a, b)\n", "shape-bmatmul", "TRANSPOSE"),
+    ]:
+        feeds = {"a": _a44, "b": _a36 if "matmul" in tag else _a43,
+                 "m": np.zeros((4, 4), bool)}
+        try:
+            ASM.run_text(prog, REGISTRY, feeds, sigs=SIGS)
+            check(f"asm-{tag}", False, "ran without error")
+        except ASM.AsmError as e:
+            check(f"asm-{tag}", want in str(e), f"fails loud ({str(e)[:70]})")
+    try:
+        ASM.run_text("IN a\nIN f\nOUT = WARP(a, f)\n", REGISTRY,
+                     {"a": _a44, "f": np.zeros((5, 5, 2))}, sigs=SIGS)
+        check("asm-shape-warp", False, "ran without error")
+    except ASM.AsmError as e:
+        check("asm-shape-warp", "spatial mismatch" in str(e),
+              f"fails loud ({str(e)[:60]})")
+    try:
+        ASM.run_text("IN a\nIN k\nOUT = ARGMAX(a, k)\n", REGISTRY,
+                     {"a": _a44, "k": 5.0}, sigs=SIGS)
+        check("asm-shape-argmax-axis", False, "accepted bad axis")
+    except (ASM.AsmError, ValueError) as e:
+        check("asm-shape-argmax-axis", True, f"fails loud ({str(e)[:50]})")
+    try:
+        ASM.run_text("IN w\nIN i\nOUT = GATHER(w, i)\n", REGISTRY,
+                     {"w": _a44, "i": np.array([0, 99])}, sigs=SIGS)
+        check("asm-shape-gather", False, "accepted OOB ids")
+    except ASM.AsmError as e:
+        check("asm-shape-gather", "out of range" in str(e),
+              f"fails loud ({str(e)[:60]})")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 
