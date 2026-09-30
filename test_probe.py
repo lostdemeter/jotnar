@@ -163,6 +163,52 @@ def main():
     print("--- xf rows ---")
     for row in ROWS[-2:]:
         print("    %-12s %-5s %7.2fdB %6.2f    %-18s %s" % row)
+    # FULL SWEEP: every flagship stream (except IN rgb and OUT itself).
+    # Derived equalities (pipeline algebra, predicted EXACT before running):
+    # BEFF-zero == BD-zero == D-zero (all force BD=0 downstream);
+    # AE-zero == YENH-zero (both force YENH=0). Any mismatch means the
+    # mental model of the composition is wrong somewhere.
+    import phi_core.lattice as _S
+
+    def zeros_like(v):
+        if isinstance(v, tuple):
+            return _S.encode(np.zeros(v[0].shape))
+        return np.zeros(v.shape, dtype=np.float64)
+
+    sweep = {}
+    for nm in ("LIN", "Y", "A", "AS", "BEFF", "BD", "AE", "YENH", "G"):
+        z = zeros_like(f0[nm])
+        got = ASM.run_text(text, REGISTRY, rgb, sigs=SIGS,
+                           overrides={nm: z})["OUT"]
+        d = psnr8(got, f0["OUT"])
+        m = float(np.abs(got.astype(np.float64)
+                         - f0["OUT"].astype(np.float64)).mean())
+        sweep[nm] = (got, d, m)
+        ROWS.append((nm, "zero", d, m, "MEASURED", "sweep"))
+    check("probe-sweep ran", len(sweep) == 9, "all streams intervened")
+    # BD-path triple equality: BEFF-zero, BD-zero, D-zero all force BD=0.
+    dzero_out = ASM.run_text(text, REGISTRY, rgb, sigs=SIGS,
+                             overrides={"D": zeros_like(f0["D"])})["OUT"]
+    check("probe-eq-bdzero",
+          bool((sweep["BEFF"][0] == sweep["BD"][0]).all())
+          and bool((sweep["BD"][0] == dzero_out).all()),
+          "BEFF-zero == BD-zero == D-zero, bit-exact (same forced BD)")
+    check("probe-eq-aeyenh",
+          bool((sweep["AE"][0] == sweep["YENH"][0]).all()),
+          "AE-zero == YENH-zero, bit-exact (same forced YENH)")
+    # Discovered (not predicted -- MEASURED, mechanism verified after):
+    # {Y,A,AE,YENH}-zero all force YENH=0 (halved image); {LIN,G}-zero both
+    # force black (LIN feeds GAIN directly: 0 * clipped-gain = 0 -- the
+    # census fan-out of LIN over LUMA+GAIN predicted this subtlety).
+    check("probe-eq-yenh0",
+          all(bool((sweep[k][0] == sweep["Y"][0]).all()) for k in ("A", "AE", "YENH")),
+          "Y==A==AE==YENH-zero, bit-exact (YENH=0 class)")
+    check("probe-eq-black",
+          bool((sweep["LIN"][0] == sweep["G"][0]).all()),
+          "LIN-zero == G-zero, bit-exact (black class)")
+    print("--- full sweep ---")
+    for row in ROWS[-9:]:
+        print("    %-12s %-5s %7.2fdB %6.2f    %-18s %s" % row)
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

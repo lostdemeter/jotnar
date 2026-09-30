@@ -463,6 +463,17 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  only); (2) probe TABLE is the representation (one row per intervention,
  growing into the content map). Methods aren't structures, so no
  INVENTORY entry (stated) -- the pattern lives here + LANGUAGE.md §8.
+ ## #LIB-042: full-sweep equivalence classes (deeper, not wider) [CLOSED]
+
+ All 11 flagship streams probed: four EXACT classes -- {D,BEFF,BD} no-boost
+ (38dB), {Y,A,AE,YENH} halved-image (15dB), {LIN,G} black (3.5dB),
+ {COH} iso-fallback (44dB), {AS} max-boost (19dB, biggest honest change).
+ Two classes PREDICTED from pipeline algebra, two DISCOVERED (LIN==G via
+ GAIN's direct LIN read -- the census fan-out of LIN over LUMA+GAIN
+ already recorded the subtlety; instruments corroborate). AS-zero is the
+ most informative row: killing the blur reference = full A as detail.
+ Standing rule: probe every stream of a listing before calling it
+ understood (the sweep is the unit of "known").
  ## #LIB-041: information round — xf rows, S11 hunt, L4 entries [OPEN]
 
  Probe table grows at STRUCTURE granularity (O/DOWN outputs, never

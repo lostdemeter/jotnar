@@ -110,3 +110,21 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      MECHANISM. Negative with a reason beats positive without one.
   3. Information-first works: measured rows accumulate without pretense
      of bands; bands form later (LIB-015). The table is the map.
+
+## 2026-09-30: full-sweep equivalence classes (~4 min, CLOCKED)
+
+- All 11 flagship streams probed + 4 exact equivalence classes gated
+  (2 predicted from pipeline algebra, 2 discovered).
+- Wall time: ~4 min. Clock 19:19:55Z -> ~19:24Z (sweep + equality gates
+  + docs + full verify incl.).
+- Surprises:
+  1. Predicted equalities held bit-exact (BEFF≡BD≡D, AE≡YENH) — pipeline
+     algebra as a predictive theory of interventions, confirmed.
+  2. LIN-zero == G-zero was NOT predicted and broke the naive model
+     (LIN=0 should equal Y=0) until GAIN's direct LIN read explained it
+     — and the census had ALREADY recorded LIN's fan-out over LUMA+GAIN.
+     Instruments corroborate each other; that is the program working.
+  3. AS-zero (max boost, 19dB) is the most informative row: the blur
+     reference is what restrains enhancement — restraint, not boost,
+     is the flagship's main content. A finding about the DESIGN, from
+     subtraction alone.
