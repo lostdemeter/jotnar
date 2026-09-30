@@ -368,6 +368,16 @@ def op_select(vals, config, feeds):
     MIXDYAD's hardcoded pattern and select_mux to arbitrary streams.
     Layouts: mask I anything, both branches same $A."""
     m, a, b = vals
+    import numpy as _np
+    m_arr = _np.ascontiguousarray(m)
+    if m_arr.dtype == bool:
+        m = m_arr
+    elif _np.issubdtype(m_arr.dtype, _np.integer):
+        m = m_arr.astype(bool)  # documented: nonzero picks A (numpy rule)
+    else:
+        raise ValueError(
+            f"SELECT: mask must be bool/int, got {m_arr.dtype} "
+            "(float truthiness is silent coercion -- pass exact flags)")
     m = np.ascontiguousarray(m, dtype=bool)
     if not (m.shape == a[0].shape == b[0].shape):
         raise ValueError(f"SELECT: shape mismatch {m.shape} vs {a[0].shape} vs {b[0].shape}")

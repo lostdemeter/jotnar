@@ -13,13 +13,20 @@ naming the operation and line — never a silent wrong number.
 
 ## 1. Orientation (5 minutes)
 
+Setup: clone `phi-core` as a sibling of this repo (`../phi-core`), run
+everything from the repo root. The snippets below spell `sys.path` out
+so they run as-is here; on another machine point those two lines at your
+checkouts (or set `PYTHONPATH=../phi-core:.`). No environment variables
+are read anywhere — verified by running the stranger test (test_stranger.py)
+under `env -i` with only PATH set.
+
 ```python
 import sys; sys.path.insert(0, "/home/thorin/Documents/OpenCode/phi-core")
 sys.path.insert(0, ".")
 from chain import asm as ASM
 from chain.asm_ops import REGISTRY, SIGS
 text = open("programs/holo_flagship.asm").read()
-feeds = ASM.run_text(text, REGISTRY, rgb_array, sigs=SIGS)  # U8 HWC array in
+feeds = ASM.run_text(text, REGISTRY, rgb_array, sigs=SIGS)  # rgb_array: a U8 HWC array (e.g. np.asarray(Image.open(p).convert("RGB")))
 out = feeds["OUT"]  # U8 HWC array out
 ```
 
@@ -77,6 +84,10 @@ a = S.encode(np.full(3, 0.25))
 feeds = ASM.run_text(open("first.asm").read(), REGISTRY, {"a": a, "b": a}, sigs=SIGS)
 v = S.decode(feeds["OUT"][0], feeds["OUT"][1])  # ~0.50 (lattice quantum ~3e-3)
 ```
+
+Masks are plain bool arrays in the payload (e.g.
+`m = np.array([True, True, False, False])` for
+`OUT = SELECT(m, S, a)` — int 0/1 works too; floats are refused, §4).
 
 Step 2 — reuse (minute 5-10). Add a procedure:
 
@@ -150,7 +161,7 @@ loud-failure. Arithmetic core (`ADD SUB MUL DIV`) refuses float inputs
 - `CONV(*,* -> *)` — general kernel `(x, K float array)`, per-tap tmul + order-free accumulate. Ex: `Y = CONV(X, K)`.
 
 **Control:**
-- `SELECT(I:*,$A,$A -> $A)` — verdict-gated branch: per-element pick of A/B by bool mask; branches must match, mask must match. Ex: `Y = SELECT(mask, A, B)`.
+- `SELECT(I:*,$A,$A -> $A)` — verdict-gated branch: per-element pick of A/B by bool mask; branches must match, mask must match. Mask rule: bool or integer arrays (nonzero picks A, numpy rule); FLOAT masks fail loud (0.5->True coercion is silent and surprising — pass exact flags). Ex: `Y = SELECT(mask, A, B)`.
 
 ## 5. Procedures and imports
 

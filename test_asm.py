@@ -183,6 +183,18 @@ def main():
         check("asm-select-shape", False, "accepted mismatched branches")
     except ValueError as e:
         check("asm-select-shape", True, f"fails loud ({str(e)[:50]})")
+    # F3 (v1.1 backlog): float masks are silent coercion (0.5->True) --
+    # refused; bool/int stay (documented nonzero rule, LANGUAGE.md §4).
+    try:
+        REGISTRY["SELECT"][0]([np.full((4, 4), 0.5), ma2, mb2], {}, {})
+        check("asm-select-floatmask", False, "accepted float mask")
+    except ValueError as e:
+        check("asm-select-floatmask", True, f"fails loud ({str(e)[:50]})")
+    _mi = np.zeros((4, 4), np.int64)
+    _mi[:2] = 1
+    _gi = REGISTRY["SELECT"][0]([_mi, ma2, mb2], {}, {})
+    check("asm-select-intmask", all(bool((a == b).all()) for a, b in zip(_gi, gs)),
+          "int 0/1 mask == bool mask, exact (documented rule)")
 
     # Batch 3 open: TYPED STREAMS v1. Concrete-vs-concrete mismatches fail
     # naming op+line+stream; UNKNOWN (unannotated) unifies silently

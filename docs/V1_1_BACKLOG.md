@@ -1,43 +1,33 @@
 # v1.1 backlog — stranger-test friction log (v1.0 Gate 6)
 
-The stranger test (test_stranger.py) passed first try from docs alone, so
-v1.0 is NOT blocked. Everything below is queued work, not forgotten work.
-Each item: friction observed, repro/evidence, proposed fix.
+ALL FOUR CLOSED (evidence below). Kept as the record of what the
+stranger test found and what each item cost.
+Each item: friction observed, repro/evidence, fix applied.
 
-## F1. Tutorial setup is not portable (biggest friction)
+## F1. Tutorial setup is not portable [CLOSED]
 
-The §1/§3 snippets hardcode `sys.path.insert(0, "/home/thorin/...")`.
-A fresh instance on another machine cannot copy-paste them. The exercise
-ran only because the paths happened to exist here.
-Fix: relative setup instruction (run from repo root + phi-core checkout
-note, or PYTHONPATH), verified by re-running the stranger test with a
-clean environment (`env -i` + documented vars only).
+Was: §1/§3 hardcoded absolute `sys.path`. Now: LANGUAGE.md §1 documents
+the layout (phi-core sibling, run from root, PYTHONPATH alternative) and
+states no env vars are read. Verified: test_stranger.py green under
+`env -i PATH=...` (no hidden env deps).
 
-## F2. No bool-payload example in the tutorial
+## F2. No bool-payload example in the tutorial [CLOSED]
 
-§2 says streams include bool arrays and §4 says SELECT takes a bool mask,
-but the tutorial only ever encodes triples. The stranger must INFER
-`np.array([True, ...])` as a payload. The inference worked (green first
-try), but one line in §3 would remove the guess:
-`m = np.array([True, True, False, False])`.
-Fix: add the line + one SELECT sentence to the tutorial.
+Was: mask construction inferred from §2+§4. Now: §3 shows the mask line
+(`np.array([True, True, False, False])`) with the int/float rule pointer.
 
-## F3. SELECT silently coerces float masks (unannotated streams)
+## F3. SELECT silently coerces float masks [CLOSED — refused]
 
-Repro: `m = np.full(4, 0.5)` (float64) as the SELECT mask on a bare
-`IN m` (UNKNOWN layout) RUNS — `float 0.5` becomes `True` via
-`ascontiguousarray(bool)` inside `op_select`. The layout-kind cross-check
-skips UNKNOWN streams (gradual typing), so nothing fails loud. Truthiness
-coercion of 0.5->True is the surprising half (0.0->False reads naturally).
-Fix (needs its own gate + full-suite green first — strictness is earned):
-refuse non-bool masks in `op_select`, or document the coercion in
-LANGUAGE.md §4 SELECT. Decide in v1.1.
+Was: `np.full(4, 0.5)` mask ran (0.5->True). Decision: REFUSE (fail loud),
+not document — float truthiness is the surprising half; bool/int keep the
+numpy nonzero rule per the `I:*` kind. Gates: `asm-select-floatmask`
+(refusal) + `asm-select-intmask` (int 0/1 == bool, exact). Full suite
+green unchanged (strictness earned). MIXDYAD coerces the same way —
+noted, untouched (out of scope, no gate).
 
-## F4 (nit). Orientation snippet references undefined `rgb_array`
+## F4 (nit). Orientation snippet references undefined `rgb_array` [CLOSED]
 
-§1 shows `ASM.run_text(text, REGISTRY, rgb_array, sigs=SIGS)` without
-saying what `rgb_array` is (a U8 HWC array — presumably an opened image).
-Harmless (tutorial step 1 covers payloads), but one clause would close it.
+Was: bare `rgb_array`. Now: annotated inline (U8 HWC array, e.g. opened image).
 
 ## Non-frictions (positive log — keep these properties)
 
