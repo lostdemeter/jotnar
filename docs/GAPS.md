@@ -58,6 +58,9 @@ already expressible; only the activation itself is missing.
 
 Batch 1 (wire+gates, no new math): MATMUL, SOFTMAX, RMSNORM, SILU. CLOSED.
 Batch 2 (ROTARY + BATCH_MATMUL/TRANSPOSE, xf_block runs). CLOSED (see above).
+Whole-block parity CLOSED 2026-09-30 as v1.0 Gate 1 (test_xf_block.py: 84dB
+vs torch.float64 in-contract S=8/D=16/Dff=32; out-of-contract row measured
+14.6dB with mechanism stated; envelope + backlogs in the test docstring).
 Pile A exposure batch CLOSED 2026-09-30 (12 mnemonics, 41 total):
 ARGMAX (only new math in the batch: exact lattice ordering, tie->first,
 negatives/zero handled; gated vs numpy), SLICE (bounds-checked windows),
