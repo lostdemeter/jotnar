@@ -202,3 +202,17 @@ Lesson: when reusing a foreign op, gate the index convention explicitly
 Refactor note: the still path split into luminance_detail/finish with 0-diff
 proven by the existing parity suites (no mirror to drift, cf #LIB-014) --
 the temporal path reuses both with mixed D. Single source, two callers.
+## #LIB-019: meta-selection + boundary-decision pattern [CLOSED]
+
+The router (chain/router.py) is the first structure selecting AMONG
+configurations (still/temporal per frame) instead of pixels. Two patterns:
+(1) decide in float at the seam, consume the verdict as an exact flag --
+third use after the motion static mask and the depth median split (helper
+promotion threshold REACHED for a `decide`-family helper: exact-flag
+decisions from boundary floats; next lowering pass should promote it);
+(2) gate meta-claims component-wise (flicker-wins AND sharpness-bounded, not
+one blended score -- a single number would hide the tradeoff the router
+exists to navigate). Switches are seamless by construction (still ignores
+state; state always refreshes so memory never lies -- the store uses the
+SAME detail the output used, threaded explicitly, gated by seamless-static).
+Per-tile routing is the stated backlog; the pattern transfers unchanged.

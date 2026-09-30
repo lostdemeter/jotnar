@@ -240,18 +240,27 @@ def warp_float_nihui(img, flow):
             + img[y1c, x1c] * ax * ay)
 
 
-def temporal_frames_float(ys, flows, beta=0.5, kernel=None, a_mix=0.5):
+def temporal_frames_float(ys, flows, beta=0.5, kernel=None, a_mix=0.5,
+                          modes=None):
     """Float mirror of the temporal chain with blur='iso', scalar beta:
-    A=sqrt(Y); As=gauss_blur(A); D=A-As; Dmix=(1-a)*D+a*warp(Dprev);
-    Ienh=clip((A+beta*Dmix)^2,0,1). flows[0] unused (may be None)."""
+    A=sqrt(Y); As=gauss_blur(A); D=A-As; Dmix=(1-a)*D+a*warp(Dprev) unless
+    modes[i]=='still' (or first frame); Ienh=clip((A+beta*Dmix)^2,0,1).
+    modes=None -> all 'temporal' (legacy behavior, 0-diff: first frame has
+    d_prev None -> direct either way). State always refreshes (mirrors INT)."""
     if kernel is None:
         kernel = gauss_kernel()
+    if modes is None:
+        modes = ["temporal"] * len(ys)
+    assert len(modes) == len(ys) == len(flows)
     outs, d_prev = [], None
-    for y, fl in zip(ys, flows):
+    for y, fl, mode in zip(ys, flows, modes):
         a = np.sqrt(np.maximum(y, 0))
         as_ = blur_replicate(a, kernel)
         d = a - as_
-        dm = d if d_prev is None else (1 - a_mix) * d + a_mix * warp_float_nihui(d_prev, fl)
+        if mode == "still" or d_prev is None:
+            dm = d
+        else:
+            dm = (1 - a_mix) * d + a_mix * warp_float_nihui(d_prev, fl)
         outs.append(np.clip((a + beta * dm) ** 2, 0, 1))
         d_prev = d
     return outs

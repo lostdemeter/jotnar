@@ -21,6 +21,7 @@ Check | Result
 `test_substitute.py` | ALL OK (sigmoid swaps numpy<->torch/CUDA exact on 2007 triples; chain-swap bit-identical live 2x; replicate-vs-zero refusal characterized)
 `test_motion.py` | ALL OK (compass 14, rescue-V 0.36->0.81, zeroflow-exact bytes, pan-preserve, parity 42.94dB, pan-e2e ratio 0.504, rotation 0.04)
 `test_temporal.py` | ALL OK (mix-frozen, warp-parity 73dB, warp-identity, static-converged + firststep bounds, firstframe-still, memory, step-settles, seq 64dB)
+`test_router.py` | ALL OK (decisions incl. boundary, seamless-static exact, flicker-wins, sharpness-bounded, routed parity 60-63dB)
 `demo.py --selftest` | GO 68.5dB
 
 ## Quick start
@@ -40,6 +41,7 @@ python3 test_v5.py                  # expect ALL OK (learned gate, grain barred)
 python3 test_substitute.py          # expect ALL OK (needs torch + rife checkout; cross-model swap)
 python3 test_motion.py               # expect ALL OK (motion side-channel consensus)
 python3 test_temporal.py             # expect ALL OK (feedback: detail IIR + warp)
+python3 test_router.py               # expect ALL OK (routing: still/temporal per frame)
 python3 demo.py input.png output.png --beta 0.5 --blur splat --ctrl on
 python3 demo.py input.png output.png --beta 0.5 --blur splat_soft --ctrl soft  # v4
 python3 demo.py input.png output.png --beta 0.5 --blur splat_soft --ctrl v5    # v5
