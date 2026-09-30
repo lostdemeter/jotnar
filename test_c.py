@@ -58,6 +58,12 @@ def main():
     check("c-cuda-units", r8.returncode == 0, f"exit={r8.returncode}")
     if r8.returncode:
         print(r8.stderr[-1500:])
+    r9 = subprocess.run([sys.executable, os.path.join(root, "test_flagship_cuda.py")],
+                        capture_output=True, text=True, cwd=root)
+    print(r9.stdout[-1500:])
+    check("c-cuda-flagship", r9.returncode == 0, f"exit={r9.returncode}")
+    if r9.returncode:
+        print(r9.stderr[-1500:])
     r5 = subprocess.run([sys.executable, os.path.join(root, "test_v4.py")],
                         capture_output=True, text=True, cwd=root)
     print(r5.stdout[-1500:])

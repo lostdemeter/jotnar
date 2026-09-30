@@ -408,6 +408,18 @@ Two slips, both mine: (1) nvcc is C++ — void* needs casts (xmalloc macro);
 Doctrine refined: one harness format per driver, writer and reader
 reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  direct C-vs-CUDA byte compares. Wired into test_c.py (c-cuda-units).
+ ## #LIB-037: flagship on CUDA, bit-exact (v1.2 gate 2 FULL) [CLOSED]
+
+ flagship_cuda_exchange: host float edges (decode/luma/encode-A in,
+ gain/chroma out — boundary by doctrine) + ~50 device launches covering
+ splat_soft+v5 A->YENH (tensor, coh+buckets, soft blend, v5 gate, finish;
+ composition on the host side, no new math). 3/3 rows BIT-EXACT vs
+ enhance_luminance_int (synth 16×16, real 288×352 frame, big-m plumbing).
+ Composition of unit-gated kernels + driver composition with no new math
+ yields bit-exactness for free — the strongest form of gate 2 (bar was
+ 40dB). Supporting kernels (neg/wherez/rescale/bucket) covered
+ compositionally; had the row failed, per-kernel bisection was the plan
+ (unneeded). Wired into test_c.py (c-cuda-flagship).
  ## #LIB-036: elementwise CUDA batch (v1.2 gate 2b) [CLOSED]
 
  9 kernels (holo_elem.cu: sqrt/tmul/tdiv/binop/square-clip/sigmoid/abs/
