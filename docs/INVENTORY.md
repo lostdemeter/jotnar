@@ -132,10 +132,26 @@ completion. Instances: holo calibrate, fit_ctrl, fit_v5 (three copies --
 promotion to framework harness DUE, tomorrow item #1).
 
 ### S19 temporal IIR + state discipline [SINGLE]
+
 Warped-detail memory, dyadic mix, first-frame==still, always-refresh store.
-Instance: holo temporal. Second instance wanted (RIFE's own temporal behavior?
-any recurrent use in diffusion sampling loops? -- diffusion iterates the SAME
-net N times: is that S19 with a=1.0? Delicious question, OPEN).
+Instance: holo temporal. Second instance wanted (RIFE's own temporal
+behavior? any recurrent use in diffusion sampling loops? -- diffusion
+iterates the SAME net N times: is that S19 with a=1.0? Delicious question,
+OPEN).
+Parse 2026-09-30 (diffusion_reverse/demo_denoise.py, DDIM 10 steps):
+DATED NEGATIVE, stays SINGLE. Shares loop-carried state + always-refresh
+store + same-net-each-step, but fails the load-bearing elements: the mix
+is a schedule blend (time-varying float coefficients from the noise
+schedule — their own words: "float scheduler scaffolding"), NOT a dyadic
+(1-a,a) mix; there is no warp/align of the memory; the first step starts
+from pure noise (no first-frame==still identity — holo frame 0 output ==
+still output exactly, gated); and the net is time-conditioned (temb per
+step, no holo counterpart). a=1.0 would mean pure memory (Dmix=warp(Dprev))
+— diffusion blends current latent AND net output, so the question as posed
+answers NO. Positive residue: the schedule-as-data half parses as S09
+("schedules as versioned data", already CONFIRMED) and the store half as
+STATE discipline — recognition-first porting working (parsed into the list
+before any code, no new structure claimed).
 
 ### S20 parity-with-basis + substitution gates [CONFIRMED, meta]
 dB parity with declared basis; file-exchange exactness; mirrored-bug
@@ -169,7 +185,7 @@ this entry needs no gate (it IS gates). Cute. Moving on.
 | S16 | L2 handoff | Y(out) | Y(in) | Y(out) | Y(in) | ? | ? |
 | S17 | hashed priors | - | - | - | Y | ? | ? |
 | S18 | fit/freeze | ? | ? | ? | Yx3 | ? | ? |
-| S19 | temporal IIR | ? | - | - | Y | loops? | - |
+| S19 | temporal IIR | ? | - | - | Y | no (DDIM parse 2026-09-30, see S19) | - |
 | S20 | parity gates | Y(0-diff) | Y | ? | Y | ? | ? |
 
 (- = believed absent, which is also a claim and should be checked.)

@@ -380,6 +380,15 @@ frozen 24.0dB, CONFIG m_acc 35492 recovers 65.1dB (41dB swing, bar 40).
  (n_chunk=32) deliberately NOT mirrored (tiling only, same sums).
  Stated divergence (holo_conv precedent): from_fixed extremes —
  numpy asserts, C clamps; fixtures stay in-range.
+ ## #LIB-033: recognition-first parse, negative result recorded [CLOSED]
+
+ Roadmap gate 3 (S19 bet): parsed diffusion DDIM sampling into INVENTORY
+ before writing any code — dated negative (schedule-blend ≠ dyadic mix,
+ no warp, noise-seed ≠ first-frame-still, time-conditioned net), S19 stays
+ SINGLE, matrix cell updated, residue assigned to S09 + STATE discipline.
+ Method note: negatives get the same writeup standard as positives
+ (evidence, reasons, residue) — an unrecorded parse is a rumor; a recorded
+ negative is a result. Time-box honored: static parse only, no code run.
 Honest scopes, all stated: (1) the sweep proved single-scale-up CANNOT
 separate the walls (matmul and softmax saturation arrive together,
 both ~w²) — the split works because attention is CONTRACT-bound
