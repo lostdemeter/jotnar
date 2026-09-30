@@ -566,6 +566,32 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-049: directional stores as structure (implant DEF) [CLOSED]
+
+ stdlib/dirstore.asm implant_apply (2 MATMULs) + variant listings
+ (xf_block_implant, mlp_qwen0_implant): the rank-1 write as TEXT instead
+ of weight bytes. Toy: sham 99.8dB (parity not exact -- ADD re-bridges),
+ listing-vs-surgery 91.2dB, A=0.2 keeps both paths in-envelope (A=2.0
+ saturates each side differently, 16dB -- envelope discipline). Real:
+ transfer 36.8dB vs predicted 60 -- FALSIFIED, bisected to small-vector
+ ENCODE quantum (u at +-0.009 pays ~0.2% per materialization; surgery
+ encodes once at +-0.44), NOT saturation; the gauge "fix" made it worse
+ (36.8<38.6), which is how the true mechanism got found. Doctrine:
+ materialization pays quantum tax per hop (LIB-006's lesson, generalized);
+ gauge must balance quantum (u,v LARGE) vs envelope (intermediates SMALL);
+ m_acc headroom is the untested release valve. Falsification with a
+ bisected mechanism beats a tuned pass.
+## #LIB-050: first model read + searches (labeling-loop input) [CLOSED]
+
+ chain/read.py (readout tables + dead_shelves/movers/selectivity) +
+ test_read.py (instrument gates on toy) + docs/MODEL_READ.md (the actual
+ 112-direction read of Qwen down_proj). Answers: 2 dead shelves
+ (864/872); France/Paris share giants (0/8/72) with distinct leaners
+ (16/24 vs 96/328); selectivity spreads 29dB (328->Paris, 24->France).
+ Caveats fenced in the doc (sampled 1/8, positional-not-semantic, one
+ prompt). Standing point: the read is a TABLE, searches are QUERIES --
+ information retrieval over weights, and the labeling loop's input is now
+ a concrete artifact instead of a wish.
  ## #LIB-036: elementwise CUDA batch (v1.2 gate 2b) [CLOSED]
 
  9 kernels (holo_elem.cu: sqrt/tmul/tdiv/binop/square-clip/sigmoid/abs/

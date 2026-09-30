@@ -248,3 +248,21 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      needs both in-envelope, not just the mechanism right.
   3. Materialization pays quantum tax per hop -- LIB-006's fusion
      lesson generalized to the store abstraction. The road rhymes.
+
+## 2026-09-30: first model read (CLOCKED)
+
+- Read instrument (chain/read.py) + gates (test_read.py) + 112-dir real
+  readout + docs/MODEL_READ.md with three searches answered (#LIB-050).
+- Wall time: clock 22:16:05Z -> 22:21Z (~5 min: readout sweep 116s +
+  searches + instrument + gates + MODEL_READ + verify).
+- Surprises:
+  1. Shared giants + distinct leaners (France 16/24, Paris 96/328):
+     content has BOTH shared and selective structure -- the read
+     separates them for free once fingerprints exist.
+  2. The most uniform direction (872) is dead: uniformity without magnitude
+     is vacuous. Selectivity must be read jointly with global dB --
+     queries compose, single numbers mislead (the router's
+     flicker-wins-AND-sharpness-bounded lesson, recurring).
+  3. 116 seconds for 112 directions: reads are CHEAP. The labeling loop
+     is no longer blocked on instruments -- only on the cross-context
+     stability question, which is now askable.
