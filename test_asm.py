@@ -586,6 +586,60 @@ def main():
         check("asm-shape-gather", "out of range" in str(e),
               f"fails loud ({str(e)[:60]})")
 
+    # Composition discipline: DEF formal AS contracts checked at CALL sites
+    # (both known + concrete + unequal fails naming CALL site AND DEF origin;
+    # UNKNOWN either side defers to post-expansion verify + runtime).
+    _t3 = S.encode(np.full(3, 0.25))
+    _lib = ("DEF shl(x AS T:HW) -> (y AS T:HW)\n"
+            "  y = ADD(x, x)\nEND\n")
+    try:
+        r5 = ASM.run_text(_lib + "IN a AS T:HW\nOUT = CALL shl(a)\n",
+                          REGISTRY, {"a": _t3}, sigs=SIGS)
+        check("asm-contract-match", True, "declared layouts agree, runs")
+    except ASM.AsmError as e:
+        check("asm-contract-match", False, str(e)[:70])
+    try:
+        ASM.run_text(_lib + "IN a AS F:HW\nOUT = CALL shl(a)\n",
+                     REGISTRY, {"a": np.zeros((4, 4))}, sigs=SIGS)
+        check("asm-contract-violation", False, "mismatched CALL accepted")
+    except ASM.AsmError as e:
+        check("asm-contract-violation",
+              "wants T:HW" in str(e) and "DEF at" in str(e),
+              f"names site+origin ({str(e)[:80]})")
+    try:
+        r6 = ASM.run_text(_lib + "IN a\nOUT = CALL shl(a)\n",
+                          REGISTRY, {"a": _t3}, sigs=SIGS)
+        check("asm-contract-defer", True, "UNKNOWN actual defers silently")
+    except ASM.AsmError as e:
+        check("asm-contract-defer", False, str(e)[:70])
+    try:
+        ASM.run_text("IN a AS T:HW\nDEF v(x AS $A) -> (y)\n  y = ADD(x, x)\nEND\n"
+                     "OUT = CALL v(a)\n",
+                     REGISTRY, {"a": _t3}, sigs=SIGS)
+        check("asm-contract-varformal", False, "accepted $VAR formal")
+    except ASM.AsmError as e:
+        check("asm-contract-varformal", "must not use $VAR" in str(e),
+              f"fails loud ({str(e)[:60]})")
+    # IMPORT contracts: interface table + cross-file enforcement.
+    import tempfile as _tf2
+    import shutil as _sh2
+    d2 = _tf2.mkdtemp()
+    try:
+        open(os.path.join(d2, "geom.asm"), "w").write(_lib)
+        errs, rep = ASM.verify('IMPORT "geom.asm"\nIN a AS T:HW\nOUT = CALL shl(a)\n',
+                               REGISTRY, SIGS, basedir=d2)
+        check("asm-iface-table", "geom.asm" in rep["defs"].get("shl", {}).get("origin", ""),
+              f"interface visible: {sorted(rep['defs'])}")
+        check("asm-iface-verify", errs == [], f"compliant import verifies clean: {errs}")
+        ASM.run_text('IMPORT "geom.asm"\nIN a AS F:HW\nOUT = CALL shl(a)\n',
+                     REGISTRY, {"a": np.zeros((4, 4))}, sigs=SIGS, basedir=d2)
+        check("asm-iface-violation", False, "cross-file mismatch accepted")
+    except ASM.AsmError as e:
+        check("asm-iface-violation", "wants T:HW" in str(e),
+              f"enforced across files ({str(e)[:80]})")
+    finally:
+        _sh2.rmtree(d2, ignore_errors=True)
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

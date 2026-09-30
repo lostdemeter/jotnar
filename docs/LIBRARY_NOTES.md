@@ -301,3 +301,15 @@ purpose: silent numpy broadcasting hid real bugs. The positives matter more
 than the negatives: every existing suite passes WITH checks active, proving
 no legitimate broadcasting broke. Doctrine: strictness must be EARNED by a
 green full-suite, never assumed safe.
+## #LIB-027: composition contracts (DEF formals checked at CALL) [CLOSED]
+
+Geometry discipline, second half: DEF formals may carry AS layouts; CALL
+sites check actuals' DECLARED layouts (both known + concrete + unequal fails
+naming CALL site AND DEF origin); UNKNOWN either side defers to
+post-expansion verify + runtime (gradual across files, stated). $VAR
+formals refused (no bindings at contract time). verify() reports the DEF
+interface table (composition contracts visible in one place). IN pre-scan
+supplies caller layouts (IMPORTed INs stay UNKNOWN -- documented limit, not
+a hole: post-expansion machinery covers them). First use found nothing to
+fix (all suites green pre-existing) -- discipline that changes nothing
+existing is safe discipline.

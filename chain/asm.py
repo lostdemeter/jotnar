@@ -50,6 +50,21 @@ def expand(text, basedir=".", origin="<?>", defs=None, stack=()):
         defs = {}
     raw = [(l, f"{origin}:{i}") for i, l in enumerate(text.splitlines(), 1)]
     flat, i, counter = [], 0, [0]
+    # Pre-scan current-file IN declarations so CALL-site contract checks see
+    # caller layouts (IMPORTed INs stay UNKNOWN -> deferred to post-expansion
+    # verify + runtime; gradual typing across files, stated).
+    in_lay0 = {}
+    for _raw in raw:
+        _code = _raw[0].split("#", 1)[0].strip()
+        _toks = _code.split(None, 1)
+        if _toks and _toks[0].upper() == "IN" and len(_toks) > 1:
+            _rest, _up = _toks[1], _toks[1].upper()
+            if " AS " in _up:
+                _idx = _up.index(" AS ")
+                for _nm in _rest[:_idx].split(","):
+                    _nm = _nm.strip()
+                    if _nm:
+                        in_lay0[_nm] = _rest[_idx + 4:].strip() or None
     # NOTE: raw lines get comment-stripped when READ (code = ... below);
     # expanded lines emitted by _expand_call derive from already-stripped
     # code, so parse() must NOT re-strip them (generated names contain '#',
@@ -67,11 +82,24 @@ def expand(text, basedir=".", origin="<?>", defs=None, stack=()):
             raise AsmError(f"{site}: CALL of unknown DEF '{name}'")
         if name in dstack:
             raise AsmError(f"{site}: recursive CALL '{name}' (def stack {dstack})")
-        fins, fouts, body = defs[name]
+        D = defs[name]
+        fins, fouts, body = D["fins"], D["fouts"], D["body"]
         if len(actuals) != len(fins):
             raise AsmError(f"{site}: CALL {name} wants {len(fins)} args, got {len(actuals)}")
         if len(outs) != len(fouts):
             raise AsmError(f"{site}: CALL {name} produces {len(fouts)}, got {len(outs)} outs")
+        # contract check: formal AS layouts vs caller DECLARED layouts.
+        # Both known + concrete + unequal -> fail naming CALL site AND DEF
+        # origin. UNKNOWN either side defers (post-expansion verify + runtime
+        # cover it). Formal $VAR layouts are meaningless here -> fail loud.
+        for fml, act in zip(fins, actuals):
+            fl = D["fin_lay"].get(fml)
+            if fl is not None and fl.startswith("$"):
+                raise AsmError(f"{site}: DEF '{name}' formal '{fml}' must not use $VAR layouts")
+            al = in_lay0.get(act)
+            if fl and al and fl != al:
+                raise AsmError(f"{site}: CALL {name}('{act}' is {al}) violates "
+                               f"formal '{fml}' wants {fl} (DEF at {D['origin']})")
         counter[0] += 1
         pre = f"{name}#{counter[0]}."
         mapping = dict(zip(fins, actuals))
@@ -177,8 +205,27 @@ def expand(text, basedir=".", origin="<?>", defs=None, stack=()):
             m = _re3.match(r"DEF\s+(\w+)\s*\((.*)\)\s*->\s*\((.*)\)\s*$", code)
             if not m:
                 raise AsmError(f"{org}: bad DEF syntax (want DEF name(a, b) -> (c))")
-            name, fins, fouts = m.group(1), [a.strip() for a in m.group(2).split(",") if a.strip()], \
-                [a.strip() for a in m.group(3).split(",") if a.strip()]
+
+            def _formals(spec, what):
+                out = []
+                for part in spec.split(","):
+                    part = part.strip()
+                    if not part:
+                        continue
+                    up = part.upper()
+                    if " AS " in up:
+                        idx = up.index(" AS ")
+                        nm, lay = part[:idx].strip(), part[idx + 4:].strip() or None
+                    else:
+                        nm, lay = part, None
+                    if not nm.replace("_", "").isalnum() or not nm[0].isalpha():
+                        raise AsmError(f"{org}: bad {what} name '{nm}'")
+                    out.append((nm, lay))
+                return out
+
+            name = m.group(1)
+            fins = _formals(m.group(2), "formal")
+            fouts = _formals(m.group(3), "return")
             if name in defs:
                 raise AsmError(f"{org}: duplicate DEF '{name}'")
             body = []
@@ -198,7 +245,11 @@ def expand(text, basedir=".", origin="<?>", defs=None, stack=()):
                 body.append((bline, borg, False))
             else:
                 raise AsmError(f"{org}: DEF '{name}' missing END")
-            defs[name] = (fins, fouts, body)
+            defs[name] = {"fins": [n for n, _ in fins],
+                          "fouts": [n for n, _ in fouts],
+                          "fin_lay": {n: l for n, l in fins},
+                          "fout_lay": {n: l for n, l in fouts},
+                          "body": body, "origin": org}
         elif head == "CALL":
             raise AsmError(f"{org}: CALL needs outputs (want x = CALL name(...))")
         else:
@@ -396,7 +447,8 @@ def verify(text, registry, sigs=None, basedir="."):
     over DECLARED layouts only (IN AS + concrete sig patterns). Returns
     (errors, report): errors = list of conflict strings derivable without
     values; report has resolved/total coverage counts (gradual typing means
-    absence of proof -- verify() reports coverage honestly)."""
+    absence of proof -- verify() reports coverage honestly) plus the DEF
+    interface table (composition contracts visible in one place)."""
     config, inp, bound, _ = assemble(text, registry, sigs, basedir)
     layouts = {n: (l or _UNKNOWN) for n, l in inp}
     errors = []
@@ -409,8 +461,12 @@ def verify(text, registry, sigs=None, basedir="."):
                 layouts[o] = _UNKNOWN
     total = len(layouts)
     resolved = sum(1 for v in layouts.values() if v != _UNKNOWN)
+    _, defs = expand(text, basedir, origin=basedir)
+    iface = {n: {"formals": [(f, d["fin_lay"].get(f)) for f in d["fins"]],
+                 "returns": [(f, d["fout_lay"].get(f)) for f in d["fouts"]],
+                 "origin": d["origin"]} for n, d in defs.items()}
     return errors, {"resolved": resolved, "total": total,
-                    "layouts": dict(layouts)}
+                    "layouts": dict(layouts), "defs": iface}
 
 
 def _summarize(v):
