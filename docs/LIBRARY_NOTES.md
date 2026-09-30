@@ -176,3 +176,18 @@ is green wallpaper; (2) the negative control: replicate-pad vs zero-pad convs
 MUST differ at borders and agree interiorly, characterizing the divergence
 contract. A substitution framework that can't say no is just aliasing. This
 is the L3 architectures claim made concrete: same column, same behavior.
+## #LIB-017: side-channels carry features, consensus governs them [CLOSED]
+
+First seam carrying features instead of pixels: flow corroborates tensor
+orientation. Rules that transferred: boundary conversion (float at seam,
+integers downstream -- same shape as depthprior), frozen analytic v1 with
+fitting flagged, hashed-cache producer pattern reserved for Phase 2.
+New doctrine -- CONSENSUS for directional side-channels: a directional prior
+may CONFIRM or VETO a local claim, never originate one (aperture problem is
+the general reason; panning-along-edge is the fixture). Corollaries, both
+gated: zero-input reproduces blind bit-exactly (static mask takes the direct
+path -- roundtrips must never tax pixels that owe them nothing); direction is
+assigned before gating (gating first lets corroboration only ever remove).
+The pan-e2e ratio gate (0.504 ~= FLOW_ATTEN exactly) is the template for
+quantitative modulation gates: don't just assert "changed", assert the
+stated factor.

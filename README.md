@@ -19,6 +19,7 @@ Check | Result
 `test_v4.py` | ALL OK (noise 40.27dB BARRED, real 52dB, structured 55dB, rotation 0.04, flat, sharpens)
 `test_v5.py` | ALL OK (grain 47.95dB barred, real 47.61, structured 50.43, rotation 0.04, detail-order, noise measured 37.10)
 `test_substitute.py` | ALL OK (sigmoid swaps numpy<->torch/CUDA exact on 2007 triples; chain-swap bit-identical live 2x; replicate-vs-zero refusal characterized)
+`test_motion.py` | ALL OK (compass 14, rescue-V 0.36->0.81, zeroflow-exact bytes, pan-preserve, parity 42.94dB, pan-e2e ratio 0.504, rotation 0.04)
 `demo.py --selftest` | GO 68.5dB
 
 ## Quick start
@@ -36,6 +37,7 @@ python3 test_depth.py               # expect ALL OK (needs DAV2 checkout + weigh
 python3 test_v4.py                  # expect ALL OK (continuity: noise barred)
 python3 test_v5.py                  # expect ALL OK (learned gate, grain barred)
 python3 test_substitute.py          # expect ALL OK (needs torch + rife checkout; cross-model swap)
+python3 test_motion.py               # expect ALL OK (motion side-channel consensus)
 python3 demo.py input.png output.png --beta 0.5 --blur splat --ctrl on
 python3 demo.py input.png output.png --beta 0.5 --blur splat_soft --ctrl soft  # v4
 python3 demo.py input.png output.png --beta 0.5 --blur splat_soft --ctrl v5    # v5

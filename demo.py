@@ -34,12 +34,14 @@ def psnr(a, b, peak=1.0):
     return float("inf") if mse == 0 else 10 * np.log10(peak ** 2 / mse)
 
 
-def run(rgb01, beta, sigma, use_alpha, blur="iso", ctrl=False, depth=None):
+def run(rgb01, beta, sigma, use_alpha, blur="iso", ctrl=False, depth=None,
+          motion=None):
     from chain.control import load_ctrl
     rgb_lin = srgb_to_linear(rgb01).astype(np.float32)
     out_lin, yenh, info = enhance_image_int(rgb_lin, beta=beta, sigma=sigma,
                                             use_alpha=use_alpha, blur=blur,
-                                            ctrl=ctrl, depth=depth)
+                                            ctrl=ctrl, depth=depth,
+                                            motion=motion)
     if blur in ("splat", "splat_soft"):
         P = load_ctrl()
         att = P["iso_atten"] if ctrl else 1.0
@@ -57,7 +59,7 @@ def run(rgb01, beta, sigma, use_alpha, blur="iso", ctrl=False, depth=None):
                                                   v5_w0=P.get("v5_w0", 0.0),
                                                   v5_w1=P.get("v5_w1", 0.0),
                                                   v5_w2=P.get("v5_w2", 0.0),
-                                                  depth=depth)
+                                                  depth=depth, motion=motion)
     else:
         oracle_lin, _ = enhance_image_float(rgb_lin, beta=beta, sigma=sigma,
                                             use_alpha=use_alpha)
@@ -81,6 +83,9 @@ def main():
                          "v5 = learned detail gate (needs splat_soft blur)")
     ap.add_argument("--depth", default=None, metavar="TAG",
                     help="depth prior via DAV2 (cached samples/depth/TAG.npy)")
+    ap.add_argument("--motion", default=None, metavar="NPY",
+                    help="forward flow (H,W,2) float pixels .npy side-channel; "
+                         "live RIFE producer lands in Phase 2")
     ap.add_argument("--selftest", action="store_true")
     a = ap.parse_args()
     use_alpha = bool(a.alpha)
@@ -109,10 +114,14 @@ def main():
     if a.depth is not None:
         from chain.depthprior import get_depth
         depth = get_depth(rgb01, a.depth)
+    motion = None
+    if a.motion is not None:
+        import numpy as _np
+        motion = _np.load(a.motion)
     out, d, info = run(rgb01.astype(np.float32), a.beta, a.sigma, use_alpha,
-                       blur=a.blur, ctrl=ctrl, depth=depth)
+                       blur=a.blur, ctrl=ctrl, depth=depth, motion=motion)
     Image.fromarray(out).save(a.output)
-    print(f"enhanced {a.input} -> {a.output} beta={a.beta} sigma={a.sigma} alpha={use_alpha} blur={a.blur} ctrl={ctrl} depth={a.depth}")
+    print(f"enhanced {a.input} -> {a.output} beta={a.beta} sigma={a.sigma} alpha={use_alpha} blur={a.blur} ctrl={ctrl} depth={a.depth} motion={a.motion}")
     print(f"parity int-vs-oracle: {d:.2f}dB (bar {BAR_DB}) -> {'GO' if d >= BAR_DB else 'NO-GO'}")
     print(f"audit={AUDIT}")
     sys.exit(0 if d >= BAR_DB else 1)

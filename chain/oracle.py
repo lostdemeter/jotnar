@@ -92,7 +92,7 @@ def splat_bank():
             _aniso(1.0, 1.0)]
 
 
-def splat_blur_float(a, coh_thr=None, soft=False):
+def splat_blur_float(a, coh_thr=None, soft=False, motion=None):
     thr = COH_THR if coh_thr is None else float(coh_thr)
     gx = _corr_replicate(a, SOBEL_X)
     gy = _corr_replicate(a, SOBEL_Y)
@@ -112,9 +112,26 @@ def splat_blur_float(a, coh_thr=None, soft=False):
     diag_dom = 2 * np.abs(jxy) > np.abs(diff)
     vert = diff > 0
     diag_pos = jxy >= 0
-    bucket = np.where(~gate, 4,
-             np.where(~diag_dom, np.where(vert, 0, 1),
-                      np.where(diag_pos, 3, 2))).astype(np.int8)
+    # direction always assigned; gate applied separately (mirrors splat.py:
+    # consensus needs the would-be direction of gate-shut pixels).
+    direction = np.where(~diag_dom, np.where(vert, 0, 1),
+                         np.where(diag_pos, 3, 2)).astype(np.int8)
+    bucket = np.where(~gate, 4, direction).astype(np.int8)
+    if motion is not None:
+        # consensus mirror (float): eff gate + strong/agree select. Uses the
+        # same quantized (perp, norm, static) as the INT path (single seam
+        # conversion -- no second mapping to drift).
+        import chain.motion as _M
+        from chain.control import load_ctrl as _lc
+        perp, norm, static_m = _M.quantize(np.ascontiguousarray(motion))
+        hi = _lc().get("coh_hi", 0.4)
+        eff = np.maximum(coh, norm)
+        gate_f = gate | (eff >= thr)
+        strong = coh >= hi
+        agree = (direction == perp)
+        opened = np.where(~gate_f, 4,
+                          np.where(strong | agree, direction, 4)).astype(np.int8)
+        bucket = np.where(static_m, bucket, opened).astype(np.int8)
     bank = splat_bank()
     outs = [_corr_replicate(a, k) for k in bank]
     if soft:
@@ -146,9 +163,11 @@ def enhance_luminance_float_splat(y, beta=0.5, iso_atten=1.0, coh_thr=None,
                                   mid_atten=1.0, coh_hi=0.5, depth=None,
                                   far_atten=0.5, strong_atten=1.0, soft=False,
                                   soft_k=30.0, soft_blur=False, v5=False,
-                                  v5_w0=0.0, v5_w1=0.0, v5_w2=0.0):
+                                  v5_w0=0.0, v5_w1=0.0, v5_w2=0.0,
+                                  motion=None):
     a = np.sqrt(np.maximum(y, 0))
-    as_, bucket, coh = splat_blur_float(a, coh_thr=coh_thr, soft=soft_blur)
+    as_, bucket, coh = splat_blur_float(a, coh_thr=coh_thr, soft=soft_blur,
+                                        motion=motion)
     if soft:
         w = (iso_atten + (mid_atten - iso_atten) * _sigmoid(soft_k * (coh - (coh_thr if coh_thr is not None else 0.25)))
              + (strong_atten - mid_atten) * _sigmoid(soft_k * (coh - coh_hi)))
@@ -162,6 +181,14 @@ def enhance_luminance_float_splat(y, beta=0.5, iso_atten=1.0, coh_thr=None,
         dhat = np.clip(np.abs(d) * 4.0, 0, 1)
         scale = 0.5 + _sigmoid(v5_w0 + v5_w1 * coh + v5_w2 * dhat)
         beff = beff * scale
+    if motion is not None:
+        from chain.motion import FLOW_ATTEN
+        d = np.ascontiguousarray(motion, dtype=np.float64)
+        assert d.shape == y.shape + (2,), f"flow geometry {d.shape}"
+        import chain.motion as _M
+        perp, norm, static_m = _M.quantize(d)
+        beff = beff * np.where(static_m, 1.0,
+                               1.0 - (1.0 - FLOW_ATTEN) * norm)
     if depth is not None:
         d = np.ascontiguousarray(depth, dtype=np.float64)
         n = np.zeros_like(d) if d.max() <= d.min() else (d - d.min()) / (d.max() - d.min())
@@ -174,7 +201,8 @@ def enhance_image_float_splat(rgb, beta=0.5, iso_atten=1.0, coh_thr=None,
                               mid_atten=1.0, coh_hi=0.5, depth=None,
                               far_atten=0.5, strong_atten=1.0, soft=False,
                               soft_blur=False, v5=False,
-                              v5_w0=0.0, v5_w1=0.0, v5_w2=0.0):
+                              v5_w0=0.0, v5_w1=0.0, v5_w2=0.0,
+                              motion=None):
     y = 0.2126 * rgb[:, :, 0] + 0.7152 * rgb[:, :, 1] + 0.0722 * rgb[:, :, 2]
     yenh = enhance_luminance_float_splat(y, beta=beta, iso_atten=iso_atten,
                                          coh_thr=coh_thr, mid_atten=mid_atten,
@@ -183,6 +211,6 @@ def enhance_image_float_splat(rgb, beta=0.5, iso_atten=1.0, coh_thr=None,
                                          strong_atten=strong_atten, soft=soft,
                                          soft_blur=soft_blur, v5=v5,
                                          v5_w0=v5_w0, v5_w1=v5_w1,
-                                         v5_w2=v5_w2)
+                                         v5_w2=v5_w2, motion=motion)
     g = np.clip(yenh / np.maximum(y, 1e-12), 0.5, 2.0)
     return np.clip(rgb * g[:, :, None], 0, 1).astype(np.float32), yenh

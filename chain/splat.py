@@ -92,7 +92,8 @@ def structure(a_t, m_acc, m_cov):
             conv_trip(jxy, k, m_acc, m_out=m_cov), gx, gy)
 
 
-def coherence_bucket(jxx, jyy, jxy, gx, gy, m_cov, m_acc, coh_thr=None):
+def coherence_bucket(jxx, jyy, jxy, gx, gy, m_cov, m_acc, coh_thr=None,
+                     flow=None):
     """coh in [0,1] triples + integer bucket map {0:V,1:H,2:\\,3:/,4:iso}.
 
     Orientation comes from the SMOOTHED tensor (never raw gradients).
@@ -105,7 +106,23 @@ def coherence_bucket(jxx, jyy, jxy, gx, gy, m_cov, m_acc, coh_thr=None):
     NOTE on the diagonal sign: \\-edge (runs along y=x) has gradient normal
     (1,-1), so Jxy = gx*gy < 0 smoothed stays negative. Hence sq<0 -> \\ = 2,
     sq>=0 -> / = 3. The kernels match: bank[2] elongated along 45deg.
-    coh = aniso/trace with 0/0 -> 0. gx/gy args kept for signature (unused)."""
+    coh = aniso/trace with 0/0 -> 0. gx/gy args kept for signature (unused).
+
+    flow (side-channel consensus, chain/motion.py): None (default, legacy
+    behavior, bit-identical) or (perp int8 (H,W), norm float [0,1] (H,W),
+    static bool (H,W)) from motion.quantize. Consensus rule -- flow CONFIRMS
+    or VETOES the tensor claim, never originates one (aperture problem):
+      eff = max(coh, norm); gate = eff >= thr   (motion explains weak coh)
+      strong = coh >= hi                         (tensor's own testimony)
+      agree = (tensor_bucket == perp)
+      final = gate AND (strong OR agree)
+    Static pixels take the direct path bit-exactly (integer select on the
+    static mask -- the consensus roundtrip may 1-step-perturb near-zero
+    coherence, and static pixels must never pay that).
+    Returns (coh, final_bucket, audit) where audit also carries flow_scale
+    triples (1-(1-FLOW_ATTEN)*norm: beta caution on fast regions, ones on
+    static) and the raw tensor bucket (for gates). Zero flow fields reproduce
+    blind EXACTLY (gated); motion=None skips the branch (also exact)."""
     shape = jxx[0].shape
     # Discriminant squares are exact (tmul), but their SUM via binop at
     # m_cov underflows the fixed floor (~1.6e-5) on real pixels: disc lives
@@ -143,29 +160,75 @@ def coherence_bucket(jxx, jyy, jxy, gx, gy, m_cov, m_acc, coh_thr=None):
     diag_dom = np.abs(sq) > np.abs(dq)
     vert = dq > 0
     diag_pos = sq >= 0  # Jxy>=0 -> /-edge (normal (1,1)); <0 -> \\-edge
-    bucket = np.where(~gate, 4,
-             np.where(~diag_dom, np.where(vert, 0, 1),
-                      np.where(diag_pos, 3, 2))).astype(np.int8)
+    # direction ALWAYS assigned (gate applied separately): consensus needs the
+    # would-be direction of gate-shut pixels (a blind-iso pixel carries no
+    # direction, so gating first would let flow only ever REMOVE orientation).
+    # Reorder only -- blind path below reproduces the legacy expression exactly.
+    direction = np.where(~diag_dom, np.where(vert, 0, 1),
+                         np.where(diag_pos, 3, 2)).astype(np.int8)
+    bucket = np.where(~gate, 4, direction).astype(np.int8)
     # soft-blend inputs (v4): the signed triples relu splits on. Returned via
     # audit (documented); the hard path ignores them.
-    return coh, bucket, {"gate_frac": float((bucket == 4).mean()),
-                         "diag_frac": float(((bucket == 2) | (bucket == 3)).mean()),
-                         "d": d, "s2": s2}
+    out_audit = {"gate_frac": float((bucket == 4).mean()),
+                 "diag_frac": float(((bucket == 2) | (bucket == 3)).mean()),
+                 "d": d, "s2": s2, "tensor_bucket": bucket.copy()}
+    if flow is None:
+        return coh, bucket, out_audit
+    # ---- consensus branch (side-channel; flow is not None) ----
+    from chain.control import load_ctrl as _lc
+    from chain.motion import FLOW_ATTEN
+    perp, norm_f, static_m = flow
+    assert perp.shape == shape, f"flow geometry {perp.shape} vs {shape}"
+    hi = _lc().get("coh_hi", 0.4)
+    norm_t = S.encode(np.ascontiguousarray(norm_f, dtype=np.float64))
+    # eff = max(coh, norm) in fixed domain (integer max, exact)
+    q_coh = S.to_fixed(coh[0], coh[1], coh[2], m_cov)
+    q_norm = S.to_fixed(norm_t[0], norm_t[1], norm_t[2], m_cov)
+    eff = S.from_fixed(np.maximum(q_coh, q_norm), m_cov)
+    eff_q = S.to_fixed(eff[0], eff[1], eff[2], m_cov)
+    # flow only OPENS (blind gate OR-ed in): the eff roundtrip
+    # (fixed max + rescale) may 1-step-perturb near-zero coherence, and must
+    # never shut a blind-open pixel. Vetoes below are the design working
+    # (weak tensor + disagreeing flow = genuine uncertainty -> iso), not noise.
+    gate_f = gate | (eff_q >= tq)
+    hq = S.to_fixed(*const_trip(hi, (1,)), m_cov)[0]
+    strong = q_coh >= hq
+    # agree against the DIRECTION (not the gated bucket): gate-shut pixels
+    # have no direction in bucket (iso), so agreement must read direction.
+    agree = (direction == np.ascontiguousarray(perp, dtype=np.int8))
+    opened = np.where(~gate_f, 4,
+                      np.where(strong | agree, direction, 4)).astype(np.int8)
+    final = np.where(static_m, bucket, opened).astype(np.int8)
+    # flow_scale = 1-(1-FLOW_ATTEN)*norm; exact ones on static (tmul by
+    # encode(1.0) is the identity: exp-add of BIAS-BIAS, sign*1 -- exact)
+    ka = S.encode(np.full(shape, 1.0 - FLOW_ATTEN, dtype=np.float64))
+    one = S.encode(np.ones(shape, dtype=np.float64))
+    dec = binop_fixed(one, tmul(ka, norm_t), m_cov, m_cov, op="sub")
+    flow_scale = (np.where(static_m, one[0], dec[0]).astype(np.int8),
+                  np.where(static_m, one[1], dec[1]).astype(np.int32),
+                  np.where(static_m, one[2], dec[2]).astype(np.uint8))
+    out_audit["gate_frac"] = float((final == 4).mean())
+    out_audit["flow_scale"] = flow_scale
+    out_audit["tensor_bucket"] = bucket
+    return coh, final, out_audit
 
 
 def splat_blur(a_t, m_acc, m_cov, bank_k=None, coh_thr=None, fused=False,
-               soft=False):
+               soft=False, flow=None):
     """Bank blur + exact mux. Returns (out_trip, diag).
     fused=True: single-pass per-pixel kernel gather (bit-identical).
     soft=True (v4): relu-weighted BLEND of all 5 bank outputs instead of the
     mux -- continuous in the tensor (no bucket flips anywhere). buckets still
     computed for diag/audit + the v3 beta path. Default False (hard select
-    mirrors the C lowering)."""
+    mirrors the C lowering).
+    flow: None (blind, legacy) or motion.quantize triple for side-channel
+    consensus (buckets) -- diag carries flow_scale triples for beta caution
+    (applied by the caller, like depth)."""
     if coh_thr is None:
         coh_thr = load_ctrl()["coh_thr"]
     jxx, jyy, jxy, gx, gy = structure(a_t, m_acc, m_cov)
     coh, bucket, audit = coherence_bucket(jxx, jyy, jxy, gx, gy, m_cov, m_acc,
-                                          coh_thr=coh_thr)
+                                          coh_thr=coh_thr, flow=flow)
     if bank_k is None:
         bank_k = bank()
     assert len(bank_k) == 5, "bank is 5-way in v1.1"
@@ -180,6 +243,10 @@ def splat_blur(a_t, m_acc, m_cov, bank_k=None, coh_thr=None, fused=False,
     diag = {"bucket": bucket, "gate_frac": audit["gate_frac"],
             "coh": S.decode(coh[0], coh[1]) * (1 - coh[2].astype(np.float64)),
             "coh_t": coh}  # triples for the v2 controller (integer path)
+    if "flow_scale" in audit:
+        diag["flow_scale"] = audit["flow_scale"]
+    if "tensor_bucket" in audit:
+        diag["tensor_bucket"] = audit["tensor_bucket"]
     return out, diag
 
 

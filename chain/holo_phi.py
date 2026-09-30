@@ -287,14 +287,17 @@ def enhance_luminance_int(y_lin, beta=0.5, kernel=None, m=None, use_alpha=False,
                           m_acc=None, m_cov=None, blur="iso", ctrl=False,
                           ctrl_atten=None, coh_thr=None, ctrl_mid=None,
                           coh_hi=None, depth=None, ctrl_strong=None,
-                          ctrl_v5w0=None, ctrl_v5w1=None, ctrl_v5w2=None):
+                          ctrl_v5w0=None, ctrl_v5w1=None, ctrl_v5w2=None,
+                          motion=None):
     """Integer datapath: Y [0,1] float (boundary) -> Y_enh triples + audits.
     Math actually executed: A=sqrt(Y); As=blur(A); D=A-As;
-    Aenh=A+beta_eff*D (beta_eff scalar, v2 controller field, and/or depth
-    multiplier -- modulations compose multiplicatively); Ienh=Aenh^2.
-    blur/ctrl/depth: docs/SPLAT_OP.md, docs/BETA_CTRL.md, docs/COMPOSE.md.
-    depth=None off, else float depth map at Y geometry (offline prior).
-    Overrides are search-only; scales as documented below."""
+    Aenh=A+beta_eff*D (beta_eff scalar, controller fields, depth and/or motion
+    multipliers -- modulations compose multiplicatively); Ienh=Aenh^2.
+    blur/ctrl/depth/motion: docs/SPLAT_OP.md, docs/BETA_CTRL.md, docs/COMPOSE.md,
+    docs/MOTION.md. depth=None off, else float depth map at Y geometry
+    (offline prior). motion=None off, else float (H,W,2) forward flow in
+    pixels at Y geometry (side-channel, chain/motion.py). Overrides are
+    search-only; scales as documented below."""
     if m_acc is None or m_cov is None:
         if m is not None:
             m_acc = m_cov = m
@@ -306,12 +309,18 @@ def enhance_luminance_int(y_lin, beta=0.5, kernel=None, m=None, use_alpha=False,
     y_t = S.encode(np.ascontiguousarray(y_lin, dtype=np.float64))
     a_t = sqrt_trip(y_t)
     diag = None
+    flow_q = None
+    if motion is not None:
+        from chain.motion import quantize as _mq
+        motion = np.ascontiguousarray(motion, dtype=np.float64)
+        assert motion.shape == (H, W, 2), f"flow geometry {motion.shape} vs Y {(H, W)}"
+        flow_q = _mq(motion)
     if blur in ("splat", "splat_soft"):
         from chain.splat import splat_blur
         from chain.control import load_ctrl
         cthr = coh_thr if coh_thr is not None else load_ctrl()["coh_thr"]
         as_t, diag = splat_blur(a_t, m_acc, m_cov, coh_thr=cthr,
-                                soft=(blur == "splat_soft"))
+                                soft=(blur == "splat_soft"), flow=flow_q)
     elif blur == "iso":
         as_t = conv_trip(a_t, kernel, m_acc, m_out=m_cov)
     else:
@@ -350,12 +359,16 @@ def enhance_luminance_int(y_lin, beta=0.5, kernel=None, m=None, use_alpha=False,
         near = near_mask(depth)
         depth_frac = float(near.mean())
         ds_t = tmul(ds_t, depth_mult((H, W), near))
+    if motion is not None:
+        assert diag is not None and "flow_scale" in diag, \
+            "flow_scale needs a splat blur (use blur='splat'/'splat_soft')"
+        ds_t = tmul(ds_t, diag["flow_scale"])
     aenh_t = binop_fixed(a_t, ds_t, m_cov, m_cov, op="add")
     ienh_t = tmul(aenh_t, aenh_t)  # I = |A|^2
     ienh_t = clip_fixed(ienh_t, 0.0, 1.0, m_cov)
     info = {"m_acc": m_acc, "m_cov": m_cov, "shape": (H, W),
             "alpha": bool(use_alpha), "blur": blur, "ctrl": bool(ctrl),
-            "depth": depth is not None}
+            "depth": depth is not None, "motion": motion is not None}
     if diag is not None:
         info["gate_frac"] = diag["gate_frac"]
     if depth_frac is not None:
@@ -398,7 +411,8 @@ def enhance_image_int(rgb_lin, beta=0.5, sigma=1.0, radius=2, use_alpha=False,
                       m=None, m_acc=None, m_cov=None, blur="iso", ctrl=False,
                       ctrl_atten=None, coh_thr=None, ctrl_mid=None,
                       coh_hi=None, depth=None, ctrl_strong=None,
-                      ctrl_v5w0=None, ctrl_v5w1=None, ctrl_v5w2=None):
+                      ctrl_v5w0=None, ctrl_v5w1=None, ctrl_v5w2=None,
+                      motion=None):
     """End-to-end integer chain on linear-light RGB float32 [0,1].
     Boundary float in/out; everything between is triples/fixed."""
     if m_acc is None or m_cov is None:
@@ -417,6 +431,7 @@ def enhance_image_int(rgb_lin, beta=0.5, sigma=1.0, radius=2, use_alpha=False,
                                          ctrl=ctrl, ctrl_atten=ctrl_atten,
                                          coh_thr=coh_thr, ctrl_mid=ctrl_mid,
                                          coh_hi=coh_hi, depth=depth,
+                                         motion=motion,
                                          ctrl_strong=ctrl_strong,
                                          ctrl_v5w0=ctrl_v5w0,
                                          ctrl_v5w1=ctrl_v5w1,
