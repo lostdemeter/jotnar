@@ -674,6 +674,15 @@ def main():
     except ASM.AsmError as e:
         check("asm-gelu-listing", False, str(e)[:70])
 
+    # v1.0 Gate 2: LANGUAGE.md covers every mnemonic (drift gate -- the
+    # reference must not silently fall behind the registry).
+    _lang = open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                              "docs", "LANGUAGE.md")).read()
+    _missing = sorted(m for m in REGISTRY if m not in _lang)
+    check("asm-lang-coverage", _missing == [],
+          f"{len(REGISTRY) - len(_missing)}/{len(REGISTRY)} mnemonics documented"
+          + ("" if not _missing else f" (missing {_missing})"))
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

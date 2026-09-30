@@ -66,7 +66,8 @@ where blur is iso-Gaussian, the splat bank (hard mux / fused / relu-blend),
 and beta_eff is scalar, the v3 decision field, the v4 sigmoid field, or the
 v5 learned gate (1x1 on coh + detail magnitude, fitted offline, frozen).
 Library notes live in docs/LIBRARY_NOTES.md (kept while using the library:
-#LIB-001..015). Specs: docs/SPLAT_OP.md, docs/BETA_CTRL.md, docs/COMPOSE.md
+#LIB-001..028). Language reference: docs/LANGUAGE.md (every mnemonic +
+tutorial + contribution process). Velocity log: docs/VELOCITY.md. Specs: docs/SPLAT_OP.md, docs/BETA_CTRL.md, docs/COMPOSE.md
 (step 3a depth built L1; temporal + L2 stay spec), docs/PROGRESS.md.
 
 ## Showcase (seeing every state)
