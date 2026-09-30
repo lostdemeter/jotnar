@@ -55,8 +55,23 @@ def op_splat_blur(vals, config, feeds):
     return out, diag["coh_t"]
 
 
+def _need_triples(t, op, name):
+    """Triple-ness assertion for the arithmetic core: triple-ops receiving
+    float arrays silently compute garbage (caught by gate). Layout-kind
+    checks cover DECLARED streams; this covers UNANNOTATED ones (gradual
+    typing must still refuse to compute nonsense). Systematic coverage of
+    every triple-op is backlog; core first, stated."""
+    import numpy as _np
+    ok = (isinstance(t, tuple) and len(t) == 3
+          and all(isinstance(x, _np.ndarray) for x in t))
+    if not ok:
+        raise ValueError(f"{op}: stream '{name}' must be triples, got {type(t)}")
+
+
 def op_sub(vals, config, feeds):
     a, b = vals
+    _need_triples(a, "SUB", "a")
+    _need_triples(b, "SUB", "b")
     _, m_cov = _scales()
     return H.binop_fixed(a, b, m_cov, m_cov, op="sub")
 
@@ -68,16 +83,21 @@ def op_beta_v5(vals, config, feeds):
 
 
 def op_mul(vals, config, feeds):
+    _need_triples(vals[0], "MUL", "a")
+    _need_triples(vals[1], "MUL", "b")
     return H.tmul(vals[0], vals[1])
 
 
 def op_add(vals, config, feeds):
+    _need_triples(vals[0], "ADD", "a")
+    _need_triples(vals[1], "ADD", "b")
     _, m_cov = _scales()
     return H.binop_fixed(vals[0], vals[1], m_cov, m_cov, op="add")
 
 
 def op_square(vals, config, feeds):
     (a,) = vals
+    _need_triples(a, "SQUARE", "a")
     _, m_cov = _scales()
     return H.clip_fixed(H.tmul(a, a), 0.0, 1.0, m_cov)
 

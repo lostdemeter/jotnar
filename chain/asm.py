@@ -31,11 +31,200 @@ class AsmError(Exception):
     pass
 
 
-def parse(text):
-    """text -> (config dict, [(name, layout|None)], [(outs, mn, args, ln)], [state])."""
+def _head_of(line):
+    toks = line.split(None, 1)
+    return toks[0].upper() if toks else ""
+
+
+def expand(text, basedir=".", origin="<?>", defs=None, stack=()):
+    """Pre-pass: IMPORT splicing + DEF collection + CALL expansion.
+    Returns (flat_lines, defs) where flat_lines = [(text, origin_str)] and
+    origin_str names the source ("file:12" or "file:12 via CALL@site:5").
+    Rules (all fail loud): IMPORT cycles; nested DEF; CONFIG/STATE inside
+    DEF; recursive CALL (expansion stack); arity mismatch on CALL;
+    duplicate DEF names. Expansion is textual macro semantics with
+    per-call-site namespacing (prefix name#k.): no runtime call overhead,
+    no closures -- the expanded listing is the program (inspectable)."""
+    import os as _os
+    if defs is None:
+        defs = {}
+    raw = [(l, f"{origin}:{i}") for i, l in enumerate(text.splitlines(), 1)]
+    flat, i, counter = [], 0, [0]
+    # NOTE: raw lines get comment-stripped when READ (code = ... below);
+    # expanded lines emitted by _expand_call derive from already-stripped
+    # code, so parse() must NOT re-strip them (generated names contain '#',
+    # e.g. twice#1.T -- re-stripping truncates them: caught by gate).
+    # Convention: flat entries are (text, origin, stripped_bool).
+
+    def _expand_call(mn_args, outs, site, dstack=()):
+        # mn_args like "name(p, q)"; outs = caller out names
+        mm = __import__("re").match(r"(\w+)\s*\((.*)\)\s*$", mn_args)
+        if not mm:
+            raise AsmError(f"{site}: bad CALL syntax (want name(a, b))")
+        name, argstr = mm.group(1), mm.group(2)
+        actuals = [a.strip() for a in argstr.split(",") if a.strip()]
+        if name not in defs:
+            raise AsmError(f"{site}: CALL of unknown DEF '{name}'")
+        if name in dstack:
+            raise AsmError(f"{site}: recursive CALL '{name}' (def stack {dstack})")
+        fins, fouts, body = defs[name]
+        if len(actuals) != len(fins):
+            raise AsmError(f"{site}: CALL {name} wants {len(fins)} args, got {len(actuals)}")
+        if len(outs) != len(fouts):
+            raise AsmError(f"{site}: CALL {name} produces {len(fouts)}, got {len(outs)} outs")
+        counter[0] += 1
+        pre = f"{name}#{counter[0]}."
+        mapping = dict(zip(fins, actuals))
+        mapping.update(zip(fouts, outs))
+        out = []
+        for btext, borig, _ in body:
+            code = btext.split("#", 1)[0].strip()
+            if not code:
+                continue
+            toks = code.split(None, 1)
+            if toks and toks[0].upper() == "CALL":
+                sub = _expand_call(toks[1], [], f"{borig} via CALL@{site}",
+                                   dstack + (name,))
+                out.extend(sub)
+                continue
+            # rewrite stream names: formals -> actuals, locals -> prefixed
+            def _rw(m):
+                w = m.group(0)
+                if w in mapping:
+                    return mapping[w]
+                return pre + w
+            import re as _re
+            # split off LHS outs vs RHS to map correctly
+            if "=" in code:
+                left, right = code.split("=", 1)
+                lo = [o.strip() for o in left.split(",")]
+                lo = [mapping.get(o, pre + o) if o not in mapping else mapping[o] for o in lo]
+                # mnemonic head stays; args rewritten. Head splits at the
+                # paren (NOT whitespace -- "ADD(x, x)" split on space gives
+                # head "ADD(x,"; caught by gate, documented).
+                import re as _re2
+                rs = right.strip()
+                # NOTE: split CALL form FIRST ("CALL name(args)" has a space
+                # before the paren -- naive paren-split yields head "CALL
+                # name" and silently keeps it as a mnemonic; caught by gate).
+                _mcall = _re2.match(r"(?i)(CALL)\s+(\w+)\s*\((.*)\)\s*$", rs)
+                if _mcall:
+                    sub = _expand_call(f"{_mcall.group(2)}({ _mcall.group(3)})",
+                                       lo, f"{borig} via CALL@{site}",
+                                       dstack + (name,))
+                    out.extend(sub)
+                    continue
+                if "(" in rs:
+                    h2, r2 = rs.split("(", 1)
+                    head, rest = h2.strip(), "(" + r2
+                else:
+                    parts = rs.split(None, 1)
+                    head = parts[0]
+                    rest = parts[1] if len(parts) > 1 else ""
+                if True:  # head/rest always paired by construction above
+                    if head.upper() == "CALL":
+                        # assignment-form inner call: recurse with the stack
+                        # (recursion detected via stack, not refused here).
+                        inner = rest[1:-1] if (rest.startswith("(") and rest.endswith(")")) else rest
+                        mm2 = __import__("re").match(r"(\w+)\s*\((.*)\)\s*$", inner)
+                        if not mm2:
+                            raise AsmError(f"{borig}: bad CALL syntax (want name(a, b))")
+                        sub = _expand_call(inner, lo,
+                                           f"{borig} via CALL@{site}",
+                                           dstack + (name,))
+                        out.extend(sub)
+                        continue
+                    if rest.startswith("(") and rest.endswith(")"):
+                        rargs = [a.strip() for a in rest[1:-1].split(",") if a.strip()]
+                        rargs = [mapping.get(a, pre + a) if not _is_literal(a) else a for a in rargs]
+                        right2 = f"{head}({', '.join(rargs)})"
+                    else:
+                        rargs = [a.strip() for a in rest.split(",") if a.strip()]
+                        rargs = [mapping.get(a, pre + a) if not _is_literal(a) else a for a in rargs]
+                        right2 = f"{head} {', '.join(rargs)}" if rargs else head
+                    code = f"{', '.join(lo)} = {right2}"
+            else:
+                code = _re.sub(r"[A-Za-z_]\w*", _rw, code)
+            out.append((code, f"{borig} via CALL@{site}", True))
+        return out
+
+    while i < len(raw):
+        line, org = raw[i]
+        i += 1
+        code = line.split("#", 1)[0].strip()
+        if not code:
+            continue
+        toks = code.split(None, 1)
+        head = toks[0].upper()
+        if head == "IMPORT":
+            target = (toks[1].strip().strip("\"'") if len(toks) > 1 else "")
+            if not target:
+                raise AsmError(f"{org}: IMPORT needs a path")
+            import os as _os2
+            path = _os2.path.normpath(_os2.path.join(basedir, target))
+            real = _os2.path.realpath(path)
+            if real in stack:
+                raise AsmError(f"{org}: IMPORT cycle ({real})")
+            try:
+                with open(path) as fh:
+                    sub = fh.read()
+            except OSError as e:
+                raise AsmError(f"{org}: IMPORT cannot read {path}: {e}")
+            flat.extend(expand(sub, _os2.path.dirname(path), path, defs,
+                               stack + (real,))[0])
+        elif head == "DEF":
+            import re as _re3
+            m = _re3.match(r"DEF\s+(\w+)\s*\((.*)\)\s*->\s*\((.*)\)\s*$", code)
+            if not m:
+                raise AsmError(f"{org}: bad DEF syntax (want DEF name(a, b) -> (c))")
+            name, fins, fouts = m.group(1), [a.strip() for a in m.group(2).split(",") if a.strip()], \
+                [a.strip() for a in m.group(3).split(",") if a.strip()]
+            if name in defs:
+                raise AsmError(f"{org}: duplicate DEF '{name}'")
+            body = []
+            while i < len(raw):
+                bline, borg = raw[i]
+                i += 1
+                bcode = bline.split("#", 1)[0].strip()
+                if not bcode:
+                    continue
+                btoks = bcode.split(None, 1)
+                if btoks[0].upper() == "END":
+                    break
+                if btoks[0].upper() == "DEF":
+                    raise AsmError(f"{borg}: nested DEF not allowed")
+                if btoks[0].upper() in ("CONFIG", "STATE", "IN", "IMPORT", "RANGE"):
+                    raise AsmError(f"{borg}: {btoks[0].upper()} not allowed inside DEF (program-global only)")
+                body.append((bline, borg, False))
+            else:
+                raise AsmError(f"{org}: DEF '{name}' missing END")
+            defs[name] = (fins, fouts, body)
+        elif head == "CALL":
+            raise AsmError(f"{org}: CALL needs outputs (want x = CALL name(...))")
+        else:
+            # assignment-form CALL: OUTs = CALL name(args)
+            if "=" in code:
+                left, right = code.split("=", 1)
+                rparts = right.strip().split(None, 1)
+                if rparts and rparts[0].upper() == "CALL":
+                    if len(rparts) < 2:
+                        raise AsmError(f"{org}: CALL needs a callee (want x = CALL name(...))")
+                    outs = [o.strip() for o in left.split(",") if o.strip()]
+                    flat.extend(_expand_call(rparts[1], outs, org))
+                    continue
+            flat.append((line, org, False))
+    return flat, defs
+
+
+def parse(text, basedir="."):
+    """text -> (config dict, [(name, layout|None)], [(outs, mn, args, ln)], [state]).
+    DEF/IMPORT/CALL expand first (origins tracked); the listing below sees
+    flat lines with origin strings ("file:12", "file:12 via CALL@site:5")."""
     config, inp, prog, state = {}, [], [], []
-    for ln, raw in enumerate(text.splitlines(), 1):
-        line = raw.split("#", 1)[0].strip()
+    flat, _ = expand(text, basedir, origin=basedir)
+    for raw, org, pre_stripped in flat:
+        ln = org
+        line = raw if pre_stripped else raw.split("#", 1)[0].strip()
         if not line:
             continue
         toks = line.split(None, 1)
@@ -113,7 +302,7 @@ def parse(text):
     return config, inp, prog, state
 
 
-def assemble(text, registry, sigs=None):
+def assemble(text, registry, sigs=None, basedir="."):
     """Bind mnemonics + check arity/inputs statically (before any execution).
     Returns (config, inp, bound, state) with bound entries
     (outs, mn, fn, args, ln, sig). Unknown mnemonic / arity mismatch /
@@ -122,7 +311,7 @@ def assemble(text, registry, sigs=None):
     for parse-time conflicts. Full verifier with scales+geometry is backlog:
     range estimator + seam chart."""
     sigs = sigs or {}
-    config, inp, prog, state = parse(text)
+    config, inp, prog, state = parse(text, basedir)
     bound, defined = [], set(n for n, _ in inp)
     for outs, mn, args, ln in prog:
         if mn not in registry:
@@ -202,13 +391,13 @@ def _check_layouts(outs, mn, args, ln, sig, layouts):
     return dict(zip(outs, out_lays))
 
 
-def verify(text, registry, sigs=None):
+def verify(text, registry, sigs=None, basedir="."):
     """Static layout pass (no payloads, no execution): replays unification
     over DECLARED layouts only (IN AS + concrete sig patterns). Returns
     (errors, report): errors = list of conflict strings derivable without
     values; report has resolved/total coverage counts (gradual typing means
     absence of proof -- verify() reports coverage honestly)."""
-    config, inp, bound, _ = assemble(text, registry, sigs)
+    config, inp, bound, _ = assemble(text, registry, sigs, basedir)
     layouts = {n: (l or _UNKNOWN) for n, l in inp}
     errors = []
     for outs, mn, fn, args, ln, sig in bound:
@@ -258,6 +447,23 @@ def _summarize(v):
         return {"kind": "unrepresentable", "note": str(e)[:60]}
 
 
+def _kind_of(v):
+    """Value kind for layout cross-check: T (triples tuple), F (float
+    array), I (int/bool array), U8 (uint8 array), else UNKNOWN."""
+    import numpy as _np
+    if isinstance(v, tuple) and len(v) == 3 and all(hasattr(x, "shape") for x in v):
+        return "T"
+    if isinstance(v, _np.ndarray):
+        if v.dtype == bool or np.issubdtype(v.dtype, np.integer):
+            return "U8" if v.dtype == np.uint8 else "I"
+        if np.issubdtype(v.dtype, np.floating):
+            return "F"
+        return _UNKNOWN
+    if isinstance(v, (int, float)):
+        return "F"
+    return _UNKNOWN
+
+
 def run(bound, config, inp, payload, trace=None):
     """Execute bound program over a feeds dict. Returns feeds (all streams).
     Convention: an op with arity_out==1 produces ONE stream (even when the
@@ -289,6 +495,19 @@ def run(bound, config, inp, payload, trace=None):
     for outs, mn, fn, args, ln, sig in prog:
         vals = [feeds[a] if a in feeds else float(a) for a in args]
         out_lays = _check_layouts(outs, mn, args, ln, sig, layouts)
+        # kind cross-check: a DECLARED layout's kind prefix must match the
+        # value (triple-ops receiving float arrays silently compute garbage
+        # -- caught by gate, documented). UNKNOWN layouts skip (gradual).
+        for a in args:
+            if _is_literal(a) or a not in layouts:
+                continue
+            lay = layouts[a]
+            if lay == _UNKNOWN or ":" not in lay:
+                continue
+            want = lay.split(":")[0]
+            got = _kind_of(feeds[a]) if a in feeds else _UNKNOWN
+            if got != _UNKNOWN and got != want:
+                raise AsmError(f"line {ln} ({mn}): stream '{a}' declared {lay} but holds {got}")
         if trace is not None:
             import time
             in_sum = {}
@@ -340,9 +559,9 @@ def format_trace(log):
     return lines
 
 
-def run_text(text, registry, payload, sigs=None, trace=None):
+def run_text(text, registry, payload, sigs=None, trace=None, basedir="."):
     """Parse + assemble + execute. Returns feeds (trace list filled if given)."""
-    config, inp, bound, _ = assemble(text, registry, sigs)
+    config, inp, bound, _ = assemble(text, registry, sigs, basedir)
     return run((config, inp, bound), config, inp, payload, trace=trace)
 
 
@@ -358,7 +577,7 @@ def _shapes_of(v):
     return None
 
 
-def repeat(text, registry, payload, n, sigs=None, grow=()):
+def repeat(text, registry, payload, n, sigs=None, grow=(), basedir="."):
     """Run a listing n times threading STATE streams (loop-carried state).
     Non-STATE IN streams take LISTS of length n (one payload per iteration;
     strict -- no implicit broadcasting, length bugs fail loud). STATE streams
@@ -371,7 +590,7 @@ def repeat(text, registry, payload, n, sigs=None, grow=()):
     Dynamic shapes beyond append-only, and data-dependent termination
     (WHILE), are out of scope -- stated, see GAPS.md. Returns
     (per-iteration OUT feeds list, final feeds)."""
-    config, inp, bound, state = assemble(text, registry, sigs)
+    config, inp, bound, state = assemble(text, registry, sigs, basedir)
     in_names = [nm for nm, _ in inp]
     if not isinstance(payload, dict):
         raise AsmError("repeat needs dict payload")

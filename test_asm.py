@@ -206,9 +206,12 @@ def main():
         except ASM.AsmError as e:
             check(f"asm-{tag}", "line" in str(e) and want in str(e),
                   f"fails loud ({str(e)[:80]})")
-    # gradual: fully-unannotated listings behave exactly as v0.1 (no checks).
+    # gradual: fully-unannotated listings behave exactly as v0.1 (no layout
+    # checks). NOTE: op-level kind assertions still apply (ADD on floats was
+    # never legal -- v0.1 silently computed garbage there, now loud). So the
+    # gradual probe uses a float-legit op (SQRT: float -> triples).
     try:
-        ASM.run_text("IN x\nOUT = ADD(x, x)\n", REGISTRY,
+        ASM.run_text("IN x\nOUT = SQRT(x)\n", REGISTRY,
                      {"x": np.zeros(3)}, sigs=SIGS)
         check("asm-gradual", True, "unknown layouts never fail")
     except ASM.AsmError as e:
@@ -444,6 +447,99 @@ def main():
         REGISTRY["CONV"][0]([tc5, tk], {}, {}),
         H.conv_trip(tc5, tk, *H._load_scales()[:1], m_out=mc))),
         "0-diff vs conv_trip (proves wiring)")
+
+    # Procedures: DEF/CALL/IMPORT as textual macros with per-call-site
+    # namespacing (no runtime call overhead; recursion refused). Expansion
+    # exactness: CALL result == manually inlined listing, bit-exact.
+    # NOTE: arithmetic is triples-only (float arrays to ADD fail loud --
+    # silently computing garbage was a real bug class, closed by op-level
+    # assertions; gated below as asm-triples-only).
+    def _run(t, payload):
+        return ASM.run_text(t, REGISTRY, payload, sigs=SIGS)
+    Sanchez = (  # noqa: odd name guards against copy-paste reuse below
+        "IN a\nIN b\n"
+        "DEF twice(x) -> (y)\n"
+        "  T = ADD(x, x)\n"
+        "  y = ADD(T, x)\n"
+        "END\n")
+    ta = S.encode(np.full(3, 0.25))
+    tb = S.encode(np.full(3, 0.0))
+    try:
+        r1 = _run(Sanchez + "OUT = CALL twice(a)\n", {"a": ta, "b": tb})
+        r2 = _run("IN a\nIN b\nT = ADD(a, a)\nOUT = ADD(T, a)\n",
+                  {"a": ta, "b": tb})
+        check("asm-call-exact", all(bool((r1["OUT"][k] == r2["OUT"][k]).all()) for k in (0, 1, 2)),
+              "CALL == manually inlined, exact")
+    except ASM.AsmError as e:
+        check("asm-call-exact", False, str(e)[:80])
+    # isolation: two CALLs of one DEF with different args don't collide.
+    # Fixture values stay inside m_cov coverage (cap ~1.62: thrice-summed
+    # 1.0 saturates BY DESIGN -- documented cap, not a bug; the suite caught
+    # my first fixture exceeding it).
+    def _dec(t):
+        return S.decode(t[0], t[1]) * (1 - t[2].astype(np.float64))
+    try:
+        t1 = S.encode(np.full(3, 0.25))
+        t10 = S.encode(np.full(3, 0.1))
+        r3 = _run(Sanchez + "O1 = CALL twice(a)\nO2 = CALL twice(b)\n",
+                  {"a": t1, "b": t10})
+        v1, v2 = _dec(r3["O1"]), _dec(r3["O2"])
+        check("asm-call-isolation",
+              bool((np.abs(v1 - 0.75) < 0.02).all() and (np.abs(v2 - 0.3) < 0.02).all()),
+              f"per-call-site namespacing ({v1[0]:.2f}, {v2[0]:.2f})")
+    except ASM.AsmError as e:
+        check("asm-call-isolation", False, str(e)[:80])
+    try:
+        _run("IN a\nIN b\nOUT = ADD(a, b)\n",
+             {"a": np.full(3, 1.0), "b": np.full(3, 2.0)})
+        check("asm-triples-only", False, "float arithmetic accepted")
+    except (ValueError, ASM.AsmError) as e:
+        check("asm-triples-only", True, f"fails loud ({str(e)[:60]})")
+    for bad, tag in [
+        (Sanchez + "OUT = CALL twice(a, b)\n", "call-arity"),
+        (Sanchez + "OUT = CALL nosuch(a)\n", "call-unknown"),
+        (Sanchez + "DEF twice(x) -> (y)\n  y = ADD(x, x)\nEND\nOUT = CALL twice(a)\n",
+         "call-dupdef"),
+        ("IN a\nDEF rec(x) -> (y)\n  y = CALL rec(x)\nEND\nOUT = CALL rec(a)\n",
+         "call-recursive"),
+        ("IN a\nDEF d(x) -> (y)\n  DEF e(z) -> (w)\n  w = ADD(z, z)\nEND\n  y = ADD(x, x)\nEND\nOUT = CALL d(a)\n",
+         "call-nested-def"),
+        ("IN a\nDEF d(x) -> (y)\n  CONFIG k v\n  y = ADD(x, x)\nEND\nOUT = CALL d(a)\n",
+         "call-config-in-def"),
+        ("IN a\nOUT = CALL twice(a)\n", "call-bare-def-missing"),
+    ]:
+        try:
+            _run(bad, {"a": np.full(3, 1.0), "b": np.full(3, 1.0)})
+            check(f"asm-{tag}", False, "assembled without error")
+        except ASM.AsmError as e:
+            check(f"asm-{tag}", True, f"fails loud ({str(e)[:70]})")
+    # IMPORT: spliced file + cycle refusal (tmp files, cleaned).
+    import tempfile as _tf
+    import shutil as _sh
+    d = _tf.mkdtemp()
+    open(os.path.join(d, "lib.asm"), "w").write(
+        "DEF inc(x) -> (y)\n  y = ADD(x, x)\nEND\n")
+    open(os.path.join(d, "main.asm"), "w").write(
+        'IMPORT "lib.asm"\nIN a\nOUT = CALL inc(a)\n')
+    open(os.path.join(d, "cyc1.asm"), "w").write('IMPORT "cyc2.asm"\nIN a\nOUT = ADD(a, a)\n')
+    open(os.path.join(d, "cyc2.asm"), "w").write('IMPORT "cyc1.asm"\n')
+    try:
+        r4 = ASM.run_text(open(os.path.join(d, "main.asm")).read(),
+                          REGISTRY, {"a": S.encode(np.full(2, 0.5))}, sigs=SIGS,
+                          basedir=d)
+        check("asm-import", bool((r4["OUT"][0] == r4["OUT"][0]).all()) and
+              abs(float(_dec(r4["OUT"])[0]) - 1.0) < 0.05,
+              "spliced file executes (basedir-relative)")
+        try:
+            ASM.run_text(open(os.path.join(d, "cyc1.asm")).read(),
+                         REGISTRY, {"a": S.encode(np.full(2, 0.5))}, sigs=SIGS,
+                         basedir=d)
+            check("asm-import-cycle", False, "accepted import cycle")
+        except ASM.AsmError as e:
+            check("asm-import-cycle", "cycle" in str(e),
+                  f"fails loud ({str(e)[:60]})")
+    finally:
+        _sh.rmtree(d, ignore_errors=True)
 
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)

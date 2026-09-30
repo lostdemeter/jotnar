@@ -274,3 +274,20 @@ prove CAUSES. Profiler falls out free (per-op wall time). Test-variable
 hygiene note, learned the hard way twice this session: loop variables
 (rgb) leaking across gate sections cause phantom shape mismatches -- fresh
 names per section (ftext/frgb pattern).
+## #LIB-025: debugging multilingual failures (two bugs, one typo) [CLOSED]
+
+The procedure round produced three failures in one session, each a different
+species: (1) a missing "w" open-mode typo that mimicked filesystem/host
+failure across five red herrings (strace showed O_RDONLY -- READ the
+syscall, not the traceback line); lesson: when adjacent identical syscalls
+behave differently, diff the CALLS (flags/modes), not the environment.
+(2) head-split assumed HEAD( with no space; CALL name(args) has one --
+fixed by matching the CALL form FIRST with an explicit regex. (3) real
+semantic gap: `#` namespace separator collided with comment syntax
+(generated names truncated on re-parse) -- fixed by tracking stripped-ness
+through expansion (flat triples carry the flag). Plus the found-then-earned
+one: float arrays reaching triple-ops computed garbage silently -- now
+refused twice (layout-kind cross-check centrally + _need_triples on the
+arithmetic core), and the procedure tests run on triples. Debugging
+multilingual stacks (text->expansion->parse->values): instrument the seam,
+not the symptom.
