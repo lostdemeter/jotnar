@@ -2,7 +2,21 @@
 
 Method: wrote programs/xf_block.asm (Qwen-style encoder block) using NEEDED
 mnemonic names, ran the assembler, neutralized each failure, re-ran. The
-assembler's fail-loud IS the enumerator (11 rounds). What passed also matters.
+assembler's fail-loud IS the enumerator. Re-run after Batch 1 (2026-09-30):
+remaining distinct gaps are ROTARY and BATCH_MATMUL (+ cascade); SILU never
+fired (cascade) but is now wired -- verify when its inputs survive.
+
+## Batch 1 CLOSED (2026-09-30): MATMUL, SOFTMAX, RMSNORM, SILU wired + gated
+
+Wrappers add NOTHING (0-diff vs phi-core fns, test_asm.py). One authored
+mini-decision inside SOFTMAX: num/den->probs via tdiv-to-2^-18 +
+from_fixed@BIAS (overflow-asserted). One CONTRACT found by measurement:
+to_fixed saturates above 1.0 at BIAS scale, so this softmax REQUIRES
+pre-scaled inputs (T-transformation doctrine); out-of-contract behavior is
+PINNED by gate (saturates to softmax of clipped inputs), not barred.
+Full-range attention needs the T-transform path (backlog). Also: eps_c is
+scale-regime-dependent by nature (CONFIG default 4514 = promoted-test
+convention); per-model eps calibration is backlog, stated.
 
 ## Measured missing mnemonics (assembler-reported, in firing order)
 

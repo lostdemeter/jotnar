@@ -132,6 +132,62 @@ def op_static(vals, config, feeds):
     return verdict_mask(mag, 0.0, "==")
 
 
+def _phi_ops():
+    """phi-core numpy ops (lazy import: keeps holo import light)."""
+    import sys as _sys
+    _sys.path.insert(0, "/home/thorin/Documents/OpenCode/phi-core")
+    from phi_core import numpy_ops as _N
+    from phi_core import lattice as _S
+    return _N, _S
+
+
+def op_matmul(vals, config, feeds):
+    """Batched triples matmul (phi-core matmul_int, 0-diff: wrapper adds
+    nothing). m_acc from frozen scales."""
+    N, _S = _phi_ops()
+    m_acc, _ = _scales()
+    return N.matmul_int(vals[0], vals[1], m_acc)
+
+
+def op_softmax(vals, config, feeds):
+    """N-way softmax to probability triples. phi-core softmaxN gives
+    (num 2^24, den); the num/den -> triples normalization (tdiv to 2^-18
+    counts + from_fixed @ BIAS, overflow-asserted) is authored here (mini-bar:
+    gated vs float softmax below) -- the one non-mechanical step in Batch 1,
+    stated not hidden."""
+    N, S = _phi_ops()
+    from phi_core.numpy_ops import _assert_bound
+    (t,) = vals
+    num, den = N.softmaxN_triples(t)
+    _assert_bound("asm-softmax:num", num)
+    assert int(np.asarray(num).max(initial=0)) < (1 << 40), "softmax num overflows 2^18 shift"
+    # den broadcasts over the LAST axis (one denominator per row): reshape
+    # explicitly -- relying on numpy trailing broadcast here divided rows by
+    # columns (shipped once, rotation-style scramble caught by the gate below).
+    den_b = np.asarray(den).reshape(np.asarray(den).shape + (1,) * (np.asarray(num).ndim - np.asarray(den).ndim))
+    c18 = S.tdiv(np.asarray(num) * np.int64(1 << 18), np.where(den_b == 0, 1, den_b))
+    return S.from_fixed(c18, S.BIAS)
+
+
+def op_rmsnorm(vals, config, feeds):
+    """Per-row RMSNorm+weight (phi-core rmsnorm_int, 0-diff). eps_c frozen via
+    CONFIG eps_rms_c (default 4514, the promoted-test convention @ m_of(3.0)
+    regime) -- scale-regime-dependent by nature; per-model eps calibration is
+    backlog, stated here not hidden."""
+    N, _S = _phi_ops()
+    x, w = vals
+    _, m_cov = _scales()
+    eps_c = int(config.get("eps_rms_c", 4514))
+    return N.rmsnorm_int(x[0], x[1], x[2], w, m_cov, eps_c)
+
+
+def op_silu(vals, config, feeds):
+    """SiLU x*sigmoid(x) (phi-core silu_int, 0-diff)."""
+    N, _S = _phi_ops()
+    (t,) = vals
+    return N.silu_int(t)
+
+
 def op_mixdyad(vals, config, feeds):
     """Motion-gated dyadic memory: static ? (D+3W)/4 : D. W=None (no
     history) -> D directly (feed convention, same doctrine as temporal
@@ -173,4 +229,8 @@ REGISTRY = {
     "WARP": (op_warp, 2, 1),
     "STATIC": (op_static, 1, 1),
     "MIXDYAD": (op_mixdyad, 3, 1),
+    "MATMUL": (op_matmul, 2, 1),
+    "SOFTMAX": (op_softmax, 1, 1),
+    "RMSNORM": (op_rmsnorm, 2, 1),
+    "SILU": (op_silu, 1, 1),
 }
