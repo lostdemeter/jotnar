@@ -504,6 +504,16 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  content), motion EXACT (moving trust bit-clean, gated). Kept as the
  record, not edited away. Debugging took 2 minutes because the versioned
  census showed the read order directly.
+## #LIB-044: first modification (iso variant, editable structures) [CLOSED]
+
+ programs/flagship_iso.asm: SPLAT_BLUR+BETA_V5 replaced by ISO_BLUR+scalar
+ BETA (two-line structural edit). Variant bit-exact vs the hand-written iso
+ chain FIRST RUN; differs 45dB / 0.8 LSB from the v5 flagship (the edit
+ moves values); census shows the new structure (AS from ISO_BLUR, no COH
+ stream). Modification with before/after numbers against the probe baseline
+ — listings are editable artifacts, not frozen text. Standing rule: every
+ variant carries its own exactness gate (meaning preserved) plus a differs
+ gate (edit bites) plus a census check (structure visible).
  ## #LIB-036: elementwise CUDA batch (v1.2 gate 2b) [CLOSED]
 
  9 kernels (holo_elem.cu: sqrt/tmul/tdiv/binop/square-clip/sigmoid/abs/

@@ -24,6 +24,7 @@ Check | Result
 `test_emit.py` | ALL OK (substrate matrix: flagship numpy/C/CUDA exact + dispatch log; xf numpy + loud C/CUDA refusals; bogus names refused)
 `test_census.py` | ALL OK (planted fan-out exact, control empty, 42/42 classified, flagship/xf/stabilize maps pinned incl. STATE versions)
 `test_probe.py` | ALL OK (sham exact, D 38dB in [20,45], COH falsified 44dB then held-out 43dB, xf O/DOWN, 11-stream sweep in 4 exact classes, stabilize W static 27dB + motion exact; probe table)
+`test_modify.py` | ALL OK (modification demo: iso variant bit-exact vs chain, differs 45dB from v5, census shows new structure)
 `test_splat_c.py` | ALL OK (full splat_blur bit-exact incl. buckets, both C modes: 6 compositional + 2 fused cases)
 `test_splat.py` | ALL OK (4 orientations 1.00, halo<=iso, blur parity 41dB, agreement 0.99, e2e 43dB, fusion-exact bit-identical)
 `test_ctrl.py` | ALL OK (file validity, hash, real-frame parity ~43-50dB, rotation-invariant gap 0.04, flat identity)

@@ -145,3 +145,16 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   2. Census versions made debugging a 2-minute read (WARP@v0 vs
      MIXDYAD/BETA@v1) instead of a probe hunt — instruments paying for
      instruments.
+
+## 2026-09-30: first modification (~3 min, CLOCKED)
+
+- Variant listing (flagship_iso.asm: bank+gate to iso+scalar) + 3 gates
+  in test_modify.py + LIB-044.
+- Wall time: ~3 min. Clock 19:53:46Z -> 19:55Z (variant + gates +
+  docs + verify incl.).
+- Results: variant bit-exact vs iso chain FIRST RUN; differs 45dB from
+  v5; census shows new structure.
+- Surprise: the two-line edit worked first try because every piece was
+  already gated — modifiability falls out of composition + gates, no
+  extra machinery. Editable structures were the destination all along;
+  the road built itself.
