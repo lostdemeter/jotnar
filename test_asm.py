@@ -351,6 +351,100 @@ def main():
           max(log1, key=lambda r: r["sec"])["op"] == "SPLAT_BLUR",
           "timings non-negative; blur dominates (matches fusion pricing)")
 
+    # Pile A exposure batch (GAPS.md): thin wrappers add NOTHING (0-diff vs
+    # source fns with identical args); new-small-math (ARGMAX) gated vs
+    # numpy semantics; dyadic enforcement + shape contracts fail loud.
+    from phi_core import numpy_ops as _N
+    ta = S.encode(np.array([[0.5, -1.0, 0.0, 2.0], [3.0, 3.0, 1.0, -2.0]]))
+    check("asm-argmax", bool((REGISTRY["ARGMAX"][0]([ta, 1.0], {}, {})
+                                   == np.array([3, 0])).all()),
+          "exact lattice order incl. tie->first, negatives, zero")
+    try:
+        REGISTRY["ARGMAX"][0]([ta, 1.5], {}, {})
+        check("asm-argmax-axis", False, "accepted fractional axis")
+    except ValueError as e:
+        check("asm-argmax-axis", True, f"fails loud ({str(e)[:40]})")
+    ts = S.encode((rng2.random((4, 6)) - 0.5) * 2)
+    gs = REGISTRY["SLICE"][0]([ts, 1.0, 1.0, 4.0], {}, {})
+    check("asm-slice", gs[0].shape == (4, 3) and bool(
+        (gs[0] == ts[0][:, 1:4]).all()), "exact window")
+    try:
+        REGISTRY["SLICE"][0]([ts, 1.0, 3.0, 9.0], {}, {})
+        check("asm-slice-bounds", False, "accepted OOB window")
+    except ValueError as e:
+        check("asm-slice-bounds", True, f"fails loud ({str(e)[:40]})")
+    tc = S.encode(rng2.uniform(-2, 2, (3, 5)))
+    check("asm-clip", all(bool((a == b).all()) for a, b in zip(
+        REGISTRY["CLIP"][0]([tc, -1.0, 1.0], {}, {}),
+        H.clip_fixed(tc, -1.0, 1.0, mc))), "0-diff vs holo fn")
+    td = S.encode(rng2.uniform(0.1, 1.0, (10,)))
+    te = S.encode(rng2.uniform(0.1, 2.0, (10,)))
+    check("asm-div", all(bool((a == b).all()) for a, b in zip(
+        REGISTRY["DIV"][0]([td, te], {}, {}), H.tdiv_pure(td, te))),
+        "0-diff (zero-or, no guards)")
+    check("asm-sigmoid", all(bool((a == b).all()) for a, b in zip(
+        REGISTRY["SIGMOID"][0]([t], {}, {}), H.sigmoid_trip(t))),
+        "0-diff (shared c-vectors-sig table covers values)")
+    tr = S.encode(rng2.uniform(0.1, 1.0, (20,)))
+    gr = REGISTRY["RESCALE"][0]([tr, float(mc)], {}, {})
+    v0 = S.decode(tr[0], tr[1])
+    v1 = S.decode(gr[0], gr[1]) * (1 - gr[2].astype(np.float64))
+    check("asm-rescale-id", float(np.abs(v1 - v0).max() / v0.max()) < 3e-3,
+          "same-scale value-preserving (lattice quantum)")
+    try:
+        REGISTRY["RESCALE"][0]([tr, 70000.0], {}, {})
+        check("asm-rescale-range", False, "accepted wild scale")
+    except ValueError as e:
+        check("asm-rescale-range", True, f"fails loud ({str(e)[:40]})")
+    tw = S.encode((rng2.random((9, 7)) - 0.5) * 2)
+    ids = np.array([3, 0, 8])
+    check("asm-gather", all(bool((a == b).all()) for a, b in zip(
+        REGISTRY["GATHER"][0]([tw, ids], {}, {}), _N.gather_int(tw, ids))),
+        "0-diff (reindex family)")
+    tp2 = S.encode(rng2.uniform(-2, 2, (6,)))
+    sl = S.encode(np.full((6,), 0.25))
+    check("asm-prelu", all(bool((a == b).all()) for a, b in zip(
+        REGISTRY["PRELU"][0]([tp2, sl], {}, {}), _N.prelu_int(tp2, sl))),
+        "0-diff")
+    tp3 = S.encode((rng2.random((4, 5, 3)) - 0.5) * 2)
+    gp = REGISTRY["POOLAVG"][0]([tp3], {}, {})
+    ref = tp3
+    rv = S.decode(ref[0], ref[1]) * (1 - ref[2].astype(np.float64))
+    gv = S.decode(gp[0], gp[1]) * (1 - gp[2].astype(np.float64))
+    check("asm-poolavg", gp[0].shape == (3,) and
+          float(np.abs(gv - rv.mean(axis=(0, 1))).max()) < 5e-3,
+          f"shape (C,) documented; trunc-mean within 5e-3")
+    try:
+        REGISTRY["POOLAVG"][0]([S.encode(rng2.random((4, 32)))], {}, {})
+        check("asm-poolavg-rank", False, "accepted non-HWC")
+    except ValueError as e:
+        check("asm-poolavg-rank", True, f"fails loud ({str(e)[:40]})")
+    td4 = S.encode((rng2.random((5, 5, 2)) - 0.5) * 2)
+    wd = S.encode((rng2.random((3, 2, 2, 2)) - 0.5) * 2)
+    Wd = {"s": wd[0], "e": wd[1], "z": wd[2]}
+    check("asm-deconv", all(bool((a == b).all()) for a, b in zip(
+        REGISTRY["DECONV"][0]([td4, wd, 2.0, 0.0], {}, {}),
+        _N.deconv_int(td4[0], td4[1], td4[2], Wd, mc, stride=2, pad=0))),
+        "0-diff, no bias v1 (stated)")
+    tq = S.encode((rng2.random((6, 7, 2)) - 0.5) * 2)
+    iq = REGISTRY["INTERP"][0]([tq, 1.0, 1.0], {}, {})
+    iv0 = S.decode(tq[0], tq[1]) * (1 - tq[2].astype(np.float64))
+    iv1 = S.decode(iq[0], iq[1]) * (1 - iq[2].astype(np.float64))
+    check("asm-interp-id", iq[0].shape == (6, 7, 2) and
+          float(np.abs(iv1 - iv0).max()) < 5e-3, "1.0 identity (dyadic)")
+    try:
+        REGISTRY["INTERP"][0]([tq, 1.5, 1.0], {}, {})
+        check("asm-interp-nondyadic", False, "accepted non-dyadic scale")
+    except ValueError as e:
+        check("asm-interp-nondyadic", True, f"LOWERING ERROR, loud ({str(e)[:40]})")
+    tk = (rng2.random((3, 3)) - 0.5) / 4
+    tk /= abs(tk).sum()
+    tc5 = S.encode(rng2.uniform(0, 1, (10, 10)))
+    check("asm-conv", all(bool((a == b).all()) for a, b in zip(
+        REGISTRY["CONV"][0]([tc5, tk], {}, {}),
+        H.conv_trip(tc5, tk, *H._load_scales()[:1], m_out=mc))),
+        "0-diff vs conv_trip (proves wiring)")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

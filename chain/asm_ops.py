@@ -348,6 +348,175 @@ def op_concat(vals, config, feeds):
     return cat(np.ascontiguousarray(a), np.ascontiguousarray(b))
 
 
+def op_argmax(vals, config, feeds):
+    """Argmax over an axis literal: exact lattice ordering WITHOUT decoding
+    (the only new math in Pile A, mini-bar: class rank pos>zero>neg, then
+    exponent -- larger e wins for BOTH signs (pos: bigger value; neg: more
+    negative = smaller... careful: among negatives the SMALLEST value has
+    the LARGEST e; argmax wants the largest value = positives first, then
+    zero, then negatives closest to zero = SMALLEST e). Ties -> first index
+    (deterministic, stated). Returns int64 indices (I streams)."""
+    (t,) = vals[:1]
+    axis = _int_arg(vals[1], "ARGMAX axis") if len(vals) > 1 else -1
+    s = np.ascontiguousarray(t[0])
+    e = np.ascontiguousarray(t[1]).astype(np.int64)
+    z = np.ascontiguousarray(t[2]).astype(bool)
+    pos = (~z) & (s > 0)
+    neg = (~z) & (s < 0)
+    ax = axis % s.ndim
+    # move target axis last for uniform handling
+    ps = np.moveaxis(pos.astype(np.int64), ax, -1)
+    ng = np.moveaxis(neg.astype(np.int64), ax, -1)
+    ee = np.moveaxis(e, ax, -1)
+    zz = np.moveaxis(z, ax, -1)
+    n = ee.shape[-1]
+    idx = np.arange(n)
+    # rank key: class (pos 2 > zero 1 > neg 0) primary; within pos: max e;
+    # within neg: min e (closest to zero); ties: first index. lexsort takes
+    # keys ascending with LAST primary: (rev-index, key2, class).
+    cls = np.where(ps > 0, 2, np.where(zz, 1, 0))
+    key2 = np.where(ps > 0, ee, np.where(zz, 0, -ee))
+    order = np.lexsort((np.broadcast_to(-idx, ee.shape), key2, cls), axis=-1)
+    return np.ascontiguousarray(order[..., -1]).astype(np.int64)
+
+
+def op_slice(vals, config, feeds):
+    """Window a stream: SLICE(X, AXIS, START, END) integer literals
+    (half-open [start,end), numpy semantics). Exact move; bounds-checked
+    (fail loud on out-of-range -- silent clamping would hide shape bugs).
+    Layout preserved approximately (documented: dims unchecked v1)."""
+    (t,) = vals[:1]
+    axis = _int_arg(vals[1], "SLICE axis")
+    start = _int_arg(vals[2], "SLICE start")
+    end = _int_arg(vals[3], "SLICE end")
+    base = t[0] if isinstance(t, tuple) else np.ascontiguousarray(t)
+    nd = base.ndim
+    if not (0 <= axis < nd):
+        raise ValueError(f"SLICE: bad axis {axis} for ndim {nd}")
+    if not (0 <= start <= end <= base.shape[axis]):
+        raise ValueError(f"SLICE: [{start},{end}) out of range dim {axis}={base.shape[axis]}")
+    sl = [slice(None)] * nd
+    sl[axis] = slice(start, end)
+    sl = tuple(sl)
+    if isinstance(t, tuple):
+        return (np.ascontiguousarray(t[0][sl]), np.ascontiguousarray(t[1][sl]),
+                np.ascontiguousarray(t[2][sl]))
+    return np.ascontiguousarray(np.ascontiguousarray(t)[sl])
+
+
+def op_clip(vals, config, feeds):
+    """Clip triples to [LO,HI] float literals (holo clip_fixed). Exact
+    lattice compare, no float arithmetic on values."""
+    t, lo, hi = vals
+    _, m_cov = _scales()
+    return H.clip_fixed(t, float(lo), float(hi), m_cov)
+
+
+def op_div(vals, config, feeds):
+    """Triple divide (holo tdiv_pure: sign-XOR + exp-sub, zero-or). No
+    guards: 0/0 stays a zero triple (callers add zero semantics explicitly)."""
+    return H.tdiv_pure(vals[0], vals[1])
+
+
+def op_sigmoid(vals, config, feeds):
+    """Sigmoid via EXPACT+LUT (holo sigmoid_trip). Any input range, [0,1]."""
+    return H.sigmoid_trip(vals[0])
+
+
+def op_rescale(vals, config, feeds):
+    """The ONLY scale changer, in-language: triples -> fixed@m_cov ->
+    rescale_ to M2 (int literal scale) -> triples. Value-preserving up to
+    lattice quantum (gated). Needed wherever listings cross scales (MATMUL
+    m_acc vs surrounding m_cov)."""
+    t, m2v = vals
+    m2 = _int_arg(m2v, "RESCALE m2")
+    if not (0 <= m2 < 65536):
+        raise ValueError(f"RESCALE: scale out of range: {m2}")
+    _, m_cov = _scales()
+    q = S.to_fixed(t[0], t[1], t[2], m_cov)
+    return S.from_fixed(H.rescale_(q, m_cov, m2), m2)
+
+
+def op_gather(vals, config, feeds):
+    """Exact row-gather: table (V,C) triples + int ids -> rows (phi-core
+    gather_int, 0-diff). Reindex family (structurally gated upstream)."""
+    N, _S = _phi_ops()
+    w, ids = vals
+    return N.gather_int(w, np.ascontiguousarray(ids))
+
+
+def op_prelu(vals, config, feeds):
+    """PReLU exact (phi-core prelu_int: sign-bit select + triple slope).
+    0-diff: wrapper adds nothing."""
+    N, _S = _phi_ops()
+    return N.prelu_int(vals[0], vals[1])
+
+
+def op_poolavg(vals, config, feeds):
+    """Global average pool to (1,1,C) (phi-core avgpool_int). HWC triples
+    only (asserted -- SEQ layouts fail loud, not silently mis-averaged).
+    Mean is truncating (documented 1-LSB-class approx upstream)."""
+    N, _S = _phi_ops()
+    (t,) = vals
+    if t[0].ndim != 3:
+        raise ValueError(f"POOLAVG: HWC triples only, got ndim={t[0].ndim}")
+    _, m_cov = _scales()
+    return N.avgpool_int(t[0], t[1], t[2], m_cov)
+
+
+def op_deconv(vals, config, feeds):
+    """Transpose-conv (phi-core deconv_int, torch-verified upstream).
+    W as triples (O,kh,kh,Cin) + int stride/pad literals; no bias v1
+    (documented -- bias-drop lesson lives upstream; add Wb stream when
+    demanded). 0-diff vs phi-core fn with same args."""
+    N, _S = _phi_ops()
+    t, w = vals[0], vals[1]
+    stride = _int_arg(vals[2], "DECONV stride")
+    pad = _int_arg(vals[3], "DECONV pad")
+    _, m_cov = _scales()
+    Wd = {"s": w[0], "e": w[1], "z": w[2]}
+    return N.deconv_int(t[0], t[1], t[2], Wd, m_cov, stride=stride, pad=pad)
+
+
+def _is_dyadic(v):
+    """Dyadic scale check via frexp (exact): significand must be 0.5."""
+    import math
+    f = float(v)
+    if f <= 0:
+        return False
+    return math.frexp(f)[0] == 0.5
+
+
+def op_interp(vals, config, feeds):
+    """Bilinear resample (phi-core interp_fixed) with dyadic enforcement:
+    non-dyadic scales are a LOWERING ERROR per IR doctrine (fail loud here,
+    never silently approximate). Bridge triples->fixed@m_cov and back
+    inside (stated roundtrip)."""
+    N, S = _phi_ops()
+    t, syv, sxv = vals
+    sy, sx = float(syv), float(sxv)
+    if not (_is_dyadic(sy) and _is_dyadic(sx)):
+        raise ValueError(f"INTERP: non-dyadic scale ({sy},{sx}) is a LOWERING ERROR")
+    _, m_cov = _scales()
+    q = S.to_fixed(t[0], t[1], t[2], m_cov)
+    H, W = q.shape[0], q.shape[1]
+    C = q.shape[2] if q.ndim == 3 else 1
+    Ho, Wo = max(int(round(H * sy)), 1), max(int(round(W * sx)), 1)
+    o = S.from_fixed(N.interp_fixed(q.reshape(H, W, C), sy, sx).reshape(-1), m_cov)
+    return (o[0].reshape(Ho, Wo, C), o[1].reshape(Ho, Wo, C), o[2].reshape(Ho, Wo, C))
+
+
+def op_conv(vals, config, feeds):
+    """General-kernel conv (holo conv_trip: per-tap tmul + order-free
+    accumulate). K as FLOAT kernel array stream (encoded per-tap inside,
+    same as conv paths -- kernel_triples-identical). m_acc/m_out from
+    frozen scales. 0-diff vs conv_trip trivially (same fn, proves wiring)."""
+    t, k = vals
+    m_acc, m_cov = _scales()
+    return H.conv_trip(t, np.ascontiguousarray(k, dtype=np.float64),
+                       m_acc, m_out=m_cov)
+
+
 def op_mixdyad(vals, config, feeds):
     """Motion-gated dyadic memory: static ? (D+3W)/4 : D. W=None (no
     history) -> D directly (feed convention, same doctrine as temporal
@@ -402,6 +571,18 @@ REGISTRY = {
     "PERMUTE3": (op_permute3, 4, 1),
     "SELECT": (op_select, 3, 1),
     "CONCAT": (op_concat, 3, 1),
+    "ARGMAX": (op_argmax, 2, 1),
+    "SLICE": (op_slice, 4, 1),
+    "CLIP": (op_clip, 3, 1),
+    "DIV": (op_div, 2, 1),
+    "SIGMOID": (op_sigmoid, 1, 1),
+    "RESCALE": (op_rescale, 2, 1),
+    "GATHER": (op_gather, 2, 1),
+    "PRELU": (op_prelu, 2, 1),
+    "POOLAVG": (op_poolavg, 1, 1),
+    "DECONV": (op_deconv, 4, 1),
+    "INTERP": (op_interp, 3, 1),
+    "CONV": (op_conv, 2, 1),
 }
 
 # Layout signatures (TYPED STREAMS v1): (in_layouts, out_layouts) per
@@ -440,4 +621,16 @@ SIGS = {
     "PERMUTE3": (["*", "F:SCALAR", "F:SCALAR", "F:SCALAR"], ["*"]),
     "SELECT": (["I:*", "$A", "$A"], ["$A"]),
     "CONCAT": (["$A", "$A", "F:SCALAR"], ["$A"]),
+    "ARGMAX": (["$A", "F:SCALAR"], ["I:*"]),
+    "SLICE": (["$A", "F:SCALAR", "F:SCALAR", "F:SCALAR"], ["$A"]),
+    "CLIP": (["$A", "F:SCALAR", "F:SCALAR"], ["$A"]),
+    "DIV": (["$A", "$A"], ["$A"]),
+    "SIGMOID": (["$A"], ["$A"]),
+    "RESCALE": (["$A", "F:SCALAR"], ["$A"]),
+    "GATHER": (["*", "I:*"], ["*"]),
+    "PRELU": (["$A", "$A"], ["$A"]),
+    "POOLAVG": (["*"], ["*"]),
+    "DECONV": (["*", "*", "F:SCALAR", "F:SCALAR"], ["*"]),
+    "INTERP": (["*", "F:SCALAR", "F:SCALAR"], ["*"]),
+    "CONV": (["*", "*"], ["*"]),
 }
