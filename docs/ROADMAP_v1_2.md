@@ -57,3 +57,18 @@ fusion headroom stay backlog), full 42-op CUDA coverage at once (matmul →
 norms/activations → rest, family by family), multi-GPU, autotuning,
 per-DEF `@scale` (v1.1 end-state, still the design), phi-core merges
 (owner action).
+
+## Declared 2026-09-30 (all five gates hold)
+
+1. 3-way matmul parity bit-exact (5 cases incl. big-m + broadcast;
+   test_matmul_cuda.py, #LIB-034).
+2. Flagship CUDA parity bit-exact — stronger than the 40dB bar
+   (synth/real/big-m YENH rows; test_flagship_cuda.py, #LIB-035..037).
+3. Emission driver + matrix: flagship numpy/C/CUDA exact, xf numpy
+   standing cell + loud C/CUDA refusals, bogus names refused, dispatch
+   proven via run_log (test_emit.py, #LIB-038).
+4. Trap clean over all C AND CUDA sources (`*.cu` covered since gate 1).
+5. VELOCITY.md continues (v1.1/v1.2 build entries with honest clock
+   status + process fix — no fabricated times).
+23/23 suites green. v1.2 is done; v1.3 seeds: per-DEF `@scale`, xf C/CUDA
+lowerings (matrix refusals flip to numbers), SIGX-32bit comment upstream.
