@@ -238,3 +238,17 @@ Companion finding: parity belongs at the chain boundary (linear, like every
 other gate); comparing sRGB bytes holds the chain accountable for gamma's
 shadow expansion (0.002 linear reads 25 LSB in deep shadow). Perceptual
 claims (flicker) stay in sRGB. Machine-metrics vs experience-metrics, stated.
+## #LIB-022: static verification splits three ways (layouts now, ranges now, verifier later)
+
+verify() (declared-layout replay, zero execution) + ranges.estimate() (hull
+intervals vs M.json coverage) land the first two thirds of the static
+verifier; full parse-time verification (scales per-op, dynamic geometry)
+stays backlog. Lessons, all measured: (1) ASYMMETRIC doctrine -- saturation
+flags on any exceedance, underflow only whole-range-below (tiny values are
+often legitimate ~0; the flagship tripped the first draft of the symmetric
+rule and was right); (2) coverage binds LATTICE values only -- checking U8
+bytes against m_cov cap false-positived on SRGB output (fixed by scoping
+checks to T:* layouts); (3) hulls cannot see precision loss inside spanning
+ranges (tensor_disc pins the boundary -- the estimator's stated limit, not a
+failure); (4) estimator rules must mirror op semantics exactly (SQUARE rule
+forgot the op's own clip -- caught by its own flagship-clean gate).

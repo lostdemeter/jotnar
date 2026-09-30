@@ -111,6 +111,18 @@ def op_iso_blur(vals, config, feeds):
     return H.conv_trip(a, H.gaussian_kernel(), m_acc, m_out=m_cov)
 
 
+def op_gauss(vals, config, feeds):
+    """Gaussian blur with radius/sigma structural literals (covers smoothing
+    needs beyond the fixed ISO kernel -- e.g. tensor regularization r1s0.8).
+    Normalized kernel: preserves value range (the estimator relies on this)."""
+    from chain.holo_phi import gaussian_kernel as _gk, conv_trip as _ct
+    (a,) = vals[:1]
+    r = _int_arg(vals[1], "GAUSS radius")
+    s = float(vals[2])
+    m_acc, m_cov = _scales()
+    return _ct(a, _gk(radius=r, sigma=s), m_acc, m_out=m_cov)
+
+
 def op_warp(vals, config, feeds):
     """Warp detail triples by float flow. dprev=None passes through as None
     (feed convention: no history on frame 0; MIXDYAD handles None)."""
@@ -362,6 +374,7 @@ REGISTRY = {
     "ROTARY": (op_rotary, 2, 1),
     "BATCH_MATMUL": (op_batch_matmul, 2, 1),
     "TRANSPOSE": (op_transpose, 1, 1),
+    "GAUSS": (op_gauss, 3, 1),
     "RESHAPE2": (op_reshape2, 3, 1),
     "RESHAPE3": (op_reshape3, 4, 1),
     "PERMUTE3": (op_permute3, 4, 1),
@@ -398,6 +411,7 @@ SIGS = {
     "ROTARY": (["$X", "*"], ["$X"]),
     "BATCH_MATMUL": (["*", "*"], ["*"]),
     "TRANSPOSE": (["$A"], ["$A^T"]),
+    "GAUSS": (["$A", "F:SCALAR", "F:SCALAR"], ["$A"]),
     "RESHAPE2": (["*", "F:SCALAR", "F:SCALAR"], ["*"]),
     "RESHAPE3": (["*", "F:SCALAR", "F:SCALAR", "F:SCALAR"], ["*"]),
     "PERMUTE3": (["*", "F:SCALAR", "F:SCALAR", "F:SCALAR"], ["*"]),

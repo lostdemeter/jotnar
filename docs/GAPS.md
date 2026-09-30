@@ -71,5 +71,11 @@ split deferred -- no demand, heads need reshape+permute only, stated).
 BRANCH CLOSED as SELECT (verdict-gated general select; MIXDYAD's hardcoded
 pattern generalized). LOOP CLOSED v1 as STATE + repeat() (fixed geometry
 refused loudly upfront; STATE must be IN-seeded and OUT-assigned, both
-gated; repeat == manual unroll bit-exact). Remaining: static verifier
-(scales at parse time) + ITERATE with dynamic shapes (still last, biggest).
+gated; repeat == manual unroll bit-exact). Static verifier v1 CLOSED:
+verify() replays unification over declared layouts with zero execution
+(flagship 13/13, bad listings caught) + ranges.estimate() (hull intervals,
+RANGE declarations, M.json coverage; asymmetric doctrine -- saturation flags
+on any exceedance, underflow only whole-range-below; tensor_disc pins the
+hull limit: precision loss inside spanning ranges stays with unit gates).
+Remaining: ITERATE with dynamic shapes (still last, biggest) + estimator
+extensions (per-op m override, typical-magnitude reasoning -- stated limits).

@@ -251,6 +251,45 @@ def main():
     except ASM.AsmError as e:
         check("asm-state-shape", True, f"fails loud ({str(e)[:60]})")
 
+    # Batch 3 continued: static verifier v1 (verify() layouts above +
+    # ranges.estimate below). Estimator scope, stated: hull intervals catch
+    # SATURATION (above cap) and WHOLE-RANGE underflow soundly; they CANNOT
+    # see precision loss inside a spanning range (the historical discriminant
+    # case: hull [-0.13,0.13] spans the floor while real values sat at 9e-6).
+    # That class stays with unit gates + the sum-at-m_acc rule -- the tensor
+    # demo (programs/tensor_disc.asm) documents the boundary. Positive
+    # controls prove the machinery isn't vacuous.
+    from chain import ranges as RG
+    f_flag, rep = RG.estimate(
+        open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          "programs", "holo_flagship.asm")).read(),
+        REGISTRY, SIGS)
+    check("estimate-flagship-clean", f_flag == [], f"findings={f_flag}")
+    sat_text = "IN a\nRANGE a 0.0 2.0\nB = MUL(a, a)\n"
+    f_sat, _ = RG.estimate(sat_text, REGISTRY, SIGS)
+    check("estimate-saturation", len(f_sat) == 1 and "exceeds" in f_sat[0],
+          f"flags [0,4] over cap ({f_sat[0][:60] if f_sat else 'none'})")
+    und_text = "IN z\nRANGE z 0.0 1e-7\nW = MUL(z, z)\n"
+    f_und, _ = RG.estimate(und_text, REGISTRY, SIGS)
+    check("estimate-underflow", len(f_und) == 1 and "underflows" in f_und[0],
+          f"flags [0,1e-14] under floor")
+    f_ten, _ = RG.estimate(
+        open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          "programs", "tensor_disc.asm")).read(),
+        REGISTRY, SIGS)
+    check("estimate-tensor-blind", f_ten == [],
+          "documents the hull limit (see tensor_disc.asm header)")
+    # GAUSS mnemonic (added for the tensor demo): parity vs float oracle.
+    from chain import oracle as _O
+    rng4 = np.random.default_rng(4)
+    gf = rng4.uniform(0, 1, (12, 12))
+    gt = S.encode(gf)
+    gg = REGISTRY["GAUSS"][0]([gt, 1.0, 0.8], {}, {})
+    gv = S.decode(gg[0], gg[1]) * (1 - gg[2].astype(np.float64))
+    ref = _O._corr_replicate(gf, _O.gauss_kernel(radius=1, sigma=0.8))
+    check("asm-gauss", 10 * np.log10(1.0 / float(np.mean((gv - ref) ** 2))) >= 40.0,
+          "gaussian blur parity vs float oracle")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

@@ -45,6 +45,17 @@ def parse(text):
             if len(kv) != 2:
                 raise AsmError(f"line {ln}: CONFIG needs key+value")
             config[kv[0]] = kv[1]
+        elif head == "RANGE":
+            # range declarations feed the static estimator (ranges.py);
+            # run() ignores them (values, not intervals, flow at runtime).
+            parts = line.split()
+            if len(parts) != 4:
+                raise AsmError(f"line {ln}: RANGE needs name+lo+hi")
+            try:
+                float(parts[2])
+                float(parts[3])
+            except ValueError:
+                raise AsmError(f"line {ln}: RANGE bounds must be numeric")
         elif head == "STATE":
             names = [n.strip() for n in toks[1].split(",") if n.strip()]
             if not names:
@@ -104,11 +115,12 @@ def parse(text):
 
 def assemble(text, registry, sigs=None):
     """Bind mnemonics + check arity/inputs statically (before any execution).
-    Returns (config, inp, bound prog) with bound entries (outs, fn, args, ln).
-    Unknown mnemonic / arity mismatch / use-before-def fails here. Layouts
-    check at run time (payloads unknown until then); sigs maps mnemonic ->
-    (in_layouts, out_layouts) with $VAR / $VAR^T / *, missing = all-wildcard.
-    Full verifier with scales+geometry is backlog: range estimator + seam chart."""
+    Returns (config, inp, bound, state) with bound entries
+    (outs, mn, fn, args, ln, sig). Unknown mnemonic / arity mismatch /
+    use-before-def fails here. Layouts check at run time (payloads unknown
+    until then); verify() below replays unification over DECLARED layouts
+    for parse-time conflicts. Full verifier with scales+geometry is backlog:
+    range estimator + seam chart."""
     sigs = sigs or {}
     config, inp, prog, state = parse(text)
     bound, defined = [], set(n for n, _ in inp)
@@ -165,6 +177,53 @@ def _resolve(pat, actual, bindings):
     return pat
 
 
+def _check_layouts(outs, mn, args, ln, sig, layouts):
+    """Unify one instruction's layouts. Returns {out: layout}. Raises
+    AsmError naming op+line+stream on concrete conflict. Shared by run()
+    (live layouts) and verify() (declared-only layouts)."""
+    in_pats, out_pats = sig if sig is not None else (["*"] * len(args), ["*"] * len(outs))
+    bindings = {}
+    try:
+        for a, pat in zip(args, in_pats):
+            actual = layouts.get(a, "F:SCALAR" if _is_literal(a) else _UNKNOWN)
+            _resolve(pat, actual, bindings)
+        out_lays = []
+        for pat in out_pats:
+            if pat == "*":
+                out_lays.append(_UNKNOWN)
+            elif pat.startswith("$"):
+                base = pat[:-2] if pat.endswith("^T") else pat
+                got = bindings.get(base, _UNKNOWN)
+                out_lays.append(_UNKNOWN if got == _UNKNOWN else (got + "^T" if pat.endswith("^T") else got))
+            else:
+                out_lays.append(pat)
+    except AsmError as e:
+        raise AsmError(f"line {ln} ({mn}): {e}")
+    return dict(zip(outs, out_lays))
+
+
+def verify(text, registry, sigs=None):
+    """Static layout pass (no payloads, no execution): replays unification
+    over DECLARED layouts only (IN AS + concrete sig patterns). Returns
+    (errors, report): errors = list of conflict strings derivable without
+    values; report has resolved/total coverage counts (gradual typing means
+    absence of proof -- verify() reports coverage honestly)."""
+    config, inp, bound, _ = assemble(text, registry, sigs)
+    layouts = {n: (l or _UNKNOWN) for n, l in inp}
+    errors = []
+    for outs, mn, fn, args, ln, sig in bound:
+        try:
+            layouts.update(_check_layouts(outs, mn, args, ln, sig, layouts))
+        except AsmError as e:
+            errors.append(str(e))
+            for o in outs:
+                layouts[o] = _UNKNOWN
+    total = len(layouts)
+    resolved = sum(1 for v in layouts.values() if v != _UNKNOWN)
+    return errors, {"resolved": resolved, "total": total,
+                    "layouts": dict(layouts)}
+
+
 def run(bound, config, inp, payload):
     """Execute bound program over a feeds dict. Returns feeds (all streams).
     Convention: an op with arity_out==1 produces ONE stream (even when the
@@ -192,33 +251,16 @@ def run(bound, config, inp, payload):
         layouts = dict(in_lay)
     for outs, mn, fn, args, ln, sig in prog:
         vals = [feeds[a] if a in feeds else float(a) for a in args]
-        in_pats, out_pats = sig if sig is not None else (["*"] * len(args), ["*"] * len(outs))
-        bindings = {}
-        try:
-            for a, pat in zip(args, in_pats):
-                actual = layouts.get(a, "F:SCALAR" if _is_literal(a) else _UNKNOWN)
-                _resolve(pat, actual, bindings)
-            out_lays = []
-            for pat in out_pats:
-                if pat == "*":
-                    out_lays.append(_UNKNOWN)
-                elif pat.startswith("$"):
-                    base = pat[:-2] if pat.endswith("^T") else pat
-                    got = bindings.get(base, _UNKNOWN)
-                    out_lays.append(_UNKNOWN if got == _UNKNOWN else (got + "^T" if pat.endswith("^T") else got))
-                else:
-                    out_lays.append(pat)
-        except AsmError as e:
-            raise AsmError(f"line {ln} ({mn}): {e}")
+        out_lays = _check_layouts(outs, mn, args, ln, sig, layouts)
         out = fn(vals, config, feeds)
         # arity was checked at assemble time: one declared output takes the
         # whole return value (even a triples-tuple); N outputs take an N-tuple.
         out = (out,) if len(outs) == 1 else tuple(out)
         if len(out) != len(outs):
             raise AsmError(f"line {ln} ({mn}): runtime arity break: {outs}")
-        for name, val, lay in zip(outs, out, out_lays):
+        for name, val in zip(outs, out):
             feeds[name] = val
-            layouts[name] = lay
+            layouts[name] = out_lays[name]
     return feeds
 
 
