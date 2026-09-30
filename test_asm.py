@@ -787,6 +787,18 @@ OUT = ADD(H, DOWN)
     _dflt = REGISTRY["MATMUL"][0]([_sA, _sB], {}, {})
     check("asm-scale-default", all(bool((a == b).all()) for a, b in zip(_same, _dflt)),
           "explicit frozen value == default, exact (default untouched)")
+    # same-line family: BATCH_MATMUL (m_acc) + ADD (m_cov) defaults 0-diff.
+    _bB = S.encode((_sc.random((2, 4, 8)) - 0.5) * 2)
+    _bA = S.encode((_sc.random((2, 4, 8)) - 0.5) * 2)
+    _bb0 = REGISTRY["BATCH_MATMUL"][0]([_sA, _sB], {"m_acc": str(_ma)}, {})
+    _bb1 = REGISTRY["BATCH_MATMUL"][0]([_sA, _sB], {}, {})
+    check("asm-scale-default-bmm", all(bool((a == b).all()) for a, b in zip(_bb0, _bb1)),
+          "BATCH_MATMUL default untouched")
+    _, _mc = H._load_scales()
+    _ad0 = REGISTRY["ADD"][0]([_bA, _bB], {"m_cov": str(_mc)}, {})
+    _ad1 = REGISTRY["ADD"][0]([_bA, _bB], {}, {})
+    check("asm-scale-default-add", all(bool((a == b).all()) for a, b in zip(_ad0, _ad1)),
+          "ADD default untouched")
     _big = REGISTRY["MATMUL"][0]([_sA, _sB], {"m_acc": "35492"}, {})
     _bigv = S.decode(_big[0], _big[1]) * (1 - _big[2].astype(np.float64))
     _dfltv = S.decode(_dflt[0], _dflt[1]) * (1 - _dflt[2].astype(np.float64))

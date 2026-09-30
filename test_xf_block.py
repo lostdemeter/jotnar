@@ -56,16 +56,18 @@ def enc(a):
     return S.encode(np.ascontiguousarray(a, dtype=np.float64))
 
 
-def fixture(Sq=8, D=16, Dff=32, scale=0.10, seed=0):
+def fixture(Sq=8, D=16, Dff=32, scale=0.10, seed=0, mlp_scale=None):
     rng = np.random.default_rng(seed)
     x_f = (rng.random((Sq, D)) - 0.5) * 2 * scale
     pos = np.arange(Sq, dtype=np.int64)
 
-    def wf(shape):
-        return (rng.random(shape) - 0.5) * 2 * scale
+    def wf(shape, s=None):
+        s = scale if s is None else s
+        return (rng.random(shape) - 0.5) * 2 * s
     wq_f, wk_f, wv_f, wo_f = wf((D, D)), wf((D, D)), wf((D, D)), wf((D, D))
-    wup_f, wgate_f = wf((D, Dff)), wf((D, Dff))
-    wdown_f = wf((Dff, D))
+    ms = scale if mlp_scale is None else mlp_scale
+    wup_f, wgate_f = wf((D, Dff), ms), wf((D, Dff), ms)
+    wdown_f = wf((Dff, D), ms)
     rms1_f = np.ones(D) * 0.9 + (rng.random(D) - 0.5) * 0.1
     rms2_f = np.ones(D) * 0.9 + (rng.random(D) - 0.5) * 0.1
     weights = (wq_f, wk_f, wv_f, wo_f, wup_f, wgate_f, wdown_f)
@@ -120,11 +122,11 @@ def torch_block(x_f, pos, weights, rms1_f, rms2_f):
     return OUT.detach().numpy(), float(SC.abs().max())
 
 
-def run_listing(x_f, pos, weights, rms1_f, rms2_f):
+def run_listing(x_f, pos, weights, rms1_f, rms2_f, extra_config=""):
     wq_f, wk_f, wv_f, wo_f, wup_f, wgate_f, wdown_f = weights
     text = open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                              "programs", "xf_block.asm")).read()
-    feeds = ASM.run_text(text, REGISTRY,
+    feeds = ASM.run_text(extra_config + text, REGISTRY,
                          {"x": enc(x_f), "pos": pos,
                           "wq": enc(wq_f), "wk": enc(wk_f),
                           "wv": enc(wv_f), "wo": enc(wo_f),
@@ -169,6 +171,25 @@ def main():
     print(f"block-out-of-contract-measured: {d3:.2f}dB (mse={mse3:.2e}, "
           f"mechanism: scores>1 saturate + products over m_acc; backlog: "
           f"recalibrated scales + 1/sqrt(d) scaling)")
+
+    # mixed-scale row (roadmap gate 1): attention small (scores in-contract,
+    # frozen-fine) + MLP big (products over frozen m_acc). Regimes differ
+    # BY BLOCK (attn values ~0.4, mlp ~0.6); one listing spans both via
+    # CONFIG m_acc (matmul family bridges big, everything else frozen).
+    # m_acc 35492 = m_of(8.0), frozen literal (stated, cf #LIB-030).
+    xm, posm, wm, r1m, r2m = fixture(scale=0.10, mlp_scale=0.30)
+    refm, scmaxm = torch_block(xm, posm, wm, r1m, r2m)
+    check("block-mixed-contract", scmaxm <= 1.0,
+          f"scoremax={scmaxm:.3f} (attention in-contract throughout)")
+    gotm_frozen = dec(run_listing(xm, posm, wm, r1m, r2m)["OUT"])
+    dm_f, _ = psnr1(gotm_frozen, refm)
+    gotm = dec(run_listing(xm, posm, wm, r1m, r2m,
+                           extra_config="CONFIG m_acc 35492\n")["OUT"])
+    dm, msem = psnr1(gotm, refm)
+    check("block-mixed-scales", dm >= BAR_DB and dm_f < BAR_DB,
+          f"mixed {dm:.1f}dB vs frozen {dm_f:.1f}dB (row non-vacuous)")
+    check("block-mixed-touched", bool((gotm != gotm_frozen).any()),
+          "override moves values (tripwire against silent ignore)")
 
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)

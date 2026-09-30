@@ -48,10 +48,11 @@ A declared kind must also match the VALUE (`T`-declared holding floats
 fails — triple-ops on float arrays used to compute garbage silently).
 
 **Config.** `CONFIG key value` — frozen choices (e.g. `beta 0.5`,
-`rope_base 10000.0`, `eps_rms_c 4514`). MATMUL also honors `CONFIG m_acc`
-/ `m_cov` scale overrides (v1.1 per-block spike: integral 0..65535, same
-rule as RESCALE; absent keys take the frozen values). Unknown keys don't
-fail; ops read what they need with documented defaults.
+`rope_base 10000.0`, `eps_rms_c 4514`). Scale overrides for multi-regime
+listings (v1.1): MATMUL + BATCH_MATMUL honor `m_acc`, ADD + SUB honor
+`m_cov` — integral 0..65535, same rule as RESCALE; absent keys take the
+frozen values. Unknown keys don't fail; ops read what they need with
+documented defaults.
 
 **Literals.** Bare numbers in arg position are `F:SCALAR` floats. Shape
 literals (axes, radii, counts) must be INTEGRAL — `1.5` fails loud, never
@@ -109,7 +110,7 @@ loud-failure. Arithmetic core (`ADD SUB MUL DIV`) refuses float inputs
 - `LUMA(F:HWC -> F:HW)` — Rec.709 luma (sum fingerprinted 1.0). Ex: `Y = LUMA(LIN)`.
 - `SQRT(F:HW -> T:HW)` — `A=sqrt(Y)` via exponent halve (sign forced +1). Ex: `A = SQRT(Y)`.
 - `SPLAT_BLUR(T:HW -> T:HW, T:HW)` — soft oriented bank + coherence. Returns `(AS, COH)`. Ex: `AS, COH = SPLAT_BLUR(A)`.
-- `SUB/MUL/ADD/DIV($A,$A -> $A)` — triples arithmetic @ m_cov (DIV: zero-or, no guards). Ex: `D = SUB(A, AS)`.
+- `SUB/MUL/ADD/DIV($A,$A -> $A)` — triples arithmetic @ m_cov (DIV: zero-or, no guards). ADD/SUB honor CONFIG `m_cov`. Ex: `D = SUB(A, AS)`.
 - `BETA_V5(T:HW,T:HW -> T:HW)` — learned beta gate `(D, COH)`. Ex: `BEFF = BETA_V5(D, COH)`.
 - `BETA($A -> $A)` — CONFIG beta as triples at the reference shape. Ex: `B = BETA(A)`.
 - `SQUARE($A -> $A)` — `tmul` + clip to [0,1]. Ex: `YENH = SQUARE(AE)`.
@@ -122,7 +123,7 @@ loud-failure. Arithmetic core (`ADD SUB MUL DIV`) refuses float inputs
 - `MIXDYAD(T:HW,T:HW,I:HW -> T:HW)` — static ? `(D+3W)/4` : `D`; `None` history -> `D`. Ex: `DM = MIXDYAD(D, W, M)`.
 
 **Transformer (block):**
-- `MATMUL/BATCH_MATMUL(*,* -> *)` — triples matmul @ m_acc (batch dims + B-broadcast). Inner dims must agree or fail WITH the transpose hint. Ex: `Q = MATMUL(XN, wq)`.
+- `MATMUL/BATCH_MATMUL(*,* -> *)` — triples matmul @ m_acc (batch dims + B-broadcast). Inner dims must agree or fail WITH the transpose hint. Honor CONFIG `m_acc` (multi-regime listings). Ex: `Q = MATMUL(XN, wq)`.
 - `SOFTMAX($A -> $A)` — row softmax to probability triples. CONTRACT: inputs ≤1.0 abs (`to_fixed` saturates above it at BIAS — the T-transformation doctrine; out-of-contract saturates to softmax-of-clipped, pinned by gate). Ex: `P = SOFTMAX(SCORES)`.
 - `RMSNORM($X,$W -> $X)` — per-row RMSNorm+weight; `eps_rms_c` from CONFIG (default 4514 = `eps_c` in 2^-36 ambient counts; regime-dependent, per-model calibration is backlog). Ex: `XN = RMSNORM(x, rms_w1)`.
 - `SILU($A -> $A)` — `x*sigmoid(x)`, 0-diff vs phi-core. Ex: `GS = SILU(GATE)`.

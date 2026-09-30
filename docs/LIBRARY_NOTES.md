@@ -353,3 +353,19 @@ per-block regimes (downstream ops re-bridge at global m) — scale context
 must thread into execution; DEF-header `@scale` is the end-state.
 Next: BATCH_MATMUL + arithmetic core follow the same line, then a
 two-regime listing with RESCALE at the seam (roadmap gate 1).
+## #LIB-031: two-regime listing (roadmap gate 1 CLOSED) [CLOSED]
+
+MATMUL-family + ADD/SUB threaded (same one-line pattern; RMSNORM/SOFTMAX/
+SILU-family need none — normalizing, BIAS-structural, scaleless, each
+stated). Demo (test_xf_block.py): attention-small (scores 0.39,
+frozen-fine) + MLP-big (products over frozen m_acc) in ONE listing —
+frozen 24.0dB, CONFIG m_acc 35492 recovers 65.1dB (41dB swing, bar 40).
+Honest scopes, all stated: (1) the sweep proved single-scale-up CANNOT
+separate the walls (matmul and softmax saturation arrive together,
+both ~w²) — the split works because attention is CONTRACT-bound
+(scores ≤1.0, no m fixes it) while MLP is COVERAGE-bound (bigger m
+fixes it); (2) big-m doesn't hurt small values here (4.5e-4 both —
+error is lattice-encode-dominated), so one CONFIG key serves both
+blocks; per-DEF `@scale` stays the end-state for the drowning case
+(phi-core GRN evidence); (3) two syntax slips caught by the suites
+(dropped `"""`, joined lines) — the gates earn their keep again.

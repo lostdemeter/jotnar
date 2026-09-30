@@ -23,8 +23,9 @@ def _scales(config=None):
     """Frozen scales with CONFIG overrides (v1.1 per-block spike): `m_acc`
     / `m_cov` keys, integral 0..65535 (same rule as RESCALE); absent keys
     take the frozen M.json values, so the default path is 0-diff by
-    construction (gated). Only MATMUL honors overrides so far (prototype;
-    BATCH_MATMUL + the arithmetic core follow the same line)."""
+    construction (gated). Honored so far: MATMUL + BATCH_MATMUL (`m_acc`),
+    ADD + SUB (`m_cov`). RMSNORM/SOFTMAX/SILU-family need none (normalizing,
+    BIAS-structural, scaleless) — stated, each with its reason."""
     m_acc, m_cov = H._load_scales()
     if config is not None:
         if "m_acc" in config:
@@ -90,7 +91,7 @@ def op_sub(vals, config, feeds):
     a, b = vals
     _need_triples(a, "SUB", "a")
     _need_triples(b, "SUB", "b")
-    _, m_cov = _scales()
+    _, m_cov = _scales(config)
     return H.binop_fixed(a, b, m_cov, m_cov, op="sub")
 
 
@@ -109,7 +110,7 @@ def op_mul(vals, config, feeds):
 def op_add(vals, config, feeds):
     _need_triples(vals[0], "ADD", "a")
     _need_triples(vals[1], "ADD", "b")
-    _, m_cov = _scales()
+    _, m_cov = _scales(config)
     return H.binop_fixed(vals[0], vals[1], m_cov, m_cov, op="add")
 
 
@@ -301,9 +302,9 @@ def op_rotary(vals, config, feeds):
 def op_batch_matmul(vals, config, feeds):
     """Batched triples matmul (phi-core matmul_int handles batch dims +
     B-broadcast natively -- verified shapes (2,3,5); 0-diff: wrapper adds
-    nothing). m_acc from frozen scales."""
+    nothing). m_acc from frozen scales, or CONFIG `m_acc` override."""
     N, _S = _phi_ops()
-    m_acc, _ = _scales()
+    m_acc, _ = _scales(config)
     return N.matmul_int(vals[0], vals[1], m_acc)
 
 
