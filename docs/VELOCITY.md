@@ -176,3 +176,16 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   3. Rank is a non-route on random weights (flat spectrum) — correctly
      defers to trained weights instead of manufacturing signal. Knowing
      which routes DON'T respond is information too.
+
+## 2026-09-30: singular directions (~2 min, CLOCKED)
+
+- Same probe in the space's own basis (per-direction ablation on wv/wo)
+  + 3 gates in test_edits.py (#LIB-046).
+- Wall time: ~2 min. Clock 21:21:46Z -> 21:22:30Z (direction sweep both
+  matrices + gates + docs + verify incl.).
+- Results: direction spread 51.4dB vs 15.6dB channels; corr(dir-dB,
+  sval) -0.84; near-null direction removable at 91.4dB.
+- Surprise: the tail correlation is PARTLY trivial (smallest sval IS
+  0.00 — ablating nothing changes nothing) — recorded, not hidden. The
+  non-trivial mid-range (40-60dB over s 0.37..0.13) is the real signal:
+  geometry beats coordinates even where energy can't explain everything.

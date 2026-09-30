@@ -529,6 +529,17 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  x N inputs, stable-important channels) -> rank spectrum -> candidate edit
  with predicted band + held-out confirm. Method gates: ordering, spread
  exists, scale-linearity, rank-monotonicity (all deterministic, seed 0).
+## #LIB-046: singular directions beat channels (basis-independence) [CLOSED]
+
+ Same probe, geometric basis (W - s_i u_i v_i^T on wv): spread 51.4dB vs
+ 15.6dB coordinate channels, delta tracking singular magnitude
+ (corr -0.84 — the probe follows weight energy, as algebra says it must),
+ near-null direction removable at 91.4dB. The coordinate finding (ch3
+ dead) was statistics in a costume; directions survive re-basing, so they
+ compose and channels don't. Standing rule: ablate the space's own basis
+ (SVD), never the ambient coordinates — gauge freedom makes coordinate
+ attributions evaporate under re-basis. Next: trained weights (flat
+ spectrum here is a toy artifact; decaying spectra will separate harder).
  ## #LIB-036: elementwise CUDA batch (v1.2 gate 2b) [CLOSED]
 
  9 kernels (holo_elem.cu: sqrt/tmul/tdiv/binop/square-clip/sigmoid/abs/

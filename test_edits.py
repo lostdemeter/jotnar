@@ -100,6 +100,26 @@ def main():
           f"svals[{s[0]:.2f}..{s[-1]:.2f}]")
     check("edits-rank-monotone", dr[8] >= dr[4] >= dr[2],
           "less rank never helps (method sanity)")
+    # E. singular-direction ablation (basis-independent content): kill one
+    # U-column's contribution (W - s_i u_i v_i^T). Prediction, stated from
+    # geometry: spread WIDER than coordinate channels (directions are the
+    # space's own basis; channels are an arbitrary one) and delta tracking
+    # singular magnitude (bigger direction removed -> bigger move).
+    U, s, Vt = np.linalg.svd(W0['wv'], full_matrices=False)
+    dd = []
+    for i in range(len(s)):
+        Wi = W0['wv'] - np.outer(U[:, i] * s[i], Vt[i])
+        dd.append(psnr(run({'wv': Wi}), base))
+    dd = np.array(dd)
+    spread_d = float(dd.max() - dd.min())
+    print("    wv dir-dB:", np.round(dd, 1))
+    check("edits-direction-spread", spread_d > 30.0,
+          f"{spread_d:.1f}dB vs 15.6dB channels (geometry beats coordinates)")
+    corr = float(np.corrcoef(dd, s)[0, 1])
+    check("edits-direction-tracks", corr < -0.5,
+          f"corr(dir-dB, sval)={corr:.2f} (bigger direction -> bigger move)")
+    check("edits-null-direction", float(dd.max()) > 70.0,
+          f"max {dd.max():.1f}dB (near-null directions removable)")
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 
