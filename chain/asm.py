@@ -224,12 +224,49 @@ def verify(text, registry, sigs=None):
                     "layouts": dict(layouts)}
 
 
-def run(bound, config, inp, payload):
+def _summarize(v):
+    """Cheap per-stream summary for traces (shapes always; value stats for
+    numerics; triples decoded coarsely). Never fails: summarization must not
+    break the program it observes (unrepresentable values -> best effort)."""
+    try:
+        if isinstance(v, tuple) and len(v) == 3 and all(hasattr(x, "shape") for x in v):
+            import numpy as _np
+            try:
+                from phi_core import lattice as _S
+                dec = _S.decode(_np.ascontiguousarray(v[0]),
+                                _np.ascontiguousarray(v[1]))
+                m = (1 - _np.ascontiguousarray(v[2]).astype(float))
+                a = dec * m
+                return {"kind": "triples", "shape": tuple(v[0].shape),
+                        "min": float(_np.min(a)), "max": float(_np.max(a)),
+                        "mean": float(_np.mean(a))}
+            except Exception:
+                return {"kind": "triples",
+                        "shape": tuple(v[0].shape)}
+        import numpy as _np
+        a = _np.ascontiguousarray(v)
+        if a.dtype == bool:
+            return {"kind": "mask", "shape": tuple(a.shape),
+                    "true": int(a.sum()), "n": int(a.size)}
+        if np.issubdtype(a.dtype, np.number):
+            with np.errstate(all="ignore"):
+                return {"kind": str(a.dtype), "shape": tuple(a.shape),
+                        "min": float(_np.min(a)), "max": float(_np.max(a)),
+                        "mean": float(_np.mean(a.astype(float)))}
+        return {"kind": str(a.dtype), "shape": tuple(a.shape)}
+    except Exception as e:
+        return {"kind": "unrepresentable", "note": str(e)[:60]}
+
+
+def run(bound, config, inp, payload, trace=None):
     """Execute bound program over a feeds dict. Returns feeds (all streams).
     Convention: an op with arity_out==1 produces ONE stream (even when the
     value is itself a tuple, e.g. triples); arity_out>1 must return a tuple
     of that length. Layouts check per instruction (parallel dict; values
-    untouched): concrete-vs-concrete mismatch fails naming op+line+stream."""
+    untouched): concrete-vs-concrete mismatch fails naming op+line+stream.
+    trace: None (default, old behavior exactly) or a list to append per-op
+    records {line, op, in: {stream: summary}, out: {...}, sec}. Summaries
+    are best-effort and never affect values (see _summarize)."""
     _, _, prog = bound
     # single-IN listings take a bare payload (backward compat); multi-IN
     # listings take {name: value}. Unknown payload keys fail loud.
@@ -252,6 +289,16 @@ def run(bound, config, inp, payload):
     for outs, mn, fn, args, ln, sig in prog:
         vals = [feeds[a] if a in feeds else float(a) for a in args]
         out_lays = _check_layouts(outs, mn, args, ln, sig, layouts)
+        if trace is not None:
+            import time
+            in_sum = {}
+            for a in args:
+                ssum = _summarize(feeds[a]) if a in feeds else {"kind": "literal", "value": a}
+                ssum["layout"] = layouts.get(a, "F:SCALAR" if _is_literal(a) else _UNKNOWN)
+                in_sum[a] = ssum
+            trace.append({"line": ln, "op": mn,
+                          "in": in_sum,
+                          "out": {}, "sec": 0.0, "_t0": time.perf_counter()})
         out = fn(vals, config, feeds)
         # arity was checked at assemble time: one declared output takes the
         # whole return value (even a triples-tuple); N outputs take an N-tuple.
@@ -261,13 +308,42 @@ def run(bound, config, inp, payload):
         for name, val in zip(outs, out):
             feeds[name] = val
             layouts[name] = out_lays[name]
+        if trace is not None:
+            rec = trace[-1]
+            rec["out"] = {}
+            for name, val in zip(outs, out):
+                ssum = _summarize(val)
+                ssum["layout"] = out_lays[name]
+                rec["out"][name] = ssum
+            rec["sec"] = time.perf_counter() - rec.pop("_t0")
     return feeds
 
 
-def run_text(text, registry, payload, sigs=None):
-    """Parse + assemble + execute. Returns feeds."""
+def format_trace(log):
+    """Human-readable trace lines: L12 SPLAT_BLUR A:T:HW(48,48) -> AS:... 0.213s."""
+    lines = []
+    for rec in log:
+        def fmt(name, s):
+            sh = "x".join(str(d) for d in s.get("shape", ())) or "?"
+            lay = s.get("layout", "")
+            extra = ""
+            if "mean" in s:
+                extra = f" ~{s['mean']:.3g}"
+            elif "true" in s:
+                extra = f" T{s['true']}/{s.get('n', '?')}"
+            return f"{name}{(':' + lay) if lay else ''}({sh}){extra}"
+        ins = " ".join(fmt(n, s) for n, s in rec["in"].items())
+        outs = " ".join(fmt(n, s) for n, s in rec["out"].items())
+        lines.append(f"L{rec['line']:>3} {rec['op']:<12} {ins} -> {outs}  {rec['sec']:.3f}s")
+    total = sum(r["sec"] for r in log)
+    lines.append(f"total {total:.3f}s over {len(log)} ops")
+    return lines
+
+
+def run_text(text, registry, payload, sigs=None, trace=None):
+    """Parse + assemble + execute. Returns feeds (trace list filled if given)."""
     config, inp, bound, _ = assemble(text, registry, sigs)
-    return run((config, inp, bound), config, inp, payload)
+    return run((config, inp, bound), config, inp, payload, trace=trace)
 
 
 def _shapes_of(v):

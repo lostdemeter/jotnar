@@ -262,3 +262,15 @@ contents exact vs manual concat + growth log [(1,6)..(4,6)]. WHILE
 semantics + verdict integration need a design conversation, and every current
 iteration need (diffusion N-steps, IIR warmup, cache fill) is bounded --
 no demand, no build (the process working: stated, not missing).
+## #LIB-024: trace mode (debugger) + what it can/can't catch [CLOSED]
+
+run(trace=[...]) records per-op {line, op, in/out summaries, sec} without
+perturbing values (bit-identical, gated); format_trace() renders the
+instrument panel (SPLAT_BLUR dominates at 0.2s/0.26s -- matches fusion
+pricing independently). Summaries are best-effort and never fail the run.
+Honest limit, stated in the gate: summaries show SYMPTOMS (shapes, layouts,
+means per line catch the broadcast/transpose classes in minutes); gates
+prove CAUSES. Profiler falls out free (per-op wall time). Test-variable
+hygiene note, learned the hard way twice this session: loop variables
+(rgb) leaking across gate sections cause phantom shape mismatches -- fresh
+names per section (ftext/frgb pattern).

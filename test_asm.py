@@ -323,6 +323,34 @@ def main():
     check("asm-gauss", 10 * np.log10(1.0 / float(np.mean((gv - ref) ** 2))) >= 40.0,
           "gaussian blur parity vs float oracle")
 
+    # Debugger: trace mode records per-op summaries + timing without
+    # perturbing values; pretty-printer renders them. The trace is how the
+    # broadcast scramble / transposed flow / diagonal swap class of bug gets
+    # caught in minutes (shapes + layouts + means per line) instead of probe
+    # scripts. Honest limit, stated: summaries show symptoms, gates prove causes.
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                           "programs", "holo_flagship.asm")) as fh:
+        ftext = fh.read()
+    frgb = np.asarray(Image.open(CAND).convert("RGB"))
+    log1, log2 = [], []
+    f1 = ASM.run_text(ftext, REGISTRY, frgb, sigs=SIGS, trace=log1)
+    f2 = ASM.run_text(ftext, REGISTRY, frgb, sigs=SIGS, trace=log2)
+    check("asm-trace-count", len(log1) == 11 and len(log2) == 11,
+          f"{len(log1)} records for 11 instructions")
+    check("asm-trace-keys", all(set(r) >= {"line", "op", "in", "out", "sec"} for r in log1),
+          "every record has line/op/in/out/sec")
+    check("asm-trace-pure", bool((f1["OUT"] == ref8).all()),
+          "trace mode bit-identical to untraced run (via fidelity ref)")
+    s1 = [{k: (v if k != "sec" else 0) for k, v in r.items()} for r in log1]
+    s2 = [{k: (v if k != "sec" else 0) for k, v in r.items()} for r in log2]
+    check("asm-trace-deterministic", s1 == s2, "summaries stable across runs")
+    lines = ASM.format_trace(log1)
+    check("asm-trace-print", len(lines) == 12 and "SPLAT_BLUR" in lines[3] and lines[-1].startswith("total"),
+          f"{len(lines)} lines incl. total")
+    check("asm-trace-profile", all(r["sec"] >= 0 for r in log1) and
+          max(log1, key=lambda r: r["sec"])["op"] == "SPLAT_BLUR",
+          "timings non-negative; blur dominates (matches fusion pricing)")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 
