@@ -1,0 +1,8 @@
+{
+  "source": "grokipedia",
+  "n_sents": 1173,
+  "n_cand": 416,
+  "n_edges": 51,
+  "minsup": 2,
+  "sha": "65a561832d45ee5d"
+}

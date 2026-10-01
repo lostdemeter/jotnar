@@ -1,0 +1,52 @@
+{"type": "manifest", "format": "echion-store/1", "n_records": 51, "source": "grokipedia", "minsup": 2}
+{"subj": "battle", "pred": "of", "obj": "actium", "cat": "possession", "support": 14, "witness": 826, "id": "m0000", "probe_q": "battle of", "probe_a": "actium", "digest": "aa8228d38fa1d7db"}
+{"subj": "donations", "pred": "of", "obj": "alexandria", "cat": "possession", "support": 7, "witness": 639, "id": "m0001", "probe_q": "donations of", "probe_a": "alexandria", "digest": "12a915cf2a01e0ee"}
+{"subj": "donations", "pred": "of", "obj": "alexandria in", "cat": "possession", "support": 5, "witness": 689, "id": "m0002", "probe_q": "donations of", "probe_a": "alexandria in", "digest": "70d0a124562ff022"}
+{"subj": "life", "pred": "of", "obj": "alexander", "cat": "possession", "support": 5, "witness": 427, "id": "m0003", "probe_q": "life of", "probe_a": "alexander", "digest": "89a35bd386a7f04e"}
+{"subj": "battle", "pred": "of", "obj": "gaugamela", "cat": "possession", "support": 4, "witness": 434, "id": "m0004", "probe_q": "battle of", "probe_a": "gaugamela", "digest": "c48a9ca38a200e8a"}
+{"subj": "battle", "pred": "of", "obj": "issus", "cat": "possession", "support": 4, "witness": 434, "id": "m0005", "probe_q": "battle of", "probe_a": "issus", "digest": "57e2323433e77091"}
+{"subj": "donations", "pred": "of", "obj": "alexandria and", "cat": "possession", "support": 4, "witness": 502, "id": "m0006", "probe_q": "donations of", "probe_a": "alexandria and", "digest": "9d3939502d0b3aed"}
+{"subj": "life", "pred": "of", "obj": "antony", "cat": "possession", "support": 4, "witness": 825, "id": "m0007", "probe_q": "life of", "probe_a": "antony", "digest": "e02cb648d046cf41"}
+{"subj": "siege", "pred": "of", "obj": "tyre", "cat": "possession", "support": 4, "witness": 436, "id": "m0008", "probe_q": "siege of", "probe_a": "tyre", "digest": "b1f9d7925fc46c5d"}
+{"subj": "adoption", "pred": "of", "obj": "egyptian", "cat": "possession", "support": 3, "witness": 502, "id": "m0009", "probe_q": "adoption of", "probe_a": "egyptian", "digest": "60009025fc1aad51"}
+{"subj": "analysis", "pred": "of", "obj": "major", "cat": "possession", "support": 3, "witness": 0, "id": "m0010", "probe_q": "analysis of", "probe_a": "major", "digest": "2f65774aa7cc5108"}
+{"subj": "battle", "pred": "of", "obj": "chaeronea in", "cat": "possession", "support": 3, "witness": 22, "id": "m0011", "probe_q": "battle of", "probe_a": "chaeronea in", "digest": "98f07460c7acc941"}
+{"subj": "battle", "pred": "of", "obj": "philippi", "cat": "possession", "support": 3, "witness": 1143, "id": "m0012", "probe_q": "battle of", "probe_a": "philippi", "digest": "5bb3a57f8ef577fc"}
+{"subj": "battle", "pred": "of", "obj": "thebes", "cat": "possession", "support": 3, "witness": 431, "id": "m0013", "probe_q": "battle of", "probe_a": "thebes", "digest": "0421a88a13fab275"}
+{"subj": "battles", "pred": "of", "obj": "issus and", "cat": "possession", "support": 3, "witness": 0, "id": "m0014", "probe_q": "battles of", "probe_a": "issus and", "digest": "6b6391f3f97f95ca"}
+{"subj": "births", "pred": "of", "obj": "heirs and", "cat": "possession", "support": 3, "witness": 502, "id": "m0015", "probe_q": "births of", "probe_a": "heirs and", "digest": "dacfcb453e2a9ba5"}
+{"subj": "consolidation", "pred": "of", "obj": "power", "cat": "possession", "support": 3, "witness": 855, "id": "m0016", "probe_q": "consolidation of", "probe_a": "power", "digest": "c036cff747ba6aef"}
+{"subj": "elimination", "pred": "of", "obj": "cicero", "cat": "possession", "support": 3, "witness": 855, "id": "m0017", "probe_q": "elimination of", "probe_a": "cicero", "digest": "ea73b4244e39edd5"}
+{"subj": "evaluation", "pred": "of", "obj": "political", "cat": "possession", "support": 3, "witness": 502, "id": "m0018", "probe_q": "evaluation of", "probe_a": "political", "digest": "42d5f9fc8e3ddaf8"}
+{"subj": "handling", "pred": "of", "obj": "conspiracies and", "cat": "possession", "support": 3, "witness": 0, "id": "m0019", "probe_q": "handling of", "probe_a": "conspiracies and", "digest": "bed58be1cc0c8bce"}
+{"subj": "invasion", "pred": "of", "obj": "asia", "cat": "possession", "support": 3, "witness": 0, "id": "m0020", "probe_q": "invasion of", "probe_a": "asia", "digest": "29f3984a66000357"}
+{"subj": "life", "pred": "of", "obj": "antony c", "cat": "possession", "support": 3, "witness": 730, "id": "m0021", "probe_q": "life of", "probe_a": "antony c", "digest": "8efadb1566bed044"}
+{"subj": "museum", "pred": "of", "obj": "art", "cat": "possession", "support": 3, "witness": 471, "id": "m0022", "probe_q": "museum of", "probe_a": "art", "digest": "93c77ffa519998b9"}
+{"subj": "siege", "pred": "of", "obj": "alexandria and", "cat": "possession", "support": 3, "witness": 502, "id": "m0023", "probe_q": "siege of", "probe_a": "alexandria and", "digest": "f71be402137214db"}
+{"subj": "spread", "pred": "of", "obj": "hellenism and", "cat": "possession", "support": 3, "witness": 0, "id": "m0024", "probe_q": "spread of", "probe_a": "hellenism and", "digest": "2e50a5b1c0d919e8"}
+{"subj": "suppression", "pred": "of", "obj": "theban", "cat": "possession", "support": 3, "witness": 0, "id": "m0025", "probe_q": "suppression of", "probe_a": "theban", "digest": "58c5e64016a3cfa8"}
+{"subj": "table", "pred": "of", "obj": "contents", "cat": "possession", "support": 3, "witness": 493, "id": "m0026", "probe_q": "table of", "probe_a": "contents", "digest": "55a93a952249ab0d"}
+{"subj": "theories", "pred": "of", "obj": "death", "cat": "possession", "support": 3, "witness": 0, "id": "m0027", "probe_q": "theories of", "probe_a": "death", "digest": "225e95286db0be1b"}
+{"subj": "victim", "pred": "of", "obj": "propaganda or", "cat": "possession", "support": 3, "witness": 855, "id": "m0028", "probe_q": "victim of", "probe_a": "propaganda or", "digest": "b8659b5d357661e4"}
+{"subj": "actium", "pred": "lost", "obj": "for", "cat": "action", "support": 2, "witness": 834, "id": "m0029", "probe_q": "actium lost", "probe_a": "for", "digest": "b15e10434924afe5"}
+{"subj": "alexander", "pred": "besieged", "obj": "and", "cat": "action", "support": 2, "witness": 203, "id": "m0030", "probe_q": "alexander besieged", "probe_a": "and", "digest": "efe3b0646ee7c7aa"}
+{"subj": "battle", "pred": "of", "obj": "actium in", "cat": "possession", "support": 2, "witness": 827, "id": "m0031", "probe_q": "battle of", "probe_a": "actium in", "digest": "a25e79833d23035e"}
+{"subj": "battle", "pred": "of", "obj": "actium on", "cat": "possession", "support": 2, "witness": 759, "id": "m0032", "probe_q": "battle of", "probe_a": "actium on", "digest": "e4bbda7523480b49"}
+{"subj": "battle", "pred": "of", "obj": "dyrrhachium", "cat": "possession", "support": 2, "witness": 1138, "id": "m0033", "probe_q": "battle of", "probe_a": "dyrrhachium", "digest": "162c8f6d3aacc711"}
+{"subj": "battle", "pred": "of", "obj": "gaugamela in", "cat": "possession", "support": 2, "witness": 106, "id": "m0034", "probe_q": "battle of", "probe_a": "gaugamela in", "digest": "c10d69202537e209"}
+{"subj": "battle", "pred": "of", "obj": "issus in", "cat": "possession", "support": 2, "witness": 192, "id": "m0035", "probe_q": "battle of", "probe_a": "issus in", "digest": "89b836d9c7c181c4"}
+{"subj": "battle", "pred": "of", "obj": "pharsalus on", "cat": "possession", "support": 2, "witness": 895, "id": "m0036", "probe_q": "battle of", "probe_a": "pharsalus on", "digest": "166d9ff721df984b"}
+{"subj": "cicero", "pred": "was", "obj": "intercepted", "cat": "identity", "support": 2, "witness": 932, "id": "m0037", "probe_q": "cicero was", "probe_a": "intercepted", "digest": "90db8811ef958e79"}
+{"subj": "cleopatra", "pred": "died", "obj": "by", "cat": "action", "support": 2, "witness": 507, "id": "m0038", "probe_q": "cleopatra died", "probe_a": "by", "digest": "7ed5a97476bd1aa5"}
+{"subj": "death", "pred": "of", "obj": "cleopatra", "cat": "possession", "support": 2, "witness": 808, "id": "m0039", "probe_q": "death of", "probe_a": "cleopatra", "digest": "178f965b6286e599"}
+{"subj": "great", "pred": "was", "obj": "born", "cat": "identity", "support": 2, "witness": 10, "id": "m0040", "probe_q": "great was", "probe_a": "born", "digest": "5ba15e534ead58fe"}
+{"subj": "history", "pred": "of", "obj": "alexander the", "cat": "possession", "support": 2, "witness": 442, "id": "m0041", "probe_q": "history of", "probe_a": "alexander the", "digest": "347a1f3eb9903b36"}
+{"subj": "iii", "pred": "of", "obj": "macedon the", "cat": "possession", "support": 2, "witness": 485, "id": "m0042", "probe_q": "iii of", "probe_a": "macedon the", "digest": "0465acb8209f051b"}
+{"subj": "impacts", "pred": "founded", "obj": "cities", "cat": "action", "support": 2, "witness": 0, "id": "m0043", "probe_q": "impacts founded", "probe_a": "cities", "digest": "d10c0307ed14ab79"}
+{"subj": "life", "pred": "of", "obj": "augustus", "cat": "possession", "support": 2, "witness": 840, "id": "m0044", "probe_q": "life of", "probe_a": "augustus", "digest": "4c1b65a29c851a8d"}
+{"subj": "pharaoh", "pred": "of", "obj": "egypt", "cat": "possession", "support": 2, "witness": 438, "id": "m0045", "probe_q": "pharaoh of", "probe_a": "egypt", "digest": "98422545c6263f06"}
+{"subj": "philadelphus", "pred": "born", "obj": "bc", "cat": "action", "support": 2, "witness": 724, "id": "m0046", "probe_q": "philadelphus born", "probe_a": "bc", "digest": "8d13ecf08914d053"}
+{"subj": "propaganda", "pred": "of", "obj": "octavian and", "cat": "possession", "support": 2, "witness": 830, "id": "m0047", "probe_q": "propaganda of", "probe_a": "octavian and", "digest": "1ade4d8125541633"}
+{"subj": "queen", "pred": "of", "obj": "kings", "cat": "possession", "support": 2, "witness": 639, "id": "m0048", "probe_q": "queen of", "probe_a": "kings", "digest": "2b07528a62bd41fb"}
+{"subj": "reign", "pred": "of", "obj": "alexander", "cat": "possession", "support": 2, "witness": 485, "id": "m0049", "probe_q": "reign of", "probe_a": "alexander", "digest": "a399675cd0142d0d"}
+{"subj": "study", "pred": "of", "obj": "combined", "cat": "possession", "support": 2, "witness": 451, "id": "m0050", "probe_q": "study of", "probe_a": "combined", "digest": "a0b2480d3ef773a1"}
