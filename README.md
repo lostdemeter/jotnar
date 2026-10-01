@@ -37,6 +37,7 @@ Check | Result
 `test_demo2.py` | v1.5 demo 2 GREEN: content-addressable memory from scratch (16 patterns, no trained weights) recalls 100% at 0/8/16 flips
 `test_demo3.py` | v1.5 demo 3 GREEN: two consecutive correct edit previews (base/halved/fresh stores all 100% @8 flips; same listing, data-only edits)
 `gallery/` | v1.5 figures, all eyeball-verified: palette_wheel (100 queries by hue+share), teal_before_after (visible teal boost), flagship/ (6 modes + internals), recall_curve (cliff at ~20 flips)
+`docs/HANDOFF_LLM.md` | v1.9 readiness: map + capability inventory + per-subsystem feasibility (GO with gaps named) + first-week plan
 `research/` | one-shot research scripts (readouts, loops, miners) with evidence in docs/ -- rerun to verify, not to gate (see research/README.md)
 `dd_resonant.py` | resonant-phase probe: scalar + H=8 signatures both scramble (~chance); bridge restated for scalar attributes, not key vectors
 `test_read.py` | ALL OK (read instrument: table shape, query plumbing, token-effect spread, shelf-map logic, factor form, predictor logic; real 112-dir readout in docs/MODEL_READ.md)

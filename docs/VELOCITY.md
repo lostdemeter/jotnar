@@ -433,6 +433,18 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: handoff drafted (CLOCKED)
+
+- Readiness map + inventory + feasibility + first-week plan (#LIB-090).
+- Wall time: clock 17:05:30Z -> 17:06:30Z (~1 min: inventory + verdict).
+- Surprises:
+  1. Writing "GO" required the gaps table first: readiness without
+     named gaps is marketing. The verdict section took as long as the
+     inventory -- honesty has mass.
+  2. Gradients OUT stated plainly (not "future work"): saying what the
+     program will NEVER do is as load-bearing as saying what it will.
+     Scope stated negatively holds shape under pressure.
+
 ## 2026-10-01: mirror migration, promotion fires (CLOCKED)
 
 - test_realw/test_implant mirrors onto chain/qwen_mirror + verification

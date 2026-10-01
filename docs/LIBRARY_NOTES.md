@@ -566,6 +566,17 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-090: handoff drafted — GO with gaps named [CLOSED]
+
+ docs/HANDOFF_LLM.md: map + capability inventory (10 rows, all gated) +
+ per-subsystem feasibility (READY x7 incl. qualified full-range, small
+ GAPs x2 (tokenizer reach, depth compounding), OUT x1 (gradients -- by
+ design, not omission)) + first-week plan. Overall verdict GO. The
+ honest table is the deliverable: a fresh instance can start earning
+ (not onboarding) on day one, and knows exactly which gaps are
+ discoveries vs blockers. v1.9's remaining work: this document reviewed
+ against a real cold read (stranger-test the handoff itself -- backlog,
+ stated).
 ## #LIB-089: mirror migration onto qwen_mirror (promotion fires) [CLOSED]
 
  test_realw.py (-60 lines) + test_implant.py (-50 lines) inline torch
