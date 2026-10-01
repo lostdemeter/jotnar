@@ -433,6 +433,20 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: tests/ move, suite stays green (CLOCKED)
+
+- 44 files moved + 161 anchors + dispatcher + README block (#LIB-091).
+- Wall time: clock 17:08:57Z -> 17:14Z (~5 min: move + anchors +
+  dispatcher + README + full 44-suite).
+- Results: 43/44 first try; test_c dispatcher fixed; full green after.
+- Surprises:
+  1. Exactly ONE break from moving 44 files (the subprocess dispatcher):
+     uniform anchor patterns are genuinely uniform. Mechanical moves
+     with mechanical verification -- the ratio held (1 fix / 44 files).
+  2. Overrode LIB-088's own restraint on explicit request: process notes
+     record defaults, owners override. Written here so the reversal is
+     legible, not hidden.
+
 ## 2026-10-01: handoff drafted (CLOCKED)
 
 - Readiness map + inventory + feasibility + first-week plan (#LIB-090).

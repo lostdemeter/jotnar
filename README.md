@@ -78,20 +78,20 @@ Check | Result
 pip install -r requirements.txt
 python3 chain/calibrate.py          # offline, freezes chain/M.json (m_acc + m_cov)
 python3 scripts/fit_ctrl.py --write # offline, freezes chain/CTRL.json (5 params)
-python3 test_core.py                # expect ALL OK
-python3 test_parity.py              # expect ALL OK (>=40dB)
-python3 test_c.py                   # expect ALL OK (needs gcc; incl. conv+splat exchange, v4)
-python3 test_splat.py               # expect ALL OK (splats-lite)
-python3 test_ctrl.py                # expect ALL OK (beta-field controller)
-python3 test_depth.py               # expect ALL OK (needs DAV2 checkout + weights)
-python3 test_v4.py                  # expect ALL OK (continuity: noise barred)
-python3 test_v5.py                  # expect ALL OK (learned gate, grain barred)
-python3 test_substitute.py          # expect ALL OK (needs torch + rife checkout; cross-model swap)
-python3 test_asm.py                  # expect ALL OK (assembly fidelity + discipline)
-python3 test_stabilize.py            # expect ALL OK (generative proof: stabilizer listing)
-python3 test_motion.py               # expect ALL OK (motion side-channel consensus)
-python3 test_temporal.py             # expect ALL OK (feedback: detail IIR + warp)
-python3 test_router.py               # expect ALL OK (routing: still/temporal per frame)
+python3 tests/test_core.py                # expect ALL OK
+python3 tests/test_parity.py              # expect ALL OK (>=40dB)
+python3 tests/test_c.py                   # expect ALL OK (needs gcc; incl. conv+splat exchange, v4)
+python3 tests/test_splat.py               # expect ALL OK (splats-lite)
+python3 tests/test_ctrl.py                # expect ALL OK (beta-field controller)
+python3 tests/test_depth.py               # expect ALL OK (needs DAV2 checkout + weights)
+python3 tests/test_v4.py                  # expect ALL OK (continuity: noise barred)
+python3 tests/test_v5.py                  # expect ALL OK (learned gate, grain barred)
+python3 tests/test_substitute.py          # expect ALL OK (needs torch + rife checkout; cross-model swap)
+python3 tests/test_asm.py                  # expect ALL OK (assembly fidelity + discipline)
+python3 tests/test_stabilize.py            # expect ALL OK (generative proof: stabilizer listing)
+python3 tests/test_motion.py               # expect ALL OK (motion side-channel consensus)
+python3 tests/test_temporal.py             # expect ALL OK (feedback: detail IIR + warp)
+python3 tests/test_router.py               # expect ALL OK (routing: still/temporal per frame)
 python3 demo.py input.png output.png --beta 0.5 --blur splat --ctrl on
 python3 demo.py input.png output.png --beta 0.5 --blur splat_soft --ctrl soft  # v4
 python3 demo.py input.png output.png --beta 0.5 --blur splat_soft --ctrl v5    # v5

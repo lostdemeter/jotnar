@@ -566,6 +566,17 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-091: tests/ move + dispatcher fix (v1.8 cleanup) [CLOSED]
+
+ 44 test files root -> tests/ (git mv): one mechanical anchor rewrite
+ (161 sites, uniform pattern) + usage lines + README block (14) + the
+ dispatcher (test_c.py shells to siblings: 8 paths). Verification caught
+ exactly one real break (test_c sub-runs FileNotFound -- everything else
+ green first try, including cross-imports via script-dir-on-path). Root
+ now holds demos + showcase only. LIB-088's restraint (don't move tests)
+ OVERRIDDEN by explicit owner request -- process notes can be wrong;
+ owners can't. The move itself validates the anchor discipline: uniform
+ patterns move mechanically, special cases (dispatcher) fail loud.
 ## #LIB-090: handoff drafted — GO with gaps named [CLOSED]
 
  docs/HANDOFF_LLM.md: map + capability inventory (10 rows, all gated) +
