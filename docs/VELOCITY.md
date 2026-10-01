@@ -1204,3 +1204,18 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   Depth helps via attention composition, not per-layer MLP content.
   Rejected: tied stands (simpler, fewer params). Dead listing
   removed; collector + keys kept as evidence.
+
+## 2026-10-01: flagship composition -- depth-4 with full wrapper stack (CLOCKED)
+
+- demo_flagship.py (retrieval prepend + depth-4 + selection over
+  bloom/rep/shape/glue + gpen + no-repeat): first runs combine the
+  0.472 stack with every wrapper. 'alexander founded alexandria
+  egypt ... roman army ... ptolemaic ... macedonian forces' --
+  best sentences yet (fact + depth + selection).
+- Unskip fallback: retrieved facts with OOV words prepend UNKs (new
+  failure, caught on cleopatra run) -> skip-prepend + report
+  (seed-only, honestly labeled). The unspeakable-fact class belongs
+  to the piece loop (it speaks allied/defeated).
+- Noted mismatch: attested shapes counted on bankhn2 generations;
+  depth-4 speaks different shapes (0.214 vs 0.471) -- re-attest on
+  flagship is the follow-up.
