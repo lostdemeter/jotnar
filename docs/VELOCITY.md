@@ -306,19 +306,21 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
 
 - Calibrate-once + 3 blind predictions confirmed at +0.2dB +
   predictor standardized (#LIB-056).
-- Wall time: clock 12:39:00Z -> 12:41Z (~2 min: calibration +
-  3 blind runs + predictor + docs).
+- Wall time: clock 12:39:00Z -> 12:47Z (~8 min: calibration +
+  3 blind runs + predictor + full-map + in-suite gate + one real bug
+  + docs).
 - Surprises:
   1. +0.2/+0.2/+0.3 on all three: prediction to a fraction of a dB on
      never-run interventions. The advantage is operational, not
      theoretical: preview any edit's delta before running it.
-  2. Two whitespace/structural edit slips in one round (a no-op "success",
-     an eaten section header) -- both caught by read-back before commit.
-     The verify-writes rule now covers docs edits explicitly, not just
-     code: grep the landing zone, every time.
-  3. Consistent +0.2 bias left unexplained ON PURPOSE (one line). The
-     doctrine prices honesty over completeness; a third decimal of
-     understanding can wait for more data.
+  2. The in-suite gate FAILED first (8.33dB) on a REAL bug (silu on UP
+     twice, not GATE) -- calibration debugged clean first, isolating
+     the bug to new code by elimination. Fixed: 0.22dB. New gates earn
+     keep by failing on real bugs.
+  3. Full 896-map: values trustworthy (blind +/-0.3), neighbor-ranks
+     not (top-10 overlap 3/10) -- cut by value threshold, never by rank.
+  4. Two whitespace/structural edit slips in one round, both caught by
+     read-back: verify-writes now covers docs edits explicitly.
 
 ## 2026-10-01: factorization (CLOCKED)
 

@@ -171,6 +171,25 @@ def main():
     check("realw-planted", np.isinf(d_rec) and d_ctl < 40.0,
           f"recovery {'inf' if np.isinf(d_rec) else f'{d_rec:.1f}'}dB "
           f"vs control {d_ctl:.1f}dB (planted direction recovered exactly)")
+    # Blind prediction in-suite (the edit-with-preview use, gated standing):
+    # calibrate C on the sweep above, predict three NEVER-RUN dirs from
+    # statics, run them, demand max err < 2dB (measured 0.3 -- margin 7x).
+    from chain import read as RD
+    HNf = rms(torch.tensor(H, dtype=dt), ln2)
+    MIDf = (torch.nn.functional.silu(HNf @ Wg.T) * (HNf @ Wup.T)).numpy()
+    cal_al = np.sqrt(((MIDf @ U[:, idx]) ** 2).mean(0))
+    C = RD.calibrate_C(s[idx], cal_al, ds)
+    errs = []
+    for i in (100, 300, 700):
+        a = float(np.sqrt(((MIDf @ U[:, i]) ** 2).mean()))
+        p = RD.predict_db(float(s[i]), a, C)
+        Wi = WdT - np.outer(U[:, i] * s[i], Vt[i])
+        got = run_down(Wi)
+        mse = float(np.mean((got - base) ** 2))
+        d = 10 * np.log10(1.0 / mse) if mse > 0 else float("inf")
+        errs.append(abs(p - d))
+    check("realw-predict", max(errs) < 2.0,
+          f"worst blind err {max(errs):.2f}dB (preview works in-suite)")
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

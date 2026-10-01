@@ -120,6 +120,18 @@ calibration handful instead of full sweeps), principled pruning (cut by
 predicted share with stated dB cost), implant aiming (pick output
 directions by predicted effect).
 
+## Full 896-direction predicted map (2026-10-01, zero runs)
+
+docs/readout_down_896.csv: all 896 dirs predicted from statics (SVD once
++ one MID matmul + C=29.347). Range [21.9, 61.5], giant dir0 at 21.9.
+Predicted dead (>55dB): 27 dirs, mostly tail (797+) plus mid-spectrum 226
+(big direction pointing at nothing -- low alignment despite energy).
+Top-10 predicted vs measured-top-10 overlap: 3/10 (0/8/16 shared) --
+values predict at +/-0.3dB but neighbor-ranks reshuffle within +-2dB
+(measurement noise + quanta among near-ties). Rule: cut/prune by VALUE
+threshold, never by rank. Blind trio now gated standing in test_realw.py
+(realw-predict, worst err 0.22dB in-suite).
+
 ## Cross-context stability (second prompt, same 112 dirs)
 
 Prompt 2 (different domain, subword tokens):

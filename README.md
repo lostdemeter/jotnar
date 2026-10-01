@@ -26,7 +26,7 @@ Check | Result
 `test_probe.py` | ALL OK (sham exact, D 38dB in [20,45], COH falsified 44dB then held-out 43dB, xf O/DOWN, 11-stream sweep in 4 exact classes, stabilize W static 27dB + motion exact; probe table)
 `test_modify.py` | ALL OK (modification demo: iso variant bit-exact vs chain, differs 45dB from v5, census shows new structure)
 `test_edits.py` | ALL OK (weight-edit routes: matrix ordering V>MLP>Q, channel spread 15.6dB, scale-linearity, rank-monotone, direction spread 51.4dB basis-independent; standard process)
-`test_realw.py` | ALL OK (Qwen2-0.5B L0 MLP on real weights+embeddings: parity 51.82dB, spectrum 17x, direction spread 33dB, planted recovery exact; SKIPs without HF cache)
+`test_realw.py` | ALL OK (Qwen2-0.5B L0 MLP on real weights+embeddings: parity 51.82dB, spectrum 17x, direction spread 33dB, planted recovery exact, blind predict 0.22dB; SKIPs without HF cache)
 `test_implant.py` | ALL OK (rank-1 implant with functional aim: target token rewritten at negative dB, leads field by 26-35dB on target + held-out; structure transfer 36.8dB quantum-tax bounds; SKIPs without HF cache)
 `test_store.py` | ALL OK (directional stores: sham 99.8dB, listing-vs-surgery 91.2dB in-envelope, stdlib DEF resolves)
 `test_read.py` | ALL OK (read instrument: table shape, query plumbing, token-effect spread, shelf-map logic, factor form, predictor logic; real 112-dir readout in docs/MODEL_READ.md)
