@@ -1,0 +1,255 @@
+{
+  "nseed": 20,
+  "hits": [
+    {
+      "seed": 3,
+      "gen": "ptolemy xii",
+      "n": 2
+    },
+    {
+      "seed": 3,
+      "gen": "xii known",
+      "n": 2
+    },
+    {
+      "seed": 3,
+      "gen": "and the",
+      "n": 2
+    },
+    {
+      "seed": 3,
+      "gen": "the great",
+      "n": 2
+    },
+    {
+      "seed": 3,
+      "gen": "and the",
+      "n": 2
+    },
+    {
+      "seed": 3,
+      "gen": "of the",
+      "n": 2
+    },
+    {
+      "seed": 6,
+      "gen": "these measures",
+      "n": 2
+    },
+    {
+      "seed": 6,
+      "gen": "measures underscored",
+      "n": 2
+    },
+    {
+      "seed": 6,
+      "gen": "and the",
+      "n": 2
+    },
+    {
+      "seed": 6,
+      "gen": "of the",
+      "n": 2
+    },
+    {
+      "seed": 6,
+      "gen": "the great",
+      "n": 2
+    },
+    {
+      "seed": 8,
+      "gen": "31 battles",
+      "n": 2
+    },
+    {
+      "seed": 8,
+      "gen": "battles of",
+      "n": 2
+    },
+    {
+      "seed": 8,
+      "gen": "of the",
+      "n": 2
+    },
+    {
+      "seed": 10,
+      "gen": "death and",
+      "n": 2
+    },
+    {
+      "seed": 10,
+      "gen": "and immediate",
+      "n": 2
+    },
+    {
+      "seed": 10,
+      "gen": "forces and",
+      "n": 2
+    },
+    {
+      "seed": 16,
+      "gen": "pdf the",
+      "n": 2
+    },
+    {
+      "seed": 16,
+      "gen": "the economic",
+      "n": 2
+    },
+    {
+      "seed": 16,
+      "gen": "and the",
+      "n": 2
+    },
+    {
+      "seed": 16,
+      "gen": "the great",
+      "n": 2
+    },
+    {
+      "seed": 16,
+      "gen": "and the",
+      "n": 2
+    },
+    {
+      "seed": 16,
+      "gen": "the great",
+      "n": 2
+    },
+    {
+      "seed": 17,
+      "gen": "36 these",
+      "n": 2
+    },
+    {
+      "seed": 17,
+      "gen": "these measures",
+      "n": 2
+    },
+    {
+      "seed": 17,
+      "gen": "as the",
+      "n": 2
+    },
+    {
+      "seed": 17,
+      "gen": "in the",
+      "n": 2
+    },
+    {
+      "seed": 17,
+      "gen": "the great",
+      "n": 2
+    },
+    {
+      "seed": 17,
+      "gen": "and the",
+      "n": 2
+    }
+  ],
+  "total": 60,
+  "shapes": {
+    "the W W": 11,
+    "and W W": 7,
+    "W and the": 6,
+    "and the W": 5,
+    "W the great": 5,
+    "the great W": 4,
+    "great W W": 4,
+    "W great and": 3,
+    "great and W": 3,
+    "W the battle": 3,
+    "the battle W": 3,
+    "W battle of": 3,
+    "battle of W": 3,
+    "battle W W": 3,
+    "W of the": 3,
+    "of W W": 3,
+    "these measures W": 2,
+    "these W W": 2,
+    "measures W W": 2,
+    "of the W": 2,
+    "W his forces": 2,
+    "his forces W": 2,
+    "his W W": 2,
+    "ptolemy xii W": 1,
+    "ptolemy W W": 1,
+    "W xii known": 1,
+    "xii known W": 1,
+    "xii W W": 1,
+    "W known and": 1,
+    "known and W": 1,
+    "known W W": 1,
+    "W measures underscored": 1,
+    "measures underscored W": 1,
+    "W underscored the": 1,
+    "underscored the W": 1,
+    "underscored W W": 1,
+    "W the persian": 1,
+    "the persian W": 1,
+    "W persian and": 1,
+    "persian and W": 1,
+    "persian W W": 1,
+    "31 battles W": 1,
+    "31 W W": 1,
+    "W battles of": 1,
+    "battles of W": 1,
+    "battles W W": 1,
+    "W of egypt": 1,
+    "of egypt W": 1,
+    "W egypt with": 1,
+    "egypt with W": 1
+  },
+  "attested_shapes": {
+    "the W W": 11,
+    "and W W": 7,
+    "W and the": 6,
+    "W the great": 5,
+    "and the W": 5,
+    "the great W": 4,
+    "great W W": 4,
+    "W of the": 3,
+    "battle W W": 3,
+    "W great and": 3,
+    "of W W": 3,
+    "great and W": 3,
+    "his W W": 2,
+    "these measures W": 2,
+    "of the W": 2,
+    "measures W W": 2,
+    "these W W": 2,
+    "underscored W W": 1,
+    "36 W W": 1,
+    "persian W W": 1,
+    "ptolemy xii W": 1,
+    "with W W": 1,
+    "31 W W": 1,
+    "xii known W": 1,
+    "measures underscored W": 1,
+    "W in the": 1,
+    "W these measures": 1,
+    "W measures underscored": 1,
+    "W xii known": 1,
+    "death W W": 1,
+    "W the economic": 1,
+    "death and W": 1,
+    "in the W": 1,
+    "as W W": 1,
+    "W battles of": 1,
+    "in W W": 1,
+    "battles of W": 1,
+    "macedonian W W": 1,
+    "31 battles W": 1,
+    "W and immediate": 1,
+    "immediate W W": 1,
+    "pdf the W": 1,
+    "egypt W W": 1,
+    "W forces and": 1,
+    "cleopatra W W": 1,
+    "the economic W": 1,
+    "ptolemy W W": 1,
+    "and immediate W": 1,
+    "battles W W": 1,
+    "36 these W": 1
+  }
+}

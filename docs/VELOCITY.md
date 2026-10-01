@@ -1097,3 +1097,12 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   needed the cov raise, laws 5-for-5). Width scales when refit, not
   transferred: operating points move with fan-in, gains don't carry.
 - Rejected: seed2 (0.621/0.187), QK-I (0.896), V1.0 (0.414/0.187).
+
+## 2026-10-01: mined content -- 51 edges with probes (CLOCKED)
+
+- Counted miner (BE/ACT/OF patterns, minsup-2, junk-filters): grokipedia
+  1173 sents -> 51 edges (battle-of-X riches: actium x20, alexandria
+  x19); wikitext-2 sample 111 edges (noisier, open-domain). Recall
+  100% @0/8 through assoc_mem; probe self-retrieval 9/18 measured
+  (partial-cue collisions price disambiguation, not a bar); curated
+  55 untouched (no regression). Content growth gated by construction.
