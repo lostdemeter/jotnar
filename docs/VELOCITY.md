@@ -433,6 +433,23 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: projection banks, v1.4 gate 1 (CLOCKED)
+
+- block_inputs bundle + test_projbank.py (6 banks + prune) (#LIB-070).
+- Wall time: clock 14:07:06Z -> 14:10Z (~3 min: bundle + gates +
+  2 falsifications + docs).
+- Results: 6/6 at 59-63dB; prune harmless at 76.1dB.
+- Surprises:
+  1. Two falsifications stacked: form-tax (compare within-form) THEN
+     floor (tiny removals cost less than predicted). Naive linearity
+     needed two corrections, each with its own measurement. Laws earn
+     their corrections one falsification at a time.
+  2. Duplication-slip species AGAIN (double RESULT print): caught by
+     counting outputs this time. Three instances of one bug class =
+     process gap, not bad luck: read-before-edit (find exact anchor),
+     diff-after-edit, count-outputs-after-run. Written here so the
+     fourth instance has no excuse.
+
 ## 2026-10-01: v1.4 definition + gate-3 verdict (CLOCKED)
 
 - Roadmap + scoremax probe + verdict + probe committed (#LIB-069).

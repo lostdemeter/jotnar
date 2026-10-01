@@ -566,6 +566,22 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-070: projection banks + form-tax vs floor (v1.4 gate 1) [CLOSED]
+
+ test_projbank.py (block_inputs bundle consolidates the 5th mirror):
+ 6/6 banks 59-63dB (q/k/v/o/up/gate -- linear half under CRUD, no new
+ math). Prune-confirm needed TWO falsifications to land: (1) cross-form
+ 61.3 vs 71.6 predicted -- the ~61dB FORM TAX dominated the tiny true
+ delta (compare within-form instead); (2) within-form 76.1 vs 71.6 --
+ LESS damage than float predicts, because tail components live UNDER
+ the lattice quantum floor (removing what the lattice already rounds
+ identically changes almost nothing; candidate mechanism, stated not
+ gated). Doctrine refined: form-tax (compare within-form) AND floor
+ (tiny removals cost less than float says) are the two corrections to
+ naive linearity -- both now have first measurements. Process debit:
+ another duplicated-lines slip (double RESULT print), caught by counting
+ outputs -- the duplication species keeps recurring; edits get diffed,
+ always.
 ## #LIB-069: v1.4 defined + DDColor scores kill gate 3 (measured) [CLOSED]
 
  docs/ROADMAP_v1_4.md (attention-side stores: projections, selection/S08,

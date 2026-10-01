@@ -82,6 +82,71 @@ def build_H(g, embed, tok, prompt, n=8):
     return H, ids, toks
 
 
+def block_inputs(prompt, n=8):
+    """Full boundary bundle for projection-level tests (5th inline mirror
+    consolidated HERE going forward; older copies migrate on touch): E,
+    XN (rmsnorm'd embeddings), H (post-attention residual), CTX, HN,
+    MID, and weight dict W (q/k/v/o/up/gate/down/ln1/ln2 as float64).
+    All torch.float64, no lattice (boundary by doctrine)."""
+    import torch
+    import numpy as np
+    g, embed, tok = load_layer0()
+    H, ids, toks = build_H(g, embed, tok, prompt, n)
+    dt = torch.float64
+    eps = 1e-6
+    E = embed(ids)
+    xt = torch.tensor(E, dtype=dt)
+    ln1 = torch.tensor(g("model.layers.0.input_layernorm.weight"), dtype=dt)
+
+    def rms(x, w):
+        return x / torch.sqrt((x ** 2).mean(-1, keepdim=True) + eps) * w
+
+    XN = rms(xt, ln1).numpy()
+    REF, MID, Wupf, Wgf, Wdf, ln2f = mlp_forward(H, g)
+    # CTX + HN recomputed (duplicates build_H internals ~15 lines; this fn
+    # is the consolidation point going forward, build_H delegates later).
+    Wq = torch.tensor(g("model.layers.0.self_attn.q_proj.weight"), dtype=dt)
+    Wk = torch.tensor(g("model.layers.0.self_attn.k_proj.weight"), dtype=dt)
+    Wv = torch.tensor(g("model.layers.0.self_attn.v_proj.weight"), dtype=dt)
+    Wo = torch.tensor(g("model.layers.0.self_attn.o_proj.weight"), dtype=dt)
+    bq = torch.tensor(g("model.layers.0.self_attn.q_proj.bias"), dtype=dt)
+    bk = torch.tensor(g("model.layers.0.self_attn.k_proj.bias"), dtype=dt)
+    bv = torch.tensor(g("model.layers.0.self_attn.v_proj.bias"), dtype=dt)
+
+    def rope(x, base=1e6):
+        Sq, Dh = x.shape[0], x.shape[-1]
+        i = torch.arange(Dh // 2, dtype=dt)
+        th = base ** (-2 * i / Dh)
+        ang = torch.arange(Sq, dtype=dt)[:, None] * th[None, :]
+        c, s = torch.cos(ang), torch.sin(ang)
+        y = torch.empty_like(x)
+        y[..., 0::2] = x[..., 0::2] * c.unsqueeze(-2) - x[..., 1::2] * s.unsqueeze(-2)
+        y[..., 1::2] = x[..., 0::2] * s.unsqueeze(-2) + x[..., 1::2] * c.unsqueeze(-2)
+        return y
+
+    _Q = (rms(xt, ln1) @ Wq.T + bq).reshape(n, 14, 64)
+    _K = (rms(xt, ln1) @ Wk.T + bk).reshape(n, 2, 64)
+    _V = (rms(xt, ln1) @ Wv.T + bv).reshape(n, 2, 64)
+    _K = _K.repeat_interleave(7, dim=1)
+    _V = _V.repeat_interleave(7, dim=1)
+    _QR, _KR = rope(_Q.permute(1, 0, 2)), rope(_K.permute(1, 0, 2))
+    _SC = (_QR @ _KR.transpose(-1, -2)) / 8.0
+    _P = torch.softmax(_SC + torch.triu(
+        torch.full((n, n), float("-inf"), dtype=dt), 1), dim=-1)
+    CTX = ((_P @ _V.permute(1, 0, 2)).permute(1, 0, 2).reshape(n, 896)).numpy()
+    ln2 = torch.tensor(g("model.layers.0.post_attention_layernorm.weight"),
+                       dtype=dt)
+    HN = rms(torch.tensor(H, dtype=dt), ln2).numpy()
+    W = {"q": g("model.layers.0.self_attn.q_proj.weight"),
+         "k": g("model.layers.0.self_attn.k_proj.weight"),
+         "v": g("model.layers.0.self_attn.v_proj.weight"),
+         "o": g("model.layers.0.self_attn.o_proj.weight"),
+         "up": Wupf, "gate": Wgf, "down": Wdf,
+         "ln1": ln1.numpy(), "ln2": ln2f}
+    return {"E": E, "XN": XN, "H": H, "CTX": CTX, "HN": HN, "MID": MID,
+            "REF": REF, "W": W, "ids": ids, "toks": toks}
+
+
 def mlp_forward(H, g):
     """MLP block in torch.float64 (the test_realw mirror, promoted): returns
     (REF output, MID intermediates, Wupf, Wgf, Wdf, ln2f as float64 numpy).

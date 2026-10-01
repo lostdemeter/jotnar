@@ -37,6 +37,7 @@ Check | Result
 `test_read.py` | ALL OK (read instrument: table shape, query plumbing, token-effect spread, shelf-map logic, factor form, predictor logic; real 112-dir readout in docs/MODEL_READ.md)
 `test_prune.py` | ALL OK (CRUD Q1+Q2: 27-dir removal 42.8 vs 42.9 predicted; gain-x2 == ablation at 22.1dB; SKIPs without HF cache)
 `test_create.py` | ALL OK (CRUD Q3+Q4: label-to-store France rank 1/8 at 8.4dB gap 22.6; shelf-null 57.8dB; SKIPs without HF cache)
+`test_projbank.py` | ALL OK (v1.4 gate 1: 6/6 projection banks 59-63dB; prune harmless 76.1dB with floor hypothesis; SKIPs without HF cache)
 `test_layer1.py` | ALL OK (CRUD Q5: layer-1 pattern reproduces -- spectrum 12x, giant 14dB, tracking -0.54; SKIPs without HF cache)
 `test_engram.py` | ALL OK (native storage: freeze/load roundtrip 6.4e-16, deterministic bytes, store-IO bit-exact; DDColor query/refine stores frozen; SKIPs without HF cache)
 `docs/EDIT_RECEIPT.md` | edit-receipt standard + filled receipt #001 (q56 hue-write SPLIT)
