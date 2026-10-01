@@ -433,6 +433,24 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: v1.4 definition + gate-3 verdict (CLOCKED)
+
+- Roadmap + scoremax probe + verdict + probe committed (#LIB-069).
+- Wall time: clock 14:03:25Z -> 14:05:30Z (~2 min: roadmap + probe +
+  3 bugs + verdict + docs).
+- Results: scores 7..429 across 9 layers; gate 3 WAITS.
+- Surprises:
+  1. Decisive-first ordering paid: one probe settled the release shape
+     before any building. Measure the load-bearing unknown FIRST is now
+     process (it was instinct; now it's written).
+  2. Three probe bugs, three shape-loud failures, minutes each: hook
+     arity, batch-vs-head geometry, 3-arg hooks. Foreign-code probing
+     is debuggable exactly when shapes fail loud -- grad school in a
+     traceback.
+  3. Score sharpening through depth (to 429!) then moderation (30):
+     attention dynamics neither uniform nor monotonic. Filed, not
+     chased -- v1.4 has enough spine already.
+
 ## 2026-10-01: edit receipts + DDColor stores (CLOCKED)
 
 - Receipt standard + filled #001 + DDColor store freeze with roundtrips

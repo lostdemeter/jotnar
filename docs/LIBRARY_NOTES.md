@@ -566,6 +566,18 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-069: v1.4 defined + DDColor scores kill gate 3 (measured) [CLOSED]
+
+ docs/ROADMAP_v1_4.md (attention-side stores: projections, selection/S08,
+ conditional DDColor layer, T-transform spike). Decisive probe FIRST
+ (dd_score.py): DDColor cross-attn scoremax per layer reads 7/12/10/20/27/
+ 43/107/429/30 -- layer 7 at 429x the softmax contract. Gate 3 WAITS, by
+ measurement exactly as the roadmap prescribed (no hope-based planning).
+ Side finding: scores SHARPEN through depth then moderate at the last
+ layer (7->429->30?) -- decoder dynamics worth their own probe later.
+ Probe bugs en route (kwargs-hook arity, batch-vs-head geometry, 3-arg
+ hook): all shape-loud, all fixed in minutes. Strictness works on
+ mirrors too (standing observation, third instance).
 ## #LIB-068: edit receipts + DDColor stores frozen (handoff sequence) [CLOSED]
 
  docs/EDIT_RECEIPT.md: change/prediction/measurement/footprint/verdict
