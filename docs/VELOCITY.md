@@ -433,6 +433,24 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: demo 3 + gallery, eyeball-verified (CLOCKED)
+
+- Two consecutive previews (test_demo3.py) + 4 verified figures
+  (gallery/make_gallery.py, #LIB-076).
+- Wall time: clock 14:49:34Z -> 14:52Z (~3 min: demo3 + gallery tool +
+  path bugs + showcase run + eyeballing).
+- Results: demo3 3/3 previews green; wheel/teal/sheet/curve all seen.
+- Surprises:
+  1. Recall cliff at ~1/3 bits flipped (100% to 16, 0.98 at 20, 0.61
+     at 24): capacity edges are CLIFFS not slopes -- same shape class
+     as the luminance cliff (decile 5-6) and the softmax contract.
+     Threshold physics keeps recurring; name it when the third instance
+     lands (this is the second... third counting T-transform saturation).
+  2. Eyeball verification caught nothing -- and that silence is data:
+     every figure correct on first render means the pipelines are
+     deterministic end-to-end (same inputs, same pixels, every time).
+     Trust, but verify -- then log that verification happened.
+
 ## 2026-10-01: demo 2, memory from scratch (CLOCKED)
 
 - 5-line listing + capacity-reasoned bands + test_demo2.py (#LIB-075).

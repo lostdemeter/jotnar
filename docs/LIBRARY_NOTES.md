@@ -566,6 +566,22 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-076: demo 3 + gallery, eyeball-verified [CLOSED]
+
+ test_demo3.py: base/halved/fresh assoc stores all 100% @8 flips -- two
+ consecutive correct previews (edits are data-only, listing untouched).
+ gallery/make_gallery.py (committed tool): palette wheel (publication
+ quality on first render), teal before/after (boost VISIBLE on jacket +
+ background), flagship 6-mode sheet, recall curve (graceful to 16 flips,
+ cliff 20->24: capacity edge located at ~1/3 bits flipped). Every figure
+ EYEBALL-verified before commit (read tool renders images: the wheel's
+ center-concentration, the teal boost, the cliff shape all confirmed by
+ looking, not just by numbers). Process notes: (1) empty-but-set
+ PHI_CORE_DIR env beats .get defaults -- use `or`, and normpath before
+ dirname (two bugs, one root: paths computed, never printed; print paths
+ on failure now); (2) figures are gates with an audience: demo claims
+ need something to POINT at, and eyeball verification catches what dB
+ cannot (a mirrored image, a swapped panel, an empty plot).
 ## #LIB-075: demo 2 — memory from scratch, capacity reasoning holds [CLOSED]
 
  programs/assoc_mem.asm (MATMUL similarities + ARGMAX + GATHER, 5 lines)
