@@ -9,7 +9,8 @@ are reuse made visible -- the same reuse the promotion rule prices.
 Access classes: elementwise (per-point map), moves (exact, no arithmetic),
 gather (reindex by ids), reduce (many-to-fewer: matmuls, norms, pools),
 select (verdict-gated mux), stencil (neighborhood/sample reads: convs,
-warps, blends), broadcast (geometry-expanding: scalars to fields).
+warps, blends), broadcast (geometry-expanding: scalars to fields),
+recur (order-sensitive state threading: SCAN -- time order load-bearing).
 """
 from collections import defaultdict
 
@@ -22,7 +23,11 @@ ACCESS = {
     "SILU": "elementwise", "GELU": "elementwise", "CLIP": "elementwise",
     "PRELU": "elementwise", "SQRT": "elementwise", "STATIC": "elementwise",
     "BETA_V5": "elementwise", "SRGB_DECODE": "elementwise",
-    "SRGB_ENCODE": "elementwise", "RESCALE": "elementwise",
+    "SRGB_ENCODE": "elementwise",
+    # recurrence (order-sensitive state threading, one step per listing
+    # line; the grown-up STATE form -- its own class, not a reduction:
+    # time order is load-bearing here, unlike commuting sums)
+    "SCAN": "recur", "RESCALE": "elementwise",
     # exact moves (no arithmetic)
     "TRANSPOSE": "moves", "RESHAPE2": "moves", "RESHAPE3": "moves",
     "PERMUTE3": "moves", "CONCAT": "moves", "SLICE": "moves",
@@ -33,7 +38,7 @@ ACCESS = {
     # reductions (many-to-fewer)
     "MATMUL": "reduce", "BATCH_MATMUL": "reduce", "POOLAVG": "reduce",
     "ARGMAX": "reduce", "RMSNORM": "reduce", "LUMA": "reduce",
-    "SOFTMAX": "reduce", "ROTARY": "elementwise",
+    "LAYERNORM": "reduce",    "SOFTMAX": "reduce", "ROTARY": "elementwise",
     # neighborhood / sample reads
     "SPLAT_BLUR": "stencil", "ISO_BLUR": "stencil", "GAUSS": "stencil",
     "CONV": "stencil", "DECONV": "stencil", "INTERP": "stencil",

@@ -73,3 +73,16 @@ Scale (tiny vocab, narrow domain -- deliberately); training machinery
 (counting + fitting only, no backprop program); fluency competitions
 (coherence judged by stated batteries, nothing more); phi-core merges
 (owner action); T-transform follow-through (branch pending review).
+
+## Declared 2026-10-01 (44/44 suites green; all five gates hold)
+
+1. Anatomy: Qwen/SmolLM2/GPT-2/mamba described + invariant/variance
+   tables + LLM_DESIGN.md (44 mnemonics incl. SCAN/LAYERNORM drills).
+2. Data frozen with provenance: split decision (S17 counts, JSONL
+   records) + grokipedia freeze + wikitext sparsity (#LIB-081).
+3. Construction behaves: bigram LM memorizes 200/200, top1 0.41/top5
+   0.61/ppl 47, speaks via demo_lm.py (greedy + selection).
+4. Loop green on own creature: 26/26 flips exact, 5/5 implants
+   (test_lm_loop.py) + labeling loop S21 CONFIRMED on Qwen.
+5. VELOCITY.md: clocked throughout (two admitted misses + fixes).
+v1.6 is done: an LLM from scratch, constructed, speaking, comprehended.
