@@ -1,0 +1,27 @@
+{
+  "base": "lm_d32 seed-0",
+  "fit": "g2 body + I0.5 V (D32 refit arc)",
+  "m_acc": 36849,
+  "m_cov": 35686,
+  "objective": {
+    "twin_dist": {
+      "depth2": 0.722,
+      "depth4": 0.405
+    },
+    "top1_10line": {
+      "depth2": 0.35,
+      "depth4": 0.35
+    },
+    "parity_depth4": {
+      "H8": 44.72,
+      "LOGITS": 43.66
+    }
+  },
+  "rejected": [
+    "seed2 dist 0.621 top1 0.187 (collapse)",
+    "QK identity 0.896 (worse)",
+    "V1.0 dist 0.414 top1 0.187 (collapse)",
+    "V*2 top1 0.236 (collapse)"
+  ],
+  "sha": "a32c9336cd4b1a01"
+}
