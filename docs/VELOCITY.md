@@ -1072,3 +1072,28 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   listing use + census class): TBETA honored beta_b (2.0 moved),
   default==beta, asm-lang-coverage drift gate FIRED correctly (46/47)
   and went green on documenting. The checklist works as designed.
+
+## 2026-10-01: v2.1 piece-fitting -- knobs exhausted, depth-4 fusion speaks (CLOCKED)
+
+- Piece space: bank K512 (twin cost, rejected), global gains (blur),
+  seeds (lose to structure), coordinate (collapse-blocked again --
+  joint rule 11-for-11), S=16 weak help (0.044->0.062), head-temps
+  transfer shape but not joint win, piece depth-4 twins 0.383 with
+  top1 cost (rejected). K64 probe died on a float-mask script bug
+  (mine); trend already answers (smaller-better twins, mass too thin
+  to matter). Piece prediction needs structural fitting from piece
+  measurements, not transferred anything.
+- Depth-4 word fusion demos: facts exact + fluent coil (ptolemaic
+  persian, great's, second, battle), no loops, UNK only on OOV verbs.
+  Most functional outputs to date (top1 0.472 stack).
+
+## 2026-10-01: D32 refit -- scale reliably (CLOCKED)
+
+- D32 transfer failed joint (twin 0.896, QK-identity worse, seeds
+  collapse); refit from D32 measurements: g2 (0.763/0.337) -> I0.5 V
+  (0.722/0.35, both-axes) -> headt 0.25 (0.714/0.35, holds) ->
+  depth-4 (twin 0.405 BEATS D16 depth-4 0.479, top1 0.35 holds,
+  parity 44.7/43.7 at priced m_acc 36849 + m_cov 35686 -- H8 9.6
+  needed the cov raise, laws 5-for-5). Width scales when refit, not
+  transferred: operating points move with fan-in, gains don't carry.
+- Rejected: seed2 (0.621/0.187), QK-I (0.896), V1.0 (0.414/0.187).
