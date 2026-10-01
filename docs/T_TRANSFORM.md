@@ -35,6 +35,17 @@ cap), with the exp/DD machinery untouched (clip at 16.0 stays correct:
 e^-16 is below quantum). Offered as a staged branch per shared-repo
 rules (branch, claim check, no main push); owner merges.
 
+STATUS 2026-10-01: SUPERSEDED BY A SMALLER CORRECT DESIGN. The one-assert
+relaxation is WRONG (proved by units analysis on the branch: counts are
+U_m-relative, the exp table is absolute -- relaxing reopens M1 silently).
+What pushed instead: branch `ai/t-transform-bridge`
+(https://github.com/lostdemeter/phi_core/tree/ai/t-transform-bridge)
+with `to_fixed_wide` (new LUT frac_hi to +-2200, existing to_fixed
+UNTOUCHED, M1 assert stands) + tests/test_wide.py (additivity bit-exact,
+exactness 0-count-error, full-range parity 3.6e-05 on +-500, fold edge).
+Their suite green (lattice + promoted + wide). Awaiting owner review;
+C mirror + TILE listing-form stay follow-ups, stated on the branch.
+
 **Our side (composition, ready now):** per-row max-sub in triples via
 ARGMAX + GATHER-tiled max + SUB at covering m (CONFIG override path,
 proven) feeding softmaxN at the same m. One gap named honestly: tiling

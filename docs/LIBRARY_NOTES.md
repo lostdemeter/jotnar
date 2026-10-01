@@ -566,6 +566,17 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-073: t-transform branch pushed — smaller correct design [CLOSED]
+
+ Pushed phi-core branch ai/t-transform-bridge (their suite green):
+ to_fixed_wide (new frac_hi LUT to +-2200, existing to_fixed UNTOUCHED,
+ M1 assert stands) + tests/test_wide.py (additivity, 0-count exactness,
+ 3.6e-05 full-range parity). En route: the planned one-assert relaxation
+ PROVED WRONG by units analysis (counts U_m-relative vs absolute table)
+ BEFORE any commit -- analysis killed a bad design pre-birth, cheapest
+ possible stage. Two fixture bugs caught by the new gates (U_BIAS=1
+ coverage; lattice-vs-raw-float comparison). residuum: C mirror,
+ TILE listing-form, owner review -- all stated on the branch.
 ## #LIB-072: T-transform specified — fold, ranges, one-assert fix [CLOSED]
 
  v1.4 gate 4 lands as DESIGN (docs/T_TRANSFORM.md), not experiment: the

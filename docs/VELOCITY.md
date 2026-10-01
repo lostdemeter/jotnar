@@ -433,6 +433,24 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: t-transform branch pushed (CLOCKED)
+
+- Additive-only phi-core branch (LUT + fn + tests) + full their-suite
+  green + push, no main touched (#LIB-073).
+- Wall time: clock (jotnar) 14:15:20Z start of analysis; branch work
+  ~25 min wall (design shrink, 2 fixture bugs, suite, push, docs).
+- Results: wide parity 3.6e-05 on +-500; their 3 suites green.
+- Surprises:
+  1. The planned change died by units analysis BEFORE commit: a wrong
+     branch never born beats a reverted one. Analysis is cheapest
+     pre-birth; the doctrine now says so explicitly.
+  2. Additive-only as a review strategy: zero diff to existing paths
+     means the owner's review is "is the new thing right" not "did you
+     break my things" (their suite proves the second half already).
+  3. LUTs/untracked in phi-core (all local builds): the frac_hi table
+     regenerates anywhere, nothing to commit. Patterns working as
+     designed feel uneventful -- log them anyway.
+
 ## 2026-10-01: T-transform specified (CLOCKED)
 
 - Range survey + obstruction analysis + two-part spec + alternatives
