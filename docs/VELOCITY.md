@@ -433,6 +433,26 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: disentangle + resonant falsified twice (CLOCKED)
+
+- dd_modify modes (query-only 36dB / refine-only 19dB / both 14.5dB) +
+  dd_resonant.py (scalar 0.01, H=8 0.04 vs 0.03 chance) (#LIB-067).
+- Wall time: clock 13:49:19Z -> 13:52Z (~3 min: modes + both probes).
+- Surprises:
+  1. BOTH disentangle bands falsified inverted (predicted query<25 AND
+     refine>25; measured 36.0/19.0): the slot is a (place, color) PAIR
+     and the pair writes coherently (14.5dB super-additive). Attribution
+     questions with "which half" answers are malformed; pairs all the
+     way down.
+  2. Scalar phase 0.01 is BELOW chance 0.03: not noise but wrap-to-
+     uniform (mechanism, not failure). Mod-2pi after random projection
+     is a uniformity machine -- which is exactly what resonant dedup
+     wants and similarity search doesn't. Read the other repo's claims
+     precisely: exact-match + uniformity was ALWAYS the offer.
+  3. Correct bridge restated (phase over scalar attributes like hue,
+     never projected keys): failed bridges with stated constraints
+     beat unbuilt ones. The constraint IS the deliverable.
+
 ## 2026-10-01: add/remove demo, norm-fit limits (CLOCKED)
 
 - LOO norm-fit analysis + ADD demo + follow-up verification + DNA

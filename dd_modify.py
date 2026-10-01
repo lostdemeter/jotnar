@@ -19,6 +19,10 @@ PTH = (os.path.expanduser("~/.cache/huggingface/hub/models--piddnad--"
                           "DDColor-models/blobs/81dd643904f4664c3718513e3320ae3db0c567f0d3e18398606659adee7bfc17"))
 IMG = "/home/thorin/Documents/OpenCode/rife_reverse/samples/f_014.png"
 HUE, NORM = 135.0, 0.2
+# Disentangle modes (argv): both (default, original demo), query (query
+# rows only), refine (refine row only). Predict: query-only moves
+# substantially (<25dB, vote-mass flip driver), refine-only moves little
+# (>25dB, hue mass flat driver) -- ordering, not values.
 
 
 def main():
@@ -59,15 +63,20 @@ def main():
     v0 = float(votes["out"].numpy()[0, 56].sum())
     print(f"base: hue135 mass {m0:.4f}; q56 vote mass {v0:.1f}")
     # write: refine row -> new hue; query rows -> strong voter copy
+    # (mode selects which half; both = original demo)
     import math
+    mode = sys.argv[1] if len(sys.argv) > 1 else "both"
     ro = model.refine_net[0][0]
-    ro.weight_orig.data[:, 56, 0, 0] = torch.tensor(
-        [NORM * math.cos(math.radians(HUE)),
-         NORM * math.sin(math.radians(HUE))])
+    if mode in ("both", "refine"):
+        ro.weight_orig.data[:, 56, 0, 0] = torch.tensor(
+            [NORM * math.cos(math.radians(HUE)),
+             NORM * math.sin(math.radians(HUE))])
     qe = model.decoder.color_decoder.query_embed.weight.data
     qf = model.decoder.color_decoder.query_feat.weight.data
-    qe[56] = qe[41].clone()
-    qf[56] = qf[41].clone()
+    if mode in ("both", "query"):
+        qe[56] = qe[41].clone()
+        qf[56] = qf[41].clone()
+    print(f"mode={mode}")
     with torch.no_grad():
         got = model(x).numpy()[0]
     m1, _ = hue_mass(got)

@@ -566,6 +566,24 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-067: disentangle (place+color pair) + resonant bridge fails [CLOSED]
+
+ Disentangle (dd_modify modes, f_014): query-only 36.0dB (vote mass flips,
+ post-silence 36.1dB), refine-only 19.0dB (votes UNCHANGED -14645 both,
+ post-silence 44.0dB), both 14.5dB (super-additive: coherent, not linear).
+ Predicted query<25 AND refine>25 -- BOTH falsified inverted. Attribution
+ RESOLVED anyway: query rows = WHERE/how-loud, refine row = WHAT hue;
+ the slot is a (place, color) PAIR, neither half "the" cause. Hue mass
+ still flat because 135deg saturates nothing and moves little alone --
+ the pair writes together or not at all.
+ Resonant bridge (dd_resonant.py): scalar phase 0.01, H=8 signatures 0.04
+ (chance 0.03) -- SCRAMBLES twice. Mechanism: mod-2pi folding destroys
+ metric structure after random projection (wrap to uniform); resonance
+ promises EXACT-match + uniformity (dedup!), never high-dim similarity.
+ Correct bridge, restated: phase-address SCALAR engram attributes (hue
+ angle IS circular 1D: nearby phases = nearby hues, the scalar case that
+ works), never projected key vectors. Failed bridge > no bridge: the
+ constraint is now stated, not guessed.
 ## #LIB-066: add/remove demo — norm-fit limits, slot live, hue open [OPEN]
 
  Norm-fit LOO: p50 err 4.6dB, p90 10.9dB, extremes -9/+20dB -- TRIAGE-grade
@@ -579,7 +597,8 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  query-row attribution UNDISENTANGLED (open: run each edit alone).
  Reliability posture, stated: act on MEASURED costs with margins (catalog:
  100 x 0.2s), predict for triage only. "Error free" = dB-bounded with a
- stated bar, never bit-exact multi-hop (ceiling stands).
+ stated bar, never bit-exact multi-hop (ceiling stands). (Disentangle
+ closed in LIB-067: slot = place+color pair.)
  Resonant-array DNA verdict (owed): shared = associative key-value
  content addressing with similarity match; different = deterministic-
  constructive (Riemann phases, exact, designed) vs learned-measured (SVD
