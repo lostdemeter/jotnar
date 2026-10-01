@@ -44,11 +44,11 @@ def main():
     dd = os.path.join(root, "data")
     sdir = os.path.join(root, "programs")
     man = json.load(open(os.path.join(dd, "mined_manifest.json")))
-    check("mined-manifest", man["n_edges"] == 51,
-          f"51 edges minsup-2 (sha {man['sha']})")
+    check("mined-manifest", man["n_edges"] >= 51,
+          f"{man['n_edges']} edges (sha {man['sha']})")
     recs = [json.loads(l) for l in open(os.path.join(dd, "mined_edges.jsonl"))]
     check("mined-records", recs[0]["format"] == "echion-store/1"
-          and len(recs) == 52, "envelope + 51 probes (q+a co-frozen)")
+          and len(recs) == man["n_edges"]+1, f"envelope + {man['n_edges']} probes (q+a co-frozen)")
     z = np.load(os.path.join(dd, "mined_keys.npz"))
     keys, values = z["keys"], z["values"]
     text = open(os.path.join(sdir, "assoc_mem.asm")).read()
