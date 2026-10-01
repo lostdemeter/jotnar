@@ -1,0 +1,8 @@
+{
+  "source": "wikitext103",
+  "n_sents": 4202998,
+  "n_cand": 628549,
+  "n_edges": 3773,
+  "minsup": 10,
+  "sha": "4d2a83c02ab274a4"
+}
