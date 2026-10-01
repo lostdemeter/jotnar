@@ -433,6 +433,23 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: construction — bigram LM behaves (CLOCKED)
+
+- Freeze pipeline + listing + gates, first-try green (#LIB-083).
+- Wall time: clock 16:21:53Z -> 16:24Z (~2 min: freeze + listing + gate).
+- Results: memorize 200/200; top1 0.41 / top5 0.61 / ppl 47.
+- Surprises:
+  1. Unsmoothed ppl 7.7e29: INFINITE-by-construction on unseen pairs,
+     not a bug -- reported once, then add-one at scoring (model stays
+     raw). Honesty about infinities beats smoothing them silently.
+  2. Coverage 0.609 worn openly: OOV is the dominant error source and
+     the doc says so. Weak numbers with stated causes beat strong
+     numbers with hidden ones -- the v1.0 stranger-test spirit.
+  3. Five lines of listing (GATHER+ARGMAX) over frozen counts IS a
+     language model (weak, honest, working): from-scratch construction
+     costs almost nothing once stores + assembly exist. The expensive
+     part was the two years underneath.
+
 ## 2026-10-01: mamba trajectory on real weights (CLOCKED)
 
 - S3 study + scan_mamba.asm variant + test_mamba.py at 46.3dB (#LIB-082).

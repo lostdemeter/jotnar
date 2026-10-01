@@ -566,6 +566,17 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-083: construction — bigram LM behaves (v1.6 gate 3) [CLOSED]
+
+ scripts/freeze_lm.py (grokipedia HTML -> 938/235 split, V=513 vocab,
+ 61% coverage, frozen npz+vocab+manifest) + programs/bigram_lm.asm
+ (GATHER row + ARGMAX, counts as exact triples, no trained weights) +
+ test_lm.py: memorize 200/200 argmax-rows, held-out top1 0.41 / top5
+ 0.61 / ppl 47 (add-one at SCORING only; model stays raw counts --
+ unsmoothed MLE ppl is infinite-by-construction, first measured 7.7e29
+ and replaced honestly, not hidden). QA batteries stay horizon (need
+ comprehension; capability-matched gates per demo-2 pattern, stated).
+ Construction without training: counts in, behavior out, first try.
 ## #LIB-082: mamba trajectory on real weights (anatomy-mamba) [CLOSED]
 
  test_mamba.py: full selective-scan trajectory (8 steps x 1536x16) on
