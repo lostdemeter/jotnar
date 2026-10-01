@@ -30,9 +30,14 @@ def main():
     mined = [json.loads(l) for l in open(os.path.join(OUT, "mined_edges.jsonl"))][1:]
     new_words = sorted({w for e in mined for f in ("subj", "pred", "obj")
                         for w in words_of(e[f])} - set(wpat))
+    # extend lexicon with mined words: HASH-addressed patterns (seed 99 +
+    # sha256(word) -> per-word deterministic, order-independent: banks
+    # frozen at different scales share identical patterns per word)
     rng = np.random.default_rng(99)
-    for w in new_words:
-        wpat[w] = rng.choice([-1.0, 1.0], size=DIM)
+    _ = rng  # seed namespace retained for provenance
+    for w in sorted(new_words):
+        h = int(hashlib.sha256(f"lex99:{w}".encode()).hexdigest()[:16], 16)
+        wpat[w] = np.random.default_rng(h).choice([-1.0, 1.0], size=DIM)
     rv = np.random.default_rng(101)
     keys, values, key_edge = [], [], []
     oov = 0

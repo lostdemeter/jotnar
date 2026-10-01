@@ -74,6 +74,26 @@ def load_wiki2(n=None):
     return sents
 
 
+def load_wiki103(n=None):
+    import glob as _glob
+    import pandas as pd
+    base = "/home/thorin/.cache/huggingface/hub/datasets--Salesforce--wikitext/snapshots/b08601e04326c79dfdd32d625aee71d232d685c3/wikitext-103-raw-v1"
+    paths = sorted(_glob.glob(base + "/train-*.parquet"))
+    texts = []
+    for p in paths:
+        df = pd.read_parquet(p, columns=["text"])
+        texts += [str(t) for t in df["text"].tolist()]
+        if n and len(texts) >= n:
+            texts = texts[:n]
+            break
+    sents = []
+    for t in texts:
+        for s in re.split(r"(?<=[.!?])\s+", html.unescape(t)):
+            if len(s.strip().split()) >= 4:
+                sents.append(s.strip())
+    return sents
+
+
 def mine(sents):
     cand = Counter()
     wit = defaultdict(list)
@@ -111,8 +131,25 @@ def main():
     ap.add_argument("--minsup", type=int, default=2)
     ap.add_argument("--limit", type=int, default=0)
     a = ap.parse_args()
-    sents = load_wiki2(a.limit or None) if a.source == "wikitext2" else load_groki()
+    sents = (load_wiki103(a.limit or None) if a.source == "wikitext103"
+             else load_wiki2(a.limit or None) if a.source == "wikitext2"
+             else load_groki())
     cand, wit = mine(sents)
+    # phrase-norm: strip trailing glue from OF-objs (re-concentrate:
+    # 'alexandria in' -> 'alexandria', 'city at' dropped if empty)
+    GLUE_TAIL = {"in", "and", "of", "our", "at", "on", "to", "for", "with"}
+    normed = {}
+    wit2 = defaultdict(list)
+    for (s, p, o, c), n in cand.items():
+        o2 = o
+        if c == "possession":
+            w = o.split()
+            while len(w) > 1 and w[-1] in GLUE_TAIL:
+                w = w[:-1]
+            o2 = " ".join(w)
+        normed[(s, p, o2, c)] = normed.get((s, p, o2, c), 0) + n
+        wit2[(s, p, o2, c)] += wit[(s, p, o, c)]
+    cand, wit = normed, wit2
     edges = []
     for (s, p, o, c), n in sorted(cand.items(), key=lambda kv: (-kv[1], kv[0])):
         if n < a.minsup:

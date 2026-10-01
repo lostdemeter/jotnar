@@ -1,7 +1,7 @@
 {
-  "source": "grokipedia+w20k",
-  "n_edges": 174,
-  "groki": 51,
-  "w20k": 123,
-  "sha": "22ef38b1e69aece3"
+  "source": "groki-norm+w20k-norm",
+  "n_edges": 202,
+  "groki": 49,
+  "w20k": 153,
+  "sha": "8dbbc828253628d1"
 }

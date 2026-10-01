@@ -1,175 +1,203 @@
-{"type": "manifest", "format": "echion-store/1", "n_records": 174, "source": "grokipedia+w20k", "minsup": "2/3"}
-{"subj": "battle", "pred": "of", "obj": "actium", "cat": "possession", "support": 14, "witness": 826, "id": "m0000", "probe_q": "battle of", "probe_a": "actium", "digest": "aa8228d38fa1d7db"}
-{"subj": "donations", "pred": "of", "obj": "alexandria", "cat": "possession", "support": 7, "witness": 639, "id": "m0001", "probe_q": "donations of", "probe_a": "alexandria", "digest": "12a915cf2a01e0ee"}
-{"subj": "donations", "pred": "of", "obj": "alexandria in", "cat": "possession", "support": 5, "witness": 689, "id": "m0002", "probe_q": "donations of", "probe_a": "alexandria in", "digest": "70d0a124562ff022"}
-{"subj": "life", "pred": "of", "obj": "alexander", "cat": "possession", "support": 5, "witness": 427, "id": "m0003", "probe_q": "life of", "probe_a": "alexander", "digest": "89a35bd386a7f04e"}
-{"subj": "battle", "pred": "of", "obj": "gaugamela", "cat": "possession", "support": 4, "witness": 434, "id": "m0004", "probe_q": "battle of", "probe_a": "gaugamela", "digest": "c48a9ca38a200e8a"}
-{"subj": "battle", "pred": "of", "obj": "issus", "cat": "possession", "support": 4, "witness": 434, "id": "m0005", "probe_q": "battle of", "probe_a": "issus", "digest": "57e2323433e77091"}
-{"subj": "donations", "pred": "of", "obj": "alexandria and", "cat": "possession", "support": 4, "witness": 502, "id": "m0006", "probe_q": "donations of", "probe_a": "alexandria and", "digest": "9d3939502d0b3aed"}
+{"type": "manifest", "format": "echion-store/1", "n_records": 202, "source": "groki-norm+w20k-norm", "minsup": "2/3"}
+{"subj": "battle", "pred": "of", "obj": "actium", "cat": "possession", "support": 18, "witness": 759, "id": "m0000", "probe_q": "battle of", "probe_a": "actium", "digest": "aa8228d38fa1d7db"}
+{"subj": "donations", "pred": "of", "obj": "alexandria", "cat": "possession", "support": 17, "witness": 502, "id": "m0001", "probe_q": "donations of", "probe_a": "alexandria", "digest": "12a915cf2a01e0ee"}
+{"subj": "battle", "pred": "of", "obj": "gaugamela", "cat": "possession", "support": 6, "witness": 106, "id": "m0002", "probe_q": "battle of", "probe_a": "gaugamela", "digest": "c48a9ca38a200e8a"}
+{"subj": "battle", "pred": "of", "obj": "issus", "cat": "possession", "support": 6, "witness": 192, "id": "m0003", "probe_q": "battle of", "probe_a": "issus", "digest": "57e2323433e77091"}
+{"subj": "life", "pred": "of", "obj": "alexander", "cat": "possession", "support": 5, "witness": 427, "id": "m0004", "probe_q": "life of", "probe_a": "alexander", "digest": "89a35bd386a7f04e"}
+{"subj": "battle", "pred": "of", "obj": "chaeronea", "cat": "possession", "support": 4, "witness": 22, "id": "m0005", "probe_q": "battle of", "probe_a": "chaeronea", "digest": "e4c27e1ed35d5c92"}
+{"subj": "battle", "pred": "of", "obj": "philippi", "cat": "possession", "support": 4, "witness": 1062, "id": "m0006", "probe_q": "battle of", "probe_a": "philippi", "digest": "5bb3a57f8ef577fc"}
 {"subj": "life", "pred": "of", "obj": "antony", "cat": "possession", "support": 4, "witness": 825, "id": "m0007", "probe_q": "life of", "probe_a": "antony", "digest": "e02cb648d046cf41"}
 {"subj": "siege", "pred": "of", "obj": "tyre", "cat": "possession", "support": 4, "witness": 436, "id": "m0008", "probe_q": "siege of", "probe_a": "tyre", "digest": "b1f9d7925fc46c5d"}
 {"subj": "adoption", "pred": "of", "obj": "egyptian", "cat": "possession", "support": 3, "witness": 502, "id": "m0009", "probe_q": "adoption of", "probe_a": "egyptian", "digest": "60009025fc1aad51"}
 {"subj": "analysis", "pred": "of", "obj": "major", "cat": "possession", "support": 3, "witness": 0, "id": "m0010", "probe_q": "analysis of", "probe_a": "major", "digest": "2f65774aa7cc5108"}
-{"subj": "battle", "pred": "of", "obj": "chaeronea in", "cat": "possession", "support": 3, "witness": 22, "id": "m0011", "probe_q": "battle of", "probe_a": "chaeronea in", "digest": "98f07460c7acc941"}
-{"subj": "battle", "pred": "of", "obj": "philippi", "cat": "possession", "support": 3, "witness": 1143, "id": "m0012", "probe_q": "battle of", "probe_a": "philippi", "digest": "5bb3a57f8ef577fc"}
-{"subj": "battle", "pred": "of", "obj": "thebes", "cat": "possession", "support": 3, "witness": 431, "id": "m0013", "probe_q": "battle of", "probe_a": "thebes", "digest": "0421a88a13fab275"}
-{"subj": "battles", "pred": "of", "obj": "issus and", "cat": "possession", "support": 3, "witness": 0, "id": "m0014", "probe_q": "battles of", "probe_a": "issus and", "digest": "6b6391f3f97f95ca"}
-{"subj": "births", "pred": "of", "obj": "heirs and", "cat": "possession", "support": 3, "witness": 502, "id": "m0015", "probe_q": "births of", "probe_a": "heirs and", "digest": "dacfcb453e2a9ba5"}
-{"subj": "consolidation", "pred": "of", "obj": "power", "cat": "possession", "support": 3, "witness": 855, "id": "m0016", "probe_q": "consolidation of", "probe_a": "power", "digest": "c036cff747ba6aef"}
-{"subj": "elimination", "pred": "of", "obj": "cicero", "cat": "possession", "support": 3, "witness": 855, "id": "m0017", "probe_q": "elimination of", "probe_a": "cicero", "digest": "ea73b4244e39edd5"}
-{"subj": "evaluation", "pred": "of", "obj": "political", "cat": "possession", "support": 3, "witness": 502, "id": "m0018", "probe_q": "evaluation of", "probe_a": "political", "digest": "42d5f9fc8e3ddaf8"}
-{"subj": "handling", "pred": "of", "obj": "conspiracies and", "cat": "possession", "support": 3, "witness": 0, "id": "m0019", "probe_q": "handling of", "probe_a": "conspiracies and", "digest": "bed58be1cc0c8bce"}
-{"subj": "invasion", "pred": "of", "obj": "asia", "cat": "possession", "support": 3, "witness": 0, "id": "m0020", "probe_q": "invasion of", "probe_a": "asia", "digest": "29f3984a66000357"}
-{"subj": "life", "pred": "of", "obj": "antony c", "cat": "possession", "support": 3, "witness": 730, "id": "m0021", "probe_q": "life of", "probe_a": "antony c", "digest": "8efadb1566bed044"}
-{"subj": "museum", "pred": "of", "obj": "art", "cat": "possession", "support": 3, "witness": 471, "id": "m0022", "probe_q": "museum of", "probe_a": "art", "digest": "93c77ffa519998b9"}
-{"subj": "siege", "pred": "of", "obj": "alexandria and", "cat": "possession", "support": 3, "witness": 502, "id": "m0023", "probe_q": "siege of", "probe_a": "alexandria and", "digest": "f71be402137214db"}
-{"subj": "spread", "pred": "of", "obj": "hellenism and", "cat": "possession", "support": 3, "witness": 0, "id": "m0024", "probe_q": "spread of", "probe_a": "hellenism and", "digest": "2e50a5b1c0d919e8"}
+{"subj": "battle", "pred": "of", "obj": "dyrrhachium", "cat": "possession", "support": 3, "witness": 894, "id": "m0011", "probe_q": "battle of", "probe_a": "dyrrhachium", "digest": "162c8f6d3aacc711"}
+{"subj": "battle", "pred": "of", "obj": "thebes", "cat": "possession", "support": 3, "witness": 431, "id": "m0012", "probe_q": "battle of", "probe_a": "thebes", "digest": "0421a88a13fab275"}
+{"subj": "battles", "pred": "of", "obj": "issus", "cat": "possession", "support": 3, "witness": 0, "id": "m0013", "probe_q": "battles of", "probe_a": "issus", "digest": "811c3fe94591510a"}
+{"subj": "births", "pred": "of", "obj": "heirs", "cat": "possession", "support": 3, "witness": 502, "id": "m0014", "probe_q": "births of", "probe_a": "heirs", "digest": "b18a8eb8ab28beb9"}
+{"subj": "consolidation", "pred": "of", "obj": "power", "cat": "possession", "support": 3, "witness": 855, "id": "m0015", "probe_q": "consolidation of", "probe_a": "power", "digest": "c036cff747ba6aef"}
+{"subj": "elimination", "pred": "of", "obj": "cicero", "cat": "possession", "support": 3, "witness": 855, "id": "m0016", "probe_q": "elimination of", "probe_a": "cicero", "digest": "ea73b4244e39edd5"}
+{"subj": "evaluation", "pred": "of", "obj": "political", "cat": "possession", "support": 3, "witness": 502, "id": "m0017", "probe_q": "evaluation of", "probe_a": "political", "digest": "42d5f9fc8e3ddaf8"}
+{"subj": "handling", "pred": "of", "obj": "conspiracies", "cat": "possession", "support": 3, "witness": 0, "id": "m0018", "probe_q": "handling of", "probe_a": "conspiracies", "digest": "9f3f44b4b5a00206"}
+{"subj": "invasion", "pred": "of", "obj": "asia", "cat": "possession", "support": 3, "witness": 0, "id": "m0019", "probe_q": "invasion of", "probe_a": "asia", "digest": "29f3984a66000357"}
+{"subj": "life", "pred": "of", "obj": "antony c", "cat": "possession", "support": 3, "witness": 730, "id": "m0020", "probe_q": "life of", "probe_a": "antony c", "digest": "8efadb1566bed044"}
+{"subj": "museum", "pred": "of", "obj": "art", "cat": "possession", "support": 3, "witness": 471, "id": "m0021", "probe_q": "museum of", "probe_a": "art", "digest": "93c77ffa519998b9"}
+{"subj": "queen", "pred": "of", "obj": "kings", "cat": "possession", "support": 3, "witness": 639, "id": "m0022", "probe_q": "queen of", "probe_a": "kings", "digest": "2b07528a62bd41fb"}
+{"subj": "siege", "pred": "of", "obj": "alexandria", "cat": "possession", "support": 3, "witness": 502, "id": "m0023", "probe_q": "siege of", "probe_a": "alexandria", "digest": "dcaf6058a795bb4c"}
+{"subj": "spread", "pred": "of", "obj": "hellenism", "cat": "possession", "support": 3, "witness": 0, "id": "m0024", "probe_q": "spread of", "probe_a": "hellenism", "digest": "75211420dea81b94"}
 {"subj": "suppression", "pred": "of", "obj": "theban", "cat": "possession", "support": 3, "witness": 0, "id": "m0025", "probe_q": "suppression of", "probe_a": "theban", "digest": "58c5e64016a3cfa8"}
 {"subj": "table", "pred": "of", "obj": "contents", "cat": "possession", "support": 3, "witness": 493, "id": "m0026", "probe_q": "table of", "probe_a": "contents", "digest": "55a93a952249ab0d"}
 {"subj": "theories", "pred": "of", "obj": "death", "cat": "possession", "support": 3, "witness": 0, "id": "m0027", "probe_q": "theories of", "probe_a": "death", "digest": "225e95286db0be1b"}
 {"subj": "victim", "pred": "of", "obj": "propaganda or", "cat": "possession", "support": 3, "witness": 855, "id": "m0028", "probe_q": "victim of", "probe_a": "propaganda or", "digest": "b8659b5d357661e4"}
 {"subj": "actium", "pred": "lost", "obj": "for", "cat": "action", "support": 2, "witness": 834, "id": "m0029", "probe_q": "actium lost", "probe_a": "for", "digest": "b15e10434924afe5"}
 {"subj": "alexander", "pred": "besieged", "obj": "and", "cat": "action", "support": 2, "witness": 203, "id": "m0030", "probe_q": "alexander besieged", "probe_a": "and", "digest": "efe3b0646ee7c7aa"}
-{"subj": "battle", "pred": "of", "obj": "actium in", "cat": "possession", "support": 2, "witness": 827, "id": "m0031", "probe_q": "battle of", "probe_a": "actium in", "digest": "a25e79833d23035e"}
-{"subj": "battle", "pred": "of", "obj": "actium on", "cat": "possession", "support": 2, "witness": 759, "id": "m0032", "probe_q": "battle of", "probe_a": "actium on", "digest": "e4bbda7523480b49"}
-{"subj": "battle", "pred": "of", "obj": "dyrrhachium", "cat": "possession", "support": 2, "witness": 1138, "id": "m0033", "probe_q": "battle of", "probe_a": "dyrrhachium", "digest": "162c8f6d3aacc711"}
-{"subj": "battle", "pred": "of", "obj": "gaugamela in", "cat": "possession", "support": 2, "witness": 106, "id": "m0034", "probe_q": "battle of", "probe_a": "gaugamela in", "digest": "c10d69202537e209"}
-{"subj": "battle", "pred": "of", "obj": "issus in", "cat": "possession", "support": 2, "witness": 192, "id": "m0035", "probe_q": "battle of", "probe_a": "issus in", "digest": "89b836d9c7c181c4"}
-{"subj": "battle", "pred": "of", "obj": "pharsalus on", "cat": "possession", "support": 2, "witness": 895, "id": "m0036", "probe_q": "battle of", "probe_a": "pharsalus on", "digest": "166d9ff721df984b"}
-{"subj": "cicero", "pred": "was", "obj": "intercepted", "cat": "identity", "support": 2, "witness": 932, "id": "m0037", "probe_q": "cicero was", "probe_a": "intercepted", "digest": "90db8811ef958e79"}
-{"subj": "cleopatra", "pred": "died", "obj": "by", "cat": "action", "support": 2, "witness": 507, "id": "m0038", "probe_q": "cleopatra died", "probe_a": "by", "digest": "7ed5a97476bd1aa5"}
-{"subj": "death", "pred": "of", "obj": "cleopatra", "cat": "possession", "support": 2, "witness": 808, "id": "m0039", "probe_q": "death of", "probe_a": "cleopatra", "digest": "178f965b6286e599"}
-{"subj": "great", "pred": "was", "obj": "born", "cat": "identity", "support": 2, "witness": 10, "id": "m0040", "probe_q": "great was", "probe_a": "born", "digest": "5ba15e534ead58fe"}
-{"subj": "history", "pred": "of", "obj": "alexander the", "cat": "possession", "support": 2, "witness": 442, "id": "m0041", "probe_q": "history of", "probe_a": "alexander the", "digest": "347a1f3eb9903b36"}
-{"subj": "iii", "pred": "of", "obj": "macedon the", "cat": "possession", "support": 2, "witness": 485, "id": "m0042", "probe_q": "iii of", "probe_a": "macedon the", "digest": "0465acb8209f051b"}
-{"subj": "impacts", "pred": "founded", "obj": "cities", "cat": "action", "support": 2, "witness": 0, "id": "m0043", "probe_q": "impacts founded", "probe_a": "cities", "digest": "d10c0307ed14ab79"}
-{"subj": "life", "pred": "of", "obj": "augustus", "cat": "possession", "support": 2, "witness": 840, "id": "m0044", "probe_q": "life of", "probe_a": "augustus", "digest": "4c1b65a29c851a8d"}
-{"subj": "pharaoh", "pred": "of", "obj": "egypt", "cat": "possession", "support": 2, "witness": 438, "id": "m0045", "probe_q": "pharaoh of", "probe_a": "egypt", "digest": "98422545c6263f06"}
-{"subj": "philadelphus", "pred": "born", "obj": "bc", "cat": "action", "support": 2, "witness": 724, "id": "m0046", "probe_q": "philadelphus born", "probe_a": "bc", "digest": "8d13ecf08914d053"}
-{"subj": "propaganda", "pred": "of", "obj": "octavian and", "cat": "possession", "support": 2, "witness": 830, "id": "m0047", "probe_q": "propaganda of", "probe_a": "octavian and", "digest": "1ade4d8125541633"}
-{"subj": "queen", "pred": "of", "obj": "kings", "cat": "possession", "support": 2, "witness": 639, "id": "m0048", "probe_q": "queen of", "probe_a": "kings", "digest": "2b07528a62bd41fb"}
-{"subj": "reign", "pred": "of", "obj": "alexander", "cat": "possession", "support": 2, "witness": 485, "id": "m0049", "probe_q": "reign of", "probe_a": "alexander", "digest": "a399675cd0142d0d"}
-{"subj": "study", "pred": "of", "obj": "combined", "cat": "possession", "support": 2, "witness": 451, "id": "m0050", "probe_q": "study of", "probe_a": "combined", "digest": "a0b2480d3ef773a1"}
-{"subj": "story", "pred": "of", "obj": "yue", "cat": "possession", "support": 17, "witness": 12142, "id": "m0051", "probe_q": "story of", "probe_a": "yue", "digest": "b105022ba665008f"}
-{"subj": "association", "pred": "of", "obj": "america", "cat": "possession", "support": 13, "witness": 1758, "id": "m0052", "probe_q": "association of", "probe_a": "america", "digest": "ad29a0ba8fb7f273"}
-{"subj": "hall", "pred": "of", "obj": "fame", "cat": "possession", "support": 13, "witness": 8194, "id": "m0053", "probe_q": "hall of", "probe_a": "fame", "digest": "b14946a20dccfd60"}
-{"subj": "journal", "pred": "of", "obj": "palestine", "cat": "possession", "support": 9, "witness": 10419, "id": "m0054", "probe_q": "journal of", "probe_a": "palestine", "digest": "54cbd359823b1aab"}
-{"subj": "church", "pred": "of", "obj": "st", "cat": "possession", "support": 8, "witness": 29718, "id": "m0055", "probe_q": "church of", "probe_a": "st", "digest": "742a0f7699585bfb"}
-{"subj": "department", "pred": "of", "obj": "transportation", "cat": "possession", "support": 8, "witness": 5340, "id": "m0056", "probe_q": "department of", "probe_a": "transportation", "digest": "15fe06804f63b3f7"}
-{"subj": "gulf", "pred": "of", "obj": "mexico", "cat": "possession", "support": 8, "witness": 9731, "id": "m0057", "probe_q": "gulf of", "probe_a": "mexico", "digest": "eb0ea61da84af6f6"}
-{"subj": "secretary", "pred": "of", "obj": "state for", "cat": "possession", "support": 8, "witness": 16850, "id": "m0058", "probe_q": "secretary of", "probe_a": "state for", "digest": "a0293becc0cd6df4"}
-{"subj": "tech", "pred": "was", "obj": "unable", "cat": "identity", "support": 8, "witness": 24649, "id": "m0059", "probe_q": "tech was", "probe_a": "unable", "digest": "3a6d8d67e8fbb421"}
-{"subj": "university", "pred": "of", "obj": "california", "cat": "possession", "support": 8, "witness": 10462, "id": "m0060", "probe_q": "university of", "probe_a": "california", "digest": "fe3c9ca5093a5907"}
-{"subj": "republic", "pred": "of", "obj": "ireland", "cat": "possession", "support": 7, "witness": 16784, "id": "m0061", "probe_q": "republic of", "probe_a": "ireland", "digest": "3576da54e557c9b7"}
-{"subj": "tales", "pred": "of", "obj": "destiny", "cat": "possession", "support": 7, "witness": 32048, "id": "m0062", "probe_q": "tales of", "probe_a": "destiny", "digest": "e2f33a265527eb09"}
-{"subj": "university", "pred": "of", "obj": "texas", "cat": "possession", "support": 7, "witness": 9664, "id": "m0063", "probe_q": "university of", "probe_a": "texas", "digest": "166e88675091c721"}
-{"subj": "city", "pred": "of", "obj": "london", "cat": "possession", "support": 6, "witness": 7211, "id": "m0064", "probe_q": "city of", "probe_a": "london", "digest": "e29531625b739172"}
-{"subj": "house", "pred": "of", "obj": "representatives", "cat": "possession", "support": 6, "witness": 10000, "id": "m0065", "probe_q": "house of", "probe_a": "representatives", "digest": "f53ece6f42784267"}
-{"subj": "museum", "pred": "of", "obj": "natural", "cat": "possession", "support": 6, "witness": 154, "id": "m0066", "probe_q": "museum of", "probe_a": "natural", "digest": "33e6e9b58099a2ef"}
-{"subj": "priest", "pred": "of", "obj": "ss", "cat": "possession", "support": 6, "witness": 12897, "id": "m0067", "probe_q": "priest of", "probe_a": "ss", "digest": "72f9421d72974f1f"}
-{"subj": "south", "pred": "of", "obj": "heaven was", "cat": "possession", "support": 6, "witness": 1755, "id": "m0068", "probe_q": "south of", "probe_a": "heaven was", "digest": "d8e1b917251ce3ea"}
-{"subj": "galveston", "pred": "is", "obj": "home", "cat": "identity", "support": 5, "witness": 9665, "id": "m0069", "probe_q": "galveston is", "probe_a": "home", "digest": "f047d85fca72df50"}
-{"subj": "mathews", "pred": "was", "obj": "appointed", "cat": "identity", "support": 5, "witness": 15285, "id": "m0070", "probe_q": "mathews was", "probe_a": "appointed", "digest": "8fcfb3c2d14e7a50"}
-{"subj": "mccall", "pred": "was", "obj": "appointed", "cat": "identity", "support": 5, "witness": 39786, "id": "m0071", "probe_q": "mccall was", "probe_a": "appointed", "digest": "022d964668012beb"}
-{"subj": "order", "pred": "of", "obj": "st", "cat": "possession", "support": 5, "witness": 15291, "id": "m0072", "probe_q": "order of", "probe_a": "st", "digest": "19a34a508ddc3e4a"}
-{"subj": "president", "pred": "of", "obj": "somalia", "cat": "possession", "support": 5, "witness": 36984, "id": "m0073", "probe_q": "president of", "probe_a": "somalia", "digest": "b36a87198ced66d2"}
-{"subj": "university", "pred": "of", "obj": "chicago", "cat": "possession", "support": 5, "witness": 10447, "id": "m0074", "probe_q": "university of", "probe_a": "chicago", "digest": "aeffaa7ab11379d0"}
-{"subj": "airports", "pred": "of", "obj": "thailand", "cat": "possession", "support": 4, "witness": 6136, "id": "m0075", "probe_q": "airports of", "probe_a": "thailand", "digest": "8f6dc055afee5bfe"}
-{"subj": "as", "pred": "of", "obj": "june", "cat": "possession", "support": 4, "witness": 22535, "id": "m0076", "probe_q": "as of", "probe_a": "june", "digest": "8dcbfb3852f70711"}
-{"subj": "battle", "pred": "of", "obj": "maryang", "cat": "possession", "support": 4, "witness": 23497, "id": "m0077", "probe_q": "battle of", "probe_a": "maryang", "digest": "5c0570d017458fec"}
-{"subj": "best", "pred": "of", "obj": "yoko", "cat": "possession", "support": 4, "witness": 43108, "id": "m0078", "probe_q": "best of", "probe_a": "yoko", "digest": "101fbf4292f6a241"}
-{"subj": "bishop", "pred": "of", "obj": "hereford", "cat": "possession", "support": 4, "witness": 20285, "id": "m0079", "probe_q": "bishop of", "probe_a": "hereford", "digest": "09e937665efd92c2"}
-{"subj": "black", "pred": "is", "obj": "ok", "cat": "identity", "support": 4, "witness": 13680, "id": "m0080", "probe_q": "black is", "probe_a": "ok", "digest": "9f89b619869857a0"}
-{"subj": "borough", "pred": "of", "obj": "oldham", "cat": "possession", "support": 4, "witness": 31257, "id": "m0081", "probe_q": "borough of", "probe_a": "oldham", "digest": "82518683090ca343"}
-{"subj": "characters", "pred": "of", "obj": "all", "cat": "possession", "support": 4, "witness": 14614, "id": "m0082", "probe_q": "characters of", "probe_a": "all", "digest": "ad0eca54d1a23d82"}
-{"subj": "conservation", "pred": "of", "obj": "nature", "cat": "possession", "support": 4, "witness": 561, "id": "m0083", "probe_q": "conservation of", "probe_a": "nature", "digest": "28ae3f8b3ddb4038"}
-{"subj": "department", "pred": "of", "obj": "energy through", "cat": "possession", "support": 4, "witness": 14165, "id": "m0084", "probe_q": "department of", "probe_a": "energy through", "digest": "328c946a5f9abaa6"}
-{"subj": "dictionary", "pred": "of", "obj": "national", "cat": "possession", "support": 4, "witness": 11911, "id": "m0085", "probe_q": "dictionary of", "probe_a": "national", "digest": "cd014518c9a2ae9b"}
-{"subj": "eve", "pred": "of", "obj": "st", "cat": "possession", "support": 4, "witness": 20606, "id": "m0086", "probe_q": "eve of", "probe_a": "st", "digest": "da6e97e5aa701806"}
-{"subj": "guild", "pred": "of", "obj": "america", "cat": "possession", "support": 4, "witness": 3018, "id": "m0087", "probe_q": "guild of", "probe_a": "america", "digest": "dd9d949c40b7c3c4"}
-{"subj": "institute", "pred": "of", "obj": "archaeology", "cat": "possession", "support": 4, "witness": 7227, "id": "m0088", "probe_q": "institute of", "probe_a": "archaeology", "digest": "316ca767054d8b67"}
-{"subj": "jordan", "pred": "was", "obj": "named", "cat": "identity", "support": 4, "witness": 4168, "id": "m0089", "probe_q": "jordan was", "probe_a": "named", "digest": "75e3b5d524e5ec97"}
-{"subj": "kingdom", "pred": "of", "obj": "jerusalem", "cat": "possession", "support": 4, "witness": 44955, "id": "m0090", "probe_q": "kingdom of", "probe_a": "jerusalem", "digest": "eda0d17b28450a5f"}
-{"subj": "legend", "pred": "of", "obj": "zhou", "cat": "possession", "support": 4, "witness": 12227, "id": "m0091", "probe_q": "legend of", "probe_a": "zhou", "digest": "df7797c3a5ec71af"}
-{"subj": "little", "pred": "is", "obj": "known", "cat": "identity", "support": 4, "witness": 1383, "id": "m0092", "probe_q": "little is", "probe_a": "known", "digest": "3fa28d4e58b45b3e"}
-{"subj": "palisades", "pred": "is", "obj": "out", "cat": "identity", "support": 4, "witness": 29384, "id": "m0093", "probe_q": "palisades is", "probe_a": "out", "digest": "ef90245748e53058"}
-{"subj": "review", "pred": "of", "obj": "books", "cat": "possession", "support": 4, "witness": 2831, "id": "m0094", "probe_q": "review of", "probe_a": "books", "digest": "67fbcda2f844c73b"}
-{"subj": "ross", "pred": "was", "obj": "named", "cat": "identity", "support": 4, "witness": 8305, "id": "m0095", "probe_q": "ross was", "probe_a": "named", "digest": "21762d0ce4cb760a"}
-{"subj": "round", "pred": "of", "obj": "applause for", "cat": "possession", "support": 4, "witness": 29386, "id": "m0096", "probe_q": "round of", "probe_a": "applause for", "digest": "752910ad377f3eab"}
-{"subj": "sarnia", "pred": "is", "obj": "located", "cat": "identity", "support": 4, "witness": 10055, "id": "m0097", "probe_q": "sarnia is", "probe_a": "located", "digest": "c174405a6b074185"}
-{"subj": "treaty", "pred": "of", "obj": "fort", "cat": "possession", "support": 4, "witness": 10094, "id": "m0098", "probe_q": "treaty of", "probe_a": "fort", "digest": "a88867ae2c5e7b25"}
-{"subj": "treaty", "pred": "of", "obj": "versailles", "cat": "possession", "support": 4, "witness": 4824, "id": "m0099", "probe_q": "treaty of", "probe_a": "versailles", "digest": "824e9c52549e1f8f"}
-{"subj": "university", "pred": "of", "obj": "london", "cat": "possession", "support": 4, "witness": 3710, "id": "m0100", "probe_q": "university of", "probe_a": "london", "digest": "849469ba64aaf611"}
-{"subj": "university", "pred": "of", "obj": "toronto", "cat": "possession", "support": 4, "witness": 22998, "id": "m0101", "probe_q": "university of", "probe_a": "toronto", "digest": "d82f95996fcd6c7b"}
-{"subj": "academy", "pred": "of", "obj": "recording", "cat": "possession", "support": 3, "witness": 6333, "id": "m0102", "probe_q": "academy of", "probe_a": "recording", "digest": "670286c7cdfa6d7f"}
-{"subj": "act", "pred": "was", "obj": "passed", "cat": "identity", "support": 3, "witness": 16763, "id": "m0103", "probe_q": "act was", "probe_a": "passed", "digest": "bbd67c3bdcab9474"}
-{"subj": "adventures", "pred": "of", "obj": "tintin the", "cat": "possession", "support": 3, "witness": 13468, "id": "m0104", "probe_q": "adventures of", "probe_a": "tintin the", "digest": "beaa59060f4776d9"}
-{"subj": "agonies", "pred": "of", "obj": "granada", "cat": "possession", "support": 3, "witness": 34392, "id": "m0105", "probe_q": "agonies of", "probe_a": "granada", "digest": "4996bd33f8f5eb79"}
-{"subj": "as", "pred": "of", "obj": "january", "cat": "possession", "support": 3, "witness": 13701, "id": "m0106", "probe_q": "as of", "probe_a": "january", "digest": "1a23029935615352"}
-{"subj": "association", "pred": "of", "obj": "japan", "cat": "possession", "support": 3, "witness": 15563, "id": "m0107", "probe_q": "association of", "probe_a": "japan", "digest": "b6a40433b06ed8a9"}
-{"subj": "battle", "pred": "of", "obj": "dogger", "cat": "possession", "support": 3, "witness": 4846, "id": "m0108", "probe_q": "battle of", "probe_a": "dogger", "digest": "5abce1dfbe75de58"}
-{"subj": "battle", "pred": "of", "obj": "jutland", "cat": "possession", "support": 3, "witness": 4865, "id": "m0109", "probe_q": "battle of", "probe_a": "jutland", "digest": "5673528ce2a84956"}
-{"subj": "berengaria", "pred": "of", "obj": "le n", "cat": "possession", "support": 3, "witness": 45090, "id": "m0110", "probe_q": "berengaria of", "probe_a": "le n", "digest": "81205a5577a9db4b"}
-{"subj": "board", "pred": "of", "obj": "directors", "cat": "possession", "support": 3, "witness": 6190, "id": "m0111", "probe_q": "board of", "probe_a": "directors", "digest": "a78262dd337d25eb"}
-{"subj": "cape", "pred": "of", "obj": "good", "cat": "possession", "support": 3, "witness": 7278, "id": "m0112", "probe_q": "cape of", "probe_a": "good", "digest": "7279c609a34d7655"}
-{"subj": "cathedral", "pred": "was", "obj": "built", "cat": "identity", "support": 3, "witness": 34502, "id": "m0113", "probe_q": "cathedral was", "probe_a": "built", "digest": "cbf7f5961fd1cc7c"}
-{"subj": "christmas", "pred": "is", "obj": "you", "cat": "identity", "support": 3, "witness": 5543, "id": "m0114", "probe_q": "christmas is", "probe_a": "you", "digest": "b53ddebdbcb39b01"}
-{"subj": "cinquemani", "pred": "of", "obj": "slant", "cat": "possession", "support": 3, "witness": 5608, "id": "m0115", "probe_q": "cinquemani of", "probe_a": "slant", "digest": "70f6db1b690c6802"}
-{"subj": "company", "pred": "was", "obj": "subjected", "cat": "identity", "support": 3, "witness": 19737, "id": "m0116", "probe_q": "company was", "probe_a": "subjected", "digest": "50317d04659ac384"}
-{"subj": "count", "pred": "of", "obj": "g lvez", "cat": "possession", "support": 3, "witness": 9656, "id": "m0117", "probe_q": "count of", "probe_a": "g lvez", "digest": "ca0276e777f77ceb"}
-{"subj": "court", "pred": "of", "obj": "appeal ruled", "cat": "possession", "support": 3, "witness": 3936, "id": "m0118", "probe_q": "court of", "probe_a": "appeal ruled", "digest": "b97f8e41e7468595"}
-{"subj": "court", "pred": "of", "obj": "appeals for", "cat": "possession", "support": 3, "witness": 4018, "id": "m0119", "probe_q": "court of", "probe_a": "appeals for", "digest": "741f252575af02e6"}
-{"subj": "department", "pred": "of", "obj": "public", "cat": "possession", "support": 3, "witness": 5299, "id": "m0120", "probe_q": "department of", "probe_a": "public", "digest": "bca0ba7cd48f3705"}
-{"subj": "division", "pred": "was", "obj": "ordered", "cat": "identity", "support": 3, "witness": 40425, "id": "m0121", "probe_q": "division was", "probe_a": "ordered", "digest": "79a0bf2646fbde80"}
-{"subj": "earl", "pred": "of", "obj": "leicester", "cat": "possession", "support": 3, "witness": 25708, "id": "m0122", "probe_q": "earl of", "probe_a": "leicester", "digest": "d4deff491279f058"}
-{"subj": "eaton", "pred": "was", "obj": "appointed", "cat": "identity", "support": 3, "witness": 2919, "id": "m0123", "probe_q": "eaton was", "probe_a": "appointed", "digest": "5f556fb4f1670e4d"}
-{"subj": "emperor", "pred": "of", "obj": "india", "cat": "possession", "support": 3, "witness": 21073, "id": "m0124", "probe_q": "emperor of", "probe_a": "india", "digest": "c17ba6fe98acb5c8"}
-{"subj": "experience", "pred": "of", "obj": "thomas", "cat": "possession", "support": 3, "witness": 29822, "id": "m0125", "probe_q": "experience of", "probe_a": "thomas", "digest": "f5fd99e46da865b6"}
-{"subj": "federation", "pred": "of", "obj": "red", "cat": "possession", "support": 3, "witness": 18090, "id": "m0126", "probe_q": "federation of", "probe_a": "red", "digest": "66f7c57dc61912fd"}
-{"subj": "federer", "pred": "won", "obj": "three", "cat": "action", "support": 3, "witness": 38842, "id": "m0127", "probe_q": "federer won", "probe_a": "three", "digest": "5d160814c1b502ed"}
-{"subj": "federer", "pred": "won", "obj": "two", "cat": "action", "support": 3, "witness": 38860, "id": "m0128", "probe_q": "federer won", "probe_a": "two", "digest": "05866edb607cd71e"}
-{"subj": "fey", "pred": "was", "obj": "ranked", "cat": "identity", "support": 3, "witness": 3072, "id": "m0129", "probe_q": "fey was", "probe_a": "ranked", "digest": "9c32b3ec106c464f"}
-{"subj": "fleet", "pred": "commanded", "obj": "by", "cat": "action", "support": 3, "witness": 15990, "id": "m0130", "probe_q": "fleet commanded", "probe_a": "by", "digest": "3ff827c5e50007b7"}
-{"subj": "friends", "pred": "of", "obj": "friendless", "cat": "possession", "support": 3, "witness": 30271, "id": "m0131", "probe_q": "friends of", "probe_a": "friendless", "digest": "7975bf70a242cea3"}
-{"subj": "galveston", "pred": "is", "obj": "within", "cat": "identity", "support": 3, "witness": 9997, "id": "m0132", "probe_q": "galveston is", "probe_a": "within", "digest": "bfbaddac2c90e756"}
-{"subj": "gerard", "pred": "was", "obj": "appointed", "cat": "identity", "support": 3, "witness": 35165, "id": "m0133", "probe_q": "gerard was", "probe_a": "appointed", "digest": "0f01aa773362f423"}
-{"subj": "gordon", "pred": "was", "obj": "arrested", "cat": "identity", "support": 3, "witness": 32335, "id": "m0134", "probe_q": "gordon was", "probe_a": "arrested", "digest": "2030c641797b45ee"}
-{"subj": "house", "pred": "of", "obj": "commons", "cat": "possession", "support": 3, "witness": 16841, "id": "m0135", "probe_q": "house of", "probe_a": "commons", "digest": "abe77ab29a0fd3ca"}
-{"subj": "innis", "pred": "was", "obj": "appointed", "cat": "identity", "support": 3, "witness": 23170, "id": "m0136", "probe_q": "innis was", "probe_a": "appointed", "digest": "261315cf23e960a2"}
-{"subj": "instrumentation", "pred": "is", "obj": "provided", "cat": "identity", "support": 3, "witness": 9515, "id": "m0137", "probe_q": "instrumentation is", "probe_a": "provided", "digest": "fdf246a662029f63"}
-{"subj": "king", "pred": "of", "obj": "kings", "cat": "possession", "support": 3, "witness": 33657, "id": "m0138", "probe_q": "king of", "probe_a": "kings", "digest": "be8109c2348e0dca"}
-{"subj": "kingdom", "pred": "of", "obj": "great", "cat": "possession", "support": 3, "witness": 15988, "id": "m0139", "probe_q": "kingdom of", "probe_a": "great", "digest": "45d4322199319676"}
-{"subj": "lady", "pred": "of", "obj": "guadalupe", "cat": "possession", "support": 3, "witness": 34381, "id": "m0140", "probe_q": "lady of", "probe_a": "guadalupe", "digest": "f55208a5d5c66215"}
-{"subj": "legend", "pred": "of", "obj": "mana", "cat": "possession", "support": 3, "witness": 43135, "id": "m0141", "probe_q": "legend of", "probe_a": "mana", "digest": "cfff09f5c11cebb4"}
-{"subj": "leonard", "pred": "of", "obj": "port", "cat": "possession", "support": 3, "witness": 8357, "id": "m0142", "probe_q": "leonard of", "probe_a": "port", "digest": "4d6d832e7834d278"}
-{"subj": "love", "pred": "is", "obj": "same", "cat": "identity", "support": 3, "witness": 22238, "id": "m0143", "probe_q": "love is", "probe_a": "same", "digest": "15ba0bf5cb102053"}
-{"subj": "love", "pred": "was", "obj": "nominated", "cat": "identity", "support": 3, "witness": 19480, "id": "m0144", "probe_q": "love was", "probe_a": "nominated", "digest": "6b7a228269802195"}
-{"subj": "love", "pred": "was", "obj": "released", "cat": "identity", "support": 3, "witness": 19441, "id": "m0145", "probe_q": "love was", "probe_a": "released", "digest": "c33386a146a8c735"}
-{"subj": "man", "pred": "of", "obj": "metropolis", "cat": "possession", "support": 3, "witness": 29378, "id": "m0146", "probe_q": "man of", "probe_a": "metropolis", "digest": "ad77604f6df00218"}
-{"subj": "manual", "pred": "of", "obj": "style", "cat": "possession", "support": 3, "witness": 10488, "id": "m0147", "probe_q": "manual of", "probe_a": "style", "digest": "d6b53885ee59c833"}
-{"subj": "member", "pred": "of", "obj": "parliament for", "cat": "possession", "support": 3, "witness": 16753, "id": "m0148", "probe_q": "member of", "probe_a": "parliament for", "digest": "8526d6af33eb72c0"}
-{"subj": "one", "pred": "of", "obj": "those", "cat": "possession", "support": 3, "witness": 24968, "id": "m0149", "probe_q": "one of", "probe_a": "those", "digest": "6a66b87dac56cbbb"}
-{"subj": "philip", "pred": "of", "obj": "jesus", "cat": "possession", "support": 3, "witness": 34314, "id": "m0150", "probe_q": "philip of", "probe_a": "jesus", "digest": "52ef57dc67ccc7f8"}
-{"subj": "philip", "pred": "of", "obj": "spain", "cat": "possession", "support": 3, "witness": 25717, "id": "m0151", "probe_q": "philip of", "probe_a": "spain", "digest": "6d9e7c4506b976d6"}
-{"subj": "preservation", "pred": "of", "obj": "christian", "cat": "possession", "support": 3, "witness": 442, "id": "m0152", "probe_q": "preservation of", "probe_a": "christian", "digest": "5832052e3e901523"}
-{"subj": "republic", "pred": "of", "obj": "korea", "cat": "possession", "support": 3, "witness": 21109, "id": "m0153", "probe_q": "republic of", "probe_a": "korea", "digest": "446efc4a01996667"}
-{"subj": "review", "pred": "of", "obj": "beyond", "cat": "possession", "support": 3, "witness": 10768, "id": "m0154", "probe_q": "review of", "probe_a": "beyond", "digest": "9595591231eb0159"}
-{"subj": "secretary", "pred": "of", "obj": "state", "cat": "possession", "support": 3, "witness": 12959, "id": "m0155", "probe_q": "secretary of", "probe_a": "state", "digest": "8a4934f636061bae"}
-{"subj": "society", "pred": "of", "obj": "jesus", "cat": "possession", "support": 3, "witness": 12874, "id": "m0156", "probe_q": "society of", "probe_a": "jesus", "digest": "f724a9c107896539"}
-{"subj": "somalia", "pred": "was", "obj": "established", "cat": "identity", "support": 3, "witness": 37135, "id": "m0157", "probe_q": "somalia was", "probe_a": "established", "digest": "922a2a7473c226e1"}
-{"subj": "songs", "pred": "of", "obj": "all", "cat": "possession", "support": 3, "witness": 19499, "id": "m0158", "probe_q": "songs of", "probe_a": "all", "digest": "978b77af2ff03bc1"}
-{"subj": "state", "pred": "of", "obj": "slovenes", "cat": "possession", "support": 3, "witness": 1314, "id": "m0159", "probe_q": "state of", "probe_a": "slovenes", "digest": "3614a79e44f333d6"}
-{"subj": "story", "pred": "of", "obj": "ozploitation", "cat": "possession", "support": 3, "witness": 12623, "id": "m0160", "probe_q": "story of", "probe_a": "ozploitation", "digest": "f936cf1f1cb03a30"}
-{"subj": "story", "pred": "of", "obj": "patty", "cat": "possession", "support": 3, "witness": 22636, "id": "m0161", "probe_q": "story of", "probe_a": "patty", "digest": "877e34bbf5e19061"}
-{"subj": "survey", "pred": "of", "obj": "india", "cat": "possession", "support": 3, "witness": 3282, "id": "m0162", "probe_q": "survey of", "probe_a": "india", "digest": "3d411671a46e7e17"}
-{"subj": "tech", "pred": "was", "obj": "forced", "cat": "identity", "support": 3, "witness": 24641, "id": "m0163", "probe_q": "tech was", "probe_a": "forced", "digest": "9ceae121a838590c"}
-{"subj": "tower", "pred": "of", "obj": "terror", "cat": "possession", "support": 3, "witness": 33382, "id": "m0164", "probe_q": "tower of", "probe_a": "terror", "digest": "09b913efb8bc9c79"}
-{"subj": "treehouse", "pred": "of", "obj": "horror", "cat": "possession", "support": 3, "witness": 42827, "id": "m0165", "probe_q": "treehouse of", "probe_a": "horror", "digest": "a0b55917901cc0b5"}
-{"subj": "trials", "pred": "of", "obj": "norman", "cat": "possession", "support": 3, "witness": 10511, "id": "m0166", "probe_q": "trials of", "probe_a": "norman", "digest": "f6ee869d737556b2"}
-{"subj": "united", "pred": "were", "obj": "relegated", "cat": "identity", "support": 3, "witness": 39909, "id": "m0167", "probe_q": "united were", "probe_a": "relegated", "digest": "ac24dd31b168ae2c"}
-{"subj": "university", "pred": "of", "obj": "michigan", "cat": "possession", "support": 3, "witness": 18372, "id": "m0168", "probe_q": "university of", "probe_a": "michigan", "digest": "fe46d96d38244c35"}
-{"subj": "university", "pred": "of", "obj": "ulster", "cat": "possession", "support": 3, "witness": 19075, "id": "m0169", "probe_q": "university of", "probe_a": "ulster", "digest": "88472a085b744bcc"}
-{"subj": "war", "pred": "of", "obj": "independence", "cat": "possession", "support": 3, "witness": 3872, "id": "m0170", "probe_q": "war of", "probe_a": "independence", "digest": "06946822cef4f26f"}
-{"subj": "wheeler", "pred": "was", "obj": "invited", "cat": "identity", "support": 3, "witness": 7198, "id": "m0171", "probe_q": "wheeler was", "probe_a": "invited", "digest": "69b60c41e71a281e"}
-{"subj": "xenon", "pred": "is", "obj": "used", "cat": "identity", "support": 3, "witness": 43909, "id": "m0172", "probe_q": "xenon is", "probe_a": "used", "digest": "8c981ab258b484ef"}
-{"subj": "york", "pred": "were", "obj": "knocked", "cat": "identity", "support": 3, "witness": 6703, "id": "m0173", "probe_q": "york were", "probe_a": "knocked", "digest": "52d93123525e0c48"}
+{"subj": "battle", "pred": "of", "obj": "alesia", "cat": "possession", "support": 2, "witness": 1060, "id": "m0031", "probe_q": "battle of", "probe_a": "alesia", "digest": "76ed71d31bc11aa3"}
+{"subj": "battle", "pred": "of", "obj": "mutina", "cat": "possession", "support": 2, "witness": 927, "id": "m0032", "probe_q": "battle of", "probe_a": "mutina", "digest": "7c4d097bc6d30213"}
+{"subj": "battle", "pred": "of", "obj": "pharsalus", "cat": "possession", "support": 2, "witness": 895, "id": "m0033", "probe_q": "battle of", "probe_a": "pharsalus", "digest": "45c9fd4a220b5db7"}
+{"subj": "cicero", "pred": "was", "obj": "intercepted", "cat": "identity", "support": 2, "witness": 932, "id": "m0034", "probe_q": "cicero was", "probe_a": "intercepted", "digest": "90db8811ef958e79"}
+{"subj": "cleopatra", "pred": "died", "obj": "by", "cat": "action", "support": 2, "witness": 507, "id": "m0035", "probe_q": "cleopatra died", "probe_a": "by", "digest": "7ed5a97476bd1aa5"}
+{"subj": "death", "pred": "of", "obj": "cleopatra", "cat": "possession", "support": 2, "witness": 808, "id": "m0036", "probe_q": "death of", "probe_a": "cleopatra", "digest": "178f965b6286e599"}
+{"subj": "destruction", "pred": "of", "obj": "thebes", "cat": "possession", "support": 2, "witness": 431, "id": "m0037", "probe_q": "destruction of", "probe_a": "thebes", "digest": "7cb7f2db6511604d"}
+{"subj": "great", "pred": "was", "obj": "born", "cat": "identity", "support": 2, "witness": 10, "id": "m0038", "probe_q": "great was", "probe_a": "born", "digest": "5ba15e534ead58fe"}
+{"subj": "history", "pred": "of", "obj": "alexander the", "cat": "possession", "support": 2, "witness": 442, "id": "m0039", "probe_q": "history of", "probe_a": "alexander the", "digest": "347a1f3eb9903b36"}
+{"subj": "iii", "pred": "of", "obj": "macedon the", "cat": "possession", "support": 2, "witness": 485, "id": "m0040", "probe_q": "iii of", "probe_a": "macedon the", "digest": "0465acb8209f051b"}
+{"subj": "impacts", "pred": "founded", "obj": "cities", "cat": "action", "support": 2, "witness": 0, "id": "m0041", "probe_q": "impacts founded", "probe_a": "cities", "digest": "d10c0307ed14ab79"}
+{"subj": "league", "pred": "of", "obj": "corinth", "cat": "possession", "support": 2, "witness": 47, "id": "m0042", "probe_q": "league of", "probe_a": "corinth", "digest": "986e1976b2198ff5"}
+{"subj": "life", "pred": "of", "obj": "augustus", "cat": "possession", "support": 2, "witness": 840, "id": "m0043", "probe_q": "life of", "probe_a": "augustus", "digest": "4c1b65a29c851a8d"}
+{"subj": "pharaoh", "pred": "of", "obj": "egypt", "cat": "possession", "support": 2, "witness": 438, "id": "m0044", "probe_q": "pharaoh of", "probe_a": "egypt", "digest": "98422545c6263f06"}
+{"subj": "philadelphus", "pred": "born", "obj": "bc", "cat": "action", "support": 2, "witness": 724, "id": "m0045", "probe_q": "philadelphus born", "probe_a": "bc", "digest": "8d13ecf08914d053"}
+{"subj": "propaganda", "pred": "of", "obj": "octavian", "cat": "possession", "support": 2, "witness": 830, "id": "m0046", "probe_q": "propaganda of", "probe_a": "octavian", "digest": "dd6697d45ecaae6c"}
+{"subj": "reign", "pred": "of", "obj": "alexander", "cat": "possession", "support": 2, "witness": 485, "id": "m0047", "probe_q": "reign of", "probe_a": "alexander", "digest": "a399675cd0142d0d"}
+{"subj": "study", "pred": "of", "obj": "combined", "cat": "possession", "support": 2, "witness": 451, "id": "m0048", "probe_q": "study of", "probe_a": "combined", "digest": "a0b2480d3ef773a1"}
+{"subj": "hall", "pred": "of", "obj": "fame", "cat": "possession", "support": 26, "witness": 4076, "id": "m0049", "probe_q": "hall of", "probe_a": "fame", "digest": "b14946a20dccfd60"}
+{"subj": "story", "pred": "of", "obj": "yue", "cat": "possession", "support": 17, "witness": 12142, "id": "m0050", "probe_q": "story of", "probe_a": "yue", "digest": "b105022ba665008f"}
+{"subj": "republic", "pred": "of", "obj": "ireland", "cat": "possession", "support": 16, "witness": 16589, "id": "m0051", "probe_q": "republic of", "probe_a": "ireland", "digest": "3576da54e557c9b7"}
+{"subj": "association", "pred": "of", "obj": "america", "cat": "possession", "support": 15, "witness": 1758, "id": "m0052", "probe_q": "association of", "probe_a": "america", "digest": "ad29a0ba8fb7f273"}
+{"subj": "gulf", "pred": "of", "obj": "mexico", "cat": "possession", "support": 12, "witness": 9731, "id": "m0053", "probe_q": "gulf of", "probe_a": "mexico", "digest": "eb0ea61da84af6f6"}
+{"subj": "secretary", "pred": "of", "obj": "state", "cat": "possession", "support": 12, "witness": 11836, "id": "m0054", "probe_q": "secretary of", "probe_a": "state", "digest": "8a4934f636061bae"}
+{"subj": "house", "pred": "of", "obj": "commons", "cat": "possession", "support": 9, "witness": 16841, "id": "m0055", "probe_q": "house of", "probe_a": "commons", "digest": "abe77ab29a0fd3ca"}
+{"subj": "journal", "pred": "of", "obj": "palestine", "cat": "possession", "support": 9, "witness": 10419, "id": "m0056", "probe_q": "journal of", "probe_a": "palestine", "digest": "54cbd359823b1aab"}
+{"subj": "university", "pred": "of", "obj": "california", "cat": "possession", "support": 9, "witness": 10462, "id": "m0057", "probe_q": "university of", "probe_a": "california", "digest": "fe3c9ca5093a5907"}
+{"subj": "archaeology", "pred": "of", "obj": "ritual", "cat": "possession", "support": 8, "witness": 34658, "id": "m0058", "probe_q": "archaeology of", "probe_a": "ritual", "digest": "0c4ee5b6bd8994e0"}
+{"subj": "borough", "pred": "of", "obj": "oldham", "cat": "possession", "support": 8, "witness": 31145, "id": "m0059", "probe_q": "borough of", "probe_a": "oldham", "digest": "82518683090ca343"}
+{"subj": "church", "pred": "of", "obj": "st", "cat": "possession", "support": 8, "witness": 29718, "id": "m0060", "probe_q": "church of", "probe_a": "st", "digest": "742a0f7699585bfb"}
+{"subj": "department", "pred": "of", "obj": "transportation", "cat": "possession", "support": 8, "witness": 5340, "id": "m0061", "probe_q": "department of", "probe_a": "transportation", "digest": "15fe06804f63b3f7"}
+{"subj": "kingdom", "pred": "of", "obj": "jerusalem", "cat": "possession", "support": 8, "witness": 44955, "id": "m0062", "probe_q": "kingdom of", "probe_a": "jerusalem", "digest": "eda0d17b28450a5f"}
+{"subj": "tech", "pred": "was", "obj": "unable", "cat": "identity", "support": 8, "witness": 24649, "id": "m0063", "probe_q": "tech was", "probe_a": "unable", "digest": "3a6d8d67e8fbb421"}
+{"subj": "adventures", "pred": "of", "obj": "tintin", "cat": "possession", "support": 7, "witness": 13473, "id": "m0064", "probe_q": "adventures of", "probe_a": "tintin", "digest": "82142d0c870ee178"}
+{"subj": "house", "pred": "of", "obj": "representatives", "cat": "possession", "support": 7, "witness": 10000, "id": "m0065", "probe_q": "house of", "probe_a": "representatives", "digest": "f53ece6f42784267"}
+{"subj": "south", "pred": "of", "obj": "heaven", "cat": "possession", "support": 7, "witness": 1752, "id": "m0066", "probe_q": "south of", "probe_a": "heaven", "digest": "baa41b4fc08d4e2d"}
+{"subj": "tales", "pred": "of", "obj": "destiny", "cat": "possession", "support": 7, "witness": 32048, "id": "m0067", "probe_q": "tales of", "probe_a": "destiny", "digest": "e2f33a265527eb09"}
+{"subj": "university", "pred": "of", "obj": "chicago", "cat": "possession", "support": 7, "witness": 10447, "id": "m0068", "probe_q": "university of", "probe_a": "chicago", "digest": "aeffaa7ab11379d0"}
+{"subj": "university", "pred": "of", "obj": "london", "cat": "possession", "support": 7, "witness": 3710, "id": "m0069", "probe_q": "university of", "probe_a": "london", "digest": "849469ba64aaf611"}
+{"subj": "university", "pred": "of", "obj": "pennsylvania", "cat": "possession", "support": 7, "witness": 14209, "id": "m0070", "probe_q": "university of", "probe_a": "pennsylvania", "digest": "9107a3c0f6447ba8"}
+{"subj": "university", "pred": "of", "obj": "texas", "cat": "possession", "support": 7, "witness": 9664, "id": "m0071", "probe_q": "university of", "probe_a": "texas", "digest": "166e88675091c721"}
+{"subj": "board", "pred": "of", "obj": "directors", "cat": "possession", "support": 6, "witness": 6136, "id": "m0072", "probe_q": "board of", "probe_a": "directors", "digest": "a78262dd337d25eb"}
+{"subj": "city", "pred": "of", "obj": "london", "cat": "possession", "support": 6, "witness": 7211, "id": "m0073", "probe_q": "city of", "probe_a": "london", "digest": "e29531625b739172"}
+{"subj": "institute", "pred": "of", "obj": "archaeology", "cat": "possession", "support": 6, "witness": 7083, "id": "m0074", "probe_q": "institute of", "probe_a": "archaeology", "digest": "316ca767054d8b67"}
+{"subj": "member", "pred": "of", "obj": "parliament", "cat": "possession", "support": 6, "witness": 16753, "id": "m0075", "probe_q": "member of", "probe_a": "parliament", "digest": "7a1a539c5e1da308"}
+{"subj": "museum", "pred": "of", "obj": "natural", "cat": "possession", "support": 6, "witness": 154, "id": "m0076", "probe_q": "museum of", "probe_a": "natural", "digest": "33e6e9b58099a2ef"}
+{"subj": "priest", "pred": "of", "obj": "ss", "cat": "possession", "support": 6, "witness": 12897, "id": "m0077", "probe_q": "priest of", "probe_a": "ss", "digest": "72f9421d72974f1f"}
+{"subj": "society", "pred": "of", "obj": "antiquaries", "cat": "possession", "support": 6, "witness": 5223, "id": "m0078", "probe_q": "society of", "probe_a": "antiquaries", "digest": "cf63297060593fae"}
+{"subj": "south", "pred": "of", "obj": "heaven was", "cat": "possession", "support": 6, "witness": 1755, "id": "m0079", "probe_q": "south of", "probe_a": "heaven was", "digest": "d8e1b917251ce3ea"}
+{"subj": "survey", "pred": "of", "obj": "india", "cat": "possession", "support": 6, "witness": 3282, "id": "m0080", "probe_q": "survey of", "probe_a": "india", "digest": "3d411671a46e7e17"}
+{"subj": "university", "pred": "of", "obj": "toronto", "cat": "possession", "support": 6, "witness": 22988, "id": "m0081", "probe_q": "university of", "probe_a": "toronto", "digest": "d82f95996fcd6c7b"}
+{"subj": "airports", "pred": "of", "obj": "thailand", "cat": "possession", "support": 5, "witness": 6136, "id": "m0082", "probe_q": "airports of", "probe_a": "thailand", "digest": "8f6dc055afee5bfe"}
+{"subj": "battle", "pred": "of", "obj": "jutland", "cat": "possession", "support": 5, "witness": 4819, "id": "m0083", "probe_q": "battle of", "probe_a": "jutland", "digest": "5673528ce2a84956"}
+{"subj": "court", "pred": "of", "obj": "appeals", "cat": "possession", "support": 5, "witness": 4018, "id": "m0084", "probe_q": "court of", "probe_a": "appeals", "digest": "ea01f6383c4b7f63"}
+{"subj": "galveston", "pred": "is", "obj": "home", "cat": "identity", "support": 5, "witness": 9665, "id": "m0085", "probe_q": "galveston is", "probe_a": "home", "digest": "f047d85fca72df50"}
+{"subj": "house", "pred": "of", "obj": "lords", "cat": "possession", "support": 5, "witness": 18734, "id": "m0086", "probe_q": "house of", "probe_a": "lords", "digest": "0d18ed80dd24a244"}
+{"subj": "king", "pred": "of", "obj": "kings", "cat": "possession", "support": 5, "witness": 33657, "id": "m0087", "probe_q": "king of", "probe_a": "kings", "digest": "be8109c2348e0dca"}
+{"subj": "mathews", "pred": "was", "obj": "appointed", "cat": "identity", "support": 5, "witness": 15285, "id": "m0088", "probe_q": "mathews was", "probe_a": "appointed", "digest": "8fcfb3c2d14e7a50"}
+{"subj": "mccall", "pred": "was", "obj": "appointed", "cat": "identity", "support": 5, "witness": 39786, "id": "m0089", "probe_q": "mccall was", "probe_a": "appointed", "digest": "022d964668012beb"}
+{"subj": "order", "pred": "of", "obj": "st", "cat": "possession", "support": 5, "witness": 15291, "id": "m0090", "probe_q": "order of", "probe_a": "st", "digest": "19a34a508ddc3e4a"}
+{"subj": "president", "pred": "of", "obj": "somalia", "cat": "possession", "support": 5, "witness": 36984, "id": "m0091", "probe_q": "president of", "probe_a": "somalia", "digest": "b36a87198ced66d2"}
+{"subj": "academy", "pred": "of", "obj": "sciences", "cat": "possession", "support": 4, "witness": 14156, "id": "m0092", "probe_q": "academy of", "probe_a": "sciences", "digest": "70ad0034ce963b8c"}
+{"subj": "archbishop", "pred": "of", "obj": "canterbury", "cat": "possession", "support": 4, "witness": 35199, "id": "m0093", "probe_q": "archbishop of", "probe_a": "canterbury", "digest": "611b20d21d7f16e9"}
+{"subj": "as", "pred": "of", "obj": "june", "cat": "possession", "support": 4, "witness": 22535, "id": "m0094", "probe_q": "as of", "probe_a": "june", "digest": "8dcbfb3852f70711"}
+{"subj": "association", "pred": "of", "obj": "japan", "cat": "possession", "support": 4, "witness": 15563, "id": "m0095", "probe_q": "association of", "probe_a": "japan", "digest": "b6a40433b06ed8a9"}
+{"subj": "battle", "pred": "of", "obj": "maryang", "cat": "possession", "support": 4, "witness": 23497, "id": "m0096", "probe_q": "battle of", "probe_a": "maryang", "digest": "5c0570d017458fec"}
+{"subj": "best", "pred": "of", "obj": "yoko", "cat": "possession", "support": 4, "witness": 43108, "id": "m0097", "probe_q": "best of", "probe_a": "yoko", "digest": "101fbf4292f6a241"}
+{"subj": "bishop", "pred": "of", "obj": "hereford", "cat": "possession", "support": 4, "witness": 20285, "id": "m0098", "probe_q": "bishop of", "probe_a": "hereford", "digest": "09e937665efd92c2"}
+{"subj": "black", "pred": "is", "obj": "ok", "cat": "identity", "support": 4, "witness": 13680, "id": "m0099", "probe_q": "black is", "probe_a": "ok", "digest": "9f89b619869857a0"}
+{"subj": "characters", "pred": "of", "obj": "all", "cat": "possession", "support": 4, "witness": 14614, "id": "m0100", "probe_q": "characters of", "probe_a": "all", "digest": "ad0eca54d1a23d82"}
+{"subj": "conservation", "pred": "of", "obj": "nature", "cat": "possession", "support": 4, "witness": 561, "id": "m0101", "probe_q": "conservation of", "probe_a": "nature", "digest": "28ae3f8b3ddb4038"}
+{"subj": "department", "pred": "of", "obj": "energy through", "cat": "possession", "support": 4, "witness": 14165, "id": "m0102", "probe_q": "department of", "probe_a": "energy through", "digest": "328c946a5f9abaa6"}
+{"subj": "dictionary", "pred": "of", "obj": "national", "cat": "possession", "support": 4, "witness": 11911, "id": "m0103", "probe_q": "dictionary of", "probe_a": "national", "digest": "cd014518c9a2ae9b"}
+{"subj": "duke", "pred": "of", "obj": "northumberland", "cat": "possession", "support": 4, "witness": 25708, "id": "m0104", "probe_q": "duke of", "probe_a": "northumberland", "digest": "afebbe22b99eef01"}
+{"subj": "emperor", "pred": "of", "obj": "india", "cat": "possession", "support": 4, "witness": 21037, "id": "m0105", "probe_q": "emperor of", "probe_a": "india", "digest": "c17ba6fe98acb5c8"}
+{"subj": "eve", "pred": "of", "obj": "st", "cat": "possession", "support": 4, "witness": 20606, "id": "m0106", "probe_q": "eve of", "probe_a": "st", "digest": "da6e97e5aa701806"}
+{"subj": "government", "pred": "of", "obj": "ireland", "cat": "possession", "support": 4, "witness": 16800, "id": "m0107", "probe_q": "government of", "probe_a": "ireland", "digest": "66a0a95f1f41e624"}
+{"subj": "guild", "pred": "of", "obj": "america", "cat": "possession", "support": 4, "witness": 3018, "id": "m0108", "probe_q": "guild of", "probe_a": "america", "digest": "dd9d949c40b7c3c4"}
+{"subj": "institute", "pred": "of", "obj": "technology", "cat": "possession", "support": 4, "witness": 11516, "id": "m0109", "probe_q": "institute of", "probe_a": "technology", "digest": "b22c6b3e847f6816"}
+{"subj": "jordan", "pred": "was", "obj": "named", "cat": "identity", "support": 4, "witness": 4168, "id": "m0110", "probe_q": "jordan was", "probe_a": "named", "digest": "75e3b5d524e5ec97"}
+{"subj": "legend", "pred": "of", "obj": "mana", "cat": "possession", "support": 4, "witness": 43135, "id": "m0111", "probe_q": "legend of", "probe_a": "mana", "digest": "cfff09f5c11cebb4"}
+{"subj": "legend", "pred": "of", "obj": "zhou", "cat": "possession", "support": 4, "witness": 12227, "id": "m0112", "probe_q": "legend of", "probe_a": "zhou", "digest": "df7797c3a5ec71af"}
+{"subj": "little", "pred": "is", "obj": "known", "cat": "identity", "support": 4, "witness": 1383, "id": "m0113", "probe_q": "little is", "probe_a": "known", "digest": "3fa28d4e58b45b3e"}
+{"subj": "manual", "pred": "of", "obj": "style", "cat": "possession", "support": 4, "witness": 10488, "id": "m0114", "probe_q": "manual of", "probe_a": "style", "digest": "d6b53885ee59c833"}
+{"subj": "palisades", "pred": "is", "obj": "out", "cat": "identity", "support": 4, "witness": 29384, "id": "m0115", "probe_q": "palisades is", "probe_a": "out", "digest": "ef90245748e53058"}
+{"subj": "port", "pred": "of", "obj": "galveston", "cat": "possession", "support": 4, "witness": 9676, "id": "m0116", "probe_q": "port of", "probe_a": "galveston", "digest": "dcd102eff8b601de"}
+{"subj": "review", "pred": "of", "obj": "books", "cat": "possession", "support": 4, "witness": 2831, "id": "m0117", "probe_q": "review of", "probe_a": "books", "digest": "67fbcda2f844c73b"}
+{"subj": "ross", "pred": "was", "obj": "named", "cat": "identity", "support": 4, "witness": 8305, "id": "m0118", "probe_q": "ross was", "probe_a": "named", "digest": "21762d0ce4cb760a"}
+{"subj": "round", "pred": "of", "obj": "applause", "cat": "possession", "support": 4, "witness": 29386, "id": "m0119", "probe_q": "round of", "probe_a": "applause", "digest": "99ffdbc9a1b074f7"}
+{"subj": "sarnia", "pred": "is", "obj": "located", "cat": "identity", "support": 4, "witness": 10055, "id": "m0120", "probe_q": "sarnia is", "probe_a": "located", "digest": "c174405a6b074185"}
+{"subj": "treaty", "pred": "of", "obj": "fort", "cat": "possession", "support": 4, "witness": 10094, "id": "m0121", "probe_q": "treaty of", "probe_a": "fort", "digest": "a88867ae2c5e7b25"}
+{"subj": "treaty", "pred": "of", "obj": "versailles", "cat": "possession", "support": 4, "witness": 4824, "id": "m0122", "probe_q": "treaty of", "probe_a": "versailles", "digest": "824e9c52549e1f8f"}
+{"subj": "university", "pred": "of", "obj": "ulster", "cat": "possession", "support": 4, "witness": 19075, "id": "m0123", "probe_q": "university of", "probe_a": "ulster", "digest": "88472a085b744bcc"}
+{"subj": "academy", "pred": "of", "obj": "recording", "cat": "possession", "support": 3, "witness": 6333, "id": "m0124", "probe_q": "academy of", "probe_a": "recording", "digest": "670286c7cdfa6d7f"}
+{"subj": "act", "pred": "was", "obj": "passed", "cat": "identity", "support": 3, "witness": 16763, "id": "m0125", "probe_q": "act was", "probe_a": "passed", "digest": "bbd67c3bdcab9474"}
+{"subj": "adventures", "pred": "of", "obj": "tintin the", "cat": "possession", "support": 3, "witness": 13468, "id": "m0126", "probe_q": "adventures of", "probe_a": "tintin the", "digest": "beaa59060f4776d9"}
+{"subj": "agonies", "pred": "of", "obj": "granada", "cat": "possession", "support": 3, "witness": 34392, "id": "m0127", "probe_q": "agonies of", "probe_a": "granada", "digest": "4996bd33f8f5eb79"}
+{"subj": "as", "pred": "of", "obj": "january", "cat": "possession", "support": 3, "witness": 13701, "id": "m0128", "probe_q": "as of", "probe_a": "january", "digest": "1a23029935615352"}
+{"subj": "battle", "pred": "of", "obj": "dogger", "cat": "possession", "support": 3, "witness": 4846, "id": "m0129", "probe_q": "battle of", "probe_a": "dogger", "digest": "5abce1dfbe75de58"}
+{"subj": "bay", "pred": "of", "obj": "biscay", "cat": "possession", "support": 3, "witness": 16039, "id": "m0130", "probe_q": "bay of", "probe_a": "biscay", "digest": "5a378a64d379fb24"}
+{"subj": "berengaria", "pred": "of", "obj": "le n", "cat": "possession", "support": 3, "witness": 45090, "id": "m0131", "probe_q": "berengaria of", "probe_a": "le n", "digest": "81205a5577a9db4b"}
+{"subj": "book", "pred": "of", "obj": "hymns", "cat": "possession", "support": 3, "witness": 327, "id": "m0132", "probe_q": "book of", "probe_a": "hymns", "digest": "56b4a422e1c3ca41"}
+{"subj": "bureau", "pred": "of", "obj": "information", "cat": "possession", "support": 3, "witness": 4691, "id": "m0133", "probe_q": "bureau of", "probe_a": "information", "digest": "246bfae4241c3a64"}
+{"subj": "cape", "pred": "of", "obj": "good", "cat": "possession", "support": 3, "witness": 7278, "id": "m0134", "probe_q": "cape of", "probe_a": "good", "digest": "7279c609a34d7655"}
+{"subj": "cathedral", "pred": "was", "obj": "built", "cat": "identity", "support": 3, "witness": 34502, "id": "m0135", "probe_q": "cathedral was", "probe_a": "built", "digest": "cbf7f5961fd1cc7c"}
+{"subj": "christmas", "pred": "is", "obj": "you", "cat": "identity", "support": 3, "witness": 5543, "id": "m0136", "probe_q": "christmas is", "probe_a": "you", "digest": "b53ddebdbcb39b01"}
+{"subj": "church", "pred": "of", "obj": "england", "cat": "possession", "support": 3, "witness": 26085, "id": "m0137", "probe_q": "church of", "probe_a": "england", "digest": "8bd9493cf60e35a7"}
+{"subj": "cinquemani", "pred": "of", "obj": "slant", "cat": "possession", "support": 3, "witness": 5608, "id": "m0138", "probe_q": "cinquemani of", "probe_a": "slant", "digest": "70f6db1b690c6802"}
+{"subj": "college", "pred": "of", "obj": "cardinals", "cat": "possession", "support": 3, "witness": 12920, "id": "m0139", "probe_q": "college of", "probe_a": "cardinals", "digest": "3988d7a0af34cc26"}
+{"subj": "college", "pred": "of", "obj": "music", "cat": "possession", "support": 3, "witness": 29224, "id": "m0140", "probe_q": "college of", "probe_a": "music", "digest": "b896cba0598df877"}
+{"subj": "company", "pred": "was", "obj": "subjected", "cat": "identity", "support": 3, "witness": 19737, "id": "m0141", "probe_q": "company was", "probe_a": "subjected", "digest": "50317d04659ac384"}
+{"subj": "count", "pred": "of", "obj": "g lvez", "cat": "possession", "support": 3, "witness": 9656, "id": "m0142", "probe_q": "count of", "probe_a": "g lvez", "digest": "ca0276e777f77ceb"}
+{"subj": "court", "pred": "of", "obj": "appeal", "cat": "possession", "support": 3, "witness": 32423, "id": "m0143", "probe_q": "court of", "probe_a": "appeal", "digest": "68724842897c4a93"}
+{"subj": "court", "pred": "of", "obj": "appeal ruled", "cat": "possession", "support": 3, "witness": 3936, "id": "m0144", "probe_q": "court of", "probe_a": "appeal ruled", "digest": "b97f8e41e7468595"}
+{"subj": "department", "pred": "of", "obj": "public", "cat": "possession", "support": 3, "witness": 5299, "id": "m0145", "probe_q": "department of", "probe_a": "public", "digest": "bca0ba7cd48f3705"}
+{"subj": "division", "pred": "was", "obj": "ordered", "cat": "identity", "support": 3, "witness": 40425, "id": "m0146", "probe_q": "division was", "probe_a": "ordered", "digest": "79a0bf2646fbde80"}
+{"subj": "duke", "pred": "of", "obj": "edinburgh", "cat": "possession", "support": 3, "witness": 31731, "id": "m0147", "probe_q": "duke of", "probe_a": "edinburgh", "digest": "9aac1ae8a1a13986"}
+{"subj": "earl", "pred": "of", "obj": "leicester", "cat": "possession", "support": 3, "witness": 25708, "id": "m0148", "probe_q": "earl of", "probe_a": "leicester", "digest": "d4deff491279f058"}
+{"subj": "eaton", "pred": "was", "obj": "appointed", "cat": "identity", "support": 3, "witness": 2919, "id": "m0149", "probe_q": "eaton was", "probe_a": "appointed", "digest": "5f556fb4f1670e4d"}
+{"subj": "experience", "pred": "of", "obj": "thomas", "cat": "possession", "support": 3, "witness": 29822, "id": "m0150", "probe_q": "experience of", "probe_a": "thomas", "digest": "f5fd99e46da865b6"}
+{"subj": "federation", "pred": "of", "obj": "red", "cat": "possession", "support": 3, "witness": 18090, "id": "m0151", "probe_q": "federation of", "probe_a": "red", "digest": "66f7c57dc61912fd"}
+{"subj": "federer", "pred": "won", "obj": "three", "cat": "action", "support": 3, "witness": 38842, "id": "m0152", "probe_q": "federer won", "probe_a": "three", "digest": "5d160814c1b502ed"}
+{"subj": "federer", "pred": "won", "obj": "two", "cat": "action", "support": 3, "witness": 38860, "id": "m0153", "probe_q": "federer won", "probe_a": "two", "digest": "05866edb607cd71e"}
+{"subj": "fey", "pred": "was", "obj": "ranked", "cat": "identity", "support": 3, "witness": 3072, "id": "m0154", "probe_q": "fey was", "probe_a": "ranked", "digest": "9c32b3ec106c464f"}
+{"subj": "fleet", "pred": "commanded", "obj": "by", "cat": "action", "support": 3, "witness": 15990, "id": "m0155", "probe_q": "fleet commanded", "probe_a": "by", "digest": "3ff827c5e50007b7"}
+{"subj": "friends", "pred": "of", "obj": "friendless", "cat": "possession", "support": 3, "witness": 30271, "id": "m0156", "probe_q": "friends of", "probe_a": "friendless", "digest": "7975bf70a242cea3"}
+{"subj": "galveston", "pred": "is", "obj": "within", "cat": "identity", "support": 3, "witness": 9997, "id": "m0157", "probe_q": "galveston is", "probe_a": "within", "digest": "bfbaddac2c90e756"}
+{"subj": "gerard", "pred": "was", "obj": "appointed", "cat": "identity", "support": 3, "witness": 35165, "id": "m0158", "probe_q": "gerard was", "probe_a": "appointed", "digest": "0f01aa773362f423"}
+{"subj": "gordon", "pred": "was", "obj": "arrested", "cat": "identity", "support": 3, "witness": 32335, "id": "m0159", "probe_q": "gordon was", "probe_a": "arrested", "digest": "2030c641797b45ee"}
+{"subj": "ii", "pred": "of", "obj": "palenque", "cat": "possession", "support": 3, "witness": 8930, "id": "m0160", "probe_q": "ii of", "probe_a": "palenque", "digest": "cc0b2b54e335bc1d"}
+{"subj": "innis", "pred": "was", "obj": "appointed", "cat": "identity", "support": 3, "witness": 23170, "id": "m0161", "probe_q": "innis was", "probe_a": "appointed", "digest": "261315cf23e960a2"}
+{"subj": "instrumentation", "pred": "is", "obj": "provided", "cat": "identity", "support": 3, "witness": 9515, "id": "m0162", "probe_q": "instrumentation is", "probe_a": "provided", "digest": "fdf246a662029f63"}
+{"subj": "keeper", "pred": "of", "obj": "archaeology", "cat": "possession", "support": 3, "witness": 7087, "id": "m0163", "probe_q": "keeper of", "probe_a": "archaeology", "digest": "3091879ab9801765"}
+{"subj": "king", "pred": "of", "obj": "dublin", "cat": "possession", "support": 3, "witness": 37963, "id": "m0164", "probe_q": "king of", "probe_a": "dublin", "digest": "f7c0fa331e8d6aa6"}
+{"subj": "king", "pred": "of", "obj": "northumbria", "cat": "possession", "support": 3, "witness": 37956, "id": "m0165", "probe_q": "king of", "probe_a": "northumbria", "digest": "6c73b28cf8c8603a"}
+{"subj": "kingdom", "pred": "of", "obj": "great", "cat": "possession", "support": 3, "witness": 15988, "id": "m0166", "probe_q": "kingdom of", "probe_a": "great", "digest": "45d4322199319676"}
+{"subj": "lady", "pred": "of", "obj": "guadalupe", "cat": "possession", "support": 3, "witness": 34381, "id": "m0167", "probe_q": "lady of", "probe_a": "guadalupe", "digest": "f55208a5d5c66215"}
+{"subj": "leonard", "pred": "of", "obj": "port", "cat": "possession", "support": 3, "witness": 8357, "id": "m0168", "probe_q": "leonard of", "probe_a": "port", "digest": "4d6d832e7834d278"}
+{"subj": "love", "pred": "is", "obj": "same", "cat": "identity", "support": 3, "witness": 22238, "id": "m0169", "probe_q": "love is", "probe_a": "same", "digest": "15ba0bf5cb102053"}
+{"subj": "love", "pred": "was", "obj": "nominated", "cat": "identity", "support": 3, "witness": 19480, "id": "m0170", "probe_q": "love was", "probe_a": "nominated", "digest": "6b7a228269802195"}
+{"subj": "love", "pred": "was", "obj": "released", "cat": "identity", "support": 3, "witness": 19441, "id": "m0171", "probe_q": "love was", "probe_a": "released", "digest": "c33386a146a8c735"}
+{"subj": "man", "pred": "of", "obj": "metropolis", "cat": "possession", "support": 3, "witness": 29378, "id": "m0172", "probe_q": "man of", "probe_a": "metropolis", "digest": "ad77604f6df00218"}
+{"subj": "ministry", "pred": "of", "obj": "transportation", "cat": "possession", "support": 3, "witness": 31022, "id": "m0173", "probe_q": "ministry of", "probe_a": "transportation", "digest": "9b17c07bde8b56c1"}
+{"subj": "minutes", "pred": "of", "obj": "heaven", "cat": "possession", "support": 3, "witness": 19089, "id": "m0174", "probe_q": "minutes of", "probe_a": "heaven", "digest": "23f7acace14b42b4"}
+{"subj": "museum", "pred": "of", "obj": "wales", "cat": "possession", "support": 3, "witness": 7083, "id": "m0175", "probe_q": "museum of", "probe_a": "wales", "digest": "3bea642e7be41ca8"}
+{"subj": "one", "pred": "of", "obj": "those", "cat": "possession", "support": 3, "witness": 24968, "id": "m0176", "probe_q": "one of", "probe_a": "those", "digest": "6a66b87dac56cbbb"}
+{"subj": "philip", "pred": "of", "obj": "jesus", "cat": "possession", "support": 3, "witness": 34314, "id": "m0177", "probe_q": "philip of", "probe_a": "jesus", "digest": "52ef57dc67ccc7f8"}
+{"subj": "philip", "pred": "of", "obj": "spain", "cat": "possession", "support": 3, "witness": 25717, "id": "m0178", "probe_q": "philip of", "probe_a": "spain", "digest": "6d9e7c4506b976d6"}
+{"subj": "preservation", "pred": "of", "obj": "christian", "cat": "possession", "support": 3, "witness": 442, "id": "m0179", "probe_q": "preservation of", "probe_a": "christian", "digest": "5832052e3e901523"}
+{"subj": "pulse", "pred": "of", "obj": "morning", "cat": "possession", "support": 3, "witness": 41924, "id": "m0180", "probe_q": "pulse of", "probe_a": "morning", "digest": "1621d0cab029abd0"}
+{"subj": "republic", "pred": "of", "obj": "korea", "cat": "possession", "support": 3, "witness": 21109, "id": "m0181", "probe_q": "republic of", "probe_a": "korea", "digest": "446efc4a01996667"}
+{"subj": "review", "pred": "of", "obj": "beyond", "cat": "possession", "support": 3, "witness": 10768, "id": "m0182", "probe_q": "review of", "probe_a": "beyond", "digest": "9595591231eb0159"}
+{"subj": "society", "pred": "of", "obj": "jesus", "cat": "possession", "support": 3, "witness": 12874, "id": "m0183", "probe_q": "society of", "probe_a": "jesus", "digest": "f724a9c107896539"}
+{"subj": "somalia", "pred": "was", "obj": "established", "cat": "identity", "support": 3, "witness": 37135, "id": "m0184", "probe_q": "somalia was", "probe_a": "established", "digest": "922a2a7473c226e1"}
+{"subj": "songs", "pred": "of", "obj": "all", "cat": "possession", "support": 3, "witness": 19499, "id": "m0185", "probe_q": "songs of", "probe_a": "all", "digest": "978b77af2ff03bc1"}
+{"subj": "state", "pred": "of", "obj": "slovenes", "cat": "possession", "support": 3, "witness": 1314, "id": "m0186", "probe_q": "state of", "probe_a": "slovenes", "digest": "3614a79e44f333d6"}
+{"subj": "story", "pred": "of", "obj": "ozploitation", "cat": "possession", "support": 3, "witness": 12623, "id": "m0187", "probe_q": "story of", "probe_a": "ozploitation", "digest": "f936cf1f1cb03a30"}
+{"subj": "story", "pred": "of", "obj": "patty", "cat": "possession", "support": 3, "witness": 22636, "id": "m0188", "probe_q": "story of", "probe_a": "patty", "digest": "877e34bbf5e19061"}
+{"subj": "tech", "pred": "was", "obj": "forced", "cat": "identity", "support": 3, "witness": 24641, "id": "m0189", "probe_q": "tech was", "probe_a": "forced", "digest": "9ceae121a838590c"}
+{"subj": "tower", "pred": "of", "obj": "terror", "cat": "possession", "support": 3, "witness": 33382, "id": "m0190", "probe_q": "tower of", "probe_a": "terror", "digest": "09b913efb8bc9c79"}
+{"subj": "treehouse", "pred": "of", "obj": "horror", "cat": "possession", "support": 3, "witness": 42827, "id": "m0191", "probe_q": "treehouse of", "probe_a": "horror", "digest": "a0b55917901cc0b5"}
+{"subj": "trials", "pred": "of", "obj": "norman", "cat": "possession", "support": 3, "witness": 10511, "id": "m0192", "probe_q": "trials of", "probe_a": "norman", "digest": "f6ee869d737556b2"}
+{"subj": "united", "pred": "were", "obj": "relegated", "cat": "identity", "support": 3, "witness": 39909, "id": "m0193", "probe_q": "united were", "probe_a": "relegated", "digest": "ac24dd31b168ae2c"}
+{"subj": "university", "pred": "of", "obj": "illinois", "cat": "possession", "support": 3, "witness": 4407, "id": "m0194", "probe_q": "university of", "probe_a": "illinois", "digest": "05df5801bc1b9cd4"}
+{"subj": "university", "pred": "of", "obj": "michigan", "cat": "possession", "support": 3, "witness": 18372, "id": "m0195", "probe_q": "university of", "probe_a": "michigan", "digest": "fe46d96d38244c35"}
+{"subj": "university", "pred": "of", "obj": "wisconsin", "cat": "possession", "support": 3, "witness": 11519, "id": "m0196", "probe_q": "university of", "probe_a": "wisconsin", "digest": "49a93f3516b929b8"}
+{"subj": "war", "pred": "of", "obj": "heaven", "cat": "possession", "support": 3, "witness": 32091, "id": "m0197", "probe_q": "war of", "probe_a": "heaven", "digest": "7116e125b230ae20"}
+{"subj": "war", "pred": "of", "obj": "independence", "cat": "possession", "support": 3, "witness": 3872, "id": "m0198", "probe_q": "war of", "probe_a": "independence", "digest": "06946822cef4f26f"}
+{"subj": "wheeler", "pred": "was", "obj": "invited", "cat": "identity", "support": 3, "witness": 7198, "id": "m0199", "probe_q": "wheeler was", "probe_a": "invited", "digest": "69b60c41e71a281e"}
+{"subj": "xenon", "pred": "is", "obj": "used", "cat": "identity", "support": 3, "witness": 43909, "id": "m0200", "probe_q": "xenon is", "probe_a": "used", "digest": "8c981ab258b484ef"}
+{"subj": "york", "pred": "were", "obj": "knocked", "cat": "identity", "support": 3, "witness": 6703, "id": "m0201", "probe_q": "york were", "probe_a": "knocked", "digest": "52d93123525e0c48"}

@@ -75,14 +75,14 @@ def main():
     zw = np.load(os.path.join(dd, "edge_wordpats.npz"))
     lex = list(zw["lex"])
     wpat = {w: zw[f"w{i}"] for i, w in enumerate(lex)}
-    # lex extension (freeze_mined: mined words, seed 99) -- keys were
-    # frozen with it, so probes must use it (partial-cue collisions
-    # were cue-side OOV drop, not store collision: 9/9 HIT full-triple)
-    rng_lex = np.random.default_rng(99)
+    # lex extension HASH-addressed (freeze_mined lex99: per-word
+    # deterministic, order-independent across banks/scales)
+    import hashlib as _hl
     mined = [json.loads(l) for l in open(os.path.join(dd, "mined_edges.jsonl"))][1:]
     for w in sorted({x for e in mined for f in ("subj", "pred", "obj")
                      for x in words_of(e[f])} - set(wpat)):
-        wpat[w] = rng_lex.choice([-1.0, 1.0], size=64)
+        h = int(_hl.sha256(f"lex99:{w}".encode()).hexdigest()[:16], 16)
+        wpat[w] = np.random.default_rng(h).choice([-1.0, 1.0], size=64)
     edges = recs[1:]
     ok = tot = 0
     for ei, e in enumerate(edges):
