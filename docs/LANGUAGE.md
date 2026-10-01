@@ -182,8 +182,9 @@ contracts in one place).
 
 Shared listings: put `DEF`s in a file, `IMPORT` it (see the IMPORT gate in
 `test_asm.py`: spliced-file execution + cycle refusal). The `stdlib/` dir
-ships three blocks (`attention.asm: attn_core`, `mlp.asm: swiglu_block`,
-`dirstore.asm: implant_apply` — rank-1 directional stores, #LIB-049),
+ships four blocks (`attention.asm: attn_core`, `mlp.asm: swiglu_block`,
+`dirstore.asm: implant_apply` — rank-1 directional stores, #LIB-049,
+`storebank.asm: storebank_apply` — K-store banks as listing data, #LIB-060),
 shared by `programs/xf_block.asm` and the implant variants — no
 copy-pasted prologues in shipped programs (v1.0 Gate 3, dogfood-proven
 bit-exact in `asm-dogfood-xf`).

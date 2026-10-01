@@ -566,6 +566,18 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-060: storebanks as listing data (native, both fixtures) [CLOSED]
+
+ stdlib/storebank.asm (storebank_apply DEF -- implant_apply's K>=1 twin,
+ named for what it is) + engram.bank() (gains folded host-side, Ub/Vb
+ ready to encode) + variant listings both fixtures. Toy: bank parity
+ 96.1dB, pruned bottom-8 reported 49.5dB. Real: parity 55.8dB (>=50
+ predicted: toy 96 minus coarser quanta), pruned-27 lands 42.7 vs 42.9
+ predicted -- AND matches test_prune's surgery-form 42.8 within 0.1dB
+ (three forms agree: surgery, bank, statics). Pruning is now an
+ assembler-side edit (rebuild bank with fewer columns, predicted cost
+ via read.py); listing-text pruning (masked sums) stays v1.4 horizon,
+ stated in the DEF header. Gains live in Ub (retune = rebuild, stated).
 ## #LIB-059: native ENGRAM storage (v1.3 gate 6) [CLOSED]
 
  chain/engram.py (decompose/freeze/load/recompose, STORAGE only -- cost

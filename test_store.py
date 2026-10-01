@@ -93,6 +93,32 @@ def main():
     check("store-iface",
           errs == [] and "stdlib" in rep["defs"].get("implant_apply", {}).get("origin", ""),
           "variant verifies clean; DEF resolves to stdlib")
+    # Storebank form (v1.3 native): DOWN via storebank_apply over Ub/Vb
+    # (gains folded host-side). Predict parity >=60dB vs MATMUL form (same
+    # shape as the implant's 91dB, one materialization). Pruned bank (drop
+    # bottom-8 by sval): combined cost predicted by float linearity, band
+    # +/-3dB (test_prune precedent) -- assembler-side edit with numbers.
+    Ub_full = W0["wdown"]
+    Us, ss, Vts = np.linalg.svd(Ub_full, full_matrices=False)
+    sb_text = open(os.path.join(sdir, "xf_block_storebank.asm")).read()
+
+    def sb_run(Uu, Vv):
+        pay = base_pay()
+        pay["Ub"], pay["Vb"] = XB.enc(Uu), XB.enc(Vv)
+        return XB.dec(ASM.run_text(sb_text, REGISTRY, pay, sigs=SIGS,
+                                   basedir=sdir)["OUT"])
+
+    full_bank = sb_run(Us * ss, Vts)
+    mse_sb = float(np.mean((full_bank - base) ** 2))
+    d_sb = float("inf") if mse_sb == 0 else 10 * np.log10(1.0 / mse_sb)
+    check("storebank-parity", d_sb >= 60.0,
+          f"{d_sb:.1f}dB bank-vs-matmul (same values)")
+    keep = list(range(8))
+    Ub_p, Vb_p = (Us[:, keep] * ss[keep]), Vts[keep]
+    got_p = sb_run(Ub_p, Vb_p)
+    mse_p = float(np.mean((got_p - base) ** 2))
+    d_p = 10 * np.log10(1.0 / mse_p) if mse_p > 0 else float("inf")
+    print(f"storebank-pruned-measured: {d_p:.1f}dB (drop bottom-8, reported)")
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

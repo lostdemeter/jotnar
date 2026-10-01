@@ -360,6 +360,27 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      that merged a header once): edits that LOOK like no-ops get
      diff-checked before AND after now, not just read-back after.
 
+## 2026-10-01: storebanks as listing data (CLOCKED)
+
+- engram.bank() + storebank_apply DEF + 2 variant listings +
+  toy gates + real test_storebank.py (#LIB-060).
+- Wall time: clock 13:15:23Z -> 13:17:30Z (~2 min: bank() + DEF +
+  2 variants + toy + real gates + docs).
+- Results: toy parity 96.1dB; real parity 55.8dB; pruned 42.7 vs 42.9;
+  three-form agreement within 0.1dB (surgery/bank/statics).
+- Surprises:
+  1. implant_apply already handled K>=1 (MATMUL is inner-dim general):
+     the "new" DEF is a rename with a contract, not new machinery.
+     Naming the concept IS the feature -- listings read as what they are.
+  2. One dropped sys.exit (edit removed it silently): suite would have
+     passed WHILE FAILING (exit 0 always). Caught by tail-reading the
+     file, not by any gate. Process: tail-read test files after editing
+     their endings -- endings carry the exit code, the one line that
+     decides pass/fail.
+  3. Three-form agreement (42.7/42.8/42.9): surgery, bank, statics all
+     land together. When three independent forms agree, the law is doing
+     the work and the implementations are just witnesses.
+
 ## 2026-10-01: native ENGRAM storage (CLOCKED)
 
 - chain/engram.py + test_engram.py + v1.3 scope extension (#LIB-059).

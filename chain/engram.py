@@ -57,3 +57,16 @@ def load(tag):
 def recompose(U, s, Vt):
     """Stores -> matrix (U*S @ Vt)."""
     return (U * s) @ Vt
+
+
+def bank(tag, idx=None):
+    """Bank as listing data: (Ub, Vb) with gains folded into Ub (Ub = U*s),
+    ready to encode as IN streams for storebank_apply. idx = subset for
+    pruning (assembler-side edit: rebuild with fewer columns); None = all.
+    Gains live in Ub by the A-folding precedent (retune = rebuild, stated).
+    Same values as the matmul form up to materialization quantum (gated)."""
+    U, s, Vt, _ = load(tag)
+    if idx is None:
+        idx = list(range(s.shape[0]))
+    idx = list(idx)
+    return U[:, idx] * s[idx], Vt[idx]
