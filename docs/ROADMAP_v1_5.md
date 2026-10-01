@@ -40,3 +40,18 @@ not once by luck).
 Real-time/interactive demos (correctness first); new mnemonics unless a
 demo demands one (then the contribution process runs); phi-core merges
 (owner action); T-transform follow-through (branch pending review).
+
+## Declared 2026-10-01 (40/40 suites green; all five gates hold)
+
+1. Demo 1 (expand existing): coordinated 5-slot teal write, energy x1.25,
+   global -3.7dB, receipt #002 (dd_demo1.py, #LIB-074 -- after 8 falsified
+   designs, all kept).
+2. Demo 2 (from scratch): assoc_mem recalls 100% at 0/8/16 flips, no
+   trained weights (test_demo2.py, #LIB-075).
+3. Demo 3 (modify between runs): base/halved/fresh stores all 100% @8,
+   two consecutive correct previews, data-only edits (test_demo3.py,
+   #LIB-076).
+4. Receipts: #002 filed (EDIT_RECEIPT.md grows per demo).
+5. VELOCITY.md: clocked throughout (one missed start admitted midstream).
+Plus gallery/ (eyeball-verified figures for every claim with an audience).
+v1.5 is done: storage in use, demonstrated three ways, each with bands.
