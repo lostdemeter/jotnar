@@ -20,12 +20,14 @@ from chain import control as C
 
 
 def _scales(config=None):
-    """Frozen scales with CONFIG overrides (v1.1 per-block spike): `m_acc`
-    / `m_cov` keys, integral 0..65535 (same rule as RESCALE); absent keys
-    take the frozen M.json values, so the default path is 0-diff by
-    construction (gated). Honored so far: MATMUL + BATCH_MATMUL (`m_acc`),
-    ADD + SUB (`m_cov`). RMSNORM/SOFTMAX/SILU-family need none (normalizing,
-    BIAS-structural, scaleless) — stated, each with its reason."""
+    """Frozen scales with CONFIG overrides (v1.1 per-block spike, completed
+    v1.6: honored by EVERY op that bridges -- MATMUL-family (`m_acc`) and
+    everything else at `m_cov`; RMSNORM/SOFTMAX-input/SILU-family need no
+    override semantically but read the same defaults, so CONFIG is uniform:
+    no key is silently ignored by any op (that gap bit us on SmolLM2 --
+    RMSNorm ran frozen while CONFIG said otherwise). `m_acc` / `m_cov`
+    keys integral 0..65535 (RESCALE's rule); absent keys take frozen M.json
+    values, so the default path is 0-diff by construction (gated)."""
     m_acc, m_cov = H._load_scales()
     if config is not None:
         if "m_acc" in config:
@@ -68,7 +70,7 @@ def op_splat_blur(vals, config, feeds):
     """Soft blend (flagship default; hard/fused variants are backlog
     mnemonics, not silent flags). Returns (AS triples, COH triples)."""
     (a,) = vals
-    m_acc, m_cov = _scales()
+    m_acc, m_cov = _scales(config)
     coh_thr = C.load_ctrl()["coh_thr"]
     out, diag = SP.splat_blur(a, m_acc, m_cov, coh_thr=coh_thr, soft=True)
     return out, diag["coh_t"]
@@ -97,7 +99,7 @@ def op_sub(vals, config, feeds):
 
 def op_beta_v5(vals, config, feeds):
     d, coh = vals
-    _, m_cov = _scales()
+    _, m_cov = _scales(config)
     return C.beta_field_v5(_beta(config), coh, d, m_cov)
 
 
@@ -117,7 +119,7 @@ def op_add(vals, config, feeds):
 def op_square(vals, config, feeds):
     (a,) = vals
     _need_triples(a, "SQUARE", "a")
-    _, m_cov = _scales()
+    _, m_cov = _scales(config)
     return H.clip_fixed(H.tmul(a, a), 0.0, 1.0, m_cov)
 
 
@@ -146,7 +148,7 @@ def op_iso_blur(vals, config, feeds):
     """Wide gaussian structure extraction (denoising wants smoothing over
     orientation analysis; no tensor, no buckets)."""
     (a,) = vals
-    m_acc, m_cov = _scales()
+    m_acc, m_cov = _scales(config)
     return H.conv_trip(a, H.gaussian_kernel(), m_acc, m_out=m_cov)
 
 
@@ -158,7 +160,7 @@ def op_gauss(vals, config, feeds):
     (a,) = vals[:1]
     r = _int_arg(vals[1], "GAUSS radius")
     s = float(vals[2])
-    m_acc, m_cov = _scales()
+    m_acc, m_cov = _scales(config)
     return _ct(a, _gk(radius=r, sigma=s), m_acc, m_out=m_cov)
 
 
@@ -169,7 +171,7 @@ def op_warp(vals, config, feeds):
     dprev, flow = vals
     if dprev is None:
         return None
-    _, m_cov = _scales()
+    _, m_cov = _scales(config)
     return warp_trips(dprev, np.ascontiguousarray(flow, dtype=np.float64),
                       m_cov)
 
@@ -222,14 +224,24 @@ def op_softmax(vals, config, feeds):
 
 
 def op_rmsnorm(vals, config, feeds):
-    """Per-row RMSNorm+weight (phi-core rmsnorm_int, 0-diff). eps_c frozen via
-    CONFIG eps_rms_c (default 4514, the promoted-test convention @ m_of(3.0)
-    regime) -- scale-regime-dependent by nature; per-model eps calibration is
-    backlog, stated here not hidden."""
+    """Per-row RMSNorm+weight (phi-core rmsnorm_int, 0-diff). Epsilon two
+    ways: CONFIG eps_rms (TRUE float, e.g. 1e-6) is converted per-scale as
+    eps_c(m) = round(eps*2^36/U_m^2) with U_m = PHI^((m-BIAS)/K) -- floors
+    live in ambient counts AND ambient depends on m (SmolLM2 proved the
+    m-blind convention wrong at 10%-of-signal: 47dB -> 84dB on correction).
+    Legacy CONFIG eps_rms_c (raw counts, default 4514) honored when eps_rms
+    is absent (backward compat: every existing suite green unchanged).
+    The one float op per call follows the rope_tables precedent (setup-phase
+    deterministic, auditable); hot values stay integer."""
+    import math as _math
     N, _S = _phi_ops()
     x, w = vals
-    _, m_cov = _scales()
-    eps_c = int(config.get("eps_rms_c", 4514))
+    _, m_cov = _scales(config)
+    if "eps_rms" in config:
+        _Um = S.PHI ** ((m_cov - S.BIAS) / S.K)
+        eps_c = int(round(float(config["eps_rms"]) * float(1 << 36) / (_Um * _Um)))
+    else:
+        eps_c = int(config.get("eps_rms_c", 4514))
     return N.rmsnorm_int(x[0], x[1], x[2], w, m_cov, eps_c)
 
 
@@ -277,7 +289,7 @@ def op_rotary(vals, config, feeds):
     base frozen via CONFIG rope_base (default 10000.0)."""
     from chain.holo_phi import tmul, binop_fixed
     x, pos = vals
-    _, m_cov = _scales()
+    _, m_cov = _scales(config)
     base = float(config.get("rope_base", 10000.0))
     D = x[0].shape[-1]
     assert D % 2 == 0, f"head dim must be even, got {D}"
@@ -468,7 +480,7 @@ def op_clip(vals, config, feeds):
     """Clip triples to [LO,HI] float literals (holo clip_fixed). Exact
     lattice compare, no float arithmetic on values."""
     t, lo, hi = vals
-    _, m_cov = _scales()
+    _, m_cov = _scales(config)
     return H.clip_fixed(t, float(lo), float(hi), m_cov)
 
 
@@ -492,7 +504,7 @@ def op_rescale(vals, config, feeds):
     m2 = _int_arg(m2v, "RESCALE m2")
     if not (0 <= m2 < 65536):
         raise ValueError(f"RESCALE: scale out of range: {m2}")
-    _, m_cov = _scales()
+    _, m_cov = _scales(config)
     q = S.to_fixed(t[0], t[1], t[2], m_cov)
     return S.from_fixed(H.rescale_(q, m_cov, m2), m2)
 
@@ -520,7 +532,7 @@ def op_poolavg(vals, config, feeds):
     (t,) = vals
     if t[0].ndim != 3:
         raise ValueError(f"POOLAVG: HWC triples only, got ndim={t[0].ndim}")
-    _, m_cov = _scales()
+    _, m_cov = _scales(config)
     return N.avgpool_int(t[0], t[1], t[2], m_cov)
 
 
@@ -533,7 +545,7 @@ def op_deconv(vals, config, feeds):
     t, w = vals[0], vals[1]
     stride = _int_arg(vals[2], "DECONV stride")
     pad = _int_arg(vals[3], "DECONV pad")
-    _, m_cov = _scales()
+    _, m_cov = _scales(config)
     Wd = {"s": w[0], "e": w[1], "z": w[2]}
     return N.deconv_int(t[0], t[1], t[2], Wd, m_cov, stride=stride, pad=pad)
 
@@ -557,7 +569,7 @@ def op_interp(vals, config, feeds):
     sy, sx = float(syv), float(sxv)
     if not (_is_dyadic(sy) and _is_dyadic(sx)):
         raise ValueError(f"INTERP: non-dyadic scale ({sy},{sx}) is a LOWERING ERROR")
-    _, m_cov = _scales()
+    _, m_cov = _scales(config)
     q = S.to_fixed(t[0], t[1], t[2], m_cov)
     H, W = q.shape[0], q.shape[1]
     C = q.shape[2] if q.ndim == 3 else 1
@@ -572,7 +584,7 @@ def op_conv(vals, config, feeds):
     same as conv paths -- kernel_triples-identical). m_acc/m_out from
     frozen scales. 0-diff vs conv_trip trivially (same fn, proves wiring)."""
     t, k = vals
-    m_acc, m_cov = _scales()
+    m_acc, m_cov = _scales(config)
     return H.conv_trip(t, np.ascontiguousarray(k, dtype=np.float64),
                        m_acc, m_out=m_cov)
 
@@ -585,7 +597,7 @@ def op_mixdyad(vals, config, feeds):
     on the False branch)."""
     from chain.holo_phi import binop_fixed
     d, w, s = vals
-    _, m_cov = _scales()
+    _, m_cov = _scales(config)
     if w is None:
         return d
     import phi_core.lattice as S

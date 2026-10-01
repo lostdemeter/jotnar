@@ -11,7 +11,7 @@
 # calibration, first instance of the GAPS backlog item, documented here).
 CONFIG m_acc 35492
 CONFIG m_cov 35492
-CONFIG eps_rms_c 68719
+CONFIG eps_rms 1e-6
 
 IN H
 IN wup

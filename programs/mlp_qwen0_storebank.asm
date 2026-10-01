@@ -6,7 +6,7 @@
 # MATMUL form and lands the pruned bank inside its predicted cost.
 CONFIG m_acc 35492
 CONFIG m_cov 35492
-CONFIG eps_rms_c 68719
+CONFIG eps_rms 1e-6
 
 IMPORT "storebank.asm"
 

@@ -84,6 +84,23 @@ def main():
     check("asm-rmsnorm", all(bool((a == b).all()) for a, b in zip(
         REGISTRY["RMSNORM"][0]([x, w], {"eps_rms_c": "4514"}, {}),
         N.rmsnorm_int(*x, w, mc, 4514))), "0-diff at same (m, eps)")
+    # eps_rms (true float) must be READ, not silently ignored: eps=1.0
+    # dominates any row energy, so it MUST differ from legacy (on normal
+    # fixtures both epsilons are negligible and identical outputs prove
+    # nothing -- the huge-eps probe is the tripwire).
+    # (A CONFIG key silently ignored by its op cost us a full SmolLM2
+    # misdiagnosis round -- this gate exists so it cannot recur.)
+    _re = REGISTRY["RMSNORM"][0]([x, w], {"eps_rms": "1.0"}, {})
+    _rl = REGISTRY["RMSNORM"][0]([x, w], {"eps_rms_c": "4514"}, {})
+    check("asm-epsrms-read",
+          any(bool((a != b).any()) for a, b in zip(_re, _rl)),
+          "eps_rms=1.0 moves output (key is read)")
+    _re6 = REGISTRY["RMSNORM"][0]([x, w], {"eps_rms": "1e-6"}, {})
+    from phi_core import lattice as _S2
+    _U = float(_S2.PHI ** ((mc - _S2.BIAS) / _S2.K))
+    _ec = int(round(1e-6 * float(1 << 36) / (_U * _U)))
+    check("asm-epsrms-match", all(bool((a == b).all()) for a, b in zip(
+        _re6, N.rmsnorm_int(*x, w, mc, _ec))), "matches direct call")
     rows = [[-0.5, 0., 0.5], [0.2, 0.2, 0.2], [0.9, -0.9, 0.], [0., 0., 0.]]
     s = S.encode(np.array(rows))
     g = REGISTRY["SOFTMAX"][0]([s], {}, {})

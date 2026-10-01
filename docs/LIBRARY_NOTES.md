@@ -566,6 +566,25 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-078: eps must scale with ambient + uniform threading [CLOSED]
+
+ SmolLM2 parity failed at 10dB; bisection exonerated execution
+ (bit-identical) and found 5%-uniform-relative error starting INSIDE
+ rmsnorm: eps_c m-blind while ambient counts scale 1/U_m^2 (10% of signal
+ at SmolLM magnitudes, 0.1% at Qwen's -- it hid where it was negligible).
+ Fix: CONFIG eps_rms (true float) converted per-scale (47->84dB direct,
+ 48.9dB end-to-end two-stage). Companion find: RMSNorm never read CONFIG
+ at all (only 4 ops threaded) -- now EVERY bridging op honors m_acc/m_cov
+ (verified: no call site lacks config; defaults green unchanged), with
+ asm-epsrms-read gating that no key is silently ignored. Laws: cover
+ TIGHTLY (bigger m starves counts -- non-monotonic, measured both ways);
+ eps_c(m) = eps*2^36/U_m^2; goldilocks is definitional (m_of), not vibes.
+ Single-stage smolm2 listing removed (superseded, not kept as relic).
+ Postscript (same round): uniform threading broke test_realw 51.8->22.3dB
+ (RMSNorm started honoring a legacy-eps CONFIG it used to ignore --
+ iatrogenic, caught by the suite in the SAME round). Migrated the three
+ mlp_qwen0 listings to eps_rms: parity recovered to 56.27dB, PAST the
+ original. Uniformity has migration costs; the suite prices them same-day.
 ## #LIB-077: v1.6 scoped — Echion survey + constructing doctrine [CLOSED]
 
  Echion_Revisited surveyed (106-test parallel program, not a parts bin):

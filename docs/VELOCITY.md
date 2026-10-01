@@ -433,6 +433,27 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: anatomy-1 + eps law (CLOCKED)
+
+- SmolLM2 survey + two-stage split + uniform threading + true-eps +
+  test_anatomy.py at 48.9dB (#LIB-078).
+- Wall time: clock 15:28:21Z -> 15:48Z (~20 min: survey + 3 misdiagnoses
+  + threading + eps law + migration + 41-suite verification).
+- Results: anatomy instance 1 green; eps law stated with formula.
+- Surprises:
+  1. THREE wrong theories before the mechanism (two-scale-can't-separate
+     disproven by construction; split-key insensitive by dominant term;
+     matmul blamed while exonerated bit-identical): bisection beats
+     narrative every time, and "unchanged to 4 sig figs" is data (it
+     fingered the dominant term).
+  2. 5%-uniform-relative error with exact integer ops is IMPOSSIBLE on
+     paper -- impossibility claims locate false premises fast (the
+     premise was m-blind eps, dead in one direct probe: 47->84dB).
+  3. Blind replace-all hit our own definition body (H._load_scales took
+     the override): bulk edits need the anchor READ (which def? whose
+     scope?), never pattern-matched. Fourth instance of the species
+     if anyone's counting -- the process note in LIB-070 stands.
+
 ## 2026-10-01: v1.6 scoped from survey (CLOCKED)
 
 - Echion inventory (data + mechanisms) + ROADMAP_v1_6 (#LIB-077).
