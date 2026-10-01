@@ -433,6 +433,22 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: data-freeze decision, both written small (CLOCKED)
+
+- Wikitext sparsity probe + echion-store vs S17 side-by-side + decision
+  (#LIB-081).
+- Wall time: clock 16:13:55Z -> 16:16:30Z (~3 min: probes + decision).
+- Surprises:
+  1. 12x size gap (843KB vs 70KB) for identical content: formats are
+     NOT interchangeable veneers -- structure has mass. Measure both,
+     then choose by the numbers (the roadmap said exactly this).
+  2. echion import clean (0.0s, zero heavy deps): a good citizen either
+     way, which made "adopt the envelope, skip the dependency" an easy
+     honest middle instead of a rationalization.
+  3. My manifest needed one fix (format key overrode the envelope's):
+     even config-shaped code fails loud under this program's reader.
+     Their reader refused my sloppiness -- good reader.
+
 ## 2026-10-01: SCAN drill + mamba pole + design formal (CLOCKED)
 
 - SCAN op + 3 gates + scan_demo.asm + mamba weights/config + design

@@ -566,6 +566,19 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-081: data-freeze decision — split by content kind [CLOSED]
+
+ Wrote both small (3000 wikitext bigrams): echion-store/1 (0.1s, 843KB,
+ manifest + per-record digests + Registry class) vs S17 npy+md5 (instant,
+ 70KB, whole-file integrity). Verdict, no armchair: counts/tensors ->
+ S17 (12x smaller, lattice-adjacent, matches samples/depth + stores/
+ precedent); records/labels/eval -> JSONL in echion-store/1 ENVELOPE
+ (same keys: type/manifest/format/n_records) with OUR OWN 30-line
+ reader/writer (no cross-repo import -- machine-specific coupling is the
+ absolute-path bug in a new costume; format-compatible, dependency-free).
+ Wikitext side: 500k tokens in 0.2s from cached parquet, 204k distinct
+ bigrams, top-1k 24% (Zipfian, as expected -- counts will work).
+ Roadmap v1.6 gate 2 decided (was: decide by writing both).
 ## #LIB-080: SCAN drill + mamba pole + design formalized [CLOSED]
 
  SCAN mnemonic (op + sig + 3 gates: 0-diff, 69-78dB vs float, repeat ==

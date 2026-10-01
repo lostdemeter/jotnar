@@ -39,9 +39,14 @@ list = "how LLMs are supposed to work" in our language + a variance table
 wikitext counts (bigrams? skip-grams? -- measured sparsity decides) +
 Echion batteries/pairs/edges/grokipedia as content+eval. Freeze format per
 S17 (hash-key sidecars) or echion-store/1 (manifests + digests) -- decide
-by writing both small and comparing (no armchair).
+ by writing both small and comparing (no armchair).
 
-### 3. Construction (the model)
+ DECIDED 2026-10-01 (#LIB-081): split by kind -- counts/tensors via S17
+ (12x smaller, instant), records/labels/eval via echion-store/1-compatible
+ JSONL with our own reader/writer (no cross-repo import). Wikitext: 500k
+ tokens/0.2s, 204k bigrams, Zipfian -- counts will work.
+
+ ### 3. Construction (the model)
 
 Template frames x relation edges over ENGRAM stores, retrieval via
 assoc_mem machinery, fingerprints as verification. Small vocabulary,
