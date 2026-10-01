@@ -302,6 +302,24 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   3. Giant dir0 at 22-23dB on all three domains: the causal hierarchy
      has a context-invariant top. Whatever "important" means, dir0 is it.
 
+## 2026-10-01: blind prediction, edit-with-preview (CLOCKED)
+
+- Calibrate-once + 3 blind predictions confirmed at +0.2dB +
+  predictor standardized (#LIB-056).
+- Wall time: clock 12:39:00Z -> 12:41Z (~2 min: calibration +
+  3 blind runs + predictor + docs).
+- Surprises:
+  1. +0.2/+0.2/+0.3 on all three: prediction to a fraction of a dB on
+     never-run interventions. The advantage is operational, not
+     theoretical: preview any edit's delta before running it.
+  2. Two whitespace/structural edit slips in one round (a no-op "success",
+     an eaten section header) -- both caught by read-back before commit.
+     The verify-writes rule now covers docs edits explicitly, not just
+     code: grep the landing zone, every time.
+  3. Consistent +0.2 bias left unexplained ON PURPOSE (one line). The
+     doctrine prices honesty over completeness; a third decimal of
+     understanding can wait for more data.
+
 ## 2026-10-01: factorization (CLOCKED)
 
 - Energy-factored residual + key-alignment law + form gate + writeup

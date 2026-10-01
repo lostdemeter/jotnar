@@ -58,6 +58,21 @@ def selectivity(ro):
             for idx, v in zip(ro["idx"], t)]
 
 
+def calibrate_C(sval, align_rms, gdb):
+    """Fit the residual constant: dB = -20log(s) - 10log(align_rms^2) + C.
+    Returns C (mean over calibration directions)."""
+    sval = np.ascontiguousarray(sval, dtype=np.float64)
+    align_rms = np.ascontiguousarray(align_rms, dtype=np.float64)
+    gdb = np.ascontiguousarray(gdb, dtype=np.float64)
+    return float(np.mean(gdb + 20 * np.log10(sval)
+                         + 10 * np.log10(align_rms ** 2 + 1e-30)))
+
+
+def predict_db(s, align_rms, C):
+    """Predicted ablation dB for a direction never run. Pure statics."""
+    return float(-20 * np.log10(s) - 10 * np.log10(align_rms ** 2 + 1e-30) + C)
+
+
 def shelf_map(readouts, thresh=55.0):
     """Multi-context shelves over a list of readout dicts: per-context dead
     sets + the intersection (dead EVERYWHERE = safe shelves) + union.

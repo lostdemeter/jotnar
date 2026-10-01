@@ -566,6 +566,17 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-056: blind prediction — edit-with-preview (0.2dB) [CLOSED]
+
+ Calibrate C once (29.347), predict never-run dirs from statics: 39.3->39.5,
+ 43.6->43.8, 43.2->43.5 (errs +0.2/+0.2/+0.3, locked before running).
+ Predictor standardized (calibrate_C/predict_db; logic gated exact,
+ lattice accuracy measured). Consistent +0.2 bias noted unexplained
+ (quantization-floor candidate, one line not a theory). Uses unlocked:
+ cheap readouts (statics + handful), principled pruning (cut by predicted
+ share at stated cost), implant aiming. Second no-op edit caught en route
+ (whitespace-only change reported success -- verify writes by read-back,
+ the standing rule that keeps earning).
 ## #LIB-055: factorization — content is key alignment (0.998) [CLOSED]
 
  residual = dB + 20log(s) vs -10log(mean key-alignment^2): corr 0.998 on

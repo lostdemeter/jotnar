@@ -99,6 +99,27 @@ generalization shipped `s[24]` unparameterized (wrong-magnitude ablation)
 -- found by reading, fixed, replay-verified identical. Generalization
 without replay proof is how mirrors drift (cf #LIB-014 postscript).
 
+## Using it: blind prediction (2026-10-01)
+
+Calibrate C on the 112 measured dirs (C=29.347), predict three NEVER-RUN
+directions from statics alone -- locked before running:
+
+| dir | predicted | measured | err |
+|---|---|---|---|
+| 100 | 39.3dB | 39.5dB | +0.2 |
+| 300 | 43.6dB | 43.8dB | +0.2 |
+| 700 | 43.2dB | 43.5dB | +0.3 |
+
+Edit-with-preview works: any intervention's delta is knowable before it
+runs (calibrate once per matrix/regime, predict freely). The consistent
++0.2-0.3 bias is noted, not explained (quantization floor candidate --
+one line, not a theory). Predictor standardized as calibrate_C/predict_db
+(chain/read.py, logic gated exact as read-predictor; lattice accuracy
+measured at ~0.2dB). Uses unlocked: cheap full readouts (statics + a
+calibration handful instead of full sweeps), principled pruning (cut by
+predicted share with stated dB cost), implant aiming (pick output
+directions by predicted effect).
+
 ## Cross-context stability (second prompt, same 112 dirs)
 
 Prompt 2 (different domain, subword tokens):

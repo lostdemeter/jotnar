@@ -106,6 +106,30 @@ def main():
     gap = float(np.abs(d_direct - d_factored).max())
     check("read-factor-form", gap < 1e-12,
           f"maxabsdiff {gap:.1e} (float rounding, not formula)")
+    # predictor logic (synthetic, instant): calibrate on half the dirs,
+    # predict the other half -- exact same code path as the real 0.2dB
+    # demonstration (chain/read.py calibrate_C/predict_db).
+    rng2 = np.random.default_rng(1)
+    Xs = rng2.normal(size=(6, 9))
+    Ws = rng2.normal(size=(9, 10))
+    Us, ss, Vts = np.linalg.svd(Ws, full_matrices=False)
+    Ys = Xs @ Ws
+    cal, held = [0, 2, 4, 6, 8], [1, 3, 5, 7]
+    gcal = []
+    for i in cal:
+        d = Ys - (Xs @ (Ws - ss[i] * np.outer(Us[:, i], Vts[i])))
+        mse = float((d ** 2).mean())
+        gcal.append(10 * np.log10(1.0 / mse))
+    al = np.sqrt(((Xs @ Us[:, cal]) ** 2).mean(0))
+    C = RD.calibrate_C(ss[cal], al, np.array(gcal))
+    errs = []
+    for i in held:
+        a = float(np.sqrt(((Xs @ Us[:, i]) ** 2).mean()))
+        d = Ys - (Xs @ (Ws - ss[i] * np.outer(Us[:, i], Vts[i])))
+        mse = float((d ** 2).mean())
+        errs.append(abs(RD.predict_db(ss[i], a, C) - 10 * np.log10(1.0 / mse)))
+    check("read-predictor", max(errs) < 0.5,
+          f"worst held-out err {max(errs):.2f}dB (logic exact, lattice adds ~0.2)")
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 
