@@ -1,0 +1,30 @@
+{
+  "n": 8,
+  "rates": {
+    "glue": 1.0,
+    "unk": 0.125
+  },
+  "worst": {
+    "glue": [
+      [
+        "alexander the great",
+        "0.60 alexander the great the battle of the great and the battle and the roman and"
+      ],
+      [
+        "cleopatra and antony",
+        "0.60 cleopatra and antony and the great and roman and the great's the roman and a"
+      ],
+      [
+        "caesar conquered gaul",
+        "0.53 caesar <unk> gaul and the great and the roman and the the roman history the"
+      ]
+    ],
+    "unk": [
+      [
+        "caesar conquered gaul",
+        "caesar <unk> gaul and the great and the roman and the the roman history the"
+      ]
+    ]
+  },
+  "base_glue": 0.24094020888338513
+}

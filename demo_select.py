@@ -59,7 +59,7 @@ def main():
                 * (1 - np.ascontiguousarray(t[2]).astype(np.float64)))[-1]
 
     args, n, i = [], 20, 1
-    topk, seedn, cand, nrep = 12, 7, 6, 3
+    topk, seedn, cand, nrep, gpen = 12, 7, 6, 3, 0.5
     while i < len(sys.argv):
         a = sys.argv[i]
         if a == "--n" and i + 1 < len(sys.argv):
@@ -74,11 +74,16 @@ def main():
         elif a == "--cand" and i + 1 < len(sys.argv):
             cand = int(sys.argv[i + 1])
             i += 2
+        elif a == "--gpen" and i + 1 < len(sys.argv):
+            gpen = float(sys.argv[i + 1])
+            i += 2
         else:
             args.append(a)
             i += 1
     seed = " ".join(args) if args else "alexander the great"
     ids = [vocab.get(w.lower(), 0) for w in seed.split()]
+    _GLUEIDS = {vocab[w] for w in ("the", "and", "of", "in", "a", "to",
+                "with", "as", "for", "on", "by", "at", "is", "was") if w in vocab}
     try:
         attested = set(json.load(open(os.path.join(dd, "attested.json")))["attested_shapes"])
     except Exception:
@@ -97,7 +102,13 @@ def main():
                 if pat in attested:
                     sh += 1
         shape = min(sh / max(len(ws) - 2, 1) / 2.0, 1.0)
-        return 0.4 * bloom + 0.25 * rep + 0.15 * q + 0.2 * shape, bloom, rep, q, shape
+        _GLUE = {"the", "and", "of", "in", "a", "to", "with", "as", "for",
+                 "on", "by", "at", "from", "is", "was", "were", "are", "be",
+                 "it", "that", "this", "an", "or", "his", "her", "its"}
+        _gr = sum(1 for x in ws if x in _GLUE) / max(len(ws), 1)
+        glue = 1.0 - min(abs(_gr - 0.24) / 0.30, 1.0)
+        return (0.35 * bloom + 0.20 * rep + 0.15 * q + 0.15 * shape
+                + 0.15 * glue), bloom, rep, q, shape, glue
 
     best, best_f = None, -1.0
     for c in range(max(cand, 1)):
@@ -106,6 +117,8 @@ def main():
         for _ in range(n):
             lg = logits_of(out).copy()
             lg[0] = -1e9
+            for _j in _GLUEIDS:
+                lg[_j] -= gpen
             if len(out) >= nrep - 1:
                 seen = {tuple(out[k:k + nrep]) for k in range(len(out) - nrep + 1)}
                 prefix = tuple(out[-(nrep - 1):]) if nrep > 1 else ()
@@ -117,11 +130,11 @@ def main():
             w[keep] = np.exp(lg[keep] - lg[keep].max())
             w = w / w.sum()
             out.append(int(rng.choice(len(w), p=w)))
-        f, bh, rp, q, sh = fitness(out)
+        f, bh, rp, q, sh, gl = fitness(out)
         if f > best_f:
-            best, best_f, best_parts = list(out), f, (bh, rp, q, sh)
+            best, best_f, best_parts = list(out), f, (bh, rp, q, sh, gl)
     print(f"seed: {seed} (cand={cand} fitness={best_f:.3f} "
-          f"bloom={best_parts[0]:.3f} rep={best_parts[1]:.3f} q={best_parts[2]:.3f} shape={best_parts[3]:.3f})")
+          f"bloom={best_parts[0]:.3f} rep={best_parts[1]:.3f} q={best_parts[2]:.3f} shape={best_parts[3]:.3f} glue={best_parts[4]:.3f})")
     print("out :", " ".join(inv.get(j, "<unk>") for j in best))
 
 

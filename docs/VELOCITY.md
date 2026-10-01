@@ -1171,3 +1171,17 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   All host-boundary; listings untouched. Fixed en route: topic-id
   set bug (int-in-strdict, always empty -- caught by identical
   outputs, the tripwire that works).
+
+## 2026-10-01: output-driven loop -- audit finds glue, penalty fixes (CLOCKED)
+
+- scripts/audit_outputs.py (failure modes counted over flagship
+  generations): glue 8/8 (0.60 vs 0.24 corpus), unk 1/8, repeat 0/8,
+  fragment 0/8, thin 0/8. Outputs drove the fix list, top mode first.
+- Selection glue-term alone changed nothing (all candidates equally
+  gluey -- selection re-ranks distributions, can't shift them; honest
+  negative, kept as measure). Decoding glue-penalty dose-responds
+  (0.60->0.47, bloom holds): wired as gpen=0.5 default in demo_select
+  + glue-term in fitness. Best output yet: 'ptolemaic propaganda ...
+  roman power persian campaigns ... east' at glue 0.22.
+- Machine-level glue (top1 hedging) stays the structural fix; the
+  audit stays unmedicated to track it (re-audit after top1 moves).
