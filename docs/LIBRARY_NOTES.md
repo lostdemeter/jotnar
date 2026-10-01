@@ -566,6 +566,20 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-072: T-transform specified — fold, ranges, one-assert fix [CLOSED]
+
+ v1.4 gate 4 lands as DESIGN (docs/T_TRANSFORM.md), not experiment: the
+ exp path already max-subtracts (only the BIAS bridge blocks); the bridge
+ FOLDS out-of-range to +/-1.0 (never saturates -- read, not assumed);
+ per-row ranges measured all 9 DDColor layers (7.4 .. 614.4) + Qwen 963.
+ Fix splits at the seam: phi-core relaxes one assert (bridge param, LUTs
+ untouched, BIAS callers safe) offered as staged branch; our side ships
+ max-sub composition (ARGMAX+GATHER-tile+SUB at covering m) with gates
+ ready (0-diff, full-range parity bar 40, in-contract regression).
+ Alternatives killed WITH measurements/reasons (global shift, clip,
+ temperature, triple-native exp). Tiling ids honestly named as the ugly
+ corner (TILE mnemonic if demanded). Chasing every lead converged: most
+ died, one assert survived.
 ## #LIB-071: selection-side decomposition — S08 first instance [CLOSED]
 
  programs/attn_mini.asm + test_select.py: output linear in V at fixed P

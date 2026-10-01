@@ -433,6 +433,25 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: T-transform specified (CLOCKED)
+
+- Range survey + obstruction analysis + two-part spec + alternatives
+  killed (#LIB-072). No implementation (cross-repo by design).
+- Wall time: clock 14:15:20Z -> 14:17:30Z (~2 min: code read +
+  range survey + spec + docs).
+- Results: exp path exonerated, bridge indicted (fold); 9-layer ranges;
+  one-assert fix + composition pattern.
+- Surprises:
+  1. The bottleneck was ONE assert, not the LUT machinery: chasing
+     every lead converged instead of sprawling. Breadth first, then
+     the survivor gets the depth. Research order matters.
+  2. Alternatives died fastest when priced against measurements
+     (global shift: one counterexample; clip: e^-5 vs e^-1 arithmetic;
+     temperature: semantics change, out). Kill criteria beat opinions.
+  3. DDColor L0 needs only m_of(~16): the first customer is the
+     CHEAPEST row, not the headline 429. Start where the gap is
+     smallest -- strangely easy to forget.
+
 ## 2026-10-01: selection-side, S08 first instance (CLOCKED)
 
 - Minimal attention listing + 4 gates incl. measured contract (v1.4
