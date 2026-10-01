@@ -566,6 +566,18 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-077: v1.6 scoped — Echion survey + constructing doctrine [CLOSED]
+
+ Echion_Revisited surveyed (106-test parallel program, not a parts bin):
+ qa_battery 41 + v2 32 (behavioral gates with expects), voice_pairs 8
+ (paraphrase twins), edge_store, grokipedia trio (factual content),
+ relation vectors (consistency+transfer), 10 templates + mining/search/
+ promotion, MI fingerprints, teacher-student bootstrap, versioned store.py
+ (manifests+digests), intgate. v1.6 = templates x relations x stores with
+ OWN data (wikitext counts + Echion content/eval), "constructing" never
+ "training" (their word, adopted). Start: comparative anatomy (SmolLM2,
+ GPT-2, mamba, templates as 4th column) before any building -- recognition
+ first, per the process that keeps working.
 ## #LIB-076: demo 3 + gallery, eyeball-verified [CLOSED]
 
  test_demo3.py: base/halved/fresh assoc stores all 100% @8 flips -- two

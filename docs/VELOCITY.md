@@ -433,6 +433,21 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: v1.6 scoped from survey (CLOCKED)
+
+- Echion inventory (data + mechanisms) + ROADMAP_v1_6 (#LIB-077).
+- Wall time: clock 15:24:48Z -> 15:26Z (~1 min: survey + roadmap).
+- Surprises:
+  1. Echion is a PARALLEL program (templates/batteries/fingerprints/
+     bootstrap/store), not salvage: v1.6 inherits an eval culture
+     (expects, shapes, batteries) and a word ("constructing").
+     Survey before salvage -- the map found the territory organized.
+  2. qa batteries carry EXPECTS: behavioral gates with answers, the
+     exact thing demo-2's success criterion wanted. Reuse beats design.
+  3. store.py's manifest+digest discipline vs our hash-sidecars: two
+     provenance designs for the data-freeze decision. Writing both
+     small beats arguing (roadmap gate 2 says so explicitly).
+
 ## 2026-10-01: demo 3 + gallery, eyeball-verified (CLOCKED)
 
 - Two consecutive previews (test_demo3.py) + 4 verified figures
