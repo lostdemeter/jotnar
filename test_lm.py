@@ -106,6 +106,27 @@ def main():
     print(f"lm-heldout: top1={t1/nq:.3f} top5={t5/nq:.3f} ppl={ppl:.1f} "
           f"(n={nq}, coverage={man['coverage']:.3f})")
     check("lm-heldout-runs", nq > 100, f"{nq} queries scored")
+    # demo diversity (Echion pattern: selection over candidates): same seed
+    # twice identical (seeded replay), sampled unique-ratio BEATS greedy on
+    # the same prefix (comparative bar -- robust to absolute levels).
+    import subprocess as _sp
+
+    def _demo(*args):
+        r = _sp.run([sys.executable, os.path.join(root, "demo_lm.py")]
+                    + list(args), capture_output=True, text=True, cwd=root)
+        lines = [l for l in r.stdout.split("\n") if l.startswith("out :")]
+        return lines[0][len("out :"):] if lines else ""
+
+    _o1 = _demo("alexander", "the", "great", "--n", "8", "--topk", "8",
+                "--seed", "3", "--cand", "4", "--no-repeat", "3")
+    _o2 = _demo("alexander", "the", "great", "--n", "8", "--topk", "8",
+                "--seed", "3", "--cand", "4", "--no-repeat", "3")
+    check("lm-demo-deterministic", _o1 == _o2 and len(_o1) > 0,
+          f"seeded replay identical ({len(_o1.split())} tokens)")
+    _og = _demo("alexander", "the", "great", "--n", "8")
+    _u = lambda s: len(set(s.split())) / max(len(s.split()), 1)
+    check("lm-demo-diverse", _u(_o1) > _u(_og),
+          f"sampled {_u(_o1):.2f} > greedy {_u(_og):.2f} unique-ratio")
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

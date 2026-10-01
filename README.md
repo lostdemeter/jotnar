@@ -46,7 +46,7 @@ Check | Result
 `test_anatomy.py` | v1.6: SmolLM2 48.9dB two-stage + GPT-2 LN-GS 57.9dB with DOWN measured 19.9dB (cancellation law); SKIPs without HF cache (see docs/LLM_DESIGN.md)
 `test_lm.py` | v1.6 construction: bigram LM from frozen counts (no trained weights) memorizes 200/200, held-out top1 0.41/top5 0.61/ppl 47
 `test_lm_loop.py` | v1.6 gate 4: loop on own creature -- 26/26 column-silence flips exact, 5/5 implants predicted (creation with guarantee)
-`demo_lm.py` | our LLM speaking: greedy bigram generation through the listing (try `python3 demo_lm.py alexander the great --n 30`)
+`demo_lm.py` | our LLM speaking through the listing (greedy; try `python3 demo_lm.py alexander the great --n 30 --topk 12 --seed 7 --no-repeat 3 --cand 6` for sampled: seeded replay identical, diversity gated in test_lm.py)
 `test_mamba.py` | v1.6 anatomy-mamba: real selective-scan trajectory 46.3dB via repeat-threading (abar/h/Bx ranges reported; SKIPs without HF cache)
 `test_asm.py` | incl. SCAN drill (0-diff, float parity, repeat==manual) + LAYERNORM exposure (44 mnemonics; see docs/LANGUAGE.md)
 `docs/T_TRANSFORM.md` | v1.4 gate 4: full-range attention specified (fold obstruction, 9-layer ranges, one-assert phi-core fix + our composition; DDColor L0 needs m_of(~16))

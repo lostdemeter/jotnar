@@ -566,6 +566,17 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-086: repetition beaten by selection (Echion pattern) [CLOSED]
+
+ Greedy bigram cycles ("and the great" attractor); Echion beats this by
+ SELECTION (generate candidates, keep by unique-ratio fitness), not by
+ decoding tricks -- adopted verbatim: --topk/--temp/--seed/--no-repeat/
+ --cand at the demo (host) boundary, model+listing untouched. Same seed
+ twice bit-identical output (0.94 unique-ratio vs greedy 0.36, real
+ Alexandrine history out). Gates: determinism + comparative diversity
+ (sampled > greedy on same prefix -- robust to absolute levels).
+ Caution logged: comparative bars move with the baseline; if greedy ever
+ improves, the bar follows it (relative, not absolute -- stated).
 ## #LIB-085: demo speaks — greedy attractor as diagnosis [CLOSED]
 
  demo_lm.py: seed words -> greedy chain through bigram_lm.asm -> printed

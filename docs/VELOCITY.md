@@ -449,6 +449,19 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   3. Third-patch-on-one-function means rewrite: patch count is a
      complexity signal. Heed it at three, not thirteen.
 
+## 2026-10-01: repetition beaten by selection (CLOCKED)
+
+- Echion survey (selection, not tricks) + demo flags + gates (#LIB-086).
+- Wall time: clock 16:32:46Z -> 16:35Z (~2 min: survey + flags + gates).
+- Results: 0.94 unique-ratio, identical replay, gates green.
+- Surprises:
+  1. "How did Echion beat repetition" had a one-line answer (selection
+     by diversity fitness) sitting in bootstrap.py's docstring: survey
+     BEFORE solving netted the pattern in one grep. Ask the neighbors.
+  2. The demo speaks real history now (caesarion, ptolemy xii, persian
+     royal family): bigram statistics + selection compose into something
+     that reads like content. Weak models, honestly framed, still speak.
+
 ## 2026-10-01: loop on own creature, exact bands (CLOCKED)
 
 - Column-silence (26/26) + 5 implants (5/5) on the bigram LM (#LIB-084).
