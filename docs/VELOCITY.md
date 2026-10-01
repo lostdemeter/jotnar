@@ -1185,3 +1185,22 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   roman power persian campaigns ... east' at glue 0.22.
 - Machine-level glue (top1 hedging) stays the structural fix; the
   audit stays unmedicated to track it (re-audit after top1 moves).
+
+## 2026-10-01: ollama-in-loop REJECTED (two probes, numbers kept)
+
+- Rank agreement vs fitness: rho=0.37, then 0.49 with spread (bar
+  0.5). Mechanism: our fitness saturates by construction (blocking
+  forces real bigrams, all candidates 0.86-1.0) -- nothing to rank.
+  External judgment adds latency + nondeterminism + worse ranking
+  than frozen counts. Corpus judges; models propose at most.
+  Proposer role not pursued (topics already come from edges).
+
+## 2026-10-01: untied layer banks LATERAL, rejected (CLOCKED)
+
+- Distinct layer-2 bank (HN2 stats, unit-norm keys, own listing):
+  twin 0.743 + top1 0.350, EXACTLY tied numbers -- twice (out-of-body
+  stats, then in-body stats under bankhn). HN/HN2 geometries too
+  similar (both RMSNormed, shared Vb) for distinct keys to matter.
+  Depth helps via attention composition, not per-layer MLP content.
+  Rejected: tied stands (simpler, fewer params). Dead listing
+  removed; collector + keys kept as evidence.
