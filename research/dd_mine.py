@@ -11,7 +11,7 @@ project (object slots as label candidates).
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 DD = "/home/thorin/Documents/OpenCode/ddcolor_reverse"
 PTH = (os.path.expanduser("~/.cache/huggingface/hub/models--piddnad--"
@@ -43,7 +43,7 @@ def main():
         votes["out"] = out.detach()
 
     model.decoder.color_decoder.register_forward_hook(hook)
-    root = os.path.dirname(os.path.abspath(__file__))
+    root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
     paths = [
         os.path.join(root, "samples", "input_example.png"),
         "/home/thorin/Documents/OpenCode/rife_reverse/samples/f_012.png",

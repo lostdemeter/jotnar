@@ -433,6 +433,19 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: reorg — research/ moved + verified (CLOCKED)
+
+- 9 one-shots git-mv'd + path widening + index + rerun proof (#LIB-088).
+- Wall time: clock 16:50:54Z -> 16:54Z (~3 min: inventory + move +
+  widen + index + rerun).
+- Surprises:
+  1. Tests stay in root DELIBERATELY (44 files x __file__ anchors):
+     reorg scope ends where churn exceeds gain. Restraint documented
+     as a decision, not laziness.
+  2. Rerun-verified (identical decimals), not just compile-checked:
+     moved code that never re-executes is Schrödinger's code. One
+     rerun collapses it.
+
 ## 2026-10-01: T-transform follow-through, WIDE live (CLOCKED)
 
 - Vendor + 2 mnemonics + gates + reference (46 total) (#LIB-087).

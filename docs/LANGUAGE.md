@@ -291,7 +291,10 @@ New structures (mnemonics AND authored patterns) clear ONE bar
 **Promotion rule:** 2 uses = helper candidate, 3 uses = MUST promote to
 phi-core (branch, claim check, no main push — shared-repo rules). The
 extension drill (v1.0 Gate 5) is the timed form of this process: op + sig
-+ gate + docs + listing use, wall time in `docs/VELOCITY.md` (GELU: ~3 min).
++ gate + docs + listing use + census ACCESS class (new shapes get names;
+the drift gate asm-lang-coverage/test_census catches stragglers, but
+three post-hoc fixes prove the checklist must name it upfront), wall time
+in `docs/VELOCITY.md` (GELU: ~3 min).
 
 **Gate patterns to copy** (from `test_asm.py` / `test_xf_block.py`):
 - 0-diff vs source fn with identical args (wrappers add NOTHING).

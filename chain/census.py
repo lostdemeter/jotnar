@@ -39,7 +39,7 @@ ACCESS = {
     "MATMUL": "reduce", "BATCH_MATMUL": "reduce", "POOLAVG": "reduce",
     "ARGMAX": "reduce", "RMSNORM": "reduce", "LUMA": "reduce",
     "LAYERNORM": "reduce",    "SOFTMAX": "reduce", "ROTARY": "elementwise",
-    # neighborhood / sample reads
+    "TSHIFT": "reduce", "SOFTMAX_WIDE": "reduce",    # neighborhood / sample reads
     "SPLAT_BLUR": "stencil", "ISO_BLUR": "stencil", "GAUSS": "stencil",
     "CONV": "stencil", "DECONV": "stencil", "INTERP": "stencil",
     "WARP": "stencil", "MIXDYAD": "stencil",

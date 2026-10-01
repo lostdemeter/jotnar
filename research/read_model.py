@@ -9,8 +9,8 @@ import os
 import sys
 import time
 
-sys.path.insert(0, os.environ.get("PHI_CORE_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "phi-core")))
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.environ.get("PHI_CORE_DIR", os.path.join(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."), "..", "phi-core")))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 import numpy as np
 
@@ -91,7 +91,7 @@ def main():
                         np.ascontiguousarray(t[1])) * (
                             1 - np.ascontiguousarray(t[2]).astype(float))
 
-    root = os.path.dirname(os.path.abspath(__file__))
+    root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
     text = open(os.path.join(root, "programs", "mlp_qwen0.asm")).read()
     sdir = os.path.join(root, "programs")
     pay0 = {"H": enc(H), "wup": enc(Wupf.T), "wgate": enc(Wgf.T),

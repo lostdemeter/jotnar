@@ -566,6 +566,17 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-088: reorg — research/ + index, verified by rerun [CLOSED]
+
+ 9 one-shot scripts root -> research/ (git mv preserves history):
+ read_model/loop1/loop_turn/dd_mine/dd_footprint/dd_catalog/dd_modify/
+ dd_resonant/dd_score. Demos stay in root (entry points), tests stay in
+ root (suite surface; moving 44 would churn every __file__ anchor for
+ zero gain -- stated, not deferred). Path widening by sed (uniform
+ pattern) + research/README.md index. Verified, not assumed: reran
+ dd_score.py from the new location (identical 6.99..428.64), compileall
+ clean, full suite next. Docs prose mentions old paths; no live
+ copy-paste commands referenced them (checked), so history stands.
 ## #LIB-087: T-transform follow-through — WIDE mnemonics live [CLOSED]
 
  Vendored wide bridge (chain/wide.py, 0-diff vs branch, delete-on-merge)

@@ -8,7 +8,7 @@ modification (add/remove with predicted cost needs the full table).
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 DD = "/home/thorin/Documents/OpenCode/ddcolor_reverse"
 PTH = (os.path.expanduser("~/.cache/huggingface/hub/models--piddnad--"
@@ -71,7 +71,7 @@ def main():
                          mass["f_014"][q], ds["f_012"], ds["f_014"]))
             if (q + 1) % 25 == 0:
                 print(f"  {q+1}/100 ({time.time()-t0:.0f}s)", flush=True)
-    root = os.path.dirname(os.path.abspath(__file__))
+    root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
     with open(os.path.join(root, "docs", "PALETTE_CATALOG.csv"), "w") as f:
         w = csv.writer(f)
         w.writerow(["q", "hue_deg", "refine_norm", "mass_f012", "mass_f014",
