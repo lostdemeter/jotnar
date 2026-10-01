@@ -1106,3 +1106,36 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   100% @0/8 through assoc_mem; probe self-retrieval 9/18 measured
   (partial-cue collisions price disambiguation, not a bar); curated
   55 untouched (no regression). Content growth gated by construction.
+
+## 2026-10-01: scale-up v3 -- 174 edges, shapes grow (CLOCKED)
+
+- w20k mining (45k sents, minsup-3): 138 edges, glue-filtered to 123;
+  merged with groki 51 -> 174 (dedup exact). Recall 348/348 @0/8;
+  probes 159/174 (91%) full-triple; curated 55 unregressed. Test
+  generalized (>=51, count-agnostic -- scale-proofed gate).
+- Attest loop x2 seeds: shapes 58/102 -> 80/130 attested families;
+  selection + retrieval + cosine gates all re-green. Content 3x with
+  quality held: the scale procedure works.
+
+## 2026-10-01: scale quality -- hash-lex, phrase-norm, banked 202+3773 (CLOCKED)
+
+- Scale bug found by measurement: lex-extension patterns were
+  iteration-order-dependent, so banks disagreed per-word (hall of fame
+  64 vs 22). Fixed with hash-addressed lexicon (lex99: per-word
+  deterministic, order-independent) -- banks now agree exactly.
+- The fix exposed a real collision (battle/chaeronea-in vs
+  gaugamela-in 48-vs-50): pre-norm fragments in the committed merge.
+  Rebuilt with phrase-norm (donations x7+5+4 -> x17): 404/404 @8,
+  collision gone STRUCTURALLY (not bar-moved). 202 merged edges,
+  probes 195/202; w103 3773 re-frozen norm+hash.
+- Banked retrieval (curated/mined202/w103, dot-arbitrate, narrow wins
+  ties): exact-64 routing verified live on both domains.
+
+## 2026-10-01: piece-loop end-to-end -- zero UNK, fragment failure named (CLOCKED)
+
+- demo_piece.py (BPE -> bankhn2 piece stack S=16 -> word-decode):
+  'secretary of state' speaks (word-model UNKs it); zero UNK anywhere
+  by construction. Failure named: mid-word fragments ('pthe',
+  'mancand', 'bing') -- piece-boundary unmodeled at top1 0.06.
+  Speakability solved, accuracy is the fitting arc. Demo, not gate
+  (no bar met yet -- honestly labeled).
