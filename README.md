@@ -49,6 +49,7 @@ Check | Result
 `demo_lm.py` | our LLM speaking through the listing (greedy; try `python3 demo_lm.py alexander the great --n 30 --topk 12 --seed 7 --no-repeat 3 --cand 6` for sampled: seeded replay identical, diversity gated in test_lm.py)
 `test_mamba.py` | v1.6 anatomy-mamba: real selective-scan trajectory 46.3dB via repeat-threading (abar/h/Bx ranges reported; SKIPs without HF cache)
 `test_asm.py` | incl. SCAN drill (0-diff, float parity, repeat==manual) + LAYERNORM exposure (44 mnemonics; see docs/LANGUAGE.md)
+`test_tshift.py` | T-transform follow-through: TSHIFT + SOFTMAX_WIDE (89dB on +-500 scores, vendor 0-diff, legacy untouched; 46 mnemonics)
 `docs/T_TRANSFORM.md` | v1.4 gate 4: full-range attention specified (fold obstruction, 9-layer ranges, one-assert phi-core fix + our composition; DDColor L0 needs m_of(~16))
 `test_layer1.py` | ALL OK (CRUD Q5: layer-1 pattern reproduces -- spectrum 12x, giant 14dB, tracking -0.54; SKIPs without HF cache)
 `test_engram.py` | ALL OK (native storage: freeze/load roundtrip 6.4e-16, deterministic bytes, store-IO bit-exact; DDColor query/refine stores frozen; SKIPs without HF cache)

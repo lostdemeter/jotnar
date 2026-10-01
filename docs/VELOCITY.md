@@ -433,6 +433,19 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: T-transform follow-through, WIDE live (CLOCKED)
+
+- Vendor + 2 mnemonics + gates + reference (46 total) (#LIB-087).
+- Wall time: clock 16:44:52Z -> 16:47:30Z (~3 min: vendor + ops + gates).
+- Results: 89dB on +-500; legacy untouched; invariance bit-exact.
+- Surprises:
+  1. Translation invariance bit-exact IN-LATTICE (TSHIFT+WIDE ==
+     WIDE-direct): the algebra survives the substrate -- composition
+     of gated ops inherits the math's symmetries for free.
+  2. Contract split instead of contract change: legacy keeps its pin,
+     WIDE takes the range. Two contracts, both green, zero migration.
+     Splits beat migrations where behavior was pinned on purpose.
+
 ## 2026-10-01: demo speaks (CLOCKED)
 
 - demo_lm.py (greedy generation through the listing) + fixes (#LIB-085).

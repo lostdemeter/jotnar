@@ -566,6 +566,17 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-087: T-transform follow-through — WIDE mnemonics live [CLOSED]
+
+ Vendored wide bridge (chain/wide.py, 0-diff vs branch, delete-on-merge)
+ + TSHIFT + SOFTMAX_WIDE (op/sig/gates/docs: the drill pattern, 46 total)
+ + test_tshift.py: rowmax exact-0, 89.0dB parity on +-500 scores, legacy
+ bit-exact in-contract (contract SPLIT, both sides green), TSHIFT+WIDE ==
+ WIDE-direct bit-exact (translation invariance proven in-lattice!).
+ Legacy SOFTMAX keeps its pinned saturating behavior untouched (its gate
+ still passes: the pin documents the old contract, the new ops the new
+ one). v1.4 gate 4's "our composition" half is now RUNNING CODE, not a
+ readiness claim: full-range attention executes end-to-end in listings.
 ## #LIB-086: repetition beaten by selection (Echion pattern) [CLOSED]
 
  Greedy bigram cycles ("and the great" attractor); Echion beats this by

@@ -1,6 +1,6 @@
 # LANGUAGE.md — the assembly language, single reference (v1.0 Gate 2)
 
-44 mnemonics. Every line of every program is `OUTS = MNEMONIC(args)` plus
+46 mnemonics. Every line of every program is `OUTS = MNEMONIC(args)` plus
 four declarations (`CONFIG IN STATE RANGE`) and three composition forms
 (`DEF CALL IMPORT`). This file is the whole language: the tutorial (write
 your first listing in 15 minutes), the per-mnemonic contracts with examples,
@@ -115,7 +115,7 @@ or `OUT = GELU(a)` and compare against `torch.sigmoid` / `torch.gelu`.
 You have now used the generate-your-own-gate loop: propose, run, compare.
 Next: read `programs/xf_block.asm` with §4 open beside it.
 
-## 4. Mnemonic reference (44)
+## 4. Mnemonic reference (46)
 
 Notation: `NAME(in -> out)` + layout sig + contract one-liner + example +
 loud-failure. Arithmetic core (`ADD SUB MUL DIV`) refuses float inputs
@@ -141,6 +141,13 @@ loud-failure. Arithmetic core (`ADD SUB MUL DIV`) refuses float inputs
 **Transformer (block):**
 - `MATMUL/BATCH_MATMUL(*,* -> *)` — triples matmul @ m_acc (batch dims + B-broadcast). Inner dims must agree or fail WITH the transpose hint. Honor CONFIG `m_acc` (multi-regime listings). Ex: `Q = MATMUL(XN, wq)`.
 - `SOFTMAX($A -> $A)` — row softmax to probability triples. CONTRACT: inputs ≤1.0 abs (`to_fixed` saturates above it at BIAS — the T-transformation doctrine; out-of-contract saturates to softmax-of-clipped, pinned by gate). Ex: `P = SOFTMAX(SCORES)`.
+- `TSHIFT($A -> $A)` — row-max shift to ~0 (T-transform half 1, integer
+  max+subtract at m_acc). Composes with SOFTMAX_WIDE; TILE-decomposed
+  form waits on a TILE mnemonic. Ex: `S = TSHIFT(SCORES)`.
+- `SOFTMAX_WIDE($A -> $A)` — full-range row softmax (T-transform half 2:
+  wide bridge to ±2200, then the existing fixed path). Legacy SOFTMAX
+  keeps its pinned behavior; WIDE takes everything else (in-contract:
+  bit-exact twins, gated). Ex: `P = SOFTMAX_WIDE(S)`.
 - `RMSNORM($X,$W -> $X)` — per-row RMSNorm+weight; `eps_rms` (true float,
   converted per-scale) preferred, legacy `eps_rms_c` honored (counts valid
   only near their regime). Ex: `XN = RMSNORM(x, rms_w1)`.

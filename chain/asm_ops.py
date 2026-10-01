@@ -223,6 +223,45 @@ def op_softmax(vals, config, feeds):
     return S.from_fixed(c18, S.BIAS)
 
 
+def op_tshift(vals, config, feeds):
+    """Row-max shift in triples (T-transform half 1): x -> x - max(x) over
+    the last axis, via wide bridge at m_acc (CONFIG-overridable, uniform).
+    Exact-ish (integer max + subtract, no float); output triples carry
+    non-positive values with the row max at ~0. Composes with SOFTMAX_WIDE
+    (half 2); TILE-decomposed form (ARGMAX+GATHER+SUB in-text) waits on a
+    TILE mnemonic (stated horizon, same note as T_TRANSFORM.md)."""
+    from chain import wide as _W
+    (t,) = vals
+    m_acc, _ = _scales(config)
+    import phi_core.lattice as _S
+    q = _W.to_fixed_wide(t[0], t[1], t[2], m_acc)
+    mx = q.max(axis=-1, keepdims=True)
+    sh = q.shape
+    so, eo, zo = _S.from_fixed((q - mx).reshape(-1), m_acc)
+    return (so.reshape(sh).astype(np.int8), eo.reshape(sh).astype(np.int32),
+            zo.reshape(sh).astype(np.uint8))
+
+
+def op_softmax_wide(vals, config, feeds):
+    """Full-range row softmax (T-transform half 2): wide bridge at BIAS
+    (absolute counts to +-2200, NOT the folding narrow bridge) then the
+    EXISTING fixed path (untouched) + the same authored normalization as
+    SOFTMAX. Legacy SOFTMAX keeps its pinned saturating behavior EXACTLY
+    (contract: in-contract inputs only); WIDE takes everything else.
+    Pair with TSHIFT upstream for the full T-transform."""
+    from chain import wide as _W
+    N, S = _phi_ops()
+    from phi_core.numpy_ops import _assert_bound
+    (t,) = vals
+    q = _W.to_fixed_wide(t[0], t[1], t[2], S.BIAS)
+    num, den = N.softmaxN_fixed(q.reshape(t[0].shape), S.BIAS)
+    _assert_bound("asm-softmax-wide:num", num)
+    assert int(np.asarray(num).max(initial=0)) < (1 << 40), "softmax num overflows 2^18 shift"
+    den_b = np.asarray(den).reshape(np.asarray(den).shape + (1,) * (np.asarray(num).ndim - np.asarray(den).ndim))
+    c18 = S.tdiv(np.asarray(num) * np.int64(1 << 18), np.where(den_b == 0, 1, den_b))
+    return S.from_fixed(c18, S.BIAS)
+
+
 def op_rmsnorm(vals, config, feeds):
     """Per-row RMSNorm+weight (phi-core rmsnorm_int, 0-diff). Epsilon two
     ways: CONFIG eps_rms (TRUE float, e.g. 1e-6) is converted per-scale as
@@ -674,6 +713,8 @@ REGISTRY = {
     "SOFTMAX": (op_softmax, 1, 1),
     "RMSNORM": (op_rmsnorm, 2, 1),
     "SILU": (op_silu, 1, 1),
+    "TSHIFT": (op_tshift, 1, 1),
+    "SOFTMAX_WIDE": (op_softmax_wide, 1, 1),
     "SCAN": (op_scan, 3, 1),
     "LAYERNORM": (op_layernorm, 3, 1),
     "GELU": (op_gelu, 1, 1),
@@ -727,6 +768,8 @@ SIGS = {
     "SOFTMAX": (["$A"], ["$A"]),
     "RMSNORM": (["$X", "$W"], ["$X"]),
     "SILU": (["$A"], ["$A"]),
+    "TSHIFT": (["$A"], ["$A"]),
+    "SOFTMAX_WIDE": (["$A"], ["$A"]),
     "SCAN": (["$X", "$X", "$X"], ["$X"]),
     "LAYERNORM": (["$X", "$W", "$W"], ["$X"]),
     "GELU": (["$A"], ["$A"]),
