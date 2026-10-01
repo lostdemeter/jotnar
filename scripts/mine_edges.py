@@ -115,8 +115,11 @@ def mine(sents):
                 # object phrase: up to 2 tokens (named entities complete:
                 # 'republic of ireland', not 'republic of i')
                 obj = low[i + 2]
-                if i + 3 < len(toks) and low[i + 2] not in (
-                        "the", "a", "an") and toks[i + 3][0].islower():
+                if (i + 3 < len(toks) and low[i + 2] not in (
+                        "the", "a", "an") and toks[i + 3][0].islower()
+                        and low[i + 3] not in (
+                            "the", "a", "an", "of", "in", "and", "to",
+                            "for", "with", "on", "at", "as", "by")):
                     obj = low[i + 2] + " " + low[i + 3]
                 e = (toks[i].lower(), "of", obj, "possession")
                 cand[e] += 1

@@ -1,0 +1,7 @@
+{
+  "source": "wikitext103",
+  "minsup": 5,
+  "n_edges": 10672,
+  "n_keys": 10672,
+  "keys_sha": "fa2ef9c165c21528"
+}

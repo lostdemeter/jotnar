@@ -1274,3 +1274,16 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
 - Verdict PARKED: width needs content-fit, not transfer. No gate
   below flagship bars (honestly parked, recipe in fit manifest).
   D16 depth-4 remains flagship; D32 the wide runner.
+
+## 2026-10-01: content x53 -- w103 minsup-5, probe 0.893 (CLOCKED)
+
+- Miner: no-extend-with-articles (trailing-'the' junk class closed);
+  w103 minsup-5 -> 10,672 edges (top: hall of fame x2150, secretary
+  of state x1180), glue-junk 3.2%, tail reads clean.
+- Recall 40/40 @0/8 at 10.6k keys (exact cues self-match by margin
+  at any scale); probe 9528/10672 = 0.893 (202-bank: 0.965).
+  Misses concentrate in genuine ambiguity (month-of-that-year,
+  cambridge/oxford-sometimes) -- disambiguation consumer priced
+  at ~11%, not noise.
+- Demos repointed at w103m5 bank (secretary of state exact-64).
+  Verdict: scale 53x with graceful, concentrated degradation. GOOD.
