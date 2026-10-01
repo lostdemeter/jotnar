@@ -98,10 +98,77 @@ def main():
             words.append(a)
             i += 1
     seed = " ".join(words) if words else "alexander the great"
+    # word-trie (boundary modeling): pieces must walk valid word paths;
+    # at word boundaries only word-start pieces allowed (host decoding
+    # rule -- listings untouched, same doctrine as UNK-mask/no-repeat)
+    import glob as _glob, html as _html
+    from html.parser import HTMLParser as _HP
+    from collections import Counter as _C
+
+    class _TT(_HP):
+        def __init__(self):
+            super().__init__()
+            self.p = []
+            self.skip = False
+
+        def handle_starttag(self, tag, attrs):
+            self.skip = tag in ("script", "style", "nav", "header",
+                                "footer", "aside")
+
+        def handle_endtag(self, tag):
+            self.skip = False
+
+        def handle_data(self, d):
+            if not self.skip:
+                self.p.append(d)
+
+    _sents = []
+    for _f in sorted(_glob.glob("/home/thorin/Documents/OpenCode/Echion_Revisted/data/grokipedia/*.html")):
+        _t = _TT()
+        _t.feed(open(_f, encoding="utf-8", errors="replace").read())
+        _txt = _html.unescape(" ".join(_t.p))
+        _sents += [_s.strip() for _s in re.split(r"(?<=[.!?])\s+", _txt)
+                   if len(_s.strip().split()) >= 4]
+
+    def _encw(_w):
+        _syms = [c for c in _w] + ["</w>"]
+        while len(_syms) > 1:
+            _best = None
+            for _i in range(len(_syms) - 1):
+                _r = rank.get((_syms[_i], _syms[_i + 1]))
+                if _r is not None and (_best is None or _r < _best[0]):
+                    _best = (_r, _i)
+            if _best is None:
+                break
+            _, _i = _best
+            _syms = _syms[:_i] + [_syms[_i] + _syms[_i + 1]] + _syms[_i + 2:]
+        return [vocab[_p] for _p in _syms]
+
+    _trie = {}
+    for _w in {w for _s in _sents for w in re.findall(r"[a-z0-9']+", _s.lower())}:
+        _node = _trie
+        for _pid in _encw(_w):
+            _node = _node.setdefault(_pid, {})
     out = encode(seed)
     rng = np.random.default_rng(seedn)
+    frag = []
+    for _pid in out:
+        frag.append(_pid)
+        if inv[_pid].endswith("</w>"):
+            frag = []
     for _ in range(n):
         lg = logits_of(out).copy()
+        # boundary mask: walk trie with current fragment
+        _node = _trie
+        for _pid in frag:
+            _node = _node.get(_pid)
+            if _node is None:
+                break
+        _allowed = set(_node) if _node else set(_trie)
+        if _allowed:
+            _mask = np.ones_like(lg, dtype=bool)
+            _mask[list(_allowed)] = False
+            lg[_mask] = -1e9
         if len(out) >= nrep - 1:
             seen = {tuple(out[k:k + nrep]) for k in range(len(out) - nrep + 1)}
             prefix = tuple(out[-(nrep - 1):]) if nrep > 1 else ()
@@ -112,7 +179,11 @@ def main():
         w = np.zeros_like(lg)
         w[keep] = np.exp(lg[keep] - lg[keep].max())
         w = w / w.sum()
-        out.append(int(rng.choice(len(w), p=w)))
+        _nxt = int(rng.choice(len(w), p=w))
+        out.append(_nxt)
+        frag.append(_nxt)
+        if inv[_nxt].endswith("</w>"):
+            frag = []
     print("seed:", seed)
     print("out :", decode(out))
     print(f"({len(out)} pieces -> words, no UNK class)")

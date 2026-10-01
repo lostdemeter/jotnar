@@ -1151,3 +1151,13 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   0.055). Piece twins 0.566 -> 0.443 with top1 held throughout.
 - demo_piece points at fit: zero UNK everywhere; fragments persist
   ('ation', 'bint') -- boundary modeling named as the next structure.
+
+## 2026-10-01: boundary modeling -- word-trie piece mask (CLOCKED)
+
+- Fragment failure (0.2 invented-word rate: 'pthe', 'mancand') fixed
+  at the decoding boundary: trie over train-word piece paths masks
+  logits to valid continuations (word-starts at boundaries).
+  test_piece_bound ALL OK (0 invented, replay identical, 1514
+  word-starts). Listings untouched (rule, not structure -- same
+  doctrine as UNK-mask). Trade stated: generation closes to train
+  vocabulary (open-domain OOV unsayable -- w103 trie is the follow-up).
