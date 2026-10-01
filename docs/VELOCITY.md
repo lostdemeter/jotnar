@@ -1233,3 +1233,18 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   (eastern/persian/cleopatra/roman -- depth-4's content showing);
   merged attested.json 50->89 shape priors. Selection shape-term
   strengthens on flagship outputs (0.538 live).
+
+## 2026-10-01: w103 refit arc -- transferred stands, local optimum (CLOCKED)
+
+- Operating point moved to flagship (d4): d2 gain-2.0 ppl win does
+  NOT transfer (d4 explodes 222->8930 -- fit at the flagship, always).
+- w103 d4 screens (10-sent): gains (no win), coordinate (top1 FROZEN
+  0.243 all 8 moves; ppl neutral-worse), headt (nothing: 222.5/222.0),
+  seeds 1-6 ALL worse (best 0.218/466 -- transferred directions beat
+  every random draw on BOTH axes: the structures generalize, not
+  overfit), bank K256/512 (top1 frozen; K256 ppl -6, noise: rejected).
+- Verdict: transferred groki structure optimal at w103 too -- genuine
+  local optimum for this architecture. Next structural shots named:
+  D64, per-block M-dicts, w103-body HN banks. Top1 frozen is itself
+  the finding (argmax pinned by ends+depth; only new directions move
+  it, all worse -- content-fit, not capacity, binds).
