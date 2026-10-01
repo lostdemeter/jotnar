@@ -83,6 +83,26 @@ def main():
     b = run_down(EN.recompose(Ul, sl, Vtl))
     check("engram-stable", bool(((a - b) == 0).all()),
           "loaded stores bit-exact vs direct weights (IO adds nothing)")
+    # DDColor query stores (receipt sequence step 2): freeze the slots the
+    # palette work mines (query_embed/feat 100x256, refine rows 2x103) with
+    # roundtrips. No runs -- storage layer only, like above.
+    import torch as _t
+    _dd = os.path.expanduser("~/.cache/huggingface/hub/models--piddnad--"
+                             "DDColor-models/blobs/81dd643904f4664c3718513e3320ae3db0c567f0d3e18398606659adee7bfc17")
+    if not os.path.isfile(_dd):
+        print("SKIP dd stores (needs DDColor blob in local HF cache)")
+    else:
+        _sd = _t.load(_dd, map_location="cpu")["params"]
+        _g = lambda n: _sd[n].float().double().numpy()
+        _mats = {"dd_qe": _g("decoder.color_decoder.query_embed.weight"),
+                 "dd_qf": _g("decoder.color_decoder.query_feat.weight"),
+                 "dd_refine": _g("refine_net.0.0.weight_orig")[:, :, 0, 0].T}
+        for _tag, _W in _mats.items():
+            EN.freeze(_W, _tag)
+            _U, _s, _V, _ = EN.load(_tag)
+            _err = float(np.abs(EN.recompose(_U, _s, _V) - _W).max())
+            check(f"engram-dd-{_tag}", _err < 1e-9,
+                  f"roundtrip maxabsdiff {_err:.1e}")
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

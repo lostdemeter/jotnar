@@ -433,6 +433,20 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: edit receipts + DDColor stores (CLOCKED)
+
+- Receipt standard + filled #001 + DDColor store freeze with roundtrips
+  (#LIB-068): the handoff sequence starts.
+- Wall time: clock 13:59:44Z -> 14:01Z (~1 min: receipt doc + freeze +
+  gates + docs).
+- Surprises:
+  1. Receipt #001's residue (disentangle) was already closed by LIB-067:
+     receipts COMPOSE across rounds (open items get closed by reference,
+     not by rewrite). The paper trail is load-bearing infrastructure.
+  2. dd roundtrips at 1e-14 (vs 6.4e-16 Qwen): bigger matrices, same
+     story. Storage is boring now, which is exactly what storage
+     should be.
+
 ## 2026-10-01: disentangle + resonant falsified twice (CLOCKED)
 
 - dd_modify modes (query-only 36dB / refine-only 19dB / both 14.5dB) +

@@ -566,6 +566,16 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-068: edit receipts + DDColor stores frozen (handoff sequence) [CLOSED]
+
+ docs/EDIT_RECEIPT.md: change/prediction/measurement/footprint/verdict
+ with honesty grades per predictor (factorization +/-3dB, analog +/-10dB
+ triage, novel = wide/reported) + filled receipt #001 (q56 SPLIT, residue
+ intact). test_engram.py grows DDColor stores (dd_qe/dd_qf/dd_refine
+ roundtrips 1e-14..1e-16): edits now start from versioned data, not the
+ 211MB blob. Sequence position: receipts make TODAY transferable; stores
+ make edits addressable; attention-side stores come next; T-transform
+ waits at the end, measured at 964x and getting no closer on its own.
 ## #LIB-067: disentangle (place+color pair) + resonant bridge fails [CLOSED]
 
  Disentangle (dd_modify modes, f_014): query-only 36.0dB (vote mass flips,
