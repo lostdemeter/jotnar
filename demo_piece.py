@@ -20,7 +20,7 @@ import phi_core.lattice as S
 from chain import asm as ASM
 from chain.asm_ops import REGISTRY, SIGS
 
-CFG = "CONFIG m_acc 36118\nCONFIG m_cov 35048\n"
+CFG = "CONFIG m_acc 36118\nCONFIG m_cov 35048\nCONFIG beta -30.0\nCONFIG beta_b 0.25\n"
 WIN = 16
 
 
@@ -55,11 +55,11 @@ def main():
         return " ".join(t.split())
 
     Ep = np.load(os.path.join(dd, "lm_piece.npz"))
-    b = np.load(os.path.join(dd, "bankpiece512.npz"))
-    d = np.load(os.path.join(dd, "lm_svd_IvoQ.npz"))
+    b = np.load(os.path.join(dd, "bankpiece64.npz"))
+    d = np.load(os.path.join(dd, "lm_piece_fit.npz"))
     B = {k: np.array(d[k]) for k in
          ["wq", "wk", "wv", "wo", "wup", "wgate", "wdown", "rms1", "rms2"]}
-    text = CFG + open(os.path.join(sdir, "lm_bankhn2.asm")).read()
+    text = CFG + open(os.path.join(sdir, "lm_headt.asm")).read()
 
     def enc(a):
         return S.encode(np.ascontiguousarray(a, dtype=np.float64))

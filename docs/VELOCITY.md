@@ -1139,3 +1139,15 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   'mancand', 'bing') -- piece-boundary unmodeled at top1 0.06.
   Speakability solved, accuracy is the fitting arc. Demo, not gate
   (no bar met yet -- honestly labeled).
+
+## 2026-10-01: piece-fit -- structural fitting in piece space (CLOCKED)
+
+- Bank K sweep (twin-screen): 64/0.507, 128/0.566, 256/0.606,
+  512/0.641 -- smaller-sharper wins twins monotonically; K64 top1
+  0.06 holds (mass 0.31 suffices: writes refine, logits carry).
+- Per-path at K64: wv*2 (0.471, top1 0.055 holds), QK-I worse (joint
+  rule 12-for-12 on collapse-catching); headt 0.25 stacks (0.443).
+  Frozen lm_piece_fit + test_lm_piecefit ALL OK (twin 0.443, top1
+  0.055). Piece twins 0.566 -> 0.443 with top1 held throughout.
+- demo_piece points at fit: zero UNK everywhere; fragments persist
+  ('ation', 'bint') -- boundary modeling named as the next structure.

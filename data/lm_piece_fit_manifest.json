@@ -1,0 +1,26 @@
+{
+  "base": "lm_svd_IvoQ (g2 body, QK-I0.2, V-I0.5)",
+  "fit": "piece-space: bank K64 (mass 0.312) + wv I*1.0 + head2 T=4 (beta_b 0.25)",
+  "m_acc": 36118,
+  "m_cov": 35048,
+  "objective": {
+    "twin": {
+      "K128": 0.566,
+      "K64": 0.507,
+      "+wv2": 0.471,
+      "+headt": 0.443
+    },
+    "top1_S16": {
+      "K128": 0.062,
+      "K64": 0.06,
+      "+wv2": 0.055,
+      "+headt": 0.055
+    }
+  },
+  "rejected": [
+    "K256/512 (twin cost)",
+    "V*2 word-space style collapse (n/a piece)",
+    "QK-I piece (worse)"
+  ],
+  "sha": "e35c08061e540811"
+}
