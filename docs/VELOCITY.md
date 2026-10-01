@@ -1248,3 +1248,13 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   D64, per-block M-dicts, w103-body HN banks. Top1 frozen is itself
   the finding (argmax pinned by ends+depth; only new directions move
   it, all worse -- content-fit, not capacity, binds).
+
+## 2026-10-01: per-block M -- mechanism proven, lateral at D16 (CLOCKED)
+
+- Layer magnitudes profiled (H 3.41->5.72, LOG 30.0); per-layer m_cov
+  priced 34725->35136 + head 36899. Driver pattern (lm_step + lm_head,
+  host loops, per-layer CONFIG): bit-exact vs monolithic (test_lm_step
+  ALL OK). Joint: twin 0.479 EXACT, top1 0.472->0.484 (noise),
+  parity +-0.5dB. Verdict LATERAL: global compromise already near
+  every sweet spot at D16. Vehicle kept for D64 (cover-tax is real
+  there). Flagship stays monolithic (5x driver cost, no gain).
