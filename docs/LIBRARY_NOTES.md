@@ -566,6 +566,20 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-079: anatomy-2 GPT-2 + fan-in law + LLM design [CLOSED]
+
+ GPT-2 L0 MLP: LN->GELU parity 57.9dB (barred: LAYERNORM exposure #43,
+ gelu_new divergence 4.7e-4 stated, biases tiled-host); DOWN measured
+ 19.9dB peak-1 with FIVE misdiagnoses en route (matmul blamed while
+ bit-identical; U_m off by margin-PHI; dimensionally-wrong autopsy
+ indicting innocent counts; encode-quantum red herring) converging on
+ TWO real mechanisms: coverage (60dB swing, exact inputs) AND
+ encode-quantum x fan-in floor (0.05% x sqrt(K) x magnitudes -- predicts
+ GPT-2 DOWN within 1.3dB, SmolLM levels consistent). Laws compose:
+ coverage gates the rest, floor prices the rest. docs/LLM_DESIGN.md
+ (formal draft v0.1): 3-row anatomy table -> per-decision picks with
+ reasons (RMSNorm/SwiGLU/RoPE/single-head/no-bias/per-block-m/true-eps/
+ in-contract/argmax) + three laws + construction plan + opens.
 ## #LIB-078: eps must scale with ambient + uniform threading [CLOSED]
 
  SmolLM2 parity failed at 10dB; bisection exonerated execution

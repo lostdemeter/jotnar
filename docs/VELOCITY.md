@@ -433,6 +433,28 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: anatomy-2 + fan-in law + LLM design (CLOCKED)
+
+- GPT-2 survey (biases/pos-emb/gelu_new) + LAYERNORM exposure (#43) +
+  split-claim gates + formal design draft (#LIB-079).
+- Wall time: clock 15:52:34Z -> (ends at commit; survey + exposure +
+  5 misdiagnoses + design).
+- Results: LN-GS 57.9dB barred; DOWN 19.9dB measured with law;
+  design draft v0.1 with priced decisions.
+- Surprises:
+  1. FIVE misdiagnoses, two mechanisms: coverage (exact-inputs proof)
+     AND fan-in floor (encode-quantum x sqrt(K) x magnitudes, predicts
+     within 1.3dB). Bisection chains beat narrative -- but count the
+     cost: five wrong theories is a slow turn. Bisect EARLIER (the
+     per-term autopsy should have been step two, not step six).
+  2. Conv1D-vs-Linear (no-transpose) + heads-batch geometry: the same
+     two mirror bugs as the Qwen probe, caught by shapes in minutes.
+     Mirror bugs rhyme; the shape-loud doctrine generalizes to new
+     repos untouched.
+  3. Extraordinary claims (48dB peakmax "law") need the extraordinary
+     version of the usual: predicted 46.6, measured 47.9 -- laws close
+     to 1dB or they are stories. This one closed.
+
 ## 2026-10-01: anatomy-1 + eps law (CLOCKED)
 
 - SmolLM2 survey + two-stage split + uniform threading + true-eps +

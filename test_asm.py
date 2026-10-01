@@ -60,8 +60,7 @@ def main():
         except ASM.AsmError as e:
             check(f"asm-{tag}", True, f"fails loud ({str(e)[:60]})")
 
-    # Batch 1 exposure wiring (GAPS.md): wrappers add NOTHING over phi-core
-    # fns (0-diff with identical args); softmax normalization gated vs float
+    # Batch 1 exposure wiring (GAPS.md): wrappers add NOTHING over phi-core    # fns (0-diff with identical args); softmax normalization gated vs float
     # within its contract (inputs <= 1.0 abs -- to_fixed saturates above it,
     # the T-transformation doctrine; out-of-contract behavior pinned, not barred).
     import phi_core.lattice as S
@@ -78,6 +77,33 @@ def main():
     t = S.encode(rng.uniform(-4, 4, (5, 16)))
     check("asm-silu", all(bool((a == b).all()) for a, b in zip(
         REGISTRY["SILU"][0]([t], {}, {}), N.silu_int(t))), "0-diff")
+    # LAYERNORM exposure (v1.6 anatomy): 0-diff both eps paths; in-coverage
+    # parity vs torch (66dB; the first fixture ran hot past U_mcov and read
+    # 15.8dB -- coverage, not the op); eps_ln-read tripwire (same lesson
+    # as eps_rms: no silently-ignored keys).
+    _xl = S.encode((rng.uniform(-1, 1, (4, 32))))
+    _wl = S.encode(np.ones(32) * 0.9 + (rng.uniform(-1, 1, (32,)) * 0.05))
+    _bl = S.encode(rng.uniform(-0.1, 0.1, (32,)))
+    _, _mc = H._load_scales()
+    check("asm-layernorm-0diff", all(bool((a == b).all()) for a, b in zip(
+        REGISTRY["LAYERNORM"][0]([_xl, _wl, _bl], {"eps_ln_c": "4514"}, {}),
+        N.int_layernorm_rows(_xl[0], _xl[1], _xl[2], _wl, _bl, _mc, 4514))),
+        "0-diff legacy path")
+    import torch as _torch2
+    _gl = REGISTRY["LAYERNORM"][0]([_xl, _wl, _bl], {"eps_ln": "1e-5"}, {})
+    _gv = S.decode(_gl[0], _gl[1]) * (1 - _gl[2].astype(np.float64))
+    _xv = S.decode(_xl[0], _xl[1]) * (1 - _xl[2].astype(np.float64))
+    _wv = S.decode(_wl[0], _wl[1]) * (1 - _wl[2].astype(np.float64))
+    _bv = S.decode(_bl[0], _bl[1]) * (1 - _bl[2].astype(np.float64))
+    _gref = _torch2.nn.functional.layer_norm(
+        _torch2.tensor(_xv), (32,), weight=_torch2.tensor(_wv),
+        bias=_torch2.tensor(_bv), eps=1e-5).numpy()
+    _gmse = float(np.mean((_gv - _gref) ** 2))
+    check("asm-layernorm-torch", 10 * np.log10(1.0 / _gmse) >= 40.0,
+          f"{10 * np.log10(1.0 / _gmse):.1f}dB vs torch layernorm")
+    _gl1 = REGISTRY["LAYERNORM"][0]([_xl, _wl, _bl], {"eps_ln": "1.0"}, {})
+    check("asm-layernorm-epsread", any(bool((a != b).any()) for a, b in zip(_gl1, _gl)),
+          "eps_ln=1.0 moves output (key is read)")
     x = S.encode((rng.random((4, 32)) - 0.5) * 6)
     w = S.encode((rng.random(32) - 0.5) * 2 + 0.5)
     _, mc = H._load_scales()

@@ -144,6 +144,9 @@ loud-failure. Arithmetic core (`ADD SUB MUL DIV`) refuses float inputs
 - `RMSNORM($X,$W -> $X)` — per-row RMSNorm+weight; `eps_rms` (true float,
   converted per-scale) preferred, legacy `eps_rms_c` honored (counts valid
   only near their regime). Ex: `XN = RMSNORM(x, rms_w1)`.
+- `LAYERNORM($X,$W,$W -> $X)` — per-row LayerNorm+weight+bias (the
+  centering norm; RMSNorm's biased sibling); `eps_ln` (true float)
+  preferred, legacy `eps_ln_c` honored. Ex: `HN = LAYERNORM(H, w, b)`.
 - `SILU($A -> $A)` — `x*sigmoid(x)`, 0-diff vs phi-core. Ex: `GS = SILU(GATE)`.
 - `GELU($A -> $A)` — exact-form `x*Phi(x)` (EXPACT + PHI LUT, any range; exact asymptotes beyond ±16). Ex: `G = GELU(X)`.
 - `ROTARY($X,* -> $X)` — RoPE pairs rotation; even last dim required; positions are int metadata; `rope_base` from CONFIG (default 10000.0). Ex: `QR = ROTARY(Q, pos)`.

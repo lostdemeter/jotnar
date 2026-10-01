@@ -252,6 +252,26 @@ def op_silu(vals, config, feeds):
     return N.silu_int(t)
 
 
+def op_layernorm(vals, config, feeds):
+    """LayerNorm+affine (phi-core int_layernorm_rows, 0-diff): per-row
+    centering + RMS + weight + BIAS (unlike RMSNorm -- GPT-2's LN has both
+    weight and bias, wired here as two streams). Epsilon mirrors the
+    eps_rms doctrine exactly: CONFIG eps_ln (TRUE float, default 1e-5 =
+    the common LN default) converted per-scale as eps_c(m); legacy
+    eps_ln_c raw counts honored if eps_ln absent. v1.6 anatomy exposure
+    (second norm after RMSNorm); thin wrapper, no new math."""
+    import math as _math
+    N, _S = _phi_ops()
+    x, w, b = vals
+    _, m_cov = _scales(config)
+    if "eps_ln" in config:
+        _Um = S.PHI ** ((m_cov - S.BIAS) / S.K)
+        eps_c = int(round(float(config["eps_ln"]) * float(1 << 36) / (_Um * _Um)))
+    else:
+        eps_c = int(config.get("eps_ln_c", 4514))
+    return N.int_layernorm_rows(x[0], x[1], x[2], w, b, m_cov, eps_c)
+
+
 def op_gelu(vals, config, feeds):
     """GELU exact-form x*Phi(x) (phi-core gelu_erf_int: EXPACT + PHI LUT,
     any input range, 0-diff). v1.0 Gate 5 drill mnemonic: first stranger-
@@ -634,6 +654,7 @@ REGISTRY = {
     "SOFTMAX": (op_softmax, 1, 1),
     "RMSNORM": (op_rmsnorm, 2, 1),
     "SILU": (op_silu, 1, 1),
+    "LAYERNORM": (op_layernorm, 3, 1),
     "GELU": (op_gelu, 1, 1),
     "ROTARY": (op_rotary, 2, 1),
     "BATCH_MATMUL": (op_batch_matmul, 2, 1),
@@ -685,6 +706,7 @@ SIGS = {
     "SOFTMAX": (["$A"], ["$A"]),
     "RMSNORM": (["$X", "$W"], ["$X"]),
     "SILU": (["$A"], ["$A"]),
+    "LAYERNORM": (["$X", "$W", "$W"], ["$X"]),
     "GELU": (["$A"], ["$A"]),
     "ROTARY": (["$X", "*"], ["$X"]),
     "BATCH_MATMUL": (["*", "*"], ["*"]),
