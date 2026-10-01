@@ -566,6 +566,22 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-061: DDColor query mining — slots, votes, footprints [OPEN]
+
+ Triage (2026-10-01): NO English anywhere (no text/CLIP in arch or keys --
+ the "identification" is 100 unlabeled 256-dim slots, not language);
+ compression worry CONFIRMED (our V20 port deleted the transformer; mine
+ the original 211MB .pth only); unexpected load keys = unused cls head
+ (non-load-bearing). Weight-space: queries alive + evenly spread (flat
+ spectrum 23->21, max cos 0.28, norms 12-16), feat matrix distinct (4.1x).
+ Vote maps (1,100,256,256) diffuse (entropy ~0.95): queries read as a
+ GLOBAL palette, not object slots -- affinities don't segment. BUT causal
+ footprints do: silence q39 = 26.1dB biting DARK pixels 3.7x over bright
+ (corr -0.72 with L); silence q0 = 13.0dB (mass != causal share, again).
+ First functional label candidate: q39 dark-region colorizer. Open: same
+ query second image (loop material), query attention maps (reads, not
+ votes), 98 queries unprobed. Scripts: dd_mine.py, dd_footprint.py
+ (one-shots, HF-cache + ddcolor_reverse checkout needed).
 ## #LIB-060: storebanks as listing data (native, both fixtures) [CLOSED]
 
  stdlib/storebank.asm (storebank_apply DEF -- implant_apply's K>=1 twin,

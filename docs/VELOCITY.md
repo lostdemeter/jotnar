@@ -381,6 +381,21 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      land together. When three independent forms agree, the law is doing
      the work and the implementations are just witnesses.
 
+## 2026-10-01: DDColor query mining round one (CLOCKED)
+
+- Triage (no-English verdict, compression confirmed, cls-head cleared) +
+  weight-space read + vote maps + footprint probes (#LIB-061, OPEN).
+- Wall time: clock 13:25:18Z -> 13:32Z (~7 min: survey + loader +
+  maps + md5 mystery (own sample == f_012!) + footprints + docs).
+- Surprises:
+  1. Own sample md5-identical to f_012: identical outputs were
+     determinism confirmation, not model failure. Check inputs first.
+  2. Diffuse votes (0.95) vs biting footprints (3.7x dark): affinity
+     != causality, the same lesson as mass != share, one level up.
+     Read what things DO (interventions), not what they SAY (maps).
+  3. q0 outranks q39 causally (13 vs 26dB) against mass order: the
+     hierarchy that matters is always the interventional one.
+
 ## 2026-10-01: native ENGRAM storage (CLOCKED)
 
 - chain/engram.py + test_engram.py + v1.3 scope extension (#LIB-059).

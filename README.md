@@ -30,6 +30,7 @@ Check | Result
 `test_implant.py` | ALL OK (rank-1 implant with functional aim: target token rewritten at negative dB, leads field by 26-35dB on target + held-out; structure transfer 36.8dB quantum-tax bounds; SKIPs without HF cache)
 `test_store.py` | ALL OK (directional stores: sham 99.8dB, listing-vs-surgery 91.2dB, bank-vs-matmul 96.1dB toy, stdlib DEFs resolve)
 `test_storebank.py` | ALL OK (native banks on real weights: parity 55.8dB, pruned 42.7 vs 42.9 predicted; SKIPs without HF cache)
+`dd_mine.py` / `dd_footprint.py` | research one-shots (DDColor 100-query mining: vote maps diffuse, footprints bite -- q39 dark-region 3.7x; needs HF cache + ddcolor checkout)
 `test_read.py` | ALL OK (read instrument: table shape, query plumbing, token-effect spread, shelf-map logic, factor form, predictor logic; real 112-dir readout in docs/MODEL_READ.md)
 `test_prune.py` | ALL OK (CRUD Q1+Q2: 27-dir removal 42.8 vs 42.9 predicted; gain-x2 == ablation at 22.1dB; SKIPs without HF cache)
 `test_create.py` | ALL OK (CRUD Q3+Q4: label-to-store France rank 1/8 at 8.4dB gap 22.6; shelf-null 57.8dB; SKIPs without HF cache)
