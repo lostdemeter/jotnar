@@ -19,6 +19,13 @@ IMGS = [
     "/home/thorin/Documents/OpenCode/rife_reverse/samples/f_014.png",
     "/home/thorin/Documents/OpenCode/rife_reverse/samples/f_012.png",
 ]
+# Bright-owner hunt (round 3): top-mass queries on the bright deciles.
+# Predict (paper-first): >=1 of the four shows mirror-image footprint
+# (bright-half mass > 2x dark-half). q0/q39 rows above are the record.
+QUERIES = (41, 94, 24, 64)
+HUNT_IMGS = [
+    "/home/thorin/Documents/OpenCode/rife_reverse/samples/f_012.png",
+]
 
 
 def main():
@@ -45,7 +52,11 @@ def main():
     # q39 loop (label candidate: dark-region colorizer from f_014): on a
     # FRESH image predict dark-bite (footprint-vs-L corr <= -0.5) with
     # substantial move (global < 40dB). q0 measured both rounds (no band).
-    for path in IMGS:
+    import sys as _sys
+    _hunt = _sys.argv[1] == "hunt" if len(_sys.argv) > 1 else False
+    _paths = HUNT_IMGS if _hunt else IMGS
+    _queries = QUERIES if _hunt else (39, 0)
+    for path in _paths:
         tag = os.path.basename(path)
         im = np.asarray(Image.open(path).convert("L").resize((256, 256)),
                         dtype=np.float32) / 255.0
@@ -53,7 +64,7 @@ def main():
         with torch.no_grad():
             base = model(x).numpy()[0]  # (2,256,256) ab
         print(f"== {tag} base ab [{base.min():.2f},{base.max():.2f}]")
-        for q in (39, 0):
+        for q in _queries:
             model.decoder.color_decoder.query_embed.weight.data[q].zero_()
             model.decoder.color_decoder.query_feat.weight.data[q].zero_()
             with torch.no_grad():

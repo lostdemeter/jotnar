@@ -605,6 +605,25 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  The brights (deciles 6-9, ~0.1-0.4 here) belong to other queries
  (41/94/24/64 candidates, unprobed). Zero new runs (saved footprints);
  analysis only. Next: hunt the bright owners.
+ (CORRECTED by LIB-064 below: the band-pass was need-driven, not
+ specialization. This entry stands as the record of the wrong turn.)
+## #LIB-064: palette verdict — queries divide HUE, not space [CLOSED]
+
+ Bright-hunt prediction FALSIFIED (all four top-mass queries bite dark
+ too, bright/dark <= 0.26 -- no mirror anywhere). Control decided it:
+ base |ab| itself reads 7..13 dark vs 1..4 bright (same shape as every
+ footprint) -- dark-bite is NEED-driven. Pairwise footprints correlate
+ +0.73..+0.99 (same places, up to scale); normalized profiles flat
+ (q39 ~0.06 everywhere, rest ~0.01). Then the zero-run kill: refine conv
+ rows give each query a chroma DIRECTION -- 100 vectors spanning the FULL
+ hue circle (all 12 bins, 4-13 each; q41 strongest 0.45@353deg, q39
+ 207deg; spectral /sigma preserves directions exactly). VERDICT: the 100
+ queries are a learned PALETTE (spatially overlapping, chromatically
+ distinct), not object slots. q39-dark label REASSIGNED (effect real:
+ 26dB twice; mechanism = 207deg hue needed most in shadows -- shadows run
+ blue, consistent). Specialization found on the THIRD axis tried (space,
+ then brightness, then hue): keep two hypotheses dead for every live one,
+ and READ THE WEIGHTS before running the model.
 ## #LIB-060: storebanks as listing data (native, both fixtures) [CLOSED]
 
  stdlib/storebank.asm (storebank_apply DEF -- implant_apply's K>=1 twin,

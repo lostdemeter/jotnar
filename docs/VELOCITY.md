@@ -415,6 +415,24 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      questions end-to-end: footprints were the expensive part, profiles
      the cheap part. Save everything, analyze forever.
 
+## 2026-10-01: palette verdict, two falsifications (CLOCKED)
+
+- Bright-hunt falsified + need-control + pairwise footprints +
+  refine-conv hue readout + LIB-063 correction pointer (#LIB-064).
+- Wall time: clock 13:36:44Z -> 13:39Z (~2 min + hunt runtimes).
+- Surprises:
+  1. The hunt prediction (bright mirror >2x) falsified so thoroughly
+     (<=0.26 everywhere) that the CONTROL became the finding: base |ab|
+     carries the footprint's shape, so dark-bite was need all along.
+     Controls first, then verdicts -- the control design is the experiment.
+  2. LIB-063's verdict stood wrong for exactly one round before its own
+     correction pointer: supersession WITH pointer, never silent rewrite.
+     The notes are append-only history, wrong turns included.
+  3. Zero-run kill (refine rows -> hue circle): READ THE WEIGHTS before
+     running the model. Two probe rounds answered in one weights read
+     what footprints couldn't separate. Statics first is now doctrine,
+     not preference.
+
 ## 2026-10-01: q39 loop closes (CLOCKED)
 
 - dd_footprint.py loops two images; dark-bite bands held on fresh
