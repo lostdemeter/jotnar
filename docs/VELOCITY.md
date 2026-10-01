@@ -433,6 +433,21 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: mirror migration, promotion fires (CLOCKED)
+
+- test_realw/test_implant mirrors onto chain/qwen_mirror + verification
+  (H bit-identical, decimals compared) (#LIB-089).
+- Wall time: clock 16:59:37Z -> 17:04:30Z (~5 min: migrate + verify +
+  trace +-0.1dB shifts + docs).
+- Surprises:
+  1. H bit-identical, per-token +-1dB: identical inputs can still shift
+     sensitive metrics through a CHANGED downstream (eps migration moved
+     the aim vector microscopically). Trace shifts to their true cause
+     (the eps fix, already explained), never to the most recent edit.
+  2. read_model.py deliberately NOT migrated (needs rerun to verify;
+     backlog). Promotion fires on touch, and this touch didn't need
+     that file. Restraint is also a decision.
+
 ## 2026-10-01: reorg — research/ moved + verified (CLOCKED)
 
 - 9 one-shots git-mv'd + path widening + index + rerun proof (#LIB-088).

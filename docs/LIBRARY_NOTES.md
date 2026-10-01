@@ -566,6 +566,17 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-089: mirror migration onto qwen_mirror (promotion fires) [CLOSED]
+
+ test_realw.py (-60 lines) + test_implant.py (-50 lines) inline torch
+ mirrors replaced by chain/qwen_mirror (load_layer0/build_H/mlp_forward):
+ third copy triggered promotion, now consumed twice. Verification, not
+ trust: H bit-identical vs /tmp reference; all gates green with SAME
+ decimals (parity 56.27, corr -0.81, planted inf); implant per-token
+ shifts +-1dB traced to the eps migration (already explained), not the
+ mirror move. read_model.py keeps its inline mirror for now (needs a
+ rerun to verify migration; backlog, stated -- migrate on touch, and
+ this touch didn't need it).
 ## #LIB-088: reorg — research/ + index, verified by rerun [CLOSED]
 
  9 one-shot scripts root -> research/ (git mv preserves history):

@@ -44,9 +44,8 @@ def main():
         print("SKIP (needs Qwen2-0.5B in local HF cache)")
         sys.exit(0)
     try:
-        import torch
-        from safetensors.torch import load_file
-        from transformers import AutoTokenizer
+        from chain.qwen_mirror import load_layer0, build_H, mlp_forward
+        g, embed, tok = load_layer0()
     except ImportError as e:
         print(f"SKIP (needs torch+safetensors+transformers: {e})")
         sys.exit(0)
@@ -55,64 +54,10 @@ def main():
     from chain import asm as ASM
     from chain.asm_ops import REGISTRY, SIGS
 
-    sd = load_file(os.path.join(QWEN, "model.safetensors"), device="cpu")
-    g = lambda n: sd[n].float().double().numpy()
-    tok = AutoTokenizer.from_pretrained(QWEN)
-    ids = tok("The capital of France is Paris, and the capital of Germany is",
-              return_tensors="pt")["input_ids"][0][:8].numpy()
-    E = sd["model.embed_tokens.weight"][torch.tensor(ids)].float().double().numpy()
-    dt = torch.float64
-    xt = torch.tensor(E, dtype=dt)
-    Wq = torch.tensor(g("model.layers.0.self_attn.q_proj.weight"), dtype=dt)
-    Wk = torch.tensor(g("model.layers.0.self_attn.k_proj.weight"), dtype=dt)
-    Wv = torch.tensor(g("model.layers.0.self_attn.v_proj.weight"), dtype=dt)
-    Wo = torch.tensor(g("model.layers.0.self_attn.o_proj.weight"), dtype=dt)
-    bq = torch.tensor(g("model.layers.0.self_attn.q_proj.bias"), dtype=dt)
-    bk = torch.tensor(g("model.layers.0.self_attn.k_proj.bias"), dtype=dt)
-    bv = torch.tensor(g("model.layers.0.self_attn.v_proj.bias"), dtype=dt)
-    ln1 = torch.tensor(g("model.layers.0.input_layernorm.weight"), dtype=dt)
-    ln2 = torch.tensor(g("model.layers.0.post_attention_layernorm.weight"), dtype=dt)
-    eps = 1e-6
-
-    def rms(x, w):
-        return x / torch.sqrt((x ** 2).mean(-1, keepdim=True) + eps) * w
-
-    def rope(x, base=1e6):
-        Sq, Dh = x.shape[0], x.shape[-1]
-        i = torch.arange(Dh // 2, dtype=dt)
-        th = base ** (-2 * i / Dh)
-        ang = torch.arange(Sq, dtype=dt)[:, None] * th[None, :]
-        c, s = torch.cos(ang), torch.sin(ang)
-        y = torch.empty_like(x)
-        y[..., 0::2] = x[..., 0::2] * c.unsqueeze(-2) - x[..., 1::2] * s.unsqueeze(-2)
-        y[..., 1::2] = x[..., 0::2] * s.unsqueeze(-2) + x[..., 1::2] * c.unsqueeze(-2)
-        return y
-
-    xn = rms(xt, ln1)
-    Q = (xn @ Wq.T + bq).reshape(8, 14, 64)
-    K = (xn @ Wk.T + bk).reshape(8, 2, 64)
-    V = (xn @ Wv.T + bv).reshape(8, 2, 64)
-    K = K.repeat_interleave(7, dim=1)
-    V = V.repeat_interleave(7, dim=1)
-    QR, KR = rope(Q.permute(1, 0, 2)), rope(K.permute(1, 0, 2))
-    SC = (QR @ KR.transpose(-1, -2)) / 8.0
-    scmax = float(SC.abs().max())
-    print(f"realw-scores: folded scoremax={scmax:.0f} "
-          f"(contract is 1.0 -- attention stays boundary float, stated)")
-    P = torch.softmax(SC + torch.triu(
-        torch.full((8, 8), float("-inf"), dtype=dt), 1), dim=-1)
-    CTX = (P @ V.permute(1, 0, 2)).permute(1, 0, 2).reshape(8, 896)
-    H = (xt + CTX @ Wo.T).numpy()
-    Wup = torch.tensor(g("model.layers.0.mlp.up_proj.weight"), dtype=dt)
-    Wg = torch.tensor(g("model.layers.0.mlp.gate_proj.weight"), dtype=dt)
-    Wd = torch.tensor(g("model.layers.0.mlp.down_proj.weight"), dtype=dt)
-    HN = rms(torch.tensor(H, dtype=dt), ln2)
-    UP, GATE = HN @ Wup.T, HN @ Wg.T
-    DOWN = (torch.nn.functional.silu(GATE) * UP) @ Wd.T
-    REF = (torch.tensor(H, dtype=dt) + DOWN).numpy()
-
-    Wupf, Wgf, Wdf = Wup.numpy(), Wg.numpy(), Wd.numpy()
-    ln2f = ln2.numpy()
+    H, ids, toks = build_H(
+        g, embed, tok,
+        "The capital of France is Paris, and the capital of Germany is")
+    REF, MIDf, Wupf, Wgf, Wdf, ln2f = mlp_forward(H, g)
 
     def enc(a):
         return S.encode(np.ascontiguousarray(a, dtype=np.float64))
@@ -175,8 +120,6 @@ def main():
     # calibrate C on the sweep above, predict three NEVER-RUN dirs from
     # statics, run them, demand max err < 2dB (measured 0.3 -- margin 7x).
     from chain import read as RD
-    HNf = rms(torch.tensor(H, dtype=dt), ln2)
-    MIDf = (torch.nn.functional.silu(HNf @ Wg.T) * (HNf @ Wup.T)).numpy()
     cal_al = np.sqrt(((MIDf @ U[:, idx]) ** 2).mean(0))
     C = RD.calibrate_C(s[idx], cal_al, ds)
     errs = []
