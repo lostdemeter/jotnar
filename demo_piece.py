@@ -82,7 +82,8 @@ def main():
         return (S.decode(np.ascontiguousarray(t[0]), np.ascontiguousarray(t[1]))
                 * (1 - np.ascontiguousarray(t[2]).astype(np.float64)))[-1]
 
-    words, n, i, topk, seedn, nrep = [], 20, 1, 12, 7, 4
+    words, n, i, topk, seedn, nrep, rho = [], 20, 1, 12, 7, 4, 1.3
+    topic, strength = [], 1.5
     while i < len(sys.argv):
         a = sys.argv[i]
         if a == "--n" and i + 1 < len(sys.argv):
@@ -93,6 +94,15 @@ def main():
             i += 2
         elif a == "--seed" and i + 1 < len(sys.argv):
             seedn = int(sys.argv[i + 1])
+            i += 2
+        elif a == "--topic" and i + 1 < len(sys.argv):
+            topic = [w.strip().lower() for w in sys.argv[i + 1].split(",")]
+            i += 2
+        elif a == "--strength" and i + 1 < len(sys.argv):
+            strength = float(sys.argv[i + 1])
+            i += 2
+        elif a == "--rho" and i + 1 < len(sys.argv):
+            rho = float(sys.argv[i + 1])
             i += 2
         else:
             words.append(a)
@@ -145,12 +155,19 @@ def main():
         return [vocab[_p] for _p in _syms]
 
     _trie = {}
-    for _w in {w for _s in _sents for w in re.findall(r"[a-z0-9']+", _s.lower())}:
+    try:
+        _w103 = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data_ingest", "wikitext103_vocab.json")))
+        _extra = {w for w in _w103 if w != "<unk>"}
+    except Exception:
+        _extra = set()
+    for _w in {w for _s in _sents for w in re.findall(r"[a-z0-9']+", _s.lower())} | _extra:
         _node = _trie
         for _pid in _encw(_w):
             _node = _node.setdefault(_pid, {})
     out = encode(seed)
+    _tids = {pid for _w in topic for pid in _encw(_w)}
     rng = np.random.default_rng(seedn)
+    _seen1 = set(out)
     frag = []
     for _pid in out:
         frag.append(_pid)
@@ -175,15 +192,35 @@ def main():
             for j in range(len(lg)):
                 if prefix + (j,) in seen:
                     lg[j] = -1e9
+        for _j in _tids:
+            lg[_j] += strength
         keep = np.argsort(-lg)[:topk]
         w = np.zeros_like(lg)
         w[keep] = np.exp(lg[keep] - lg[keep].max())
+        for _j in _seen1:
+            w[_j] /= rho
         w = w / w.sum()
         _nxt = int(rng.choice(len(w), p=w))
         out.append(_nxt)
+        _seen1.add(_nxt)
         frag.append(_nxt)
         if inv[_nxt].endswith("</w>"):
             frag = []
+    for _ in range(4):
+        if inv[out[-1]].endswith("</w>"):
+            break
+        lg = logits_of(out).copy()
+        _node = _trie
+        for _pid in frag:
+            _node = _node.get(_pid)
+            if _node is None:
+                break
+        _allowed = set(_node) if _node else set(_trie)
+        if _allowed:
+            _mask = np.ones_like(lg, dtype=bool)
+            _mask[list(_allowed)] = False
+            lg[_mask] = -1e9
+        out.append(int(np.argmax(lg)))
     print("seed:", seed)
     print("out :", decode(out))
     print(f"({len(out)} pieces -> words, no UNK class)")

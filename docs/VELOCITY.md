@@ -1161,3 +1161,13 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   word-starts). Listings untouched (rule, not structure -- same
   doctrine as UNK-mask). Trade stated: generation closes to train
   vocabulary (open-domain OOV unsayable -- w103 trie is the follow-up).
+
+## 2026-10-01: piece guidance -- rho, topics, w103 trie, word-finish (CLOCKED)
+
+- demo_piece: repetition penalty (rho 1.3, guided precedent), topic
+  steer (piece ids + strength, dose-responsive: city 0->2x at s=3.0),
+  trie augmented with w103 vocab (open-domain words speakable),
+  word-boundary finish ('resor' -> 'resorted', greedy +3 max).
+  All host-boundary; listings untouched. Fixed en route: topic-id
+  set bug (int-in-strdict, always empty -- caught by identical
+  outputs, the tripwire that works).
