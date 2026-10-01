@@ -1287,3 +1287,14 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   at ~11%, not noise.
 - Demos repointed at w103m5 bank (secretary of state exact-64).
   Verdict: scale 53x with graceful, concentrated degradation. GOOD.
+
+## 2026-10-01: piece-native stores -- OOV-free retrieval (CLOCKED)
+
+- scripts/freeze_pkeys.py (same combiner, piece space, plex hash
+  patterns): 202 keys, oov=0. test_pkey ALL OK: recall 404/404 @0/8,
+  partial 198/202 BEATS word 195/202 (no OOV drop ever), full 202/202
+  exact. Live sanity (battle/actium, donations/alexandria, league/
+  corinth) exact through the listing. Caught en route: my own
+  value-vs-key back-mapping nonsense (dotted random values at keys)
+  -- fixed with exact value identity. Retrieval is now vocab-free;
+  generation (fragments) remains the accuracy bottleneck.
