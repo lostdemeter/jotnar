@@ -396,6 +396,18 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   3. q0 outranks q39 causally (13 vs 26dB) against mass order: the
      hierarchy that matters is always the interventional one.
 
+## 2026-10-01: q39 loop closes (CLOCKED)
+
+- dd_footprint.py loops two images; dark-bite bands held on fresh
+  content (#LIB-062).
+- Wall time: clock 13:32:44Z -> 13:33:30Z (~1 min + test runtimes).
+- Results: q39 f_012 at 25.8dB/-0.74 (vs 26.1/-0.72); q0 11.3/-0.38.
+- Surprise: NONE -- and that is the news. Same signature to a decimal
+  on fresh content, no new machinery, no new doctrine. The loop has
+  gone from research to routine in four closes (Qwen x3 + q39). Routine
+  is what instruments are FOR; the excitement budget moves to what the
+  labels SAY (dark-regions? brightness-gated or object-gated? -- next).
+
 ## 2026-10-01: native ENGRAM storage (CLOCKED)
 
 - chain/engram.py + test_engram.py + v1.3 scope extension (#LIB-059).

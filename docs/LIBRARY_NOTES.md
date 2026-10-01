@@ -582,6 +582,17 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  query second image (loop material), query attention maps (reads, not
  votes), 98 queries unprobed. Scripts: dd_mine.py, dd_footprint.py
  (one-shots, HF-cache + ddcolor_reverse checkout needed).
+## #LIB-062: q39 loop closes — dark-region label x2 images [CLOSED]
+
+ dd_footprint.py now loops IMGS (f_014 + f_012): q39 silence on the FRESH
+ image reads 25.8dB (vs 26.1) with footprint-vs-L corr -0.74 (vs -0.72),
+ darkmass 0.467 vs bright 0.160 (~2.9x). Both bands held (corr <= -0.5,
+ global < 40dB): q39 IS a dark-region colorizer, twice in a row, same
+ signature to a decimal. q0 reproduces too (11.3dB/-0.38 vs 13.0/-0.33,
+ measured rows). Second instance of a loop-verified label class: match on
+ fresh content + verify bands, no new machinery. The loop is now routine
+ (third close counting Qwen x3): hypothesize from fingerprints, silence
+ for match, write for verify, record both bands either way.
 ## #LIB-060: storebanks as listing data (native, both fixtures) [CLOSED]
 
  stdlib/storebank.asm (storebank_apply DEF -- implant_apply's K>=1 twin,

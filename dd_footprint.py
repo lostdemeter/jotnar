@@ -15,6 +15,10 @@ DD = "/home/thorin/Documents/OpenCode/ddcolor_reverse"
 PTH = (os.path.expanduser("~/.cache/huggingface/hub/models--piddnad--"
                           "DDColor-models/blobs/81dd643904f4664c3718513e3320ae3db0c567f0d3e18398606659adee7bfc17"))
 IMG = "/home/thorin/Documents/OpenCode/rife_reverse/samples/f_014.png"
+IMGS = [
+    "/home/thorin/Documents/OpenCode/rife_reverse/samples/f_014.png",
+    "/home/thorin/Documents/OpenCode/rife_reverse/samples/f_012.png",
+]
 
 
 def main():
@@ -33,36 +37,40 @@ def main():
     blob = torch.load(PTH, map_location="cpu")["params"]
     model.load_state_dict(blob, strict=False)
     model.eval()
-    im = np.asarray(Image.open(IMG).convert("L").resize((256, 256)),
-                    dtype=np.float32) / 255.0
-    x = torch.tensor(np.stack([im, im, im])[None])
-    with torch.no_grad():
-        base = model(x).numpy()[0]  # (2,256,256) ab
-    print(f"base ab range [{base.min():.2f},{base.max():.2f}]")
 
     def psnr(a, b):
         mse = float(np.mean((a - b) ** 2))
         return float("inf") if mse == 0 else 10 * np.log10(4.0 / mse)
 
-    for q in (39, 0):
-        model.decoder.color_decoder.query_embed.weight.data[q].zero_()
-        model.decoder.color_decoder.query_feat.weight.data[q].zero_()
+    # q39 loop (label candidate: dark-region colorizer from f_014): on a
+    # FRESH image predict dark-bite (footprint-vs-L corr <= -0.5) with
+    # substantial move (global < 40dB). q0 measured both rounds (no band).
+    for path in IMGS:
+        tag = os.path.basename(path)
+        im = np.asarray(Image.open(path).convert("L").resize((256, 256)),
+                        dtype=np.float32) / 255.0
+        x = torch.tensor(np.stack([im, im, im])[None])
         with torch.no_grad():
-            got = model(x).numpy()[0]
-        # restore (in-place zeroing would corrupt later probes)
-        model.decoder.color_decoder.query_embed.weight.data[q].copy_(
-            blob["decoder.color_decoder.query_embed.weight"][q])
-        model.decoder.color_decoder.query_feat.weight.data[q].copy_(
-            blob["decoder.color_decoder.query_feat.weight"][q])
-        d = psnr(got, base)
-        foot = np.abs(got - base).mean(0)
-        foot /= foot.max() + 1e-30
-        print(f"silence-q{q}: {d:.1f}dB; footprint-vs-L corr "
-              f"{np.corrcoef(foot.ravel(), im.ravel())[0,1]:+.2f}; "
-              f"footprint mass top-half-L pixels: "
-              f"{foot[im > np.median(im)].mean():.3f} vs bottom "
-              f"{foot[im <= np.median(im)].mean():.3f}")
-        np.save(f"/tmp/dd_foot_q{q}.npy", foot)
+            base = model(x).numpy()[0]  # (2,256,256) ab
+        print(f"== {tag} base ab [{base.min():.2f},{base.max():.2f}]")
+        for q in (39, 0):
+            model.decoder.color_decoder.query_embed.weight.data[q].zero_()
+            model.decoder.color_decoder.query_feat.weight.data[q].zero_()
+            with torch.no_grad():
+                got = model(x).numpy()[0]
+            # restore (in-place zeroing would corrupt later probes)
+            model.decoder.color_decoder.query_embed.weight.data[q].copy_(
+                blob["decoder.color_decoder.query_embed.weight"][q])
+            model.decoder.color_decoder.query_feat.weight.data[q].copy_(
+                blob["decoder.color_decoder.query_feat.weight"][q])
+            d = psnr(got, base)
+            foot = np.abs(got - base).mean(0)
+            foot /= foot.max() + 1e-30
+            cc = float(np.corrcoef(foot.ravel(), im.ravel())[0, 1])
+            print(f"silence-q{q}: {d:.1f}dB; footprint-vs-L corr {cc:+.2f}; "
+                  f"darkmass {foot[im <= np.median(im)].mean():.3f} vs "
+                  f"bright {foot[im > np.median(im)].mean():.3f}")
+            np.save(f"/tmp/dd_foot_{tag}_q{q}.npy", foot)
 
 
 if __name__ == "__main__":
