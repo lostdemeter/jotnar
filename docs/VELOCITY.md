@@ -1258,3 +1258,19 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   parity +-0.5dB. Verdict LATERAL: global compromise already near
   every sweet spot at D16. Vehicle kept for D64 (cover-tax is real
   there). Flagship stays monolithic (5x driver cost, no gain).
+
+## 2026-10-01: D64 arc -- width degrades, diagnosed, parked (CLOCKED)
+
+- Freeze (rank-64 SVD, spec 15.9x) + listing (Dh=32) + parity green
+  (53/50 at 36118/35048 -- tighter beats bigger, goldilocks again).
+  Transfer fails (twin 1.246): refit finds QK-I0.2 best (0.956/0.309)
+  but still trails D32 (0.722) and D16 (0.479).
+- Diagnosis (measured): Dh=32 random dots ~4x D16 -> attention
+  entropy 0.15 vs 0.6 (near one-hot); V-identity fails everywhere
+  (mixing scrambles first, V cannot save); law-temp 1/sqrt(32)
+  BACKFIRES (1.13 -- twin rewards flatness, not sharpness);
+  head-temps flat; depth-4 WORSE (1.064 -- depth compounds scramble
+  without content-preserving V). U-shaped temp optimum at I0.2.
+- Verdict PARKED: width needs content-fit, not transfer. No gate
+  below flagship bars (honestly parked, recipe in fit manifest).
+  D16 depth-4 remains flagship; D32 the wide runner.

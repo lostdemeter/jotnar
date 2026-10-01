@@ -1,0 +1,29 @@
+{
+  "base": "lm_d64 seed-0",
+  "fit": "g2 body + wq=wk=I*0.2 (similarity-QK, Dh=32)",
+  "recipe": "recomputable from lm_d64.npz (no new blob)",
+  "objective": {
+    "twin": 0.956,
+    "top1_10line": 0.309
+  },
+  "landscape": {
+    "transfer-I": [
+      1.246,
+      0.325
+    ],
+    "g2": [
+      1.109,
+      0.256
+    ],
+    "QK-I0.2": [
+      0.956,
+      0.309
+    ],
+    "V-identity": "all worse (1.12-1.67)",
+    "law-temp 1/sqrt32": "worse (1.13)",
+    "headt": "flat (0.956-1.009)",
+    "depth4": "worse (1.064)"
+  },
+  "diagnosis": "Dh=32 random dots ~4x -> collapsed attention (entropy 0.15 vs 0.6 D16); twin rewards flatness, U-optimum at I0.2; V cannot save scrambled mixing",
+  "verdict": "PARKED below flagship (D16 0.743/0.472, D32 0.722/0.35). Width needs content-fit, not transfer."
+}
