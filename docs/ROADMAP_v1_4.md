@@ -50,3 +50,17 @@ more precisely than "scores get big".
 Full DDColor-in-assembly end-to-end (needs gate 3 AND packaging);
 multi-head batching elegance (correctness first); listing-text pruning
 (masked sums); per-DEF @scale; phi-core merges (owner action).
+
+## Declared 2026-10-01 (38/38 suites green; all five gates hold)
+
+1. Projection storebanks: 6/6 at 59-63dB + prune harmless 76.1dB with
+   tax + floor corrections (test_projbank.py, #LIB-070).
+2. Selection-side decomposition: P-invariance bit-exact, recompose
+   82.9dB, ordering holds (test_select.py, #LIB-071; S08 SINGLE).
+3. DDColor layer: WAITS by measurement (scoremax 429x, dd_score.py).
+4. T-transform: DESIGN, better than spike brief (docs/T_TRANSFORM.md:
+   fold obstruction, 9-layer ranges, one-assert fix + composition;
+   #LIB-072). Staged phi-core branch: offered, owner action.
+5. VELOCITY.md: clocked throughout (no missed starts this release).
+v1.4 is done: attention consumes stores with the linear half banked,
+the selection half instanced, and full range specified.
