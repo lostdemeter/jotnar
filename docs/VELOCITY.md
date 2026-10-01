@@ -302,6 +302,25 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   3. Giant dir0 at 22-23dB on all three domains: the causal hierarchy
      has a context-invariant top. Whatever "important" means, dir0 is it.
 
+## 2026-10-01: factorization (CLOCKED)
+
+- Energy-factored residual + key-alignment law + form gate + writeup
+  (#LIB-055). Zero new runs (existing readout + statics).
+- Wall time: clock 12:20:30Z -> 12:23Z (~3 min: residual analysis +
+  alignment law + form gate + writeup). Zero new runs.
+- Surprises:
+  1. 0.998 is not "strong correlation", it is identity with noise:
+     the residual IS the alignment, and content reduces to geometry
+     with nothing left over. The fundamental thing was hiding in the
+     correlation everyone (including us, LIB-046) called "partly
+     algebraic" -- it was ENTIRELY algebraic, in two factors.
+  2. The loop's match step just got 1000x cheaper (alignments ~ms vs
+     ablations ~100s): instruments obsolete each other here, and that
+     is progress, not waste.
+  3. My print labels in the first probe were backwards (top residual =
+     matters LESS than energy says); the math corrected the narrative
+     before it got committed. Analysis first, prose second.
+
 ## 2026-10-01: labeling loop, run one (CLOCKED)
 
 - First full loop turn: (dir24, France) hypothesized, matched, verified

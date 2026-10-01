@@ -92,6 +92,20 @@ def main():
         check("read-shelf-grid", False, "accepted mismatched grids")
     except ValueError:
         check("read-shelf-grid", True, "grid mismatch fails loud")
+    # factorization form (exact reals identity the B1 measurement relies on:
+    # ablating s.u.vT moves output by s.(X.u)(+)v -- gated at 1e-12, NOT
+    # bit-exact: BLAS reorders float sums (measured 9e-16, pure rounding).
+    # Form pinned in-suite; B1's 0.998 lattice survival is measured).
+    rng = np.random.default_rng(0)
+    Xf = rng.normal(size=(5, 7))
+    Wf = rng.normal(size=(7, 6))
+    Uf, sf, Vtf = np.linalg.svd(Wf, full_matrices=False)
+    i = 3
+    d_direct = Xf @ (Wf - sf[i] * np.outer(Uf[:, i], Vtf[i]))
+    d_factored = (Xf @ Wf) - sf[i] * np.outer(Xf @ Uf[:, i], Vtf[i])
+    gap = float(np.abs(d_direct - d_factored).max())
+    check("read-factor-form", gap < 1e-12,
+          f"maxabsdiff {gap:.1e} (float rounding, not formula)")
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

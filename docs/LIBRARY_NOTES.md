@@ -566,6 +566,18 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-055: factorization — content is key alignment (0.998) [CLOSED]
+
+ residual = dB + 20log(s) vs -10log(mean key-alignment^2): corr 0.998 on
+ the 112-direction real readout (form gated at 1e-12 -- first drafted as
+ bit-exact, FAILED honestly: BLAS reorders float sums, 9e-16 measured;
+ the gate now states what floats actually guarantee). Ablation deltas = energy x alignment, both static; runs only confirm.
+ Selectivity 0.64 (moderate, stated). Consequences: magnitudes predictable
+ run-free; loop match-step drops from ~100s (ablations) to ~ms
+ (alignments); labels ARE alignment profiles. The mathematically
+ fundamental thing: the key-value store model is not an analogy here, it
+ is the exact computation, and every content question reduces to "which
+ content aligns with which key".
 ## #LIB-054: three labels, S21 CONFIRMED, generalization discipline [CLOSED]
 
  Loops 2+3 via generalized loop_turn.py (argv over dir/token/prompt/pos):

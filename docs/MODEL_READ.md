@@ -52,6 +52,23 @@ France, 32 -> capital (28.7dB). Selectivity itself spreads ~29dB.
    algebraically (removed energy). The spread and the ranking are the
    content; the correlation is the sanity.
 
+## The factorization (the fundamental connection, 2026-10-01)
+
+Ablation delta factorizes: removing s.u.vT moves output by s.(X.u)(+)v
+(exact identity in reals, gated as read-factor-form). So global dB =
+-20log(s) - 10log(mean_t alignment^2) + C, where alignment = |MID[t].U_i|.
+Define residual = dB + 20log(s): it should EQUAL minus-log-alignment with
+nothing left over. Measured on the 112-readout: **corr 0.998**. The store
+model (Wx = sum of key-value stores) is quantitatively exact and content
+== key alignment, computable STATICALLY with zero runs. Consequences:
+(a) HOW MUCH any direction matters is predictable without running
+(anything left over after energy+alignment is the only true surprise
+left in magnitudes); (b) match-step of the loop (does d follow P?) can
+run on alignments (~ms) instead of ablations (~100s); (c) selectivity
+spread is moderately predicted the same way (corr 0.64 -- dB nonlinearity
++ quanta, stated). Labels ARE alignment profiles: operational, geometric,
+no semantics required.
+
 ## Labeling loop, run one: (dir24, France) VERIFIED (2026-10-01)
 
 Hypothesis (from Q2 above): dir24 carries France-content. New prompt with
