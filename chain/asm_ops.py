@@ -252,6 +252,26 @@ def op_silu(vals, config, feeds):
     return N.silu_int(t)
 
 
+def op_scan(vals, config, feeds):
+    """One SSM scan step h' = Abar*h + Bx (phi-core scan_step_int).
+    Contract (handoff ASM_HANDOFF.md): abar DIMENSIONLESS, bridged at BIAS;
+    h/Bx share m_state := m_cov (CONFIG-overridable like everything: uniform
+    threading). Thin wrapper: triples -> fixed -> scan -> triples, no new
+    math. v1.6 anatomy drill (first stranger-supplied op after GELU); the
+    grown-up STATE form -- thread h through repeat() across steps (gated:
+    repeat == manual loop bit-exact). Tiled form stays a schedule variant
+    (SCAN-TILED backlog, per the handoff)."""
+    N, _S = _phi_ops()
+    h, abar, bx = vals
+    _, m_cov = _scales(config)
+    import phi_core.lattice as _S2
+    q_h = _S2.to_fixed(h[0], h[1], h[2], m_cov)
+    q_abar = _S2.to_fixed(abar[0], abar[1], abar[2], _S2.BIAS)
+    q_bx = _S2.to_fixed(bx[0], bx[1], bx[2], m_cov)
+    q_out = N.scan_step_int(q_h, q_abar, q_bx)
+    return _S2.from_fixed(q_out, m_cov)
+
+
 def op_layernorm(vals, config, feeds):
     """LayerNorm+affine (phi-core int_layernorm_rows, 0-diff): per-row
     centering + RMS + weight + BIAS (unlike RMSNorm -- GPT-2's LN has both
@@ -654,6 +674,7 @@ REGISTRY = {
     "SOFTMAX": (op_softmax, 1, 1),
     "RMSNORM": (op_rmsnorm, 2, 1),
     "SILU": (op_silu, 1, 1),
+    "SCAN": (op_scan, 3, 1),
     "LAYERNORM": (op_layernorm, 3, 1),
     "GELU": (op_gelu, 1, 1),
     "ROTARY": (op_rotary, 2, 1),
@@ -706,6 +727,7 @@ SIGS = {
     "SOFTMAX": (["$A"], ["$A"]),
     "RMSNORM": (["$X", "$W"], ["$X"]),
     "SILU": (["$A"], ["$A"]),
+    "SCAN": (["$X", "$X", "$X"], ["$X"]),
     "LAYERNORM": (["$X", "$W", "$W"], ["$X"]),
     "GELU": (["$A"], ["$A"]),
     "ROTARY": (["$X", "*"], ["$X"]),

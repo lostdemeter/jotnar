@@ -566,6 +566,18 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-080: SCAN drill + mamba pole + design formalized [CLOSED]
+
+ SCAN mnemonic (op + sig + 3 gates: 0-diff, 69-78dB vs float, repeat ==
+ manual bit-exact -- the handoff's grown-up-STATE claim proven) + 44th
+ mnemonic + programs/scan_demo.asm. Mamba-130m weights downloaded,
+ config read (768/1536/16/48, RMSNorm, SiLU, conv-bias-only); full mixer
+ parity queued behind the S3 quantization-protocol study (stated).
+ LLM_DESIGN.md: 3-row table + fourth-pole section + three laws + plan +
+ opens = the formal design requested. En route: one garbage check-line
+ written mid-haste (caught by reading, fixed clean) + rng-ordering slip
+ (fixed by fresh seeded rng) -- haste shows in drafts, gates catch it
+ before commit, both logged so the pattern is visible.
 ## #LIB-079: anatomy-2 GPT-2 + fan-in law + LLM design [CLOSED]
 
  GPT-2 L0 MLP: LN->GELU parity 57.9dB (barred: LAYERNORM exposure #43,

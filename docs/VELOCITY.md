@@ -433,6 +433,25 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: SCAN drill + mamba pole + design formal (CLOCKED)
+
+- SCAN op + 3 gates + scan_demo.asm + mamba weights/config + design
+  fourth pole + formal draft (#LIB-080).
+- Wall time: clock 16:05:38Z -> 16:11:30Z (~6 min: download + drill +
+  doc fixes + design formal).
+- Results: drill green (0-diff/69dB/bit-exact-repeat); 44 mnemonics.
+- Surprises:
+  1. repeat()==manual bit-exact on first run: STATE threading was
+     DESIGNED for exactly this (handoff said so) and the design held.
+     Well-specified interfaces compose on contact.
+  2. Two haste-slips in one drill (garbage check-line, rng ordering):
+     both caught before commit by reading + running. Speed is fine;
+     skipping the read-back is not -- the rule held under pressure.
+  3. Mamba config reads like a Jotnar program already (scan + conv +
+     gate + norm, no attention/softmax anywhere): the language was
+     ready for recurrence before we were. Coverage check passed by
+     existence.
+
 ## 2026-10-01: anatomy-2 + fan-in law + LLM design (CLOCKED)
 
 - GPT-2 survey (biases/pos-emb/gelu_new) + LAYERNORM exposure (#43) +

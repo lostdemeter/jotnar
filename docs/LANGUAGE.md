@@ -1,6 +1,6 @@
 # LANGUAGE.md — the assembly language, single reference (v1.0 Gate 2)
 
-42 mnemonics. Every line of every program is `OUTS = MNEMONIC(args)` plus
+44 mnemonics. Every line of every program is `OUTS = MNEMONIC(args)` plus
 four declarations (`CONFIG IN STATE RANGE`) and three composition forms
 (`DEF CALL IMPORT`). This file is the whole language: the tutorial (write
 your first listing in 15 minutes), the per-mnemonic contracts with examples,
@@ -115,7 +115,7 @@ or `OUT = GELU(a)` and compare against `torch.sigmoid` / `torch.gelu`.
 You have now used the generate-your-own-gate loop: propose, run, compare.
 Next: read `programs/xf_block.asm` with §4 open beside it.
 
-## 4. Mnemonic reference (42)
+## 4. Mnemonic reference (44)
 
 Notation: `NAME(in -> out)` + layout sig + contract one-liner + example +
 loud-failure. Arithmetic core (`ADD SUB MUL DIV`) refuses float inputs
@@ -149,6 +149,10 @@ loud-failure. Arithmetic core (`ADD SUB MUL DIV`) refuses float inputs
   preferred, legacy `eps_ln_c` honored. Ex: `HN = LAYERNORM(H, w, b)`.
 - `SILU($A -> $A)` — `x*sigmoid(x)`, 0-diff vs phi-core. Ex: `GS = SILU(GATE)`.
 - `GELU($A -> $A)` — exact-form `x*Phi(x)` (EXPACT + PHI LUT, any range; exact asymptotes beyond ±16). Ex: `G = GELU(X)`.
+- `SCAN($X,$X,$X -> $X)` — one SSM step `h' = Abar*h + Bx`: abar
+  DIMENSIONLESS (bridged at BIAS), h/Bx share m_state := m_cov
+  (CONFIG-overridable). Thread h through `repeat()` across steps
+  (STATE-carried recurrence, no driver loop). Ex: `h = SCAN(h, ab, bx)`.
 - `ROTARY($X,* -> $X)` — RoPE pairs rotation; even last dim required; positions are int metadata; `rope_base` from CONFIG (default 10000.0). Ex: `QR = ROTARY(Q, pos)`.
 - `TRANSPOSE($A -> $A^T)` — last-two-axes swap, exact. Ex: `KT = TRANSPOSE(KR)`.
 

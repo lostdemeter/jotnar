@@ -44,6 +44,7 @@ Check | Result
 `test_projbank.py` | ALL OK (v1.4 gate 1: 6/6 projection banks 59-63dB; prune harmless 76.1dB with floor hypothesis; SKIPs without HF cache)
 `test_select.py` | ALL OK (v1.4 gate 2: S08 first instance -- P-invariance bit-exact, recompose 82.9dB, top-beats-bottom ordering)
 `test_anatomy.py` | v1.6: SmolLM2 48.9dB two-stage + GPT-2 LN-GS 57.9dB with DOWN measured 19.9dB (cancellation law); SKIPs without HF cache (see docs/LLM_DESIGN.md)
+`test_asm.py` | incl. SCAN drill (0-diff, float parity, repeat==manual) + LAYERNORM exposure (44 mnemonics; see docs/LANGUAGE.md)
 `docs/T_TRANSFORM.md` | v1.4 gate 4: full-range attention specified (fold obstruction, 9-layer ranges, one-assert phi-core fix + our composition; DDColor L0 needs m_of(~16))
 `test_layer1.py` | ALL OK (CRUD Q5: layer-1 pattern reproduces -- spectrum 12x, giant 14dB, tracking -0.54; SKIPs without HF cache)
 `test_engram.py` | ALL OK (native storage: freeze/load roundtrip 6.4e-16, deterministic bytes, store-IO bit-exact; DDColor query/refine stores frozen; SKIPs without HF cache)

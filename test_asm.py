@@ -104,6 +104,48 @@ def main():
     _gl1 = REGISTRY["LAYERNORM"][0]([_xl, _wl, _bl], {"eps_ln": "1.0"}, {})
     check("asm-layernorm-epsread", any(bool((a != b).any()) for a, b in zip(_gl1, _gl)),
           "eps_ln=1.0 moves output (key is read)")
+    # SCAN drill (v1.6 anatomy, phi-core handoff structure): 0-diff vs the
+    # manual bridge-scan-bridge composition; parity vs float recurrence;
+    # repeat() threading == manual loop bit-exact (the grown-up STATE form).
+    import phi_core.lattice as _S3
+    _srng = np.random.default_rng(11)
+    _sh = S.encode(_srng.uniform(-1, 1, (4,)))
+    _sa = S.encode(np.full(4, 0.9))
+    _sb = S.encode(_srng.uniform(-0.5, 0.5, (4,)))
+    _, _smc = H._load_scales()
+    _qh = _S3.to_fixed(_sh[0], _sh[1], _sh[2], _smc)
+    _qa = _S3.to_fixed(_sa[0], _sa[1], _sa[2], _S3.BIAS)
+    _qb = _S3.to_fixed(_sb[0], _sb[1], _sb[2], _smc)
+    check("asm-scan-0diff", all(bool((a == b).all()) for a, b in zip(
+        REGISTRY["SCAN"][0]([_sh, _sa, _sb], {}, {}),
+        _S3.from_fixed(N.scan_step_int(_qh, _qa, _qb), _smc))),
+        "0-diff (wrapper adds nothing)")
+    _gv = S.decode(REGISTRY["SCAN"][0]([_sh, _sa, _sb], {}, {})[0],
+                   REGISTRY["SCAN"][0]([_sh, _sa, _sb], {}, {})[1])
+    _hv = S.decode(_sh[0], _sh[1]) * (1 - _sh[2].astype(np.float64))
+    _av = S.decode(_sa[0], _sa[1]) * (1 - _sa[2].astype(np.float64))
+    _bv = S.decode(_sb[0], _sb[1]) * (1 - _sb[2].astype(np.float64))
+    _fmse = float(np.mean((_gv * (1 - REGISTRY["SCAN"][0](
+        [_sh, _sa, _sb], {}, {})[2].astype(np.float64)) - _av * _hv - _bv) ** 2))
+    check("asm-scan-float", 10 * np.log10(1.0 / _fmse) >= 40.0,
+          f"{10 * np.log10(1.0 / _fmse):.1f}dB vs float recurrence")
+    _n = 5
+    _abs = [S.encode(np.full(4, 0.9)) for _ in range(_n)]
+    _bxs = [S.encode(_srng.uniform(-0.5, 0.5, (4,))) for _ in range(_n)]
+    _seed = S.encode(np.zeros(4))
+    _stext = open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               "programs", "scan_demo.asm")).read()
+    _hists, _, _ = ASM.repeat(_stext, REGISTRY,
+                              {"h": _seed, "ab": _abs, "bx": _bxs},
+                              _n, sigs=SIGS)
+    _man = _seed
+    for _abi, _bxi in zip(_abs, _bxs):
+        _man = ASM.run_text(_stext, REGISTRY,
+                            {"h": _man, "ab": _abi, "bx": _bxi},
+                            sigs=SIGS)["h"]
+    check("asm-scan-repeat", all(
+        bool((_hists[-1]["h"][k] == _man[k]).all()) for k in (0, 1, 2)),
+        "repeat == manual loop, bit-exact (grown-up STATE)")
     x = S.encode((rng.random((4, 32)) - 0.5) * 6)
     w = S.encode((rng.random(32) - 0.5) * 2 + 0.5)
     _, mc = H._load_scales()

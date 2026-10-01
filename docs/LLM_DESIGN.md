@@ -31,6 +31,21 @@ built yet).
    where structured sums cancel (GPT-2 DOWN: predicted 46.6dB peakmax,
    measured 47.9 -- confirmed within 1.3dB).
 
+## Comparative anatomy, fourth pole: Mamba + templates (2026-10-01)
+
+Three transformers agree on almost everything (table above). The poles:
+- **Mamba-130m** (weights downloaded, config read): NO attention/softmax/
+  RoPE/GQA at all -- selective scan (d_model 768, d_inner 1536, state 16,
+  dt_rank 48) + depthwise conv1d + SiLU gating + RMSNorm, no biases except
+  conv. SCAN mnemonic wired (0-diff, 69-78dB vs float, repeat==manual
+  bit-exact); full mixer parity queued (needs the S3 quantization-protocol
+  study -- stated, not missing). Design consequence: recurrence is a
+  first-class alternative to attention in this language, not a fallback.
+- **Echion templates**: no weights, no dot products -- sentence geometry
+  + fingerprints + batteries. The fourth column of v1.6 gate 1: counted
+  as described (ROADMAP_v1_6 survey), not listed (nothing to list yet --
+  template-to-store compilation is the construction-phase bridge).
+
 ## Construction plan (no training anywhere)
 
 - Tokenizer: tiny, own data (wikitext counts for coverage; Echion
