@@ -566,6 +566,18 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-075: demo 2 — memory from scratch, capacity reasoning holds [CLOSED]
+
+ programs/assoc_mem.asm (MATMUL similarities + ARGMAX + GATHER, 5 lines)
+ + test_demo2.py: 16 seeded bipolar patterns, dim 64, NO trained weights
+ (patterns are data, noise is draws). Recall 100% at 0/8/16 flips --
+ bands asked exact/100%/>=80%, all exceeded with margin (capacity
+ reasoning conservative by design: correct leads 2*(32-f) vs spread ~24).
+ Behavior from composition alone (recall curves, no reference to match):
+ the demo-2 brief's success criterion, met first try. Storage angle: the
+ pattern bank IS a frozen store (seeded); ENGRAM framing applies verbatim
+ (keys match, values return, gains uniform) -- memory without training,
+ the oldest dream in the program, running in 5 lines.
 ## #LIB-074: demo 1 greens by coordination (9 rounds) [CLOSED]
 
  Teal expansion took NINE designs (dd_demo1.py): gain eaten by spectral

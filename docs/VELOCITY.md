@@ -433,6 +433,19 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: demo 2, memory from scratch (CLOCKED)
+
+- 5-line listing + capacity-reasoned bands + test_demo2.py (#LIB-075).
+- Wall time: clock 14:44:20Z -> 14:45Z (~1 min: listing + bands + gate).
+- Results: 100% recall at 0/8/16 flips (band asked >=80% at 16).
+- Surprises:
+  1. First-try green with margin everywhere: capacity reasoning
+     (margins, not fits) is the right way to set behavioral bands --
+     conservative by construction, confirmed with room.
+  2. The whole demo is 5 lines + seeded data: from-scratch models are
+     CHEAP when behavior replaces training. The expensive part was
+     never the model; it was knowing what composition proves what.
+
 ## 2026-10-01: demo 1 greens by coordination (CLOCKED)
 
 - 9-round teal saga (8 falsified mechanisms + coordinated success) +

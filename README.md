@@ -34,6 +34,7 @@ Check | Result
 `dd_catalog.py` | full palette catalog in 28s (docs/PALETTE_CATALOG.csv: hue + mass + causal dB per query; statics beat dynamics as predictor)
 `dd_modify.py` | ADD demo + disentangle modes (query-only 36dB / refine-only 19dB / both 14.5dB: slot = place+color pair; see #LIB-067)
 `dd_demo1.py` | v1.5 demo 1 GREEN: coordinated 5-slot teal write, energy x1.25, global -3.7dB, receipt #002 (9 designs, 8 falsified, see #LIB-074)
+`test_demo2.py` | v1.5 demo 2 GREEN: content-addressable memory from scratch (16 patterns, no trained weights) recalls 100% at 0/8/16 flips
 `dd_resonant.py` | resonant-phase probe: scalar + H=8 signatures both scramble (~chance); bridge restated for scalar attributes, not key vectors
 `test_read.py` | ALL OK (read instrument: table shape, query plumbing, token-effect spread, shelf-map logic, factor form, predictor logic; real 112-dir readout in docs/MODEL_READ.md)
 `test_prune.py` | ALL OK (CRUD Q1+Q2: 27-dir removal 42.8 vs 42.9 predicted; gain-x2 == ablation at 22.1dB; SKIPs without HF cache)
