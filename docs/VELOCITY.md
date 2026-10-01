@@ -320,3 +320,20 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      geometry first keeps paying.
   3. S21's first instance cost one script: the expensive part was the
      year of instruments underneath it, not the turn itself.
+
+## 2026-10-01: loops two and three, S21 CONFIRMED (CLOCKED)
+
+- loop1.py generalized to loop_turn.py (replay-verified identical) +
+  two more labels closed (dir32/capital, dir328/Paris) (#LIB-054).
+- Wall time: clock 11:25:26Z -> 11:27:30Z (~2 min: generalization +
+  s-fix + replay + loops 2-3 + docs).
+- Results: 3/3 matches rank 1/8; writes -12 to -15dB, gaps 24-33dB.
+- Surprises:
+  1. Every match rank ONE of eight against bands asking top-3: either
+     the bands are loose or selective directions are cleaner than the
+     doctrine assumes. Not tightening yet (3 samples); the fourth loop
+     decides whether bands move.
+  2. The s[24] bug survived one full green run (loop 2's first pass
+     CONFIRMED with wrong magnitudes): bands that pass under bug and
+     fix alike are TOO LOOSE to catch that bug class. Replay-identity,
+     not bands, caught it. Gate the machinery, band the content.

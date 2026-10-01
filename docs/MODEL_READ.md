@@ -65,6 +65,23 @@ Both bands held with margin. First verified label: S21 goes PREDICTED ->
 SINGLE (second instance wanted). The loop's first full turn took one
 script and ~6 listing runs.
 
+## Labeling loops two and three: CONFIRMED (2026-10-01)
+
+Generalized script (loop_turn.py: dir/token/prompt/pos/A as argv; replay
+of loop one bit-identical at 33.9/-12.7, proving the generalization safe).
+Same bands (match top-3 + <=45dB, verify gap >6dB):
+
+| loop | label | match | verify |
+|---|---|---|---|
+| 2 (dir32, capital, Berlin-pos3) | rank 1/8, 31.7dB | -12.2dB, gap 32.7 | CONFIRM |
+| 3 (dir328, Paris, Yesterday-pos1) | rank 1/8, 33.4dB | -15.1dB, gap 25.9 | CONFIRM |
+
+3/3 matches rank ONE (bands asked top-3); 3/3 writes negative-dB with
+24-33dB gaps. S21: CONFIRMED (three instances). Caught en route: the
+generalization shipped `s[24]` unparameterized (wrong-magnitude ablation)
+-- found by reading, fixed, replay-verified identical. Generalization
+without replay proof is how mirrors drift (cf #LIB-014 postscript).
+
 ## Cross-context stability (second prompt, same 112 dirs)
 
 Prompt 2 (different domain, subword tokens):

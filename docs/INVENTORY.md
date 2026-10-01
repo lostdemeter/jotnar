@@ -217,7 +217,7 @@ wanted: flow-confidence vs coherence on real motion (aperture-matched).
 | S18 | fit/freeze | ? | ? | ? | Yx3 | ? | ? |
 | S19 | temporal IIR | ? | - | - | Y | no (DDIM parse 2026-09-30, see S19) | - |
 | S20 | parity gates | Y(0-diff) | Y | ? | Y | ? | ? |
-| S21 | causal streams | ? | ? | ? | cand | ? | Y(dir24) |
+| S21 | causal streams | ? | ? | ? | cand | ? | Yx3 (d24/32/328) |
 | S22 | content corresp. | ? | ? | 0.27meas | ? | ? | ? |
 
 (- = believed absent, which is also a claim and should be checked.)

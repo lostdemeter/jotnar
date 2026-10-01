@@ -566,6 +566,16 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-054: three labels, S21 CONFIRMED, generalization discipline [CLOSED]
+
+ Loops 2+3 via generalized loop_turn.py (argv over dir/token/prompt/pos):
+ (dir32, capital) rank 1/8 + -12.2dB/32.7 gap; (dir328, Paris) rank 1/8 +
+ -15.1dB/25.9 gap. 3/3 matches rank ONE (bands asked top-3); S21 SINGLE ->
+ CONFIRMED. Caught: generalization shipped s[24] unparameterized
+ (wrong-magnitude silence) -- found by reading, fixed, replay-verified
+ bit-identical at 33.9/-12.7. Rule: generalize ONLY with replay proof
+ (mirrors drift exactly this way, cf LIB-014 postscript); loop1.py kept
+ as the original record, loop_turn.py as the instrument.
 ## #LIB-049: directional stores as structure (implant DEF) [CLOSED]
 
  stdlib/dirstore.asm implant_apply (2 MATMULs) + variant listings
