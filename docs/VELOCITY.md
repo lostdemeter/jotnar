@@ -433,6 +433,22 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: full palette catalog (CLOCKED)
+
+- dd_catalog.py (100 queries x 2 images, 28s) + PALETTE_CATALOG.csv +
+  analysis (#LIB-065).
+- Wall time: clock 13:41:43Z -> 13:43Z (~1 min + 28s catalog run).
+- Surprises:
+  1. 0.2s forwards made the "expensive" catalog trivial: 28 seconds
+     total. Cost models age fast -- reprice often (this catalog was
+     scoped as "too slow" one turn earlier on a wrong estimate).
+  2. Static norm (0.78) beats dynamic mass (-0.40) as causal predictor:
+     the vote maps we spent a round capturing predict BACKWARDS. The
+     instrument that felt most direct (watch it work) loses to the
+     one that reads the weights. Statics first, for the third time.
+  3. q77 moves output at 3.2dB alone: single-point concentration in a
+     100-slot palette. Robustness question filed (knock out the giant?).
+
 ## 2026-10-01: q39 loop closes (CLOCKED)
 
 - dd_footprint.py loops two images; dark-bite bands held on fresh

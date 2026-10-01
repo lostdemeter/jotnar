@@ -566,6 +566,19 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-065: full palette catalog — statics beat dynamics [CLOSED]
+
+ docs/PALETTE_CATALOG.csv (dd_catalog.py, 28s for 100 queries x 2 images):
+ per-query hue + refine norm + vote masses + causal dBs. Findings: causal
+ range 3-59dB (q77 alone moves output at 3.2dB -- concentration worth
+ noting); cross-image causal corr 0.988 (hierarchy nearly identical);
+ refine-norm predicts causal share at 0.78 while vote MASS manages -0.40
+ (inverted-ish: the STATIC weight beats the DYNAMIC vote -- read the
+ weights, again); top-20 causal hue bins cluster blue-purple-magenta
+ (225x7/270x5/315x4); dead both images: only q56. The modification
+ premise this enables: add/remove palette entries with refine-norm as
+ the cost predictor (no runs), causal silence to confirm. Next: reliable
+ add/remove with predicted cost (the user's brief).
 ## #LIB-061: DDColor query mining — slots, votes, footprints [OPEN]
 
  Triage (2026-10-01): NO English anywhere (no text/CLIP in arch or keys --
