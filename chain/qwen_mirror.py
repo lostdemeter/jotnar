@@ -80,3 +80,29 @@ def build_H(g, embed, tok, prompt, n=8):
     CTX = (P @ V.permute(1, 0, 2)).permute(1, 0, 2).reshape(n, 896)
     H = (xt + CTX @ Wo.T).numpy()
     return H, ids, toks
+
+
+def mlp_forward(H, g):
+    """MLP block in torch.float64 (the test_realw mirror, promoted): returns
+    (REF output, MID intermediates, Wupf, Wgf, Wdf, ln2f as float64 numpy).
+    Boundary math for listing runs; parity claim lives in test_realw."""
+    import torch
+    import numpy as np
+    dt = torch.float64
+    eps = 1e-6
+    ln2 = torch.tensor(g("model.layers.0.post_attention_layernorm.weight"),
+                       dtype=dt)
+    Wup = torch.tensor(g("model.layers.0.mlp.up_proj.weight"), dtype=dt)
+    Wg = torch.tensor(g("model.layers.0.mlp.gate_proj.weight"), dtype=dt)
+    Wd = torch.tensor(g("model.layers.0.mlp.down_proj.weight"), dtype=dt)
+
+    def rms(x, w):
+        return x / torch.sqrt((x ** 2).mean(-1, keepdim=True) + eps) * w
+
+    HN = rms(torch.tensor(H, dtype=dt), ln2)
+    UP, GATE = HN @ Wup.T, HN @ Wg.T
+    MID = torch.nn.functional.silu(GATE) * UP
+    DOWN = MID @ Wd.T
+    REF = (torch.tensor(H, dtype=dt) + DOWN).numpy()
+    return (REF, MID.numpy(), Wup.numpy(), Wg.numpy(), Wd.numpy(),
+            ln2.numpy())

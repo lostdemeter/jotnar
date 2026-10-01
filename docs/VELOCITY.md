@@ -322,6 +322,21 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   4. Two whitespace/structural edit slips in one round, both caught by
      read-back: verify-writes now covers docs edits explicitly.
 
+## 2026-10-01: CRUD goal + pruning demo (CLOCKED)
+
+- Goal doc (docs/CRUD_GOAL.md: operations, v1.4 language shape, 5 research
+  questions, ceilings) + Q1 closed (test_prune.py, #LIB-057).
+- Wall time: clock 12:59:03Z -> 13:00:30Z (~2 min: doc + mirror helper +
+  prediction + 2 runs + gates + docs).
+- Surprises:
+  1. Combined err 0.1dB on 27 components: superposition budgets EXACTLY.
+     Delete-by-prediction is now a standing capability, not an experiment.
+  2. "Dead" is per-direction: 27x >55dB each = 42.9dB together. The shelf
+     story's honest decimal -- above bar, not free. Aggregation changes
+     the claim class (cf per-op vs whole-block parity, same lesson).
+  3. qwen_mirror.py's 4th avoided copy: promotion working as designed,
+     helpers accreting instead of mirrors multiplying.
+
 ## 2026-10-01: factorization (CLOCKED)
 
 - Energy-factored residual + key-alignment law + form gate + writeup

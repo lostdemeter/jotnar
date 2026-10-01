@@ -566,6 +566,17 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-057: pruning by prediction — combined linearity (CRUD Q1) [CLOSED]
+
+ All 27 predicted-dead dirs removed in ONE edit (test_prune.py): combined
+ cost predicted statically from linearity (sum of delta vectors, no runs)
+ at 42.9dB, measured 42.8dB in a single run (err 0.1dB). Two lessons:
+ (1) combined-cost linearity holds across 27 components -- superposition
+ is exact enough to budget; (2) "dead" is PER-DIRECTION: individually
+ >55dB each, 42.9dB together (small deltas accumulate incoherently).
+ Pruning 27 shelves is above bar but NOT free -- the honest hundredth
+ decimal of the shelf story. chain/qwen_mirror.py grows mlp_forward
+ (promotion working: 4th inline copy avoided).
 ## #LIB-056: blind prediction — edit-with-preview (0.2dB) [CLOSED]
 
  Calibrate C once (29.347), predict never-run dirs from statics: 39.3->39.5,

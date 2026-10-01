@@ -30,6 +30,7 @@ Check | Result
 `test_implant.py` | ALL OK (rank-1 implant with functional aim: target token rewritten at negative dB, leads field by 26-35dB on target + held-out; structure transfer 36.8dB quantum-tax bounds; SKIPs without HF cache)
 `test_store.py` | ALL OK (directional stores: sham 99.8dB, listing-vs-surgery 91.2dB in-envelope, stdlib DEF resolves)
 `test_read.py` | ALL OK (read instrument: table shape, query plumbing, token-effect spread, shelf-map logic, factor form, predictor logic; real 112-dir readout in docs/MODEL_READ.md)
+`test_prune.py` | ALL OK (CRUD research Q1: 27 predicted-dead dirs removed in one edit, measured 42.8dB vs predicted 42.9dB; SKIPs without HF cache)
 `test_splat_c.py` | ALL OK (full splat_blur bit-exact incl. buckets, both C modes: 6 compositional + 2 fused cases)
 `test_splat.py` | ALL OK (4 orientations 1.00, halo<=iso, blur parity 41dB, agreement 0.99, e2e 43dB, fusion-exact bit-identical)
 `test_ctrl.py` | ALL OK (file validity, hash, real-frame parity ~43-50dB, rotation-invariant gap 0.04, flat identity)
