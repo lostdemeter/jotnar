@@ -396,6 +396,25 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   3. q0 outranks q39 causally (13 vs 26dB) against mass order: the
      hierarchy that matters is always the interventional one.
 
+## 2026-10-01: brightness-vs-object split (CLOCKED)
+
+- Decile profiles + gradient control from saved footprints, zero new
+  runs; band-pass verdict with shared cliff (#LIB-063).
+- Wall time: clock 13:34:57Z -> 13:36Z (~1 min: profiles + control).
+- Surprises:
+  1. Within-dark foot-vs-L correlation POSITIVE (+0.4): the first number
+     contradicted the working theory (dark-gated) and forced the decile
+     profile, which showed the band-pass. Contradictions are instruments
+     too -- this one cost nothing and paid a verdict.
+  2. Neither hypothesis survived: not brightness-monotonic (peak at
+     decile 2-3, not 0), not object-gated (grad corr ~0). The axis is
+     DIVIDED among queries with a shared bright cliff. Third options
+     win more often than the split admits -- design splits with room
+     for "neither".
+  3. Analysis-only rounds (saved artifacts + statics) now resolve
+     questions end-to-end: footprints were the expensive part, profiles
+     the cheap part. Save everything, analyze forever.
+
 ## 2026-10-01: q39 loop closes (CLOCKED)
 
 - dd_footprint.py loops two images; dark-bite bands held on fresh

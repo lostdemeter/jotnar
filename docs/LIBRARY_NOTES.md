@@ -593,6 +593,18 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  fresh content + verify bands, no new machinery. The loop is now routine
  (third close counting Qwen x3): hypothesize from fingerprints, silence
  for match, write for verify, record both bands either way.
+## #LIB-063: brightness vs object — neither, it's band-pass [CLOSED]
+
+ q39 footprint across L deciles (both images, ~identical): 1.25 1.49 1.73
+ 1.69 1.66 1.15 | 0.41 0.29 0.26 0.08 -- rises to deciles 2-3, plateaus,
+ then falls off a CLIFF at decile 5-6. Not monotonic brightness-gating
+ (would peak at 0), not object-gating (within-dark grad corr -0.04/-0.16:
+ no edge preference). q0 mirrors with its own peak (decile 5: 2.19) and
+ the SAME cliff (2.19->0.31). Verdict: queries DIVIDE THE LUMINANCE AXIS
+ among themselves -- band-pass specialists with a shared bright cutoff.
+ The brights (deciles 6-9, ~0.1-0.4 here) belong to other queries
+ (41/94/24/64 candidates, unprobed). Zero new runs (saved footprints);
+ analysis only. Next: hunt the bright owners.
 ## #LIB-060: storebanks as listing data (native, both fixtures) [CLOSED]
 
  stdlib/storebank.asm (storebank_apply DEF -- implant_apply's K>=1 twin,
