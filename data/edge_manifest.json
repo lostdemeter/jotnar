@@ -1,0 +1,9 @@
+{
+  "seed": 0,
+  "dim": 64,
+  "n_edges": 55,
+  "n_keys": 68,
+  "n_lex": 138,
+  "twin_edges": 8,
+  "keys_sha": "a36973f69ef1deda"
+}

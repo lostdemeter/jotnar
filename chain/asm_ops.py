@@ -138,6 +138,18 @@ def op_beta(vals, config, feeds):
     return S.encode(np.full(ref[0].shape, _beta(config), dtype=np.float64))
 
 
+def op_tbeta(vals, config, feeds):
+    """Second temperature constant (head specialization): TBETA reads
+    CONFIG beta_b (default: beta value), else identical to BETA. Two
+    heads need two temperatures in one run; one key cannot name both
+    (the head-temp design). Honors-key gated like every CONFIG reader."""
+    (ref,) = vals
+    import phi_core.lattice as S
+    return S.encode(np.full(ref[0].shape,
+                             float(config.get("beta_b", _beta(config))),
+                             dtype=np.float64))
+
+
 def op_srgb_encode(vals, config, feeds):
     (lin,) = vals
     return np.clip(np.power(np.clip(lin, 0, 1), 1.0 / 2.2) * 255.0,
@@ -590,9 +602,12 @@ def op_rescale(vals, config, feeds):
 
 def op_gather(vals, config, feeds):
     """Exact row-gather: table (V,C) triples + int ids -> rows (phi-core
-    gather_int, 0-diff). Reindex family (structurally gated upstream)."""
+    gather_int, 0-diff). Reindex family (structurally gated upstream).
+    Table must be triples (raw arrays misread silently -- fail loud)."""
     N, _S = _phi_ops()
     w, ids = vals
+    assert isinstance(w, tuple) and len(w) == 3, \
+        f"GATHER table must be triples, got {type(w)} (encode first)"
     return N.gather_int(w, np.ascontiguousarray(ids))
 
 
@@ -705,6 +720,7 @@ REGISTRY = {
     "GAIN": (op_gain, 3, 1),
     "SRGB_ENCODE": (op_srgb_encode, 1, 1),
     "BETA": (op_beta, 1, 1),
+    "TBETA": (op_tbeta, 1, 1),
     "ISO_BLUR": (op_iso_blur, 1, 1),
     "WARP": (op_warp, 2, 1),
     "STATIC": (op_static, 1, 1),
@@ -755,6 +771,7 @@ SIGS = {
     "SUB": (["$A", "$A"], ["$A"]),
     "BETA_V5": (["T:HW", "T:HW"], ["T:HW"]),
     "BETA": (["$A"], ["$A"]),
+    "TBETA": (["$A"], ["$A"]),
     "MUL": (["$A", "$A"], ["$A"]),
     "ADD": (["$A", "$A"], ["$A"]),
     "SQUARE": (["$A"], ["$A"]),

@@ -1,0 +1,13 @@
+{
+  "keys": "mid_keys top-128 (unit-row-normalized ukt)",
+  "m_acc": 36118,
+  "m_cov": 35048,
+  "layer": "layer-1 MLP replaced by softmax storebank; layer-2 swiglu control",
+  "twin_dist": 0.781,
+  "top1_10line": 0.35,
+  "parity": {
+    "H4": 54.48,
+    "LOGITS": 53.47
+  },
+  "sha": "910455757fc57709"
+}

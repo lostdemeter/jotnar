@@ -1,0 +1,28 @@
+{
+  "base": "lm_svd seed-0",
+  "fit": "global body gain 2.0",
+  "objective": {
+    "twin_dist": {
+      "g1": 1.722,
+      "g2": 1.456
+    },
+    "top1_10line": {
+      "g1": 0.325,
+      "g2": 0.329
+    },
+    "parity": {
+      "H4": 58.56,
+      "LOGITS": 60.03
+    }
+  },
+  "grid": [
+    0.5,
+    0.7,
+    1.0,
+    1.5,
+    2.0,
+    3.0
+  ],
+  "note": "g3.0 top1 regresses 0.297 (edge of chaos); g2.0 must-beat writes",
+  "sha": "f2379f48b237b711"
+}

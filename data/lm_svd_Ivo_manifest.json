@@ -1,0 +1,15 @@
+{
+  "base": "lm_svd_g2",
+  "fit": "wv=wo=I*0.5 identity-value (content-preserving)",
+  "twin_dist_g2": 1.456,
+  "twin_dist_Ivo": 0.858,
+  "top1_g2": 0.329,
+  "top1_Ivo": 0.341,
+  "parity_H4": 56.77,
+  "parity_LOGITS": 55.07,
+  "rejected": [
+    "seed3/4 dist 0.94 top1 0.28 (blur)",
+    "wv wo x2 dist 1.06 top1 0.228 (collapse)"
+  ],
+  "sha": "a8ad82b287620071"
+}

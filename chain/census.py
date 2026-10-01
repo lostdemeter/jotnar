@@ -34,7 +34,7 @@ ACCESS = {
     # reindex / selection / expansion
     "GATHER": "gather",
     "SELECT": "select",
-    "BETA": "broadcast", "GAIN": "broadcast",
+    "BETA": "broadcast", "TBETA": "broadcast", "GAIN": "broadcast",
     # reductions (many-to-fewer)
     "MATMUL": "reduce", "BATCH_MATMUL": "reduce", "POOLAVG": "reduce",
     "ARGMAX": "reduce", "RMSNORM": "reduce", "LUMA": "reduce",

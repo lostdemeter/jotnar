@@ -1,0 +1,7 @@
+{
+  "base": "lm_svd_Ivo",
+  "fit": "wq=wk=I*0.2 similarity-mixing",
+  "twin_dist": 0.832,
+  "top1_10line": 0.354,
+  "sha": "2d976e818b7a174f"
+}

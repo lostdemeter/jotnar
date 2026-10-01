@@ -957,3 +957,118 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      CONFIRMED with wrong magnitudes): bands that pass under bug and
      fix alike are TOO LOOSE to catch that bug class. Replay-identity,
      not bands, caught it. Gate the machinery, band the content.
+
+## 2026-10-01: GAPs-to-LM session -- attention merge to retrieve-then-generate (CLOCKED)
+
+- Handoff GO verdict worked through: baseline green -> phi-core
+  ai/t-transform-bridge merged+pushed (af4e3c0, both suites green on
+  main) -> tokenizer OOV measured (0.59 in-domain, 0.29-0.48 wider,
+  UNK 39% mass) -> depth compounding decided (84->79.3dB, ~sum+1.4) ->
+  block-one (71/84dB) -> H=2 (74/87dB, fan-in law) -> depth-2 tied
+  (70.9/83.7dB, -3.4dB) -> causal mask as structure (past bit-exact)
+  -> twins without template strings -> SVD injection (top1 0.325,
+  ppl 95) -> BPE freeze+assembly (roundtrip 0, OOV 0) -> edge-store
+  freeze (1.00/1.00/0.99) -> retrieve-then-generate (16/16 tag-exact).
+- Full suite: 55/55 ALL OK (10 new gates this session).
+- Surprises:
+  1. Word-2k bought coverage (0.826) but cost behavior (top1 0.252,
+     ppl 390): coverage without mass concentration doesn't convert.
+     The experiment was worth more than the vocab.
+  2. Piece-bigram 0.035: pieces stretch words over ~1.7 steps, so a
+     1-step model loses word memory. The spec's gate was wrong, not
+     the freeze -- amended with numbers kept.
+  3. Raw-vs-triples GATHER silently misread (luck-masked): hardened
+     op_gather fail-loud, all suites re-green. Design cases leaning
+     on the language make the language stricter.
+  4. Passive S=5 40.6dB thin margin was content, not length (S=8
+     gives 51-53dB). Margins need content sweeps, not just length.
+  5. Cue combiner position-gap mismatch (frozen kept gaps, demo
+     compacted): caught by the passive twin missing, fixed to
+     identical combiners. Twins earn their keep as gates.
+
+## 2026-10-01: word-order arc -- identity-V to cosine retrieval (CLOCKED)
+
+- Seed sweep (12 dirs, best 0.94) + gain fits all rejected by the joint
+  rule (dist down + top1 down = blur/collapse); identity-V (wv=wo=I,
+  content unscrambled) first both-axes win (0.858/0.341); similarity-QK
+  (I*0.2) second (0.832/0.354, in-contract); dot retrieval diagnosed
+  norm-biased (2/16) -> cosine as structure (assoc_cos, priced m_acc
+  36230, 14/16 through-listing); hidden-space keys required (emb-space
+  != hidden-space); GATHER triples assert hardened (luck-masked
+  silent misread found + fixed); MLP moves all neutral/rejected.
+- Full suite: 57/57 ALL OK (12 new gates this arc).
+- Surprises:
+  1. The joint objective (dist + top1) rejected 6 straight "wins" --
+     without it we would have optimized into mush twice over. The
+     constraint is the instrument, not the decoration.
+  2. Dot-vs-cosine: exact self-matches lose argmax to big-norm rows.
+     Direction, not magnitude, retrieves -- geometrically obvious in
+     hindsight, invisible until hidden-space keys made it measurable.
+  3. Fresh scales priced first-try green 4 times running (35492, 35048,
+     36230...). The three laws price before running -- that is what
+     they are for, and the streak is the evidence.
+  4. v07 misses retrieval both sides at every stage (genuine
+     ambiguity); v02 UNK outlier persists (OOV mechanism, BPE-shaped).
+
+## 2026-10-01: counts-structured DOWN -- bankhn (CLOCKED)
+
+- MID-space bank built first (128 mean-MID keys): breached logits
+  (9.2dB, 21x oversized writes) then went lateral (0.84/0.341) --
+  MID-space is content-free, matching is uniform noise. Re-grounded
+  in emb-space (unit-norm keys + softmax competition = attention over
+  stores): twin_dist 0.781 (best yet), top1 0.350 (holds), parity
+  54.5/53.5 at priced m_acc 36118 (global raise held; per-block
+  M-dicts stay follow-up per the law that demanded them).
+- Full suite re-run at close (report in chat). Rejected this arc:
+  MID-bank (wrong space), wgate x2 (blur), seed 3/4 (overfit).
+
+## 2026-10-01: bankhn2 -- last random structure gone (CLOCKED)
+
+- Layer-2 swiglu replaced by the tied storebank (same 128 stores):
+  twin_dist 0.781->0.743, top1 0.350 holds, torch parity 53.5/53.1.
+  Every matrix now counts-derived or content-structured (SVD ends,
+  identity V/out, similarity QK, dual storebank MLPs, fixture norms).
+- The joint rule's full record this arc: 9 rejections (gains,
+  seeds, MID-bank, wgate) each with numbers; 5 writes (g2, Ivo, IvoQ,
+  bankhn, bankhn2) each beating on primary without regressing
+  constraint. Selection with a leash, not tuning.
+
+## 2026-10-01: BPE-covered rebuild -- transfer measured (CLOCKED)
+
+- Piece model (V=2038 SVD ends, IvoQ body transferred, bankpiece
+  top-128): parity 56/62dB first try (same D, architecture carries);
+  twins cleaner in piece space (0.485 vs 0.74 word -- no UNK mush);
+  prediction weaker (piece top1 0.062 S=16, word-decoded 0.076 vs word
+  0.35): 2038 choices + 4-word windows + 43%-mass bank + unfitted
+  body. Gain-4 twin win rejected again (0.402/0.023 -- the joint rule
+  is now 7-for-7 on catching blur). Piece prediction needs its own
+  fitting arc (gains/temps refit, bigger bank, S=16+).
+- Fact organs separated at scale: retrieval edge-ID 25/55 from
+  subj+pred cues through the listing (chance 0.02; misses are
+  same-person neighbors -- subject class resolves, edge disambiguates
+  partially); pure generation 0/54 facts (function-word attractor).
+  Retrieval is the fact organ, generation the fluency organ -- the
+  fusion composition, not either alone, is the functional system.
+
+## 2026-10-01: depth-4 -- composition beats counts (CLOCKED)
+
+- Depth-4 tied bankhn2 (174-line listing, m_acc 36849 priced): parity
+  H8 44.1/LOGITS 45.2 (budgets summed as predicted; 2.7dB cover-tax on
+  H8 from the global raise, stated), twin_dist 0.743->0.479, top1
+  0.350->0.472 -- BEATS word-bigram 0.406 from inside the transformer,
+  first time. Composition outperforms counts alone: the depth bet of
+  LLM_DESIGN pays with numbers, not narrative.
+- Piece-space fitting verdict: gains rejected (blur), seeds lose to
+  structure, S=16 helps weakly (0.044->0.062). Piece prediction needs
+  structural fitting (bank mass, temps), not global knobs.
+
+## 2026-10-01: head specialization -- TBETA, 47th mnemonic (CLOCKED)
+
+- Per-head temperatures (head1 T=1 control, head2 T=4 fitted over grid
+  0.25/0.5/0.75/1.0/2.0): twin_dist 0.743->0.700, top1 0.350 holds,
+  parity 52.3/52.5. The joint rule passes its first specialization:
+  distinct roles per head (averaging + selection) beat uniform temp.
+- Extension drill per AUTHORING (op + sig + honors-key gate + docs +
+  listing use + census class): TBETA honored beta_b (2.0 moved),
+  default==beta, asm-lang-coverage drift gate FIRED correctly (46/47)
+  and went green on documenting. The checklist works as designed.

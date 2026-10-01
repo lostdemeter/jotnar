@@ -1,6 +1,6 @@
 # LANGUAGE.md — the assembly language, single reference (v1.0 Gate 2)
 
-46 mnemonics. Every line of every program is `OUTS = MNEMONIC(args)` plus
+47 mnemonics. Every line of every program is `OUTS = MNEMONIC(args)` plus
 four declarations (`CONFIG IN STATE RANGE`) and three composition forms
 (`DEF CALL IMPORT`). This file is the whole language: the tutorial (write
 your first listing in 15 minutes), the per-mnemonic contracts with examples,
@@ -148,6 +148,10 @@ loud-failure. Arithmetic core (`ADD SUB MUL DIV`) refuses float inputs
   wide bridge to ±2200, then the existing fixed path). Legacy SOFTMAX
   keeps its pinned behavior; WIDE takes everything else (in-contract:
   bit-exact twins, gated). Ex: `P = SOFTMAX_WIDE(S)`.
+- `TBETA($A -> $A)` — second temperature constant (head specialization):
+  CONFIG `beta_b` as triples at the reference shape (default: `beta`
+  value); identical math to BETA, different key (two heads need two
+  temperatures in one run). Honors-key gated. Ex: `T2 = TBETA(SC2)`.
 - `RMSNORM($X,$W -> $X)` — per-row RMSNorm+weight; `eps_rms` (true float,
   converted per-scale) preferred, legacy `eps_rms_c` honored (counts valid
   only near their regime). Ex: `XN = RMSNORM(x, rms_w1)`.

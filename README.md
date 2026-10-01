@@ -51,7 +51,25 @@ Check | Result
 `demo_lm.py` | our LLM speaking through the listing (greedy; try `python3 demo_lm.py alexander the great --n 30 --topk 12 --seed 7 --no-repeat 3 --cand 6` for sampled: seeded replay identical, diversity gated in test_lm.py)
 `test_mamba.py` | v1.6 anatomy-mamba: real selective-scan trajectory 46.3dB via repeat-threading (abar/h/Bx ranges reported; SKIPs without HF cache)
 `test_asm.py` | incl. SCAN drill (0-diff, float parity, repeat==manual) + LAYERNORM exposure (44 mnemonics; see docs/LANGUAGE.md)
-`test_tshift.py` | T-transform follow-through: TSHIFT + SOFTMAX_WIDE (89dB on +-500 scores, vendor 0-diff, legacy untouched; 46 mnemonics)
+`test_tshift.py` | T-transform follow-through: TSHIFT + SOFTMAX_WIDE (89dB on +-500 scores, vendor 0-diff, legacy untouched; 46 mnemonics) -- MERGED to phi-core origin/main (af4e3c0), vendored copy redundant-but-green
+`test_lm_block1.py` | single-head LM block (GATHER emb + RoPE + TSHIFT+WIDE + SwiGLU + unembed): hidden 71.19dB, logits 83.84dB, deterministic
+`test_lm_block2h.py` | H=2 via SLICE/CONCAT repeats (Dh=8): hidden 74.29dB, logits 87.21dB (smaller K buys floor, law confirmed)
+`test_lm_depth2.py` | depth-2 weight-tied: hidden 70.91dB, logits 83.66dB (-3.4dB compounding, naive sum holds)
+`test_lm_depth2causal.py` | causal depth-2 + twin orders (active S=3 47.7dB, passive S=5 40.6dB thin-but-green; S=8 stress 51-53dB, margin was content not length)
+`test_causal.py` | causal mask as structure (SELECT+BETA, no new mnemonics): future-blocked ~0, past bit-exact under future perturbation, reversal 0.45, torch 82.4dB
+`test_lm_svd.py` | counts-injected transformer (log1p-bigram rank-16 SVD, spectrum 7.3x, m_acc 35492+m_cov 35048): parity 59.7/60.4dB, top1 0.325 (random 0.0), ppl 95 (random 512, bigram 47)
+`demo_deep.py` / `demo_retrieve.py` | retrieve-then-generate bridge: cue -> assoc recall -> prepend -> causal LM (active exact e0003, passive exact e0019 post combiner fix)
+`test_edge_store.py` | 55 Echion edges -> 68 keys (8 twin order-pairs) + 138-lexicon: recall 1.00/1.00/0.99 @0/8/16, twin-same-value exact
+`test_retrieve.py` | 16/16 voice cues retrieve twin-tagged edges through the listing (GATHER triples assert hardened en route)
+`test_bpe_asm.py` | BPE in assembly: decode rows exact, splice step bit-exact, driver-loop == host encode (full cascade waits on shrink-geometry design; see docs/BPE_SPEC.md)
+`test_twin_print.py` | causal H4-last-row fingerprints: reversal 0.877 sensitive, twin 0.845 measured-not-barred (invariance waits on non-random weights)
+`test_assoc_cos.py` | cosine retrieval as structure (RMSNorm equalize + MATMUL + ARGMAX, m_acc 36230 priced): 14/16 tag-exact through the listing, host ceiling matched (dot was 2/16 norm-biased); v07 ambiguity stated
+`test_cuehidden.py` | cue projection H@P listing (69.3dB) + hidden-cue baseline 2/16 measured-not-barred (gap to close; word-cues 16/16)
+`docs/BPE_SPEC.md` | subword bridge spec: 2000 merges V=2038, roundtrip 0 mismatches, OOV 0/14399; word-2k autopsy (top1 0.252/ppl 390: coverage w/o concentration) + bigram-pieces mismatch (0.035: context-order) recorded
+`data/lm_svd_IvoQ.npz` | word-order stack: identity-V (wv=wo=I*0.5: dist 0.858/top1 0.341) + similarity-QK (wq=wk=I*0.2: dist 0.832/top1 0.354, scoremax 0.527 in-contract); gains/seeds/MLP moves rejected-with-reason in manifest (blur, collapse, overfit)
+`test_lm_bankhn.py` | counts-structured DOWN: layer-1 MLP replaced by softmax storebank over 128 next-word stores (HN@ukt->WIDE->@evb, m_acc 36118 priced): twin_dist 0.781, top1 0.350 no-collapse, parity 54.5/53.5 (MID-space bank failed first: content-free space, re-grounded in emb-space)
+`test_lm_headt.py` | head specialization (47th mnemonic TBETA, head2 T=4 fitted, head1 control): twin_dist 0.700, top1 0.350, parity 52.3/52.5 (drift gate fired 46/47, greened on documenting)
+`test_lm_bankhn2.py` | both-layer bank MLP (tied stores, last random structure gone): twin_dist 0.743, top1 0.350, parity 53.5/53.1 -- every matrix counts-derived or content-structured
 `docs/T_TRANSFORM.md` | v1.4 gate 4: full-range attention specified (fold obstruction, 9-layer ranges, one-assert phi-core fix + our composition; DDColor L0 needs m_of(~16))
 `test_layer1.py` | ALL OK (CRUD Q5: layer-1 pattern reproduces -- spectrum 12x, giant 14dB, tracking -0.54; SKIPs without HF cache)
 `test_engram.py` | ALL OK (native storage: freeze/load roundtrip 6.4e-16, deterministic bytes, store-IO bit-exact; DDColor query/refine stores frozen; SKIPs without HF cache)

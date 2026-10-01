@@ -1,0 +1,13 @@
+{
+  "fit": "head2 temp T=4 (beta_b 0.25); head1 T=1 control",
+  "grid": [
+    0.25,
+    0.5,
+    0.75,
+    1.0,
+    2.0
+  ],
+  "twin_dist": 0.7,
+  "top1_10line": 0.35,
+  "note": "TBETA (47th mnemonic) honors-key gated"
+}
