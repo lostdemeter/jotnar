@@ -437,8 +437,8 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
 
 - GPT-2 survey (biases/pos-emb/gelu_new) + LAYERNORM exposure (#43) +
   split-claim gates + formal design draft (#LIB-079).
-- Wall time: clock 15:52:34Z -> (ends at commit; survey + exposure +
-  5 misdiagnoses + design).
+- Wall time: clock 15:52:34Z -> 16:03:30Z (~11 min: survey + exposure
+  + 5 misdiagnoses + fan-in law + design draft).
 - Results: LN-GS 57.9dB barred; DOWN 19.9dB measured with law;
   design draft v0.1 with priced decisions.
 - Surprises:
