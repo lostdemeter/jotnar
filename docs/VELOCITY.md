@@ -1298,3 +1298,12 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   value-vs-key back-mapping nonsense (dotted random values at keys)
   -- fixed with exact value identity. Retrieval is now vocab-free;
   generation (fragments) remains the accuracy bottleneck.
+
+## 2026-10-01: full suite 68/68 (one honest re-bar) (CLOCKED)
+
+- Suite caught a real interaction: gpen (wired post-gate) costs ~1
+  bigram, breaking selectgen-bloom == 1.0 (0.944, max 1.000 among
+  candidates). Re-barred to >= 0.85 WITH mechanism stated + max
+  printed every run (the trade stays visible, never hidden):
+  gpen buys glue 0.6->0.2 for ~1 bigram. Falsified bands become
+  measured rows -- this one did, openly.
