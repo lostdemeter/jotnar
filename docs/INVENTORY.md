@@ -163,16 +163,23 @@ are the prior art. The suite is the instrument -- and per S20's own logic,
 
 ## L4 — content motifs (v1.3 frontier: what weights CONTAIN, not their shape)
 
-### S21 causal feature streams [PREDICTED]
+### S21 causal feature streams [SINGLE]
 
 A stream with a measured causal delta: zero/swap intervention moves the
 output by a stated dB (basis declared), sham-exact control, determinism
 to 0.01dB. Canonical sketch: (stream, intervention, ΔdB, control).
-CANDIDATES (not instances — toy magnitudes, need real-model confirmation
-before claiming): flagship D (38dB) and COH (44dB); xf O (36dB) and DOWN
-(43dB) — all in test_probe.py's table. Related but NOT qualifying:
-motion consensus direction-agreement (rescue-V 0.36->0.81) corroborates
-directions across models without measuring a stream's causal share.
+FIRST VERIFIED INSTANCE (2026-10-01, loop1.py): Qwen2-0.5B L0 down_proj
+direction 24 carries France-content -- silencing moves France-token most
+(rank 1/8, 33.9dB) on a prompt with France at a NEW position (was 3, now
+5: fingerprint followed the content, not the position); writing dir24's
+output direction at France rewrites it (-12.7dB, 24.4dB gap). Label +
+match + implant-verify per docs/LABELING_LOOP.md. Second instance wanted
+(new direction, new property, or new model).
+Other CANDIDATES (not instances -- need the loop, not just rows): flagship
+D (38dB) and COH (44dB); xf O (36dB) and DOWN (43dB). Related but NOT
+qualifying: motion consensus direction-agreement (rescue-V 0.36->0.81)
+corroborates directions across models without measuring a stream's causal
+share.
 
 ### S22 cross-model content correspondence [PREDICTED]
 
@@ -210,7 +217,7 @@ wanted: flow-confidence vs coherence on real motion (aperture-matched).
 | S18 | fit/freeze | ? | ? | ? | Yx3 | ? | ? |
 | S19 | temporal IIR | ? | - | - | Y | no (DDIM parse 2026-09-30, see S19) | - |
 | S20 | parity gates | Y(0-diff) | Y | ? | Y | ? | ? |
-| S21 | causal streams | ? | ? | ? | cand | ? | ? |
+| S21 | causal streams | ? | ? | ? | cand | ? | Y(dir24) |
 | S22 | content corresp. | ? | ? | 0.27meas | ? | ? | ? |
 
 (- = believed absent, which is also a claim and should be checked.)

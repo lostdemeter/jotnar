@@ -592,6 +592,19 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  prompt). Standing point: the read is a TABLE, searches are QUERIES --
  information retrieval over weights, and the labeling loop's input is now
  a concrete artifact instead of a wish.
+## #LIB-053: loop one closes — (dir24, France) verified [CLOSED]
+
+ docs/LABELING_LOOP.md's first full turn (loop1.py): hypothesis from Q2
+ (dir24 selective for France) -> fresh prompt, France moved 3->5 ->
+ silence: France-pos rank 1/8 at 33.9dB (band top-3 + <=45) -> write
+ dir24's Vt output keyed at France: -12.7dB rewrite, 24.4dB gap (band
+ >6). Both held with margin; S21 PREDICTED -> SINGLE (first verified
+ label; second instance wanted). Process notes: (1) chain/qwen_mirror.py
+ promoted (third inline copy of the boundary mirror -- the rule fires on
+ helpers, not just ops; old copies migrate on touch); (2) a shape bug
+ (U-side vs Vt-side of the write) caught on re-read BEFORE running --
+ reading the geometry first is now habit; (3) ~6 listing runs per loop
+ turn: labels are cheap to verify, expensive only to hypothesize.
 ## #LIB-052: shelf map + labeling-loop draft (both) [CLOSED]
 
  shelf_map (chain/read.py: intersection/union over readout grids, mismatch

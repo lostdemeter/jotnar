@@ -52,6 +52,19 @@ France, 32 -> capital (28.7dB). Selectivity itself spreads ~29dB.
    algebraically (removed energy). The spread and the ranking are the
    content; the correlation is the sanity.
 
+## Labeling loop, run one: (dir24, France) VERIFIED (2026-10-01)
+
+Hypothesis (from Q2 above): dir24 carries France-content. New prompt with
+France at position 5 (was 3): `My/friends/from/school/visited/France/
+yesterday/morning` (loop1.py, chain/qwen_mirror.py promoted helper).
+- MATCH: silence dir24 -> France-pos rank **1/8** at 33.9dB (band: top-3
+  + <=45dB). Fingerprint followed the content, not the position.
+- VERIFY: write dir24's output direction (Vt[24]) keyed at France ->
+  France rewritten at **-12.7dB**, gap **24.4dB** (band: gap > 6dB).
+Both bands held with margin. First verified label: S21 goes PREDICTED ->
+SINGLE (second instance wanted). The loop's first full turn took one
+script and ~6 listing runs.
+
 ## Cross-context stability (second prompt, same 112 dirs)
 
 Prompt 2 (different domain, subword tokens):

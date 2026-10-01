@@ -301,3 +301,22 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      composition of proven primitives -- the Jotnar way.
   3. Giant dir0 at 22-23dB on all three domains: the causal hierarchy
      has a context-invariant top. Whatever "important" means, dir0 is it.
+
+## 2026-10-01: labeling loop, run one (CLOCKED)
+
+- First full loop turn: (dir24, France) hypothesized, matched, verified
+  (loop1.py + chain/qwen_mirror.py promotion, #LIB-053).
+- Wall time: clock 00:51:06Z -> 00:52:30Z (~2 min: mirror promotion +
+  loop script + 6 runs + docs + verify).
+- Results: MATCH rank 1/8 at 33.9dB; VERIFY -12.7dB rewrite, 24.4dB gap.
+- Surprises:
+  1. The fingerprint followed the CONTENT across positions (3->5), not
+     the position. Positional caveat honored in the breach: fingerprints
+     are positional per-read but content-tracking across reads -- the
+     distinction the loop exists to draw, drawn on its first turn.
+  2. Shape bug caught on re-read (write must use Vt-side output, not
+     U-side): input keys (4864, MID side) vs output values (896) are
+     different spaces and the store view names which is which. Reading
+     geometry first keeps paying.
+  3. S21's first instance cost one script: the expensive part was the
+     year of instruments underneath it, not the turn itself.
