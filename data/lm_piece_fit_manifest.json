@@ -22,5 +22,17 @@
     "V*2 word-space style collapse (n/a piece)",
     "QK-I piece (worse)"
   ],
-  "sha": "e35c08061e540811"
+  "sha": "e35c08061e540811",
+  "depth4": {
+    "twin": 0.337,
+    "top1_S16": 0.046,
+    "parity": {
+      "H8": 44.56,
+      "LOGITS": 48.99
+    },
+    "verdict": "ACCEPT structure (twin -24%, top1 within collapse-bar); demo stays depth-2 (speed)"
+  },
+  "w103d4": {
+    "note": "LATERAL (0.270/217.7 vs 0.274/217): no depth without w103 refit; refit arc queued"
+  }
 }

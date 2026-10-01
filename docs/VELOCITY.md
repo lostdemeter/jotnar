@@ -1219,3 +1219,17 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
 - Noted mismatch: attested shapes counted on bankhn2 generations;
   depth-4 speaks different shapes (0.214 vs 0.471) -- re-attest on
   flagship is the follow-up.
+
+## 2026-10-01: three-track decision -- piece-d4, w103-d4, flagship shapes (CLOCKED)
+
+- Piece depth-4: parity 44.6/49.0 first try; twin 0.443->0.337
+  (-24%), top1 0.055->0.046 (within collapse-bar 0.018):
+  ACCEPT as structure (tweaks need both-axes; structures need
+  primary-win + no-collapse -- policy stated). Demo stays depth-2.
+- w103 D32 depth-4: parity 42/48 green; top1 0.270/ppl 217.7 vs
+  0.274/217 depth-2: LATERAL. No depth without w103 refit (body
+  never saw wikitext; deeper mixing adds nothing). Refit arc queued.
+- Flagship re-attest (20 seeds): 72 attested families, 39 NEW
+  (eastern/persian/cleopatra/roman -- depth-4's content showing);
+  merged attested.json 50->89 shape priors. Selection shape-term
+  strengthens on flagship outputs (0.538 live).
