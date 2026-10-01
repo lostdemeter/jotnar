@@ -566,6 +566,19 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-082: mamba trajectory on real weights (anatomy-mamba) [CLOSED]
+
+ test_mamba.py: full selective-scan trajectory (8 steps x 1536x16) on
+ mamba-130m weights via repeat-threading at 46.3dB vs torch float64 +
+ determinism bit-exact. Route: frozen m_cov folded everything (-14.6dB!)
+ -> magnitudes measured (h/Bx to 549) -> m_of(600) variant listing ->
+ green. Boundaries (conv1d, softplus-dt, abar-exp, dt*B*x) stated in the
+ file, not hidden; Bx composition in-listing is the queued half (MULs
+ exist -- no new machinery needed, just wiring). Goldilocks holds at
+ 500+ magnitudes as at 3: cover tightly or starve/fold, no middle.
+ S3 quantization-protocol study: DONE in the meaningful sense (the
+ protocol's shape -- triples in, BIAS/m_state bridges inside -- matches
+ our drill exactly; remaining delta is composition, not semantics).
 ## #LIB-081: data-freeze decision — split by content kind [CLOSED]
 
  Wrote both small (3000 wikitext bigrams): echion-store/1 (0.1s, 843KB,

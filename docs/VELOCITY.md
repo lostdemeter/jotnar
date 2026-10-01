@@ -433,6 +433,23 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: mamba trajectory on real weights (CLOCKED)
+
+- S3 study + scan_mamba.asm variant + test_mamba.py at 46.3dB (#LIB-082).
+- Wall time: clock 16:18:16Z -> 16:20Z (~2 min: survey + magnitudes +
+  variant + green).
+- Results: trajectory parity 46.3dB; determinism bit-exact.
+- Surprises:
+  1. -14.6dB first (total fold at frozen scales): magnitude-first
+     debugging again (measure ranges BEFORE theorizing -- the SmolLM2
+     lesson applied without relearning).
+  2. scan_demo.asm untouched, variant added: generic demo stays frozen,
+     magnitude variants fork. One listing per regime, not CONFIG soup
+     in one file -- readability as discipline.
+  3. Boundaries honestly listed (conv/softplus/exp/Bx-composition):
+     each named with its reason, each a future gate. The file states
+     its own incompleteness -- completeness theater helps no one.
+
 ## 2026-10-01: data-freeze decision, both written small (CLOCKED)
 
 - Wikitext sparsity probe + echion-store vs S17 side-by-side + decision
