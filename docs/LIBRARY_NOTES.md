@@ -566,6 +566,26 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-066: add/remove demo — norm-fit limits, slot live, hue open [OPEN]
+
+ Norm-fit LOO: p50 err 4.6dB, p90 10.9dB, extremes -9/+20dB -- TRIAGE-grade
+ (+/-10dB bands), NOT preview-grade: predictability tracks LINEARITY of
+ the path (SVD law exact -> +/-0.3dB; palette removal through 9 nonlinear
+ layers -> +/-10dB). Errors at extremes, honesty about the middle.
+ ADD (new hue 135deg at dead q56, dd_modify.py): hue-appears FALSIFIED
+ (query-hue sparsity != output absence -- 135deg already at 16% mass);
+ bounded CONFIRM (14.5dB < 35). Follow-up: slot IS live (vote mass flips
+ sign, post-write silence moves 21.4dB) but hue unproven -- refine-row vs
+ query-row attribution UNDISENTANGLED (open: run each edit alone).
+ Reliability posture, stated: act on MEASURED costs with margins (catalog:
+ 100 x 0.2s), predict for triage only. "Error free" = dB-bounded with a
+ stated bar, never bit-exact multi-hop (ceiling stands).
+ Resonant-array DNA verdict (owed): shared = associative key-value
+ content addressing with similarity match; different = deterministic-
+ constructive (Riemann phases, exact, designed) vs learned-measured (SVD
+ keys, dB-gated, discovered). Bridge proposal (untested): index engram
+ keys by resonant phase for exact cross-model lookup -- deterministic
+ addressing over discovered content.
 ## #LIB-065: full palette catalog — statics beat dynamics [CLOSED]
 
  docs/PALETTE_CATALOG.csv (dd_catalog.py, 28s for 100 queries x 2 images):

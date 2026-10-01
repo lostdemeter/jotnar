@@ -433,6 +433,23 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: add/remove demo, norm-fit limits (CLOCKED)
+
+- LOO norm-fit analysis + ADD demo + follow-up verification + DNA
+  verdict (#LIB-066, OPEN: disentangle pending).
+- Wall time: clock 13:46:06Z -> 13:48Z (~2 min + demo runtimes).
+- Surprises:
+  1. Norm-fit p90 10.9dB: predictability TRACKS LINEARITY (exact law ->
+     0.3dB; 9 nonlinear layers -> 10dB). A meta-law about our own laws:
+     preview-grade prediction needs a factorizable path. Price every
+     predictor by its path's linearity.
+  2. ADD falsified-then-half-confirmed in one follow-up: hue unproven,
+     slot live (21.4dB). Falsification with a live remainder beats
+     clean confirmation -- the remainder (disentangle) is next.
+  3. "Error free" redefined honestly: dB-bounded with stated bar, acting
+     on measured costs (100 x 0.2s catalog) with margins. Bit-exact
+     multi-hop stays impossible; bounded multi-hop is the product.
+
 ## 2026-10-01: full palette catalog (CLOCKED)
 
 - dd_catalog.py (100 queries x 2 images, 28s) + PALETTE_CATALOG.csv +
