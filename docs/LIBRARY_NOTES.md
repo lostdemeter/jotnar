@@ -566,6 +566,16 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-084: loop on own creature — exact bands (v1.6 gate 4) [CLOSED]
+
+ test_lm_loop.py: silence 'bc' column flips 26/26 predicting contexts
+ EXACTLY; 5 unseen pairs set above row max predicted 5/5 (e.g.
+ the->legitimacy). Bands are EXACT (deterministic pipeline), stronger
+ than dB: own models admit proof where borrowed ones admit only parity.
+ Proper nouns mostly UNK (lowercase grokipedia vs top-512 Zipf) -- the
+ creature's world is common words + 'bc'/'000' dating artifacts; stated
+ as its character, not a flaw to tune away this round. v1.6 gate 4 holds:
+ read (rows), label ('bc'-contexts), implant, verify -- all green.
 ## #LIB-083: construction — bigram LM behaves (v1.6 gate 3) [CLOSED]
 
  scripts/freeze_lm.py (grokipedia HTML -> 938/235 split, V=513 vocab,

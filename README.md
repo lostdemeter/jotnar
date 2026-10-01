@@ -45,6 +45,7 @@ Check | Result
 `test_select.py` | ALL OK (v1.4 gate 2: S08 first instance -- P-invariance bit-exact, recompose 82.9dB, top-beats-bottom ordering)
 `test_anatomy.py` | v1.6: SmolLM2 48.9dB two-stage + GPT-2 LN-GS 57.9dB with DOWN measured 19.9dB (cancellation law); SKIPs without HF cache (see docs/LLM_DESIGN.md)
 `test_lm.py` | v1.6 construction: bigram LM from frozen counts (no trained weights) memorizes 200/200, held-out top1 0.41/top5 0.61/ppl 47
+`test_lm_loop.py` | v1.6 gate 4: loop on own creature -- 26/26 column-silence flips exact, 5/5 implants predicted (creation with guarantee)
 `test_mamba.py` | v1.6 anatomy-mamba: real selective-scan trajectory 46.3dB via repeat-threading (abar/h/Bx ranges reported; SKIPs without HF cache)
 `test_asm.py` | incl. SCAN drill (0-diff, float parity, repeat==manual) + LAYERNORM exposure (44 mnemonics; see docs/LANGUAGE.md)
 `docs/T_TRANSFORM.md` | v1.4 gate 4: full-range attention specified (fold obstruction, 9-layer ranges, one-assert phi-core fix + our composition; DDColor L0 needs m_of(~16))

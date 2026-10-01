@@ -433,6 +433,22 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: loop on own creature, exact bands (CLOCKED)
+
+- Column-silence (26/26) + 5 implants (5/5) on the bigram LM (#LIB-084).
+- Wall time: clock 16:25:39Z -> 16:27:30Z (~2 min: vocab check + gates).
+- Results: all exact, zero statistics.
+- Surprises:
+  1. Proper nouns UNK (france/paris/texas/capital all out of top-512):
+     the creature lives in common words + dating artifacts. World-model
+     limits stated upfront -- narrowness documented is a feature (v1.6
+     says narrow domain deliberately).
+  2. Exhaustive verification (all 513 rows through the listing, not a
+     sample): own models are small enough to check COMPLETELY. Sampling
+     is for other people's scale; exactness is the home advantage.
+  3. the->legitimacy: implanted pairs read like found poetry. Creation
+     with guarantee has aesthetic side effects; log them too.
+
 ## 2026-10-01: construction — bigram LM behaves (CLOCKED)
 
 - Freeze pipeline + listing + gates, first-try green (#LIB-083).
