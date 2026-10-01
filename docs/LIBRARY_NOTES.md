@@ -566,6 +566,20 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-074: demo 1 greens by coordination (9 rounds) [CLOSED]
+
+ Teal expansion took NINE designs (dd_demo1.py): gain eaten by spectral
+ norm; direction impotent on dead slots; metric blind (positive-clip);
+ premise broken (q27 already teal); file drift ran Q=41 twice unknowingly
+ (verified, not assumed, after); signs wash means out; aligned slot weak
+ alone. Winner: rotate top-5 teal-ALIGNED slots (87/57/4/98/28, corr
+ +0.78) to teal @ preserved norms -> energy x1.25, global -3.7dB, both
+ bands held. Moral, stated as law: DISTRIBUTED representation yields
+ only to COORDINATED writes (superposition budgets exactly, Q1); single
+ slots move pixels, never aggregates. Spectral norm eats magnitude
+ (edit direction), dead slots eat direction (borrow votes or pick live
+ ones), means eat signs (measure distributions). Nine falsifications,
+ one compositional success -- research priced honestly.
 ## #LIB-073: t-transform branch pushed — smaller correct design [CLOSED]
 
  Pushed phi-core branch ai/t-transform-bridge (their suite green):

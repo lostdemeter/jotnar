@@ -30,3 +30,15 @@ A receipt that hides a miss is green wallpaper; re-read LIB-015.
    output absence: 135deg already at 16%), bounded CONFIRMED, slot-live
    CONFIRMED (follow-up). Residue: disentangle open (refine vs query
    attribution) -- closed later in LIB-067 as place+color pair.
+
+## Receipt #002: DDColor teal expansion, coordinated (dd_demo1.py, f_014)
+
+1. **Change**: top-5 teal-aligned slots' refine rows -> 180deg @ preserved
+   norms (sigma-stable); query rows untouched. Mechanism: coordinated
+   direction surgery (9th design; 8 falsified, all kept in #LIB-074).
+2. **Prediction**: teal energy >1.2x (aligned superposition) AND global
+   < 40dB (house bar).
+3. **Measurement**: energy 2.8248 -> 3.5391 (x1.25); global -3.7dB.
+4. **Footprint**: |dTeal| 1.55 vs mean shift 0.71 (2x: moves with spread);
+   top-decile churn 0.019 (joins, not floods).
+5. **Verdict**: CONFIRM / CONFIRM. Demo 1 (v1.5 expand-existing) GREEN.

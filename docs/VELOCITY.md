@@ -433,6 +433,27 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: demo 1 greens by coordination (CLOCKED)
+
+- 9-round teal saga (8 falsified mechanisms + coordinated success) +
+  receipt #002 (#LIB-074).
+- Wall time: clock 14:35:27Z -> 14:43:30Z (~8 min: 9-round saga with
+  file drift, metric fixes, mechanism hunts, coordinated success).
+- Results: energy x1.25, global -3.7dB, both bands held.
+- Surprises:
+  1. File drift ran Q=41 twice unknowingly (identical decimals should
+     have TRIGGERED suspicion at once, not after a mechanism story):
+     identical outputs across supposedly-different runs are ALWAYS a
+     red flag, never a coincidence. New tripwire, stated.
+  2. Metric blindness (positive-clip), premise errors (already-teal
+     slot), sign washout, sigma ripple: four DISTINCT failure modes
+     found by keeping every falsification. The saga IS the method
+     section demo 1 needed.
+  3. Coordinated multi-slot writes succeed where singles can't, and the
+     predictor for them is superposition (Q1), not any single-slot law:
+     composition scales where components don't. The program's thesis
+     in one demo.
+
 ## 2026-10-01: t-transform branch pushed (CLOCKED)
 
 - Additive-only phi-core branch (LUT + fn + tests) + full their-suite
