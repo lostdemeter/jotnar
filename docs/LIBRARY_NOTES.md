@@ -566,6 +566,18 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-085: demo speaks — greedy attractor as diagnosis [CLOSED]
+
+ demo_lm.py: seed words -> greedy chain through bigram_lm.asm -> printed
+ text ("and the great" on loop). Two bugs en route, both process-shaped:
+ argv leaking into seeds (parse-then-use, never inline), stacked edits
+ scrambling main() (rewrite coherently past a point, don't patch --
+ third patch on one function means rewrite). Findings: UNK absorbing
+ (tail mass; masked at bank-build as decoding rule, model untouched);
+ greedy bigram CYCLES ("and the great" attractor) -- temperature/top-k
+ sampling justified by demonstration, not theory (host boundary per
+ design). First contact with our creature speaking: monotonous,
+ grokipedia-flavored, working end-to-end with zero trained weights.
 ## #LIB-084: loop on own creature — exact bands (v1.6 gate 4) [CLOSED]
 
  test_lm_loop.py: silence 'bc' column flips 26/26 predicting contexts

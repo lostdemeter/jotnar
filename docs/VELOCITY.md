@@ -433,6 +433,22 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: demo speaks (CLOCKED)
+
+- demo_lm.py (greedy generation through the listing) + fixes (#LIB-085).
+- Wall time: clock 16:30:25Z -> 16:31:30Z (~1 min: demo + argv fix + UNK
+  rule + rewrite + runs).
+- Results: "and the great" on loop, end to end, zero trained weights.
+- Surprises:
+  1. Stillbirth first (UNK everywhere in 1 step): tail mass makes raw
+     greedy unusable -- masking UNK at bank-build is a DECODING choice
+     (boundary), not model surgery. Boundaries absorb hacks honestly.
+  2. The attractor ("and the great" x10) diagnoses greedy decoding
+     live: sampling earns its place by demonstration. Theory said
+     host-boundary; practice shows why.
+  3. Third-patch-on-one-function means rewrite: patch count is a
+     complexity signal. Heed it at three, not thirteen.
+
 ## 2026-10-01: loop on own creature, exact bands (CLOCKED)
 
 - Column-silence (26/26) + 5 implants (5/5) on the bigram LM (#LIB-084).
