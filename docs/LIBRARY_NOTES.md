@@ -566,6 +566,19 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-071: selection-side decomposition — S08 first instance [CLOSED]
+
+ programs/attn_mini.asm + test_select.py: output linear in V at fixed P
+ (P bit-exact under ALL V masks -- precondition, not assumption),
+ recompose 82.9dB (sum of single-row outputs vs full), top-beats-bottom
+ ordering (26.7 vs 27.3: thin by mechanism, flat attention ~= flat
+ contributions, stated IN the gate string). S08 PREDICTED-ish -> SINGLE;
+ biggest-unverified-claim flag retired with honors. Two process notes:
+ (1) the contract gate as first written asserted NOTHING (check True --
+ wallpaper by construction); caught on re-read, now measures scoremax
+ 0.275 (tripwire gates must MEASURE, even trivially); (2) a tool call
+ reported failure while the diff proves success -- verify writes by
+ read-back AND diff, never by return code alone.
 ## #LIB-070: projection banks + form-tax vs floor (v1.4 gate 1) [CLOSED]
 
  test_projbank.py (block_inputs bundle consolidates the 5th mirror):

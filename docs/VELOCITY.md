@@ -433,6 +433,22 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      what footprints couldn't separate. Statics first is now doctrine,
      not preference.
 
+## 2026-10-01: selection-side, S08 first instance (CLOCKED)
+
+- Minimal attention listing + 4 gates incl. measured contract (v1.4
+  gate 2, #LIB-071).
+- Wall time: clock 14:12:14Z -> 14:13:30Z (~1 min: mini listing +
+  gates + contract fix + docs).
+- Results: P-invariance bit-exact, recompose 82.9dB, ordering 26.7<27.3.
+- Surprises:
+  1. V-independence is STRUCTURAL (P never sees V): the decomposition's
+     precondition holds by construction, so attribution by ablation is
+     exact in principle -- the gate just confirms the implementation
+     honors the math. Strongest kind of gate: proves no bug, by design.
+  2. Thin margins are data (0.6dB): flat attention means flat
+     contributions -- the gate string carries the mechanism so the next
+     reader doesn't "fix" the margin into a false alarm.
+
 ## 2026-10-01: projection banks, v1.4 gate 1 (CLOCKED)
 
 - block_inputs bundle + test_projbank.py (6 banks + prune) (#LIB-070).

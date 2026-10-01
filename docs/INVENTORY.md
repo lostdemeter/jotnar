@@ -217,7 +217,7 @@ structure", far from isomorphism (texture without depth, depth without
 | S05 | warp | Y(nihui) | ? | ? | Y((dy,dx)) | ? | ? |
 | S06 | exact select | Y(prelu) | ? | ? | Yx4 | ? | ? |
 | S07 | norms | ? | ? | ? | - | Y? | ? |
-| S08 | attention | ? | ? | ? | - | ? | ? |
+| S08 | attention | ? | ? | ? | - | ? | Y(mini) |
 | S09 | residuals | Y | Y | Y? | Y | ? | ? |
 | S10 | resample moves | Y(interp) | Y(shuf) | ? | Y(pad) | ? | ? |
 | S11 | tensor+coh | ? | ? | ? | Y | ? | ? |
