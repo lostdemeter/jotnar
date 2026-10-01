@@ -360,6 +360,18 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
      that merged a header once): edits that LOOK like no-ops get
      diff-checked before AND after now, not just read-back after.
 
+## 2026-10-01: native ENGRAM storage (CLOCKED)
+
+- chain/engram.py + test_engram.py + v1.3 scope extension (#LIB-059).
+- Wall time: clock 13:11:37Z -> 13:13:30Z (~2 min: storage module +
+  gates + scope extension + docs).
+- Results: roundtrip 6.4e-16, deterministic bytes, store-IO bit-exact.
+- Surprise: the only design decision (blobs in git or not) resolved by
+  ARITHMETIC (41MB vs 1.9MB repo) with the determinism gate as
+  compensation -- process constraints (hygiene) and proof constraints
+  (reproducibility) reconciled instead of traded. v1.3's definition grew
+  a gate mid-release; the roadmap says so explicitly, dated.
+
 ## 2026-10-01: factorization (CLOCKED)
 
 - Energy-factored residual + key-alignment law + form gate + writeup

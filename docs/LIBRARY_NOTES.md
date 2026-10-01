@@ -566,6 +566,17 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-059: native ENGRAM storage (v1.3 gate 6) [CLOSED]
+
+ chain/engram.py (decompose/freeze/load/recompose, STORAGE only -- cost
+ stays in read.py, no duplicate) + test_engram.py: roundtrip 6.4e-16,
+ freeze-twice identical bytes, loaded stores bit-exact vs direct weights.
+ Blobs OUT of git (41MB vs 1.9MB repo; stores/*.npz ignored, .json
+ sidecar tracked): S17's commit-priors rule bows to hygiene WITH the
+ determinism gate as compensation (reproducible, not precious).
+ v1.3's definition extended in ROADMAP_v1_3 (gate 6 added; gate 4's
+ deferral lifted for the implemented loop). Remaining for native:
+ STOREBANK sections + assembler-side SVD + cost model over stored data.
 ## #LIB-058: CRUD round — retune, create, null-shelf, layer-1, ENGRAM [CLOSED]
 
  Q2 retune = signed ablation (gain-x2 22.1dB == ablation 22.1dB, exact to

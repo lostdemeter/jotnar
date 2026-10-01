@@ -52,8 +52,14 @@ instruments to plug into.
    family (via handoff) or a dated reason it couldn't happen.
 2. One causal probe, threshold stated beforehand, control clean.
 3. ≥2 PREDICTED content entries with canonical sketches; probe folded in.
-4. Labeling deferral recorded with reason (this section IS the record).
+4. Labeling loop: designed AND running (S21 CONFIRMED with three labels;
+   the deferral this gate planned is LIFTED for the implemented part --
+   cross-layer + volume remain open, stated in LABELING_LOOP.md).
 5. VELOCITY.md continues — CLOCKED this time (v1.2 process fix in force).
+6. NATIVE ENGRAM STORAGE (added 2026-10-01: this is what defines v1.3):
+   freeze/load/recompose with roundtrip + determinism + stability gates;
+   stores addressable from listings (implant_apply today, STOREBANK
+   sections horizon); predictor as cost model over stored data.
 
 ## Out of scope (named, not forgotten)
 

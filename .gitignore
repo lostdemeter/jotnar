@@ -4,6 +4,8 @@
 # Same for samples/depth/*.npy: gate-depended priors are frozen evidence.
 *.npy
 !samples/depth/*.npy
+# ENGRAM blobs (41MB full float64 dwarfs the repo; regenerable, gated)
+stores/*.npz
 *.pth
 *.pt
 *.bin
