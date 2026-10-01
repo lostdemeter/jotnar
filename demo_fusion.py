@@ -114,6 +114,15 @@ def main():
         banks.append(("w103", float(simsW.max()), recW))
     banks.sort(key=lambda t: -t[1])
     win_tag, win_score, win_rec = banks[0]
+    # curated rec: key->edge walk over n_keys records (original path)
+    ki = int(np.argmax(keys @ cue))
+    acc = 0
+    rec = recs[0]
+    for r in recs:
+        if ki < acc + r["n_keys"]:
+            rec = r
+            break
+        acc += r["n_keys"]
     if win_rec is not None and win_tag != "curated":
         rec = {"id": win_rec.get("id", "?"), "tag": f"{win_tag}/{win_rec.get('id', '?')}",
                "subj": win_rec["subj"], "pred": win_rec["pred"],
