@@ -337,6 +337,29 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   3. qwen_mirror.py's 4th avoided copy: promotion working as designed,
      helpers accreting instead of mirrors multiplying.
 
+## 2026-10-01: CRUD round — Q2/Q3/Q4/Q5 + ENGRAM (CLOCKED)
+
+- Gain retune (= signed ablation), label-to-store CREATE, shelf null,
+  layer-1 spot-check, structure named (test_create.py, test_layer1.py,
+  S23, #LIB-058).
+- Wall time: clock 13:04:45Z -> 13:09Z (~4 min: Q2 + Q3 + Q4 + Q5 +
+  naming + docs; test runtimes dominate).
+- Results: retune 22.1==22.1; create rank 1/8 at 8.4dB gap 22.6;
+  shelf-null 57.8dB; L1 spectrum 12x giant 14dB tracking -0.54.
+- Surprises:
+  1. Retune predicted ITSELF from the ablation number (same |delta|):
+     the cheapest prediction in the program -- zero new runs to state
+     it, one run to confirm. Laws compose.
+  2. Created store leaks to Germany/Switzerland (proper nouns move):
+     keys built from entity-MIDs match entity-ness broadly, not one
+     name exactly. Labels are coarser than their names -- recorded
+     against future overclaiming.
+  3. L1 tracking weaker (-0.54, n=8): unknown whether depth or noise.
+     Stated with the caveat; the next layer survey decides.
+  4. Two more whitespace edit slips (phantom trailing-space "fixes"
+     that merged a header once): edits that LOOK like no-ops get
+     diff-checked before AND after now, not just read-back after.
+
 ## 2026-10-01: factorization (CLOCKED)
 
 - Energy-factored residual + key-alignment law + form gate + writeup

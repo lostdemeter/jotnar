@@ -188,10 +188,23 @@ chance with a stated mechanism. First measurement (2026-09-30, f_012):
 holo coherence vs DAV2 depth-edge strength — pearson 0.27, top-decile
 overlap 0.29 (~3x chance): consistent with "both respond to scene
 structure", far from isomorphism (texture without depth, depth without
-texture). Recorded as the method working, not as evidence. Instances
-wanted: flow-confidence vs coherence on real motion (aperture-matched).
+ texture). Recorded as the method working, not as evidence. Instances
+ wanted: flow-confidence vs coherence on real motion (aperture-matched).
 
----
+ ### S23 directional store / engram [CONFIRMED]
+
+ A rank-1 key-value-gain component (key `v` matches input by projection,
+ value `u` writes out, gain `s` scales) as the editable unit of stored
+ information. Canonical form: S = s.(x.u)v, predicted cost from statics
+ (calibrate_C/predict_db), CRUD ops gated (readout, ablate, implant,
+ prune, create). Instances: every probed direction (toy + Qwen L0/L1),
+ three verified labels (S21), created France-store, 27 pruned shelves,
+ implant_apply DEF in stdlib. Named ENGRAM (memory trace): the structure
+ information is stored in, and the unit it is edited in. Second MODEL
+ family wanted (all instances orbit Qwen L0/L1 + toy -- holo-native
+ engrams unclaimed).
+
+ ---
 
 ## Traversal matrix (rows x columns; cell = instance+gate / absent / ?)
 
@@ -219,6 +232,7 @@ wanted: flow-confidence vs coherence on real motion (aperture-matched).
 | S20 | parity gates | Y(0-diff) | Y | ? | Y | ? | ? |
 | S21 | causal streams | ? | ? | ? | cand | ? | Yx3 (d24/32/328) |
 | S22 | content corresp. | ? | ? | 0.27meas | ? | ? | ? |
+| S23 | engram (store) | ? | ? | ? | ? | ? | Y(L0+L1) |
 
 (- = believed absent, which is also a claim and should be checked.)
 (cand = measured candidate, not yet an instance; 0.27meas = method demo.)

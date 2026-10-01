@@ -566,6 +566,21 @@ reviewed as a pair; transitivity (CUDA==C via shared numpy ref) beats
  graffiti (random plant, 21.6dB smear-with-pattern) vs writing (aligned
  plant, negative-dB rewrite with 26dB+ specificity) — same primitive,
  different aim, both gated.
+## #LIB-058: CRUD round — retune, create, null-shelf, layer-1, ENGRAM [CLOSED]
+
+ Q2 retune = signed ablation (gain-x2 22.1dB == ablation 22.1dB, exact to
+ 0.1). Q3 CREATE from the (dir24, France) label on a THIRD prompt: key
+ from old France-MIDs, value Vt[24], gain s24 -> France-pos rank 1/8 at
+ 8.4dB, gap 22.6dB (creation from knowledge, not fit; proper nouns leak
+ slightly -- Germany/Switzerland move too, stated). Q4 shelf null: same
+ write on pruned vs full weights identical at 57.8dB -- shelves are
+ CAPACITY (free space + headroom), not interference; freeing changes
+ nothing about what a write does. Q5 layer 1 reproduces the pattern
+ (spectrum 12x, giant 14dB, spread 21dB, corr -0.54 -- weaker tracking
+ with n=8 caveat, holds past bar). NAME: the directional store is an
+ ENGRAM (S23 CONFIRMED: instances across toy + L0 + L1; second model
+ family wanted). Tests: test_prune.py grows retune; test_create.py
+ (create + null); test_layer1.py (spot-check).
 ## #LIB-057: pruning by prediction — combined linearity (CRUD Q1) [CLOSED]
 
  All 27 predicted-dead dirs removed in ONE edit (test_prune.py): combined

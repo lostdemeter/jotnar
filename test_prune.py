@@ -87,6 +87,17 @@ def main():
     d = 10 * np.log10(1.0 / mse) if mse > 0 else float("inf")
     check("prune-confirm", abs(d - d_pred) <= 3.0,
           f"measured {d:.1f}dB vs predicted {d_pred:.1f}dB")
+    # Q2 gain retune: doubling store 0's gain changes output by the SAME
+    # magnitude as removing it (|+1x| == |-1x| of the component) -- predict
+    # gain-x2 dB == ablation dB within 2dB, everything else fixed. One run.
+    g2 = run_down(WdT + s[0] * np.outer(U[:, 0], Vt[0]))
+    mse_g = float(np.mean((g2 - base) ** 2))
+    d_g = 10 * np.log10(1.0 / mse_g) if mse_g > 0 else float("inf")
+    ga = run_down(WdT - s[0] * np.outer(U[:, 0], Vt[0]))
+    mse_a = float(np.mean((ga - base) ** 2))
+    d_abl0 = 10 * np.log10(1.0 / mse_a) if mse_a > 0 else float("inf")
+    check("retune-predict", abs(d_g - d_abl0) <= 2.0,
+          f"gain-x2 {d_g:.1f}dB vs ablation {d_abl0:.1f}dB (same |delta|)")
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 
