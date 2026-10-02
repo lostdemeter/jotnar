@@ -1,0 +1,13 @@
+{
+  "seed": 0,
+  "n_merges": 4000,
+  "v": 4038,
+  "n_train": 938,
+  "coverage": 1.0,
+  "src_shas": {
+    "Alexander_the_Great.html": "8edc2e8c1b90f50b",
+    "Cleopatra.html": "c0c8e561b2b65c8e",
+    "Mark_Antony.html": "5e884147898c5d1d"
+  },
+  "merges_sha": "18968aa1b167a5f9"
+}

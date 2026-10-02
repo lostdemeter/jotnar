@@ -47,7 +47,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--merges", type=int, default=2000)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--out", type=str, default=None,
+                    help="output dir (default data/; sweeps use data/bpe_N/)")
     a = ap.parse_args()
+    outdir = os.path.join(ROOT, a.out) if a.out else OUT
     sents, shas = [], {}
     for f in sorted(glob.glob(os.path.join(SRC, "*.html"))):
         raw = open(f, encoding="utf-8", errors="replace").read()
@@ -103,13 +106,13 @@ def main():
     man = {"seed": a.seed, "n_merges": len(merges), "v": len(vocab),
            "n_train": len(train), "coverage": cov, "src_shas": shas,
            "merges_sha": hashlib.sha256(json.dumps(merges).encode()).hexdigest()[:16]}
-    os.makedirs(OUT, exist_ok=True)
-    json.dump(vocab, open(os.path.join(OUT, "bpe_vocab.json"), "w"))
-    json.dump(merges, open(os.path.join(OUT, "bpe_merges.json"), "w"))
-    json.dump(man, open(os.path.join(OUT, "bpe_manifest.json"), "w"), indent=2)
+    os.makedirs(outdir, exist_ok=True)
+    json.dump(vocab, open(os.path.join(outdir, "bpe_vocab.json"), "w"))
+    json.dump(merges, open(os.path.join(outdir, "bpe_merges.json"), "w"))
+    json.dump(man, open(os.path.join(outdir, "bpe_manifest.json"), "w"), indent=2)
     top = Counter(p for syms, n in words.values() for p in syms for _ in range(min(n, 1)))
     print(f"train={len(train)} merges={len(merges)} V={len(vocab)}")
-    print(f"wrote {OUT}/bpe_vocab.json + bpe_merges.json + manifest")
+    print(f"wrote {outdir}/bpe_vocab.json + bpe_merges.json + manifest")
 
 
 if __name__ == "__main__":
