@@ -1307,3 +1307,15 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   printed every run (the trade stays visible, never hidden):
   gpen buys glue 0.6->0.2 for ~1 bigram. Falsified bands become
   measured rows -- this one did, openly.
+
+## 2026-10-01: w103 HN banks lateral -- local optimum from 7 sides (CLOCKED)
+
+- scripts/collect_w103.py (200 sents, HN/HN2 rows by next word, 256
+  words 0.878 mass) + diagnosis (HN~emb cosine 0.32 -- weak but real)
+  + HN-matched untied banks: top1 0.243 IDENTICAL, ppl 580 vs 573.
+  Same verdict as D16 untied: layer content doesn't differentiate.
+- w103 local optimum now confirmed from 7 directions (gains,
+  coordinate, headt, seeds, bank mass, HN banks, depth). The optimum
+  is the finding: transferred structure + w103 ends are jointly
+  optimal for this architecture; top1 moves need new mechanisms
+  (rank>D32 needs D64 body; D64 needs content-fit -- the circle).
