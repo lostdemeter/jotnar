@@ -1693,6 +1693,42 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   depth/content, then transfer). Full port urgency reduced for
   knowledge (port buys compute); attention blocker unchanged.
 
+## 2026-10-02: port depth limit -- range law bites at L1 (CLOCKED, start missed)
+
+- Start clock MISSED (19-for-19). L0 port GREEN (41.81dB +
+  divergence pin); L1 staged RED (13.4dB). Bisection (4 rounds
+  incl. 2 mirror bugs, both shape-loud): QKV green (65dB), failure
+  at DOWN -- L1 MID +-40 (vs L0 +-17) x Wd folds per-PRODUCT
+  (range law: matmul products must stay ~+-13, m-INDEPENDENT;
+  chunking useless since fold is per-product pre-sum; ADD folds
+  too). L0 was LUCKY (small Wd), not robust -- same law, kinder
+  numbers. Staging/splitting cannot help; only phi-core wide-path
+  unblocks (filed as backlog class, not this repo).
+- Compounding: no-qb divergence 23.3 -> 15.2dB across two layers
+  (range workaround decays with depth -- priced). Knowledge
+  (lens: L22+) UNREACHABLE by port on current substrate. Closing
+  irony, stated warmly: our small-weights construction sidesteps
+  the exact law that blocks teacher ports (fit bodies live where
+  products stay small BY DESIGN). The native loop+implant path is
+  unaffected -- fill-up proceeds natively.
+
+## 2026-10-02: twin-v2 + closure -- instruments close, outputs end (CLOCKED, start missed)
+
+- Start clock MISSED (18-for-18). Twin-v2 (tests/test_twin_traj
+  .py, 5/5 ALL OK): 8 voice pairs x endpoint+trajectory twins --
+  endpoint-mean 0.420/max 0.665, traj-mean 0.520/max 0.651,
+  coverage 8/8 with min-aligned 3. Neither bounds the other
+  (v03 0.665/0.464 vs v02 0.335/0.651): endpoints carry
+  order/length residue, aligned pairs carry history mismatch --
+  triangulation instrument, both barred.
+- Closure (tests/test_closure.py, 4/4 ALL OK): hedge-stop (top-1
+  in frozen frequent-64 = would-coil-next) + glue-trim + CAP-24
+  (termination by proof). 8/8 fire before cap, 8/8 add content,
+  replay identical. Outputs end on content (maladies/resentments/
+  ptolemaic/persian/roman -- short 5-8 word closed sentences).
+  Coil-to-closed converter DELIVERED; thinness recorded as aim's
+  shadow (short-closed >> rambling-coil for the stranger test).
+
 ## 2026-10-02 (branch teacher-scaffold): joint K-x-temp sweep -- no off-axis optimum (CLOCKED, start missed)
 
 - Start clock MISSED (17-for-17). Qwen-ratio bank K173 frozen

@@ -22,3 +22,5 @@ __pycache__/
 data/piece_bigrams.npz
 data/w20k_piece_bigrams.npz
 data_ingest/*_bigrams.npz
+# teacher block ports (119MB/layer float64, regenerable via scripts/freeze_qwen0.py + HF cache; manifests tracked, parity gates compensate)
+data/qwen*_block.npz
