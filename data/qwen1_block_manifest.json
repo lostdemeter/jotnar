@@ -1,0 +1,43 @@
+{
+  "shapes": {
+    "Wq8": [
+      896,
+      896
+    ],
+    "Wk8": [
+      896,
+      128
+    ],
+    "Wva": [
+      897,
+      128
+    ],
+    "Wo": [
+      896,
+      896
+    ],
+    "ln1": [
+      896
+    ],
+    "ln2": [
+      896
+    ],
+    "wup": [
+      896,
+      4864
+    ],
+    "wgate": [
+      896,
+      4864
+    ],
+    "wdown": [
+      4864,
+      896
+    ]
+  },
+  "folding": "SC/8 split balanced (/sqrt8 into Q and K sides; rotation-linearity keeps RoPE exact; quantization-optimal)",
+  "biases": "V-bias via ones-augment (exact, tiny); Q-bias OMITTED (23.3dB stated divergence -- substrate product-range law); K-bias cancelled by proof (row-constant); o_bias absent verified",
+  "tshift": "omitted (teacher has none)",
+  "rope_base": 1000000.0,
+  "sha": "45a49ec58845d57a"
+}

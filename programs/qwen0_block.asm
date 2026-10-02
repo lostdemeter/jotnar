@@ -1,0 +1,152 @@
+# Qwen2-0.5B layer-0 FULL block port (Task 2: attention + MLP, GQA-14).
+#
+# GQA (kv=2, rep=7) as 14 explicit heads (house style, zero new
+# mnemonics): Q slices x14, K/V slices x2 reused across groups
+# (head h uses K/V head h//7 -- mirror repeat_interleave(7)).
+# Q/K WITHOUT bias (range law: matmul products must stay ≲ ±13,
+# m-independent lattice fold; Q/K bias rows ±45 exceed it -- 23.3dB
+# stated divergence). V bias via ones-augment (tiny, exact). /8 folding
+# split balanced (/sqrt8 both sides). NO TSHIFT (teacher has none).
+# RoPE base per-model (rope_base 1000000.0). Scores surveyed <=30
+# (short contexts) -- inside WIDE contract with margin.
+CONFIG m_acc 35492
+CONFIG m_cov 35492
+CONFIG eps_rms 1e-6
+CONFIG beta -30.0
+CONFIG rope_base 1000000.0
+
+IN H
+IN pos
+IN cmask
+IN ones
+IN ln1
+IN Wq8
+IN Wk8
+IN Wva
+IN Wo
+IN ln2
+IN wup
+IN wgate
+IN wdown
+
+XN = RMSNORM(H, ln1)
+XNa = CONCAT(XN, ones, 1)
+Q = MATMUL(XN, Wq8)
+K = MATMUL(XN, Wk8)
+V = MATMUL(XNa, Wva)
+
+Q1 = SLICE(Q, 1, 0, 64)
+Q2 = SLICE(Q, 1, 64, 128)
+Q3 = SLICE(Q, 1, 128, 192)
+Q4 = SLICE(Q, 1, 192, 256)
+Q5 = SLICE(Q, 1, 256, 320)
+Q6 = SLICE(Q, 1, 320, 384)
+Q7 = SLICE(Q, 1, 384, 448)
+Q8 = SLICE(Q, 1, 448, 512)
+Q9 = SLICE(Q, 1, 512, 576)
+Q10 = SLICE(Q, 1, 576, 640)
+Q11 = SLICE(Q, 1, 640, 704)
+Q12 = SLICE(Q, 1, 704, 768)
+Q13 = SLICE(Q, 1, 768, 832)
+Q14 = SLICE(Q, 1, 832, 896)
+K1 = SLICE(K, 1, 0, 64)
+K2 = SLICE(K, 1, 64, 128)
+V1 = SLICE(V, 1, 0, 64)
+V2 = SLICE(V, 1, 64, 128)
+QR1 = ROTARY(Q1, pos)
+QR2 = ROTARY(Q2, pos)
+QR3 = ROTARY(Q3, pos)
+QR4 = ROTARY(Q4, pos)
+QR5 = ROTARY(Q5, pos)
+QR6 = ROTARY(Q6, pos)
+QR7 = ROTARY(Q7, pos)
+QR8 = ROTARY(Q8, pos)
+QR9 = ROTARY(Q9, pos)
+QR10 = ROTARY(Q10, pos)
+QR11 = ROTARY(Q11, pos)
+QR12 = ROTARY(Q12, pos)
+QR13 = ROTARY(Q13, pos)
+QR14 = ROTARY(Q14, pos)
+KR1 = ROTARY(K1, pos)
+KR2 = ROTARY(K2, pos)
+KT1 = TRANSPOSE(KR1)
+KT2 = TRANSPOSE(KR2)
+SC1 = BATCH_MATMUL(QR1, KT1)
+SC2 = BATCH_MATMUL(QR2, KT1)
+SC3 = BATCH_MATMUL(QR3, KT1)
+SC4 = BATCH_MATMUL(QR4, KT1)
+SC5 = BATCH_MATMUL(QR5, KT1)
+SC6 = BATCH_MATMUL(QR6, KT1)
+SC7 = BATCH_MATMUL(QR7, KT1)
+SC8 = BATCH_MATMUL(QR8, KT2)
+SC9 = BATCH_MATMUL(QR9, KT2)
+SC10 = BATCH_MATMUL(QR10, KT2)
+SC11 = BATCH_MATMUL(QR11, KT2)
+SC12 = BATCH_MATMUL(QR12, KT2)
+SC13 = BATCH_MATMUL(QR13, KT2)
+SC14 = BATCH_MATMUL(QR14, KT2)
+NEG = BETA(SC1)
+MS1 = SELECT(cmask, SC1, NEG)
+MS2 = SELECT(cmask, SC2, NEG)
+MS3 = SELECT(cmask, SC3, NEG)
+MS4 = SELECT(cmask, SC4, NEG)
+MS5 = SELECT(cmask, SC5, NEG)
+MS6 = SELECT(cmask, SC6, NEG)
+MS7 = SELECT(cmask, SC7, NEG)
+MS8 = SELECT(cmask, SC8, NEG)
+MS9 = SELECT(cmask, SC9, NEG)
+MS10 = SELECT(cmask, SC10, NEG)
+MS11 = SELECT(cmask, SC11, NEG)
+MS12 = SELECT(cmask, SC12, NEG)
+MS13 = SELECT(cmask, SC13, NEG)
+MS14 = SELECT(cmask, SC14, NEG)
+P1 = SOFTMAX_WIDE(MS1)
+P2 = SOFTMAX_WIDE(MS2)
+P3 = SOFTMAX_WIDE(MS3)
+P4 = SOFTMAX_WIDE(MS4)
+P5 = SOFTMAX_WIDE(MS5)
+P6 = SOFTMAX_WIDE(MS6)
+P7 = SOFTMAX_WIDE(MS7)
+P8 = SOFTMAX_WIDE(MS8)
+P9 = SOFTMAX_WIDE(MS9)
+P10 = SOFTMAX_WIDE(MS10)
+P11 = SOFTMAX_WIDE(MS11)
+P12 = SOFTMAX_WIDE(MS12)
+P13 = SOFTMAX_WIDE(MS13)
+P14 = SOFTMAX_WIDE(MS14)
+C1 = BATCH_MATMUL(P1, V1)
+C2 = BATCH_MATMUL(P2, V1)
+C3 = BATCH_MATMUL(P3, V1)
+C4 = BATCH_MATMUL(P4, V1)
+C5 = BATCH_MATMUL(P5, V1)
+C6 = BATCH_MATMUL(P6, V1)
+C7 = BATCH_MATMUL(P7, V1)
+C8 = BATCH_MATMUL(P8, V2)
+C9 = BATCH_MATMUL(P9, V2)
+C10 = BATCH_MATMUL(P10, V2)
+C11 = BATCH_MATMUL(P11, V2)
+C12 = BATCH_MATMUL(P12, V2)
+C13 = BATCH_MATMUL(P13, V2)
+C14 = BATCH_MATMUL(P14, V2)
+CTX2 = CONCAT(C1, C2, 1)
+CTX3 = CONCAT(CTX2, C3, 1)
+CTX4 = CONCAT(CTX3, C4, 1)
+CTX5 = CONCAT(CTX4, C5, 1)
+CTX6 = CONCAT(CTX5, C6, 1)
+CTX7 = CONCAT(CTX6, C7, 1)
+CTX8 = CONCAT(CTX7, C8, 1)
+CTX9 = CONCAT(CTX8, C9, 1)
+CTX10 = CONCAT(CTX9, C10, 1)
+CTX11 = CONCAT(CTX10, C11, 1)
+CTX12 = CONCAT(CTX11, C12, 1)
+CTX13 = CONCAT(CTX12, C13, 1)
+CTX = CONCAT(CTX13, C14, 1)
+O = MATMUL(CTX, Wo)
+H1 = ADD(H, O)
+HN = RMSNORM(H1, ln2)
+UP = MATMUL(HN, wup)
+GATE = MATMUL(HN, wgate)
+GS = SILU(GATE)
+MID = MUL(GS, UP)
+DOWN = MATMUL(MID, wdown)
+OUT = ADD(H1, DOWN)
