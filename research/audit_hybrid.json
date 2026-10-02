@@ -1,0 +1,12 @@
+{
+  "n": 8,
+  "rates": {
+    "repeat": 0.0,
+    "fragment": 0.0,
+    "glue": 0.0,
+    "thin": 0.0,
+    "closure": 0.0
+  },
+  "worst": {},
+  "base_glue": 0.24094020888338513
+}

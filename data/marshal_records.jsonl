@@ -1,0 +1,5 @@
+{"type": "manifest", "format": "echion-store/1", "n_records": 4}
+{"type": "edge", "id": "m0054", "subj": "secretary", "pred": "of", "obj": "state", "support": 12, "witness": 11836, "orders": ["canon"], "digest": "8a4934f636061bae"}
+{"type": "edge", "id": "n7473c825", "subj": "ides", "pred": "of", "obj": "march", "support": 1, "witness": "groki-subminsup+w103m5x10", "orders": ["canon"], "digest": "7473c825b9dbc02f"}
+{"type": "edge", "id": "n90d3c29c", "subj": "battle", "pred": "of", "obj": "carrhae", "support": 1, "witness": "groki-subminsup+w103m5x9", "orders": ["canon"], "digest": "90d3c29c50fc8ebf"}
+{"type": "edge", "id": "n97e52cbe", "subj": "battle", "pred": "of", "obj": "cannae", "support": 1, "witness": "groki-subminsup+w103m5x5", "orders": ["canon"], "digest": "97e52cbebce02fad"}

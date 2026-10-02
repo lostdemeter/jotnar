@@ -1,0 +1,13 @@
+{
+  "base": "bankp32_64",
+  "pruned": {
+    "slot": 19,
+    "was": 649
+  },
+  "created": {
+    "slot": 19,
+    "piece": 399,
+    "word": "cannae"
+  },
+  "idea": "marshal n97e52cbe (battle/of/cannae)"
+}
