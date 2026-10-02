@@ -1,0 +1,107 @@
+{
+  "base_glue": 0.24094020888338513,
+  "models": {
+    "Qwen/Qwen2-0.5B": {
+      "n": 8,
+      "rates": {
+        "repeat": 0.0,
+        "fragment": 0.875,
+        "glue": 0.125,
+        "thin": 0.0,
+        "closure": 0.5
+      },
+      "worst": {
+        "fragment": [
+          [
+            "alexander the great",
+            "novel=4 open-valid=2 alexander the great less info reputation 8 bio website location"
+          ],
+          [
+            "cleopatra and antony",
+            "novel=2 open-valid=1 cleopatra and antony may 27th 2006"
+          ],
+          [
+            "the battle of actium",
+            "novel=1 open-valid=0 the battle of actium 2800bc and 275"
+          ]
+        ],
+        "closure": [
+          [
+            "caesar conquered gaul",
+            ", and he was not defeated.\nHe defeated the Romans with"
+          ],
+          [
+            "mark antony and cleopatra",
+            "2.0\n150,00 \u20ac"
+          ],
+          [
+            "alexander founded alexandria",
+            "in 2007.\nOur mission is to create"
+          ]
+        ],
+        "glue": [
+          [
+            "the battle of actium",
+            "0.43 the battle of actium 2800bc and 275"
+          ]
+        ]
+      }
+    },
+    "HuggingFaceTB/SmolLM2-135M": {
+      "n": 8,
+      "rates": {
+        "repeat": 0.25,
+        "fragment": 0.625,
+        "glue": 0.5,
+        "thin": 0.0,
+        "closure": 0.125
+      },
+      "worst": {
+        "repeat": [
+          [
+            "alexander the great",
+            "alexander the great and to the last the last the last i"
+          ],
+          [
+            "the battle of actium",
+            "the battle of actium and had the battle of the basileia"
+          ]
+        ],
+        "glue": [
+          [
+            "alexander the great",
+            "0.50 alexander the great and to the last the last the last i"
+          ],
+          [
+            "cleopatra and antony",
+            "0.45 cleopatra and antony the lady were the last words of mary"
+          ],
+          [
+            "the battle of actium",
+            "0.55 the battle of actium and had the battle of the basileia"
+          ]
+        ],
+        "fragment": [
+          [
+            "cleopatra and antony",
+            "novel=2 open-valid=2 cleopatra and antony the lady were the last words of mary"
+          ],
+          [
+            "the battle of actium",
+            "novel=1 open-valid=0 the battle of actium and had the battle of the basileia"
+          ],
+          [
+            "mark antony and cleopatra",
+            "novel=1 open-valid=0 mark antony and cleopatra s son you shall not go out of"
+          ]
+        ],
+        "closure": [
+          [
+            "the roman empire",
+            ",\nand to the Greeks. In the middle ages the"
+          ]
+        ]
+      }
+    }
+  }
+}
