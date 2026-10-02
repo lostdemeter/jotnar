@@ -35,8 +35,12 @@ learning spec with gates exists), fluency competitions of any kind.
    gate (recorded in VELOCITY, research track owns it).
 4. **Retrieval disambiguation closed**: probe misses (7/202 mined,
    ~11% w103m5 ambiguity classes) resolved by second-pass
-   full-triple re-cue; v07 both sides retrieved; gate bars
-   second-pass hit rate with first-pass numbers kept.
+   full-triple re-cue + family stage (202-bank 195 pinned +
+   202/202; w103m5 9528 pinned + 0.9636, family 0.9960 with 43
+   family-absent residual priced as next mechanism); v07 both
+   sides retrieved (word path; hidden path named limitation);
+   gate bars staged hit rates with first-pass numbers kept
+   (tests/test_disambig.py 10/10).
 5. **w103 top1 >= 0.35 with ppl <= 150** (today 0.27/217). Path:
    w103-body HN banks v2 (rank-matched), D32 refit at w103 point,
    per-block scales at width. Transfer alone is proven insufficient.
@@ -56,13 +60,10 @@ scale past D64 (no evidence it helps yet).
 
 R1. **Piece word-top1 0.20** (today 0.091 word / 0.058 piece).
 Exhausted: refit, boundary scoring, banks to K256, temps, context,
-priors (unbuilt, wrong direction), fusion (both shapes). Open:
-distinct-content banks, content-gated sharpening (BOUNDED SPIKE
-FIRED 2026-10-02: argmax net-zero BUT decision-mass moves
-sub-threshold (truth +3.9 rank, 76% prob-up) -- coupling is
-threshold-gated, not absent; navigation reframe (flat converges,
-sharp discriminates); absolute-origin leak measured 65dB,
-exonerated. PMI differential (logit minus log-unigram) INERT at
-0.25 (identical-30, zero flips) then destructive -- trace verdict:
-error is ignorance, not bias; decode-differentials closed,
-redirect to content paths).
+priors (unbuilt, wrong direction), fusion (both shapes). Deepened:
+all accuracy is ROUTING (30/81 glue vs 0/249 content -- content aim
+absent, not weak); generation quality via hybrid+closure+collage
+(validity/grounding/flow gated separately under Gate 3). Open:
+distinct-content banks (closed as class), content-gated
+sharpening (falsified net-zero), spectral flattening (gradient
+confirmed, inverted-U mapped, optimum at natural spec).

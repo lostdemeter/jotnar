@@ -234,6 +234,13 @@ def main():
             i += 1
     seed = " ".join(words) if words else "alexander the great"
     fact, fsrc = retrieve(words_of(seed))
+    # echo guard: strip fact/seed prefix overlap (retrieval keys on seed
+    # words, so the fact often restates the seed -- prepend would echo
+    # beyond nrep range; drop the shared prefix, keep the new tail)
+    _sw = words_of(seed)
+    while fact and _sw and fact[0] == _sw[0]:
+        fact.pop(0)
+        _sw.pop(0)
     out = []
     for w in fact:
         try:

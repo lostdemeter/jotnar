@@ -1712,6 +1712,139 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   products stay small BY DESIGN). The native loop+implant path is
   unaffected -- fill-up proceeds natively.
 
+## 2026-10-02: fill-up turn 1 -- marshalling process runs (CLOCKED, start missed)
+
+- Start clock MISSED (20-for-20). THE PROCESS (v1, five stages):
+  PROPOSE (corpus-mined edges only -- attested by support; never
+  bare teacher text) -> PARAPHRASE-FILTER (teachers supply surface
+  orders; exact-word filter or drop loudly) -> FREEZE (same
+  combiner+lex99, SEPARATE bank, provenance-kept) -> VERIFY
+  (self-recall exact through listing + replay identical +
+  arbitration routing + existing probes green by construction) ->
+  CATALOG (append-only ledger: geometry, support, orders, shas).
+  Bit-exact everywhere claimed (recovery, replay, freeze bytes).
+- Turn 1 (m0054 secretary/of/state, sup 12): paraphrase 0/4
+  faithful (drift+loops -- teachers can't rephrase either);
+  canon-only frozen (scripts/freeze_marshal.py); self-recall 64.0
+  exact; arbitration marshal-64 vs mined202-64 TIE (duplication
+  found by measurement, not review -- turn-1 class grandfathered,
+  novel-only enforced from turn 2); test_retrieve 16/16 green.
+  Two process bugs caught live (catalog double-append on rerun;
+  orphaned edit block -- both fixed, idempotent now).
+- Catalog open: data/marshal_catalog.jsonl entry 1. Next turns:
+  novel-only ideas; teacher role narrowed to paraphrase attempts
+  (disposal remains ours: attest + filter).
+
+## 2026-10-02: meaning-vs-routing -- all accuracy is routing (CLOCKED, start missed)
+
+- Start clock MISSED (24-for-24). Frozen counts: surprisal
+  (meaning) vs out-entropy (routing) correlate -0.41 -- proper
+  nouns 7-11 bits meaning / 1-3 bits routing ("battle" 1.3!);
+  function words ~5 / ~4; egypt the hub exception (8.7 AND 4.2).
+  Past experiments' intuition, priced.
+- Bigram-residual probe (subtract routing, keep content):
+  baseline 30/330 splits 30/81 GLUE vs 0/249 CONTENT -- every
+  correct prediction is a function word; content aim is ABSENT,
+  not weak. Residual kills routing (30->0) for +1 content:
+  not viable as decoder, DECISIVE as diagnostic. Division of
+  labor MEASURED: routing (models, 37% on glue) + content
+  (retrieval/copy only) -- the two-organ architecture is FORCED,
+  and hybrid is its structural expression.
+- XOR doctrine named (user): define-by-differences IS the
+  program (twins, probes, PMI, implants, census, residual --
+  every instrument subtracts). Subtraction as identification,
+  stated as principle.
+
+## 2026-10-02: audit loop closes -- echo fixed, all modes zero (CLOCKED, start missed)
+
+- Start clock MISSED (25-for-25). Audit B (research/audit_hybrid
+  .py+.json): same 8 seeds/modes on hybrid+closure outputs --
+  flagship-era (glue 8/8) vs hybrid (repeat 2/8 ECHO, rest 0).
+  New mode: fact-prepend/seed DUPLICATION beyond nrep range
+  (retrieval keys on seed words, so facts restate seeds).
+- Fix: echo guard (strip fact/seed shared prefix, deterministic,
+  both demo_hybrid + audit script): re-audit ALL MODES ZERO
+  (repeat/fragment/glue/thin/unk 0/8). Loop closed exactly as
+  designed (top mode first, re-run shows delta). One sed-hack
+  misstep en route (junk line, immediately reverted -- edits go
+  through the reader, process note).
+- Outputs now: fact-tail + seed, closed, valid, content-ending
+  (helios/summoned/pompey-defeated/twenty-cities/olympias --
+  retrieval facts flowing). Remaining texture: short (5-10
+  words), thin-adjacent by design (closure trades coil for
+  brevity -- aim's shadow, still R1).
+
+## 2026-10-02: multi-fact collage -- content without prose (CLOCKED, start missed)
+
+- Start clock MISSED (26-for-26). Top-3 DISTINCT edges prepended
+  (deduped) instead of top-1: outputs go 14 words, all content
+  (never-lost-battle, oracle-siwa, allied-caesar, asp-bite --
+  curated depth showing), zero glue-endings -- but generation
+  adds NOTHING (hedge-stop fires at once on fact-piles; model
+  has no continuation for concatenated facts). Collage, not
+  prose: fact pile + seed, closed.
+- Verdict: composition gap NAMED (facts don't compose into
+  sentences -- needs verbs/relations = the 0/249 content
+  problem). Collage stands as RETRIEVAL-DISPLAY mode (grounded
+  fact lists > fluent hallucinations; pairs with Gate-4
+  ambiguity SETS shown as lists -- coherent product story).
+
+## 2026-10-02: fill-up turn 2 -- novelty pipeline + tier policy (CLOCKED, start missed)
+
+- Start clock MISSED (21-for-21). Novelty funnel: groki
+  sub-minsup 334 -> pronoun/glue filters 244 -> w103-attested 4
+  (god/war, battle/carrhae, ides/march, department/history) ->
+  curated-novel 4. Picked ides/of/march (Caesar-thread synergy).
+- Process contradiction FOUND by the tool (attestation REQUIRES
+  w103, novelty FORBID banked): resolved as TIERS (w103m5 =
+  source mass, marshal = curated tier; cross-tier dupes resolve
+  marshal-first, stated). Tool enforces both (asserts) + catalog
+  idempotent + per-idea value streams + content-hash ids +
+  same-version rebuild deterministic (verified twice).
+- Paraphrase 0/4 again (Qwen HALLUCINATES "2017", smol loops) +
+  new rule: looped paraphrases rejected (audit repeat def) even
+  when word-faithful (smol's "marches" changed meaning!).
+  Teachers now 0/8 across turns at faithful rephrasing.
+- Verify: self-recall 64 exact, arbitration tie (policy),
+  test_retrieve green. Catalog: 2 ideas. Fill-up velocity: the
+  funnel (334->1) is the work; freezing is seconds.
+
+## 2026-10-02: fill-up turn 3 -- consumption closes the loop (CLOCKED, start missed)
+
+- Start clock MISSED (22-for-22). Adjudicated OUT: god/of/war
+  (myth-vs-game ambiguous), department/of/history (institutional
+  boilerplate) -- skips recorded with reasons, not silently
+  dropped. Turn 3: battle/of/carrhae (Parthian content we lack).
+  Paraphrase 0/4 (Qwen FABRICATES with confidence: "1805",
+  "412 Constantine" for 53 BC Carrhae -- filter catches all;
+  teachers now 0/12). Canon frozen (n90d3c29c).
+- Consumption probe (4-bank arbitration incl marshal): all 3
+  marshal ideas self-retrieve 64 exact through the listing AND
+  win routing (marshal-first on cross-tier ties). Loop closed:
+  marshal -> retrieve -> route. Honest accounting: ties
+  everywhere (same combiner+lex = identical keys) means marshal
+  buys ROUTING PRIORITY + catalog ledger + domain curation, not
+  new retrievability beside w103m5 (value lands for w103-less
+  consumers + tier quality). Catalog: 3 ideas.
+
+## 2026-10-02: bank-CRUD turn -- two-tier architecture verified (CLOCKED, start missed)
+
+- Start clock MISSED (23-for-23). Echion-weights thread: usage
+  audit (1920 positions, BP streams) shows bank dominated by
+  CHARACTER pieces (y/e/s/t top) -- refines fragments, as
+  designed. Pruned weakest ('e' bare) + created cannae store
+  (bankp32_crud.npz, variant -- frozen K64 untouched): twin
+  0.666 (vs 0.665), top1 IDENTICAL counts (32/178, 1/388,
+  33/566). Verdict (valuable negative): piece-bankhn stores
+  CANNOT hold multi-piece word ideas (single vectors vs 4-piece
+  'c'+'an'+'na'+'e' words; first-piece 'c' shared by hundreds =
+  no discrimination) -- while assoc/marshal sequence-keys hold
+  cannae EXACTLY (64.0). Two tiers VERIFIED by construction
+  attempt: assoc (words/facts) -> bankhn (pieces/fluency).
+  "Update Echion weights" bifurcates CLEANLY: bankhn = refit
+  operating points (joint sweep), assoc = catalog turns (ideas
+  land exactly). Catalog: 4 ideas.
+
 ## 2026-10-02: twin-v2 + closure -- instruments close, outputs end (CLOCKED, start missed)
 
 - Start clock MISSED (18-for-18). Twin-v2 (tests/test_twin_traj
