@@ -1319,3 +1319,13 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   is the finding: transferred structure + w103 ends are jointly
   optimal for this architecture; top1 moves need new mechanisms
   (rank>D32 needs D64 body; D64 needs content-fit -- the circle).
+
+## 2026-10-01: piece arc verdict -- fit stands, width queued (CLOCKED)
+
+- K256 top1 0.058 (lateral), boundary word-top1 0.085 (validity
+  not accuracy), gains U-opt at fit (0.481), seeds all worse (best
+  0.519), piece32 transfer twin 1.048 (width-without-refit degrades
+  -- same law as word-D64). Fit (K64+wv2+headt, 0.443/0.055) stands
+  across every probe. Piece-D32 refit queued (gains/V/QK/headt at
+  piece32 point). Fragments remain THE visible gap; boundary mask
+  holds them at zero inventions.

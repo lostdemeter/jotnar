@@ -34,5 +34,20 @@
   },
   "w103d4": {
     "note": "LATERAL (0.270/217.7 vs 0.274/217): no depth without w103 refit; refit arc queued"
+  },
+  "arc": {
+    "K256_top1": 0.058,
+    "K64_top1": 0.055,
+    "boundary_word_top1": 0.085,
+    "gains_Uopt": "1.0-2.0 (0.481, at fit)",
+    "seeds": "all worse (best 0.519)",
+    "piece32_transfer": {
+      "twin": 1.048,
+      "parity": [
+        47.99,
+        51.49
+      ]
+    },
+    "verdict": "fit stands; width needs piece-D32 refit (queued); boundary=validity not accuracy"
   }
 }
