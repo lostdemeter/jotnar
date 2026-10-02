@@ -21,10 +21,18 @@ learning spec with gates exists), fluency competitions of any kind.
    managed). Structural, not wrapper: content confidence from (1)
    must carry it; penalties stay as guardrails with their costs
    stated (gpen ~1 bigram, recorded).
-3. **Piece word-top1 >= 0.20** (today 0.085) with zero inventions
-   held (test_piece_bound stays green). Path: piece-D32 refit
-   (baseline 1.048 twin recorded), boundary-aware scoring, bigger
-   piece banks with twin constraint.
+3. **Piece generation quality: validity + grounding + flow, all
+   demonstrated** (re-scoped 2026-10-02: word-top1 >= 0.20 moved to
+   research horizon, below). Bars: zero inventions held
+   (test_piece_bound green); retrieved OOV facts spoken verbatim
+   (hybrid fact-prepend, demo_hybrid -- was seed-only surrender);
+   loop-free + replay-identical generation (declared rules,
+   verified); router mix reported per run (core/piece/fact parts).
+   Rationale: operating-point moves exhausted (fit stands from ~16
+   directions), fusion falsified both shapes, piece OOV aim 0/144,
+   oracle union bounds the pair AT the old bar with no router
+   margin -- the old bar is a research question, not a release
+   gate (recorded in VELOCITY, research track owns it).
 4. **Retrieval disambiguation closed**: probe misses (7/202 mined,
    ~11% w103m5 ambiguity classes) resolved by second-pass
    full-triple re-cue; v07 both sides retrieved; gate bars
@@ -43,3 +51,18 @@ D64 revisit (parked with diagnosis; needs content-fit ideas, not
 sweeps), BPE cascade listing (shrink-geometry design), interaction
 learning (speculative until a gated spec exists), dialogue state,
 scale past D64 (no evidence it helps yet).
+
+## Research horizon (not release-blocking; measured rows, no bars)
+
+R1. **Piece word-top1 0.20** (today 0.091 word / 0.058 piece).
+Exhausted: refit, boundary scoring, banks to K256, temps, context,
+priors (unbuilt, wrong direction), fusion (both shapes). Open:
+distinct-content banks, content-gated sharpening (BOUNDED SPIKE
+FIRED 2026-10-02: argmax net-zero BUT decision-mass moves
+sub-threshold (truth +3.9 rank, 76% prob-up) -- coupling is
+threshold-gated, not absent; navigation reframe (flat converges,
+sharp discriminates); absolute-origin leak measured 65dB,
+exonerated. PMI differential (logit minus log-unigram) INERT at
+0.25 (identical-30, zero flips) then destructive -- trace verdict:
+error is ignorance, not bias; decode-differentials closed,
+redirect to content paths).

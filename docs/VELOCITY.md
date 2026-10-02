@@ -1443,3 +1443,252 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   fact (was seed-only fallback); alexander mixes 13+1 with olympias
   content; replay-identical verified. Remaining piece mechanisms
   (distinct-content banks, content-gated sharpening) still open.
+
+## 2026-10-02: sharpening spike -- coupling is threshold-gated (CLOCKED, start missed)
+
+- Start clock MISSED (6-for-6 question-led; the agenda item stands).
+  Bounded spike, dual-temp oracle on 330 boundaries (660 runs):
+  sharp (beta_b 2.0) changes 2/330 top-1 decisions (1 fix, 1 break,
+  net ZERO) while the same knob moves twin_dist 0.665->1.107.
+  Content-gating moot (n=1 per side) -- spike FALSIFIED as designed.
+- First write claimed DECOUPLING (twins move, decisions don't) --
+  CHALLENGED same day and revised: continuous decision variables DO
+  move (truth-rank +3.9 under sharp, 133 up / 82 down; truth-prob up
+  on 251/330, mean +0.002; margins flat). Coupling is real but
+  THRESHOLD-gated: mass shifts sub-argmax. Reframed geometrically
+  (navigation: flat converges trajectories, sharp discriminates
+  endpoints -- one mechanism with sign-disagreement, not two
+  worlds). The joint rule stands vindicated as tension: twins and
+  decisions disagree on temperature's SIGN, and neither implies the
+  other. Aim still lives in content paths (knobs that move decisions
+  at constant twins were all value-side); distinct-content banks
+  remains the open structural shot.
+- Pipeline audit (time/order lead): absolute-origin shift moves H4
+  at 65-67dB (integer-quantization leak of rotary relativity --
+  real, measured, below every bar) but twin_dist only to 4 decimals
+  (0.665/0.666) -- EXONERATED as the cause. Mismatch hunt stays open
+  (twin S-confound known-shape); theory side flagged (T-transform:
+  lattice temperature entangled with encoding scale).
+
+## 2026-10-02: what the twin corrects for -- differential instrument (CLOCKED, start missed)
+
+- Start clock MISSED (7-for-7; agenda item now comedic). Thesis
+  (user): the clock IS the execution; twin comparison is Da Vinci
+  averaging (opposed imperfections cancel common-mode error);
+  find WHAT it corrects for. Results: (1) origin-leak CANCELS in
+  the difference (H4 moves 65dB each side, twin 4th-decimal still)
+  -- common-mode cancellation PROVEN live, the Da Vinci mechanism
+  confirmed as the instrument's working principle; (2) content-
+  aligned trajectory probe (same pieces, all H rows, not endpoints):
+  0.464 mean vs 0.665 endpoint -- ~0.2 of the endpoint is
+  order/length execution-shape residue (the averaging limit, with
+  a number); remainder = content-invariance proper + uncancelled
+  residue. Causal caveat recorded (aligned pairs share tokens, not
+  histories -- decomposition estimate, not replacement).
+- Instrument proposal (not gate): twin v2 compares worldlines, not
+  endpoints (content-aligned trajectory comparison). Endpoint
+  averaging is structural to the current instrument; trajectory
+  comparison sees past it. Needs bars + multi-pair thought first
+  (LIB-015: measured row today).
+
+## 2026-10-02 (branch teacher-scaffold): assay A -- teachers audited with our harness (CLOCKED, start missed)
+
+- Start clock MISSED (12-for-12). Qwen2-0.5B + SmolLM2-135M, 8
+  audit seeds x 12 tokens, plain topk-12 seeded (native behavior,
+  no guards), same 5 modes + closure/open-validity
+  (research/teacher_audit.py + .json, branch-only).
+- Qwen: repeat 0/8, thin 0/8, glue 1/8, closure 4/8 -- does NOT
+  coil, no guards needed. BUT fragment 7/8 as open-domain sludge
+  ("bio website location", "may 27th 2006"): aim without grounding.
+  SmolLM2: repeat 2/8, glue 4/8, closure 1/8 -- coils LIKE US
+  ("the last the last the last", "battle of the basileia").
+- Verdicts: (1) coil ~= small-scale phenomenon (135M coils with
+  training; 0.5B doesn't) -- supply/scale, not our unique bug;
+  guards aren't the difference (teachers ran unguarded). (2)
+  Validity tradeoff INVERTED (fluent-sludge vs valid-coil) -- the
+  fusion argument restated empirically. (3) Closure = missing
+  machinery with cheap shape (EOS/stop; ours: shape-completion
+  stopping via 89 attested families -- UNBUILT, queued). Confound
+  stated (guarded-ours vs plain-teachers; Qwen gap survives it).
+
+## 2026-10-02 (branch teacher-scaffold): assay B-1 -- stores share physics, differ in shape (CLOCKED, start missed)
+
+- Start clock MISSED (13-for-13). SmolLM2 L0 MLP through our
+  two-stage listings, test_realw protocol mirrored
+  (research/smolm2_realw.py + .json, branch-only): parity holds
+  (66.3dB peak-relative; 31.79 at peak=1.0 is fixture magnitudes
+  +-53, re-barred honestly like selectgen); spectrum 24x (Qwen
+  17x); spread 34.9dB (Qwen 33); track corr -0.81 (Qwen -0.84);
+  planted inf (same). Single-block storage LAWS IDENTICAL.
+- Differences: macro SHAPE (Qwen 5.4x-wide x24 shallow vs SmolLM2
+  2.7x-narrow x30 deep) + TEMPERATURE (SmolLM2 weights 7x,
+  activations 10-60x hotter: DOWN +-53 vs Qwen H 0.08). "Stored
+  differently" = capacity placement + operating temp, NOT
+  different physics. Our narrow+banks+depth stack is SmolLM2-class
+  (and coils like it -- assay A grounds out here).
+- Port verdict: both ALREADY run in our listings (parity both).
+  Echion update rule is JOINT (bank mass x temperature x depth):
+  K-sweeps held temps fixed, but Qwen-ratio width (K173 @D32)
+  needs its own temp point -- width alone lateral, joint unknown.
+  Queued: bank-mass x temperature JOINT sweep (off-axis optimum
+  hunt), then Echion refit at the winner.
+
+## 2026-10-02 (branch teacher-scaffold): adapters run, theft fails on reference (CLOCKED, start missed)
+
+- Start clock MISSED (14-for-14). Adapter (programs/lm_d32_adapt
+  .asm, probe variant kept): Qwen-L0 MLP as coprocessor via random
+  orthonormal projections (seed 11, tight frame) -- executes green
+  in assembly (integration proven), twin sane (0.684), top1
+  IDENTICAL (33/566, same counts) -- semantics null (alien LN
+  geometry + early-layer memories + our local coverage; fitted-L0
+  closed without build: same direction, stronger prior needed).
+  Two shape bugs caught en route (projection order, torch .T --
+  both shape-loud, minutes).
+- Harvest trial (16 prompts x 2 teachers greedy, mine+attest):
+  34 candidates, attested-novel 9 (ALL pronoun sludge: "he was a",
+  "it was the" -- attestation admits grammar, not facts),
+  agree-novel 3 (teachers diverge), junk 25 majority -- REJECTED
+  by pre-stated rule. Mechanism: teachers speak in PRONOUNS
+  (discourse), our miner reads NAMES (capitalized) -- knowledge
+  present but unresolvable without coreference (new machinery,
+  named speculative). Steal-via-harvest CLOSED; coreference-
+  resolved harvest queued behind real need.
+- Reverse verdict: integration YES (adapters execute), physics
+  SHARED, knowledge NO (reference gap + early-layer null).
+  Echion update stays the JOINT sweep (main branch), not theft.
+
+## 2026-10-02 (branch teacher-scaffold): coprocessor generation -- three voices (CLOCKED, start missed)
+
+- Start clock MISSED (15-for-15). research/gen_adapt.py: same
+  seed + same guards (seeded topk-12, trie, nrep-4) through base /
+  qwen-L0 / smol-L0 stacks. All speak (integration end-to-end):
+  base coils with content (ptolemaic maladies), qwen leaks a
+  novel word (tablets) inside the same coil, smol doubles glue
+  (and and) + fragments once (resored -- demo-grade trie-fallback
+  roughness, test_piece_bound rule untouched). smol twin-shift
+  (0.494) moved voice without improving it -- geometry moves,
+  decisions threshold, again. Honesty boundary kept: coprocessor
+  mode (one teacher block beside our loop), never full-model port
+  (attention + 23/29 layers stay teacher-side, stated).
+
+## 2026-10-02: data audit -- 3 articles carry everything (CLOCKED, start missed)
+
+- Start clock MISSED (9-for-9). Lineage: groki corpus = THREE html
+  files (938/235 sents) -- word vocab/counts/ends, BPE-2000 merges,
+  piece counts/ends/banks, mined edges ALL derive from it (+w20k
+  for mining only, +w103 for scale banks; LM data never leaves
+  groki). Rare-word aim starved BY CONSTRUCTION (rare contexts
+  appear ~1x -- nothing to fit; mechanism behind 0/144 OOV).
+  BPE-2000 merge count NEVER varied (unexplored axis, mechanism
+  both ways: fewer merges = less stretch vs worse sharing).
+- Probe variance (paired, same 330/566): word CI half-width 0.032,
+  piece 0.019 -- small top1 deltas UNRESOLVABLE (0.085->0.091 is
+  +2 words, nested wins 28-subset-30, directionally clean but
+  nonsignificant; piece 31v33 discord 1v3, p~0.6). Doctrine
+  VALIDATED in retrospect: gates already bar twins (continuous)
+  with top1 as floor, never top1-deltas. CIs belong beside pins
+  in gate strings (follow-up, no gate change).
+- Audit-the-auditor: SECOND harness bug caught by a gate pin today
+  (double-last [-1][-1] scored scalar==id -> 0/566; word loop in
+  the same script stayed correct). Two-for-two on pin-caught
+  harness bugs -- pins earn keep hardest against our own scripts.
+- Proposals priced: (P1) report CIs beside pins, probe-v2 widened
+  set later; (P2, the data answer to ignorance) w20k/w103
+  piece-COUNTS + ends stack -- new supply for aim, replays
+  freeze/refit arc on bigger corpus (scripts/freeze_w20k.py
+  committed: deterministic counts/ends/banks + manifest); (P3,
+  after P2) BPE merge-count sweep -- full cascade per point,
+  priced frankly in hours.
+
+## 2026-10-02: P2 new supply -- better spectra, halved accuracy (CLOCKED, start missed)
+
+- Start clock MISSED (10-for-10). w20k (85k wiki2 sents) encoded
+  under groki BPE (skip=0, OOV-free by construction): nnz 8x,
+  top200-mass 0.66 (vs 0.54), spec16 10.1 / spec32 12.9 (vs 3.9 /
+  4.6 -- looks healthier). Ends+banks frozen (w20k_piece16/32,
+  w20k_bank16/32; counts git-ignored per precedent).
+- Transfer: twins WIN big (d16 0.443->0.390, d32 0.665->0.407)
+  via 2.7x end norms (operating point moved, magnitude-first).
+  Refit battery at w20k point: V-down twin-win/top1-flat (0.037
+  best, noise), V-up REJECTED both axes (0.503/0.030 -- rebalance
+  hypothesis dead), QK flat, headt lateral, depth-4 twin 0.284
+  with top1 flat-collapsed 0.032. Both-domain probes: w20k-best
+  loses on wiki2-test too (0.045 < groki-fit 0.057) -- H2
+  (domain-matched supply wins) FALSIFIED.
+- Verdict: better-counts != better-aim. Priced hypothesis named
+  (unproven): SPECTRAL PEAKINESS trades twins against accuracy
+  (flat groki 3.9 aims 0.058; peaky w20k 10.1 aims 0.021; word-D64
+  15.9 parked the same way) -- giants dominate invariant twins
+  and drown readout details. Next shot queued: spectral
+  flattening (whiten top modes) as ends-side knob, behind
+  distinct-content banks. w20k artifacts kept as evidence.
+
+## 2026-10-02: distinct-content banks closed, flattening confirms gradient (CLOCKED, start missed)
+
+- Start clock MISSED (11-for-11). Bank ablation (evb-zero, no new
+  file): bank = frequent-amplifier, rare-NEUTRAL (frequent 32->29,
+  rare 1->1 -- removing loses without recovering; twins 0.488 ->
+  0.618 LOGIT-space, direction holds). BGE
+  (bigram-expectation bank, emb-space keys, groki+w20k stats):
+  twins win (0.593/0.607) but frequent DOWN (0.146) and rare still
+  1 -- expectation writes blur toward the mean (keys live in the
+  wrong space: HN queries vs emb keys, the rejected MID-bank
+  class). HN-space mini (284 exemplar buckets, 50 sents):
+  coherence WITHOUT conversion (within-bucket cos 0.56-0.58 vs bg
+  0.39 at ALL sizes incl n=2 -- signal exists! -- but bank
+  lateral 31v33, rare still 1: competition margins too thin;
+  threshold lesson again). Full 200-sent V2 closed WITHOUT build
+  (mini decisive; word precedent agreed). Rare stays 1/388 across
+  FIVE bank variants -- readout-side closed as a class.
+- Spectral flattening (w20k ends, E=U s^tau V): tau 1.0->0.6
+  (spec 12.9->4.6 = groki): twins 0.407->0.604 AND accuracy
+  0.032->0.041 (rare 0->1) -- gradient CONFIRMED toward groki on
+  BOTH axes (~35% of the gap is shape; rest is content/domain).
+  Peakiness hypothesis now mechanism, not story. Not a gate (below
+  fit) -- recipe recorded (regenerable), flattening queued as the
+  live ends-side knob.
+
+## 2026-10-02: PMI differential -- inert, error is ignorance not bias (CLOCKED, start missed)
+
+- Start clock MISSED (8-for-8). Differential-decoding probe (user
+  thesis: stack differentials, converge, trace the error): PMI
+  score = logit - λ·logP_uni (frozen train unigram), greedy word
+  rollout, λ sweep on 330 boundaries. λ=0.25: IDENTICAL 30/330
+  (zero flips either way); λ=0.5: 20 (worse); λ>=1: 0 (total
+  collapse -- rarity bonus exceeds logit dynamic range, rare-noise
+  wins everything). Plus an earlier self-bug caught en route
+  (rollout overshoot on single-piece words gave 0/330 incl.
+  baseline -- fixed to pure-loop, baseline re-verified 30/330;
+  harness bugs fail LOUD here, caught by the baseline pin).
+- Trace verdict: error source is IGNORANCE (underdetermination),
+  not BIAS (removable skew). Four nulls converge: (1) PMI removes
+  nothing (identical-30: no skew to remove); (2) miss pattern
+  (rare-truth/frequent-guess) is the optimal-backoff signature,
+  and removing the backoff destroys calibration (λ>=0.5); (3) OOV
+  aim 0/144 (no signal anywhere for rare); (4) WIN32 +1 word (more
+  context adds no signal either). Differentials converge on bias;
+  they cannot create signal. Bank-ablation differential closed
+  TRANSITIVELY (same direction as PMI, same null -- no run spent).
+  Redirect stands (content paths carry new signal, decode tricks
+  don't); distinct-content banks remains the open shot.
+
+## 2026-10-02 (branch teacher-scaffold): organization law + siphon capped (CLOCKED, start missed)
+
+- Start clock MISSED (16-for-16). Permutation sandwich on our
+  stack: pair-preserving 23.7dB, within-half pairs 29.1dB,
+  general 6.0dB -- NO hidden permutation is a symmetry (graded
+  breaking, exact nowhere). First prediction (pairs free) died
+  on TBETA head-asymmetry, second (halves free) on RoPE angle
+  slots: basis PINNED by angle-slots > head-split. First
+  organization law from an invariance test, as proposed.
+- Paired-state siphon (50 sents, ours-32 -> Qwen-896 least
+  squares, held-out 10): L0 15.2 ... L23 23.1dB, rank-flat
+  (rank4 ~= rank32: mappable content is ~4-dim; bottleneck is OUR
+  content, not map width). Below 40dB bar -- linear last-row
+  siphon INSUFFICIENT. Confound stated (40-train fit, 28k params:
+  sample starvation possible; 200-sent refit would separate, not
+  run -- gap to bar too wide to matter).
+- Verdict: organization test DELIVERS (graded symmetry map);
+  siphon does not (knowledge needs our-side content first --
+  depth/content, then transfer). Full port urgency reduced for
+  knowledge (port buys compute); attention blocker unchanged.

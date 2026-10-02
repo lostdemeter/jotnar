@@ -20,4 +20,5 @@ __pycache__/
 .tmp/
 # ingest scale artifacts (32MB-200MB+ frozen counts; regenerable via scripts/ingest.py + freeze_piece.py)
 data/piece_bigrams.npz
+data/w20k_piece_bigrams.npz
 data_ingest/*_bigrams.npz
