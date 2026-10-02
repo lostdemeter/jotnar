@@ -1873,3 +1873,105 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   SORT by the content/shape split -- V/QK move decisions, K/temp
   move twins-only. The split predicts which knobs can ever move
   top1 (value paths only); future sweeps consult it first.
+
+## 2026-10-02: fill-up turns 4-5 -- elicitation harvest + unique track (CLOCKED, start missed)
+
+- Start clock MISSED (28-for-28). Name-forcing (proper names,
+  never pronouns): Qwen 5/5 entity-subj (pronouns ~0) vs
+  SmolLM2 0/4 (ignores instruction, same US loop) -- elicitation
+  is QWEN-ONLY path. Attestation held (4 unattested shapes cut):
+  battle/of/cannae survives -> turn 4 (catalog 4). Harvest-v2
+  protocol validated (elicit -> mine -> attest -> marshal).
+- Action funnel: 66 support-1 -> 30 filtered -> ZERO w103
+  attested (verbs don't transfer exactly; groki actions are
+  groki-specific). Flipped: w103-ABSENCE = uniqueness signal.
+  Unique track (--unique: groki-witness recorded, thin evidence
+  class labeled): turn 5 eumenes/defeated/craterus (Diadochi,
+  self-recall 64 exact). Adjudicated OUT: god/war (ambiguous),
+  department/history (boilerplate).
+- Catalog: 5 ideas (banked/attested/attested/attested/unique).
+  Funnel economics: elicitation ~25% yield, sub-minsup ~1%.
+
+## 2026-10-02: onion layers -- depth sheds routing, adds no content (CLOCKED, start missed)
+
+- Start clock MISSED (29-for-29). Logit-lens per skin (H2/H4/H6/
+  H8 read through wlog, 330 boundaries, preregistered content-
+  enrichment): H2 30/330 (29 glue/1 content) = H4 30/330 >
+  H6/H8 24/330 (glue 24/81, content 0). Onion CONFIRMED with a
+  twist: skins stratify by routing-confidence SHED, not content
+  enrichment -- depth removes certainty without adding
+  discrimination (explains d4 twin-win + top1-cost in one
+  mechanism). AIM IS SHALLOW (layer 1 + bank), INVARIANCE IS
+  DEEP. Cross-model corollary: siphon must match depth
+  philosophy (Qwen concentrates facts LATE L22+, ours aims EARLY
+  -- late-to-early mapping mismatches by construction, closing
+  the siphon loop with mechanism).
+
+## 2026-10-02: exclusivity operators -- dead at decoding, alive in acquisition (CLOCKED, start missed)
+
+- Start clock MISSED (30-for-30). Thesis (user): compression is
+  spatial, exclusive differences are meaningful. Operators
+  tested: max-contrast selectivity (spikiness tracks FREQUENT:
+  the 11.2 > alexander 7.79 -- wrong operator, decode
+  lateral-to-harmful 30->27, +1 content at lam 1.0); context-IDF
+  (1947/2038 pieces never top-12; decode inert 30/30 at 0.5 then
+  destructive 29->7 -- PMI's signature exactly). Four decode
+  differentials now share one fate (PMI, bigram-residual,
+  selectivity, IDF): inaudible or vandalism. Readout's mind made
+  up structurally at 0/249; no additive reweighting moves it.
+- Division recorded: exclusivity guides ACQUISITION (marshal
+  funnel: novel-only + entity filters = exclusivity selection,
+  5 ideas banked -- thesis LIVES there), never DECODING. Content
+  arrives via stores/retrieval/copy; decoding does routing.
+  The two-organ split, fourth independent confirmation.
+
+## 2026-10-02: supply-scale closed -- wiki spectra saturate (CLOCKED, start missed)
+
+- Start clock MISSED (31-for-31). w103-pilot (69k sents, same
+  BPE/counts/SVD recipe): nnz/top200/spec ALL ≈ w20k
+  (213k/0.661/9.8-12.4 vs 237k/0.660/10.1-12.9) -- same
+  distribution, saturated statistics. Full-w103 (50x) would
+  replicate, not surprise: peakiness is DISTRIBUTION property
+  (wiki ~13 vs groki-history 4.6), size-independent past ~70k.
+  Supply axis CLOSED at all testable scales (groki/w20k/w103p).
+  c4/dolma caches hold metadata only (20K blobs) -- new
+  distributions need downloads (priced, not run). Intrinsic
+  question (peakiness universal?) stays open; flattening-tau
+  remains the operable knob.
+
+## 2026-10-02: P3 merge sweep -- tokenization neutral, twins monotonic (CLOCKED, start missed)
+
+- Start clock MISSED (32-for-32). bpe_freeze + --outdir (shared
+  tooling extended, default unchanged). Merges 500/1000/2000/
+  4000 (V 538/1038/2038/4038, stretch 2.48/2.03/1.71/1.32):
+  word-top1 on IDENTICAL 871 bounds FLAT (0.064/0.062/0.076/
+  0.065, all inside +-0.018 -- hypothesis INVERTED first
+  (fewer merges = MORE stretch, not less; corrected live),
+  then FALSIFIED (stretch 2x moves nothing resolvable).
+  Twins MONOTONIC worsening with merges (0.359/0.418/0.665/
+  0.739): finer pieces = less invariant?? no -- FEWER merges
+  (shorter, shared pieces) = MORE invariant. Tokenization
+  granularity is a SHAPE knob (moves twins, not decisions --
+  split holds again). Corollaries: BPE-N free for speed
+  (4000 = 1.3x fewer steps/word at equal quality -- propose
+  demo adoption, don't churn yet); bpe500-REFIT queued behind
+  need (transfer twin 0.359 already beats fit -- refit would
+  extend a twins-only lead, not aim).
+
+## 2026-10-02: w103full -- density peaks, aim collapses, supply closed (CLOCKED, start missed)
+
+- Start clock MISSED (33-for-33). Full w103 (4.2M sents, 173M
+  toks, streaming counts): density 21% (vs 5-6% pilot/w20k),
+  spec EXPLODES 16.8/23.2 (pilot-equivalence REFUTED -- two
+  close points misled; spec climbs with density, lesson: never
+  extrapolate from two points). Transfer: twin 0.292 (extreme
+  invariance!) + top1 0.011 collapse; flatten-tau-0.49 recovers
+  0.520/0.034 (gradient reconfirmed). Wiki-probe: raw 0.019,
+  flat 0.036 -- BOTH below groki-fit 0.057 AND w20k 0.045.
+- SUPPLY VERDICT (final): groki/w20k/w103pilot/w103full x
+  groki-probe/wiki-probe -- groki-fit wins EVERY cell. More,
+  denser, better counts NEVER convert (twins win big, accuracy
+  halves+). Ignorance is STRUCTURAL (body can't use rare stats:
+  competition drowns, argmax thresholds, giants dominate), not
+  supply. R1's remaining addresses: none in supply; flattening
+  live as partial; body-architecture open (unstated how).

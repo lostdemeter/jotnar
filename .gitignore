@@ -21,6 +21,7 @@ __pycache__/
 # ingest scale artifacts (32MB-200MB+ frozen counts; regenerable via scripts/ingest.py + freeze_piece.py)
 data/piece_bigrams.npz
 data/w20k_piece_bigrams.npz
+data/w103full_piece_bigrams.npz
 data_ingest/*_bigrams.npz
 # teacher block ports (119MB/layer float64, regenerable via scripts/freeze_qwen0.py + HF cache; manifests tracked, parity gates compensate)
 data/qwen*_block.npz
