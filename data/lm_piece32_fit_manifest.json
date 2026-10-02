@@ -1,0 +1,61 @@
+{
+  "base": "piece32 transfer (lm_piece32 ends + lm_d32_fit body + bankp32_64): twin 1.048 / top1 0.049",
+  "fit": "piece32 refit at operating point: QK-I0.2 + V-I1.0 + head2 T=4 (beta_b 0.25) + K64 bank",
+  "m_acc": 36118,
+  "m_cov": 35048,
+  "m_d4": [
+    36849,
+    35686
+  ],
+  "objective": {
+    "twin_depth2": {
+      "transfer": 1.048,
+      "QK0.2": 0.952,
+      "+V1.0": 0.735,
+      "+headt": 0.665
+    },
+    "top1_S16": {
+      "transfer": 0.049,
+      "+V1.0": 0.058,
+      "+headt": 0.058
+    },
+    "depth4_headt": {
+      "twin": 0.448,
+      "top1": 0.044,
+      "verdict": "ACCEPT structure (twin -33%, top1 cost 0.014 within 0.018 bar); demo stays depth-2 (speed)"
+    }
+  },
+  "rejected": [
+    "K128 (1.088 base / 0.670 d2headt: lateral, smaller-sharper holds)",
+    "V2.0 twin 0.580 / top1 0.049 (collapse: joint rule 13-for-13)",
+    "MLP-body gains (dead weights under bank MLP: twin flat 0.665, correctly null)"
+  ],
+  "bank": "bankp32_64.npz (K64, mass TBD)",
+  "listing_d2": "programs/lm_d32_headt.asm (beta_b 0.25)",
+  "listing_d4": "programs/lm_d32_d4headt.asm",
+  "sha": "3e129dbcd6117d68",
+  "arc": {
+    "word_top1": {
+      "d16fit": 0.085,
+      "p32d2": 0.091,
+      "p32d4": 0.073,
+      "gate": 0.2
+    },
+    "first_piece_topK": {
+      "top1": 0.091,
+      "top6": 0.185,
+      "top12": 0.245
+    },
+    "shots": [
+      "trie-mask scoring: no lift (greedy argmax already valid; 28/330 both)",
+      "K128: identical predictions (30/330, lateral)",
+      "K256 (mass 0.57): twin 0.673 holds, piece 0.057/word 0.091 lateral -- REJECT (4x params, keep K64)",
+      "unigram prior: wrong direction 8x (missTrue 0.0026 vs missPred 0.0219) -- rejected unbuilt",
+      "beta_b sweep: sharp kills twins (2.0: 0.853, 4.0: 1.107); 0.125 lateral (keep 0.25)",
+      "WIN32: 31/330 vs 30/330 (lateral, context hypothesis rejected)",
+      "QK0.1/0.15: twins 0.578/0.615, top1 0.049/0.053 collapse -- REJECT (joint 14/15-for-17)",
+      "V1.25/1.5: twins 0.625/0.602, top1 0.055/0.051 -- REJECT (joint 16/17-for-17)"
+    ],
+    "verdict": "fit (QK0.2/V1.0/headt/K64) is a local optimum from 8 directions; 0.091->0.20 needs new mechanisms (distinct-content banks, word-bigram fusion proposer, content-gated sharpening), not operating-point moves"
+  }
+}
