@@ -2148,3 +2148,20 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   untouched + verified green): 13 vs 17 pieces/output (fewer
   steps, equal quality per P3 null). D16 ends/bank frozen
   alongside (spec16 3.4).
+
+## 2026-10-02: discord screen -- v1 router confirmed optimal (CLOCKED, start missed)
+
+- Start clock MISSED (44-for-44). Full discord feature screen
+  (flat-vs-sharp per position, correct indices): depth0 net -1
+  (tied), depth1 +5, depth2+ +8 (9-1!); prev-rare +13 CONFOUNDED
+  (rare pieces sit deeper in words -- v2's signal was midword
+  wearing a mask); sentpos/margin nothing. v1 rule
+  (flat@starts, sharp@rest) already implements the ONLY cut
+  that separates -- screen VALIDATES it, adds nothing.
+- Twin-orthogonality law (for future routers): features must
+  be CONSTANT on twin contexts (boundary qualifies -- all twin
+  ctxs are starts; rarity fails -- twin ctxs contain rare
+  pieces). Design law, not observation.
+- Process toll: mislabeled-field screen reported garbage
+  (off-by-one indices -- caught by impossibility 532-vs-33,
+  data re-analyzed clean with zero new runs).
