@@ -1,0 +1,646 @@
+{
+  "n_cand": 34,
+  "attested_novel": [
+    {
+      "triple": [
+        "he",
+        "was",
+        "a",
+        "identity"
+      ],
+      "witnessed": true,
+      "agree": true,
+      "novel": true,
+      "qwen_n": 1,
+      "smol_n": 3
+    },
+    {
+      "triple": [
+        "he",
+        "was",
+        "also",
+        "identity"
+      ],
+      "witnessed": true,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 1,
+      "smol_n": 0
+    },
+    {
+      "triple": [
+        "he",
+        "was",
+        "commissioned",
+        "identity"
+      ],
+      "witnessed": true,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 1,
+      "smol_n": 0
+    },
+    {
+      "triple": [
+        "he",
+        "was",
+        "the",
+        "identity"
+      ],
+      "witnessed": true,
+      "agree": true,
+      "novel": true,
+      "qwen_n": 4,
+      "smol_n": 4
+    },
+    {
+      "triple": [
+        "it",
+        "was",
+        "a",
+        "identity"
+      ],
+      "witnessed": true,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 0,
+      "smol_n": 1
+    },
+    {
+      "triple": [
+        "it",
+        "was",
+        "the",
+        "identity"
+      ],
+      "witnessed": true,
+      "agree": true,
+      "novel": true,
+      "qwen_n": 4,
+      "smol_n": 3
+    },
+    {
+      "triple": [
+        "republic",
+        "was",
+        "a",
+        "identity"
+      ],
+      "witnessed": true,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 0,
+      "smol_n": 1
+    },
+    {
+      "triple": [
+        "she",
+        "was",
+        "a",
+        "identity"
+      ],
+      "witnessed": true,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 0,
+      "smol_n": 1
+    },
+    {
+      "triple": [
+        "they",
+        "were",
+        "the",
+        "identity"
+      ],
+      "witnessed": true,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 0,
+      "smol_n": 2
+    }
+  ],
+  "agree_novel": [
+    {
+      "triple": [
+        "he",
+        "was",
+        "a",
+        "identity"
+      ],
+      "witnessed": true,
+      "agree": true,
+      "novel": true,
+      "qwen_n": 1,
+      "smol_n": 3
+    },
+    {
+      "triple": [
+        "he",
+        "was",
+        "the",
+        "identity"
+      ],
+      "witnessed": true,
+      "agree": true,
+      "novel": true,
+      "qwen_n": 4,
+      "smol_n": 4
+    },
+    {
+      "triple": [
+        "it",
+        "was",
+        "the",
+        "identity"
+      ],
+      "witnessed": true,
+      "agree": true,
+      "novel": true,
+      "qwen_n": 4,
+      "smol_n": 3
+    }
+  ],
+  "junk_n": 25,
+  "rows": [
+    {
+      "triple": [
+        "antony",
+        "was",
+        "forced",
+        "identity"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 0,
+      "smol_n": 1
+    },
+    {
+      "triple": [
+        "c",
+        "was",
+        "fought",
+        "identity"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 0,
+      "smol_n": 1
+    },
+    {
+      "triple": [
+        "cleopatra",
+        "is",
+        "a",
+        "identity"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 0,
+      "smol_n": 1
+    },
+    {
+      "triple": [
+        "egypt",
+        "was",
+        "built",
+        "identity"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 1,
+      "smol_n": 0
+    },
+    {
+      "triple": [
+        "empire",
+        "was",
+        "a",
+        "identity"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 0,
+      "smol_n": 1
+    },
+    {
+      "triple": [
+        "empire",
+        "was",
+        "divided",
+        "identity"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": false,
+      "qwen_n": 0,
+      "smol_n": 1
+    },
+    {
+      "triple": [
+        "empire",
+        "was",
+        "in",
+        "identity"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": false,
+      "qwen_n": 0,
+      "smol_n": 1
+    },
+    {
+      "triple": [
+        "empire",
+        "was",
+        "the",
+        "identity"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 2,
+      "smol_n": 0
+    },
+    {
+      "triple": [
+        "he",
+        "was",
+        "a",
+        "identity"
+      ],
+      "witnessed": true,
+      "agree": true,
+      "novel": true,
+      "qwen_n": 1,
+      "smol_n": 3
+    },
+    {
+      "triple": [
+        "he",
+        "was",
+        "also",
+        "identity"
+      ],
+      "witnessed": true,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 1,
+      "smol_n": 0
+    },
+    {
+      "triple": [
+        "he",
+        "was",
+        "arrested",
+        "identity"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 1,
+      "smol_n": 0
+    },
+    {
+      "triple": [
+        "he",
+        "was",
+        "born",
+        "identity"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 2,
+      "smol_n": 0
+    },
+    {
+      "triple": [
+        "he",
+        "was",
+        "commissioned",
+        "identity"
+      ],
+      "witnessed": true,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 1,
+      "smol_n": 0
+    },
+    {
+      "triple": [
+        "he",
+        "was",
+        "extradited",
+        "identity"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 1,
+      "smol_n": 0
+    },
+    {
+      "triple": [
+        "he",
+        "was",
+        "the",
+        "identity"
+      ],
+      "witnessed": true,
+      "agree": true,
+      "novel": true,
+      "qwen_n": 4,
+      "smol_n": 4
+    },
+    {
+      "triple": [
+        "it",
+        "was",
+        "a",
+        "identity"
+      ],
+      "witnessed": true,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 0,
+      "smol_n": 1
+    },
+    {
+      "triple": [
+        "it",
+        "was",
+        "the",
+        "identity"
+      ],
+      "witnessed": true,
+      "agree": true,
+      "novel": true,
+      "qwen_n": 4,
+      "smol_n": 3
+    },
+    {
+      "triple": [
+        "kingdom",
+        "of",
+        "egypt from",
+        "possession"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 0,
+      "smol_n": 1
+    },
+    {
+      "triple": [
+        "republic",
+        "was",
+        "a",
+        "identity"
+      ],
+      "witnessed": true,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 0,
+      "smol_n": 1
+    },
+    {
+      "triple": [
+        "republic",
+        "was",
+        "in",
+        "identity"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 0,
+      "smol_n": 1
+    },
+    {
+      "triple": [
+        "romans",
+        "built",
+        "a",
+        "action"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 0,
+      "smol_n": 1
+    },
+    {
+      "triple": [
+        "romans",
+        "conquered",
+        "it",
+        "action"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 1,
+      "smol_n": 0
+    },
+    {
+      "triple": [
+        "romans",
+        "were",
+        "defeated",
+        "identity"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 0,
+      "smol_n": 1
+    },
+    {
+      "triple": [
+        "romans",
+        "were",
+        "forced",
+        "identity"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 0,
+      "smol_n": 3
+    },
+    {
+      "triple": [
+        "romans",
+        "were",
+        "not",
+        "identity"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 0,
+      "smol_n": 1
+    },
+    {
+      "triple": [
+        "romans",
+        "were",
+        "the",
+        "identity"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 1,
+      "smol_n": 0
+    },
+    {
+      "triple": [
+        "senate",
+        "was",
+        "a",
+        "identity"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 0,
+      "smol_n": 2
+    },
+    {
+      "triple": [
+        "she",
+        "was",
+        "a",
+        "identity"
+      ],
+      "witnessed": true,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 0,
+      "smol_n": 1
+    },
+    {
+      "triple": [
+        "soter",
+        "reigned",
+        "bc",
+        "action"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 0,
+      "smol_n": 1
+    },
+    {
+      "triple": [
+        "spartans",
+        "were",
+        "defeated",
+        "identity"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 0,
+      "smol_n": 1
+    },
+    {
+      "triple": [
+        "spartans",
+        "were",
+        "the",
+        "identity"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 0,
+      "smol_n": 1
+    },
+    {
+      "triple": [
+        "they",
+        "conquered",
+        "the",
+        "action"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 1,
+      "smol_n": 0
+    },
+    {
+      "triple": [
+        "they",
+        "were",
+        "the",
+        "identity"
+      ],
+      "witnessed": true,
+      "agree": false,
+      "novel": true,
+      "qwen_n": 0,
+      "smol_n": 2
+    },
+    {
+      "triple": [
+        "university",
+        "of",
+        "south",
+        "possession"
+      ],
+      "witnessed": false,
+      "agree": false,
+      "novel": false,
+      "qwen_n": 1,
+      "smol_n": 0
+    }
+  ],
+  "gens": {
+    "Qwen/Qwen2-0.5B": [
+      " the first king of the ancient Greek empire. He was born in 356 BC and died in 323 BC. He was the son of Alexander the Great and his wife, Cle",
+      " her death in the hands of the Romans in 124 BC. The Romans were the first to conquer Egypt, and they were the first to conquer the world. They conquered the whole world,",
+      " for the Roman Republic against the Roman Empire. He was the son of a Roman senator and a Roman citizen. He was born in 100 BC and died in 44 BC. He",
+      " the Alps in 43 BC. He was a Roman general who led the army of the Roman emperor Augustus. He was the first Roman general to be killed in battle. He was also the",
+      " Egypt from 100 BC to 107 BC. He was the first to use the method of triangulation to find the length of the sides of a triangle. He also used the",
+      " its territory and its influence in the Mediterranean world. The Roman Empire was the largest empire in the world during the 2nd century. It was the largest empire in the world during the 2nd",
+      " the leadership of the late Dr. George M. Katsos, a former president of the University of South Carolina, to become a major player in the state's higher education system. The university's",
+      " the Romans conquered it in 529 BC. The Persian Empire was the largest empire in the world at the time. It was the largest empire in the world at the time. It was the",
+      " was fought in 312 BC between the Roman army under the command of Julius Caesar and the forces of the Roman general, Lucius Cornelius Sulla. The battle was fought in the vicinity",
+      " is a place where the senate is the highest authority in the Roman Republic. The senate is the highest authority in the Roman Republic. The senate is the highest authority in the Roman Republic. The senate is",
+      " the Roman Empire in 1929. The city is located in the heart of the Mediterranean Sea, on the banks of the River Nile. The city is the capital of the country of Egypt",
+      " was a dynasty of Greek kings who ruled over the Greek world from 313 BC to 30 BC. The Ptolemaic dynasty was the last of the Greek dynasties",
+      " the border into the United States on a flight from Mexico City. He was arrested and charged with murder. He was extradited to the United States and was convicted of the murder of a Mexican woman.",
+      " a member of the United States Army in 1861. He was commissioned as a second lieutenant in the 1st U.S. Infantry Regiment in 1862. He was",
+      ", Egypt, was built in the 1st century BC. It was the first library in the world to contain books in all languages. The library was built by the Greek philosopher and mathematician Plato",
+      " for the first time in the 2018/19 season, and they were able to do so with a 3-0 win over the 2017/18"
+    ],
+    "HuggingFaceTB/SmolLM2-135M": [
+      " a great man, and he was a great king. He was a great king, and he was a great man. He was a great king, and he was a great man. He was a",
+      " her death in 1892.\n\nThe story of Cleopatra is a fascinating one. She was a powerful woman, a queen, a great warrior, and a great woman of letters.",
+      " the Romans in the first battle of Philippi, and was killed in the second.\n\nThe Romans were defeated at the battle of Actium, and Antony was forced to retire to Egypt.\n",
+      " the Rubicon, and the Roman Republic was in danger of collapse.\n\nThe Roman Republic was a republic, and the Roman Senate was a republic. The Senate was a body of senators, and",
+      " the Ptolemaic Kingdom of Egypt from 305 to 205 BC. He was the son of Ptolemy I Soter and Cleopatra Selene II. He was the first ruler of",
+      " rapidly, and the empire was divided into provinces. The provinces were ruled by governors who were appointed by the emperor. The provinces were divided into districts, which were ruled by a governor. The governor was",
+      " the leadership of the Roman emperor Diocletian, who was also the first Roman emperor to use the title of emperor.\n\nThe Roman Empire was divided into four parts: the East, the",
+      " the Roman Empire was in decline.\n\nThe Roman Empire was a great empire, but it was not a great empire. It was a great empire, but it was not a great empire. It",
+      ", Oct. 21, 31 B.C., was fought between the forces of Octavian, the Roman general, and the forces of Mark Antony, the Roman general. Octavian",
+      ", which was the most powerful body in the Roman state, was composed of the senate and the people. The senate was the supreme legislative body of the Roman state. The senate was composed of the people",
+      " the Romans in 200 BC. It was the capital of the Roman province of Asia. It was the first city in the world to have a written language.\n\nThe Romans built a",
+      " was the last of the Greek Ptolemaic dynasties to rule Egypt. The Ptolemaic dynasty was founded by Ptolemy I Soter (reigned 305\u2013283 BC) and",
+      " the Alps, and the Romans were\nforced to retreat.\n\nThe Romans were not able to hold the Alps, and the Romans were forced to\nretreat.\n\nThe Romans were forced",
+      " the first Roman emperor to be born in the empire. He was the son of Augustus and Livia, and was the first Roman emperor to be born in the empire. He was the first Roman emperor",
+      ", the great library of the ancient world, was the first to be founded. The library was the centre of learning and the centre of the empire. It was the centre of the world. It was",
+      " against the Persians, and the Spartans were defeated.\n\nThe Spartans were the first people to have a written language. They were the first people to have a written language. They were the"
+    ]
+  }
+}
