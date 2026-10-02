@@ -34,8 +34,10 @@ def main():
     ap.add_argument("ids", nargs="*")
     ap.add_argument("--new", nargs=3, metavar=("SUBJ", "PRED", "OBJ"),
                     help="sub-minsup novel triple (w103 attestation enforced)")
+    ap.add_argument("--unique", nargs=3, metavar=("SUBJ", "PRED", "OBJ"),
+                    help="groki-unique triple (absent everywhere; groki-witness recorded, thin evidence class)")
     a = ap.parse_args()
-    assert a.ids or a.new, "usage: freeze_marshal.py m0054 [...] [--new s p o]"
+    assert a.ids or a.new or a.unique, "usage: freeze_marshal.py m0054 [...] [--new s p o] [--unique s p o]"
     zw = np.load(os.path.join(OUT, "edge_wordpats.npz"))
     lex = list(zw["lex"])
     wpat = {w: zw[f"w{i}"] for i, w in enumerate(lex)}
@@ -96,7 +98,50 @@ def main():
             assert (s, p, o) not in banked, f"triple {(s, p, o)} already banked (novel-only)"
             assert (s, p, o) in w3sup, f"triple {(s, p, o)} NOT attested in w103m5 (independent mining required)"
             edges.append({"id": mid, "subj": s, "pred": p, "obj": o,
-                          "support": 1, "witness": f"groki-subminsup+w103m5x{w3sup[(s, p, o)]}"})
+                          "support": 1, "witness": f"groki-subminsup+w103m5x{w3sup[(s, p, o)]}",
+                          "evidence": "attested"})
+    if a.unique:
+        import glob as _glob
+        import html as _html
+        from html.parser import HTMLParser as _HP
+
+        class _TT(_HP):
+            def __init__(self):
+                super().__init__()
+                self.p = []
+                self.skip = False
+
+            def handle_starttag(self, tag, attrs):
+                self.skip = tag in ("script", "style", "nav", "header", "footer",
+                                    "aside")
+
+            def handle_endtag(self, tag):
+                self.skip = False
+
+            def handle_data(self, d):
+                if not self.skip:
+                    self.p.append(d)
+
+        gsents = []
+        for _f in sorted(_glob.glob("/home/thorin/Documents/OpenCode/Echion_Revisted/data/grokipedia/*.html")):
+            _t = _TT()
+            _t.feed(open(_f, encoding="utf-8", errors="replace").read())
+            _txt = _html.unescape(" ".join(_t.p))
+            gsents += [_s.strip() for _s in re.split(r"(?<=[.!?])\s+", _txt)
+                       if len(_s.strip().split()) >= 4]
+        s, p, o = (x.lower() for x in a.unique)
+        mid = "u" + hashlib.sha256(json.dumps([s, p, o]).encode()).hexdigest()[:8]
+        if (s, p, o) in cat_triples:
+            print(f"NOTE triple {(s, p, o)} already marshalled (rerun is not a new idea, skipped)")
+        else:
+            assert (s, p, o) not in banked, f"triple {(s, p, o)} already banked (novel-only)"
+            assert (s, p, o) not in w3sup, f"triple {(s, p, o)} in w103m5 (use --new attested path)"
+            wit = [i for i, _s in enumerate(gsents)
+                   if s in words_of(_s) and p in words_of(_s) and o in words_of(_s)]
+            assert wit, f"triple {(s, p, o)} has no groki witness sentence (thin evidence minimum)"
+            edges.append({"id": mid, "subj": s, "pred": p, "obj": o,
+                          "support": 1, "witness": f"groki-sent{wit[0]}-only",
+                          "evidence": "unique-thin"})
     edges = [e for e in edges if e["id"] not in old_ids]
     for w in sorted({x for e in edges for f in ("subj", "pred", "obj")
                      for x in words_of(e[f])} - set(wpat)):
@@ -116,6 +161,7 @@ def main():
         recs.append({"type": "edge", "id": e["id"], "subj": e["subj"],
                      "pred": e["pred"], "obj": e["obj"],
                      "support": e["support"], "witness": e["witness"],
+                     "evidence": e.get("evidence", "banked"),
                      "orders": ["canon"],
                      "digest": hashlib.sha256(
                          json.dumps(order).encode()).hexdigest()[:16]})
@@ -140,6 +186,7 @@ def main():
             fh.write(json.dumps(
                 {"id": r["id"], "triple": [r["subj"], r["pred"], r["obj"]],
                  "support": r["support"], "orders": r["orders"],
+                 "evidence": r.get("evidence", "banked"),
                  "paraphrase": "canon only unless turn log notes otherwise",
                  "key_sha": hashlib.sha256(
                      np.ascontiguousarray(k).tobytes()).hexdigest()[:16]}) + "\n")
