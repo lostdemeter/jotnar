@@ -36,7 +36,7 @@
     ]
   },
   "folding": "SC/8 split balanced (/sqrt8 into Q and K sides; rotation-linearity keeps RoPE exact; quantization-optimal)",
-  "biases": "V-bias via ones-augment (exact, tiny); Q-bias OMITTED (23.3dB stated divergence -- substrate product-range law); K-bias cancelled by proof (row-constant); o_bias absent verified",
+  "biases": "V-bias via ones-augment (exact, tiny); Q-bias OMITTED (stated divergence, pinned per-layer in tests); K-bias cancelled by proof (row-constant); o_bias absent verified",
   "tshift": "omitted (teacher has none)",
   "rope_base": 1000000.0,
   "sha": "45a49ec58845d57a"
