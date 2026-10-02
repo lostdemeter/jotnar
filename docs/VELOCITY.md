@@ -1692,3 +1692,15 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   siphon does not (knowledge needs our-side content first --
   depth/content, then transfer). Full port urgency reduced for
   knowledge (port buys compute); attention blocker unchanged.
+
+## 2026-10-02 (branch teacher-scaffold): joint K-x-temp sweep -- no off-axis optimum (CLOCKED, start missed)
+
+- Start clock MISSED (17-for-17). Qwen-ratio bank K173 frozen
+  (mass 0.488); 4x4 grid (K 64/128/173/256 x beta_b
+  0.125-1.0): twins monotonic in BOTH (0.656->0.735, no
+  interaction); top1 three off-cells all EXACTLY 33/566 (argmax
+  sleeps through K/temp entirely). Joint CLOSED: K64/0.25 stands
+  (simplest + best twins). Finding that outlives the null: knobs
+  SORT by the content/shape split -- V/QK move decisions, K/temp
+  move twins-only. The split predicts which knobs can ever move
+  top1 (value paths only); future sweeps consult it first.
