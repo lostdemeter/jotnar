@@ -1329,3 +1329,117 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   across every probe. Piece-D32 refit queued (gains/V/QK/headt at
   piece32 point). Fragments remain THE visible gap; boundary mask
   holds them at zero inventions.
+
+## 2026-10-01: piece-D32 refit -- same structures win at width (CLOCKED, start missed)
+
+- Start clock MISSED (process lapse, recorded -- picked up mid-roadmap
+  without a clock read; fix holds: read the clock when the QUESTION
+  lands). Refit from piece32 transfer baseline (1.048/0.049):
+  QK-I0.2 (0.952) -> +V-I1.0 (0.735/0.058 both-axes) -> +headt 0.25
+  (0.665/0.058 holds) -> depth-4 (0.448/0.044, cost 0.014 within
+  0.018 bar, ACCEPT as structure, demo stays depth-2). Frozen
+  data/lm_piece32_fit.npz + test_lm_piece32fit.py ALL OK (twin<0.75,
+  top1>=0.05, d4<0.60). test_piece_bound re-green (0 inventions).
+- Rejected: K128 (lateral, smaller-sharper holds), V2.0 (0.580/0.049
+  collapse -- joint rule 13-for-13), MLP-body gains (flat 0.665:
+  dead weights under bank MLP, correctly null).
+- Surprises:
+  1. Piece structures transfer across width when applied TOGETHER
+     (QK0.2+V1.0+headt rediscovers the D16 fit exactly): refit at
+     the operating point converges to the same answer. Width moved
+     the point; the structures held.
+  2. D32 depth-2 (0.665) still trails D16 (0.443) even refit -- width
+     costs twins; depth-4 (0.448) recovers it almost exactly. Same
+     shape as word (0.722->0.405). Depth composes with width.
+  3. Gate-3 distance honest: piece top1 0.058, word-top1 ~0.085
+     class -- refit is step one of the gate path (boundary-aware
+     scoring + bigger banks remain), not the gate.
+
+## 2026-10-01: gate-3 structural shots -- fit is a local optimum (CLOCKED, start missed)
+
+- Start clock MISSED again (question-led turn; the fix keeps not
+  sticking on question-led turns -- recorded, not hidden). Eight
+  shots at word-top1 0.091->0.20, all priced: trie-mask (no lift:
+  greedy already valid, 28/330 both), K128 (identical 30/330),
+  K256 built from reverse-engineered construction (row-sum top-256,
+  K64-prefix verified exact, mass 0.57): twin 0.673 holds, accuracy
+  lateral -- REJECTED (4x params, keep K64); unigram prior rejected
+  UNBUILT (miss analysis: truth 0.0026 vs guess 0.0219, model already
+  over-guesses frequent 8x -- prior would reinforce the bias);
+  beta_b sweep (sharp kills twins 0.853/1.107, 0.125 lateral);
+  WIN32 (+1 word, lateral); QK0.1/0.15 + V1.25/1.5 all twin-win +
+  top1-collapse -- joint rule now 17-for-17 at piece level.
+- Verdict: fit stands from 8 directions -- the optimum is the
+  finding (w103 precedent). The miss mechanism is named
+  (rare-truth vs frequent-guess: discrimination, not calibration).
+  Next mechanisms for a future turn (not moves): distinct-content
+  banks, word-bigram fusion proposer (0.406!), content-gated
+  sharpening (sharp WHERE, not global -- global kills twins).
+
+## 2026-10-01: retrieval second-pass -- disambiguation closes (CLOCKED, start missed)
+
+- Start clock MISSED (question-led turn again -- the pattern is now
+  3-for-3 on question-led turns; fix: read the clock when the
+  QUESTION lands, not when the build starts). Composition
+  (always-run, no thresholds): pass-1 question cue -> top-1 edge +
+  ambiguity SET (top-K edges UNION ties) -> pass-2 full-triple
+  re-cue, each edge by best row -> argmax. Frozen
+  tests/test_disambig.py ALL OK: 202-bank 195 pinned + 202/202
+  (K=4, mean set 5.1); w103m5 9528 pinned + 10284/10672=0.9636
+  (K=8, mean set 11.6, bar 0.96); v07 both sides retrieve (word
+  path); listing discipline + replay green.
+- Rejected/closed: margin triggers (exact-collide misses score 64.0
+  confident-wrong -- thresholds can't catch them, always-run can);
+  row-level rescore (v07/passive picked poss#1 -- edge-level
+  max-row fixed it: content decides, order matches itself);
+  rank-based coverage (overcounts ties by 24 -- argmax-honest pin
+  9528 matches the old number exactly); hidden-path v07 (3 designs
+  falsified: candidate rescore, grammar strip, subject-residual --
+  same-subject hidden collapse mechanism; word path covers).
+- Mechanism rows: stage-2-over-ALL-keys = 100% (disambiguating info
+  always present in full triples); stage-2 loses ONLY outside the
+  shortlist (exact). Tail priced: 388 rank>8 burials live in giant
+  families (78.2 vs 2.9 mean) -- next mechanism is family-aware
+  retrieval, named not wished.
+
+## 2026-10-01: family-aware tail hunt -- 0.9636 to 0.9960 (CLOCKED, start missed)
+
+- Start clock MISSED (4-for-4 question-led; the fix is now a standing
+  agenda item, not a lapse note). Tail = giant-family burials (median
+  fam 44, tail objs 2-word vs head 1-word). Shots: obj-only cue
+  (tail 0.67 BUT bank 0.32 -- family-picker without family-finder,
+  rejected as replacement); IDF-weighted cues (0.70/0.01 collapse --
+  the combiner needs balanced summands, weights reduce to 1-term
+  dominance + noise; rejected with mechanism, cheap); obj-answer
+  composition (0.9958 MIRAGE -- leaked obj[1:] past the question
+  contract, caught by contract audit and redone honestly at 0.9931);
+  J-tuning (J=8 chokes BELOW baseline 0.9574 -- intermediate stages
+  can hurt; dropping J for plain family-expand wins).
+- Composition final: P1 shortlist (K=8 ∪ ties) -> expand to (subj,
+  pred) FAMILIES -> P2 full-triple argmax over members. Gate adds:
+  m202-family 202/202, w103-family 10629/10672=0.9960 (bar 0.995,
+  mean cand 185), v07-family 2/2 -- test_disambig.py 10/10 ALL OK.
+  Losses == family-absent EXACTLY (43; K=16 doubles working set for
+  +11 -- K=8 stands).   Residual (0.4%) = pass-1 family recall, next
+  priced problem.
+
+## 2026-10-01: fusion falsified, hybrid speaks (CLOCKED, start missed)
+
+- Start clock MISSED (5-for-5 question-led). Fusion proposer
+  (bigram x piece) falsified in BOTH shapes: product 0.109->0.088
+  monotonic worse with lambda; selection 0.109->0.091 (K=1 to 512).
+  Audit found bigram's 0.109 rides first-index tie-breaks over
+  97.5%-tied rows (sparse counts: 6522/263k) -- honest bigram lower.
+  Piece OOV accuracy 0/144 EXACT (supply without aim; all 30 piece
+  hits in-vocab). Oracle union bounds the pair at <=66/330 = 0.20
+  with no margin for a real router -- Piece-first-as-fusion CLOSED.
+- Hybrid instead (generation quality, not top1): demo_hybrid.py --
+  banked retrieval -> fact prepended AS PIECES (no UNK) ->
+  piece-carried context (D32 refit) with deterministic router
+  (bigram-minsup-2 propose incl. sampled top6 + nrep guard consult,
+  else seeded piece step + trie + nrep). UNK-mass rule fired 0/28
+  (39% mass -- dead rule, replaced); argmax-core looped x5 (Echion
+  attractor, replaced by sampling). Demos: cleopatra speaks its
+  fact (was seed-only fallback); alexander mixes 13+1 with olympias
+  content; replay-identical verified. Remaining piece mechanisms
+  (distinct-content banks, content-gated sharpening) still open.
