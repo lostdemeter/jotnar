@@ -1,0 +1,8 @@
+{
+  "form": "block-diag(head1 I*0.2 (avg), head2 I*0.5 (copy-specialist)) + beta_b 2.0 (sharp head2)",
+  "body": "lm_piece32_fit (shared; only wq/wk swapped)",
+  "router": "word-START -> flat stack (I0.2/beta0.25); MID-WORD -> sharp stack (block/beta2.0); boundary observable pre-decision, no thresholds",
+  "twin": 0.665,
+  "top1": "46/566=0.081 (discord fit-only 1, routed-only 14; McNemar 9.6, p~0.002)",
+  "sha": "2abf8e9dab6c3c10"
+}

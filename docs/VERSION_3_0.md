@@ -58,12 +58,17 @@ scale past D64 (no evidence it helps yet).
 
 ## Research horizon (not release-blocking; measured rows, no bars)
 
-R1. **Piece word-top1 0.20** (today 0.091 word / 0.058 piece).
-Exhausted: refit, boundary scoring, banks to K256, temps, context,
-priors (unbuilt, wrong direction), fusion (both shapes). Deepened:
+R1. **Piece word-top1 0.20** (today 0.091 word / 0.058 piece;
+routed 0.081 -- first significant aim movement, below). Exhausted
+as solo levers: refit, boundary scoring, banks to K256, temps,
+context, priors (unbuilt, wrong direction), fusion (both shapes).
+Deepened:
 all accuracy is ROUTING (30/81 glue vs 0/249 content -- content aim
 absent, not weak); generation quality via hybrid+closure+collage
-(validity/grounding/flow gated separately under Gate 3). Open:
-distinct-content banks (closed as class), content-gated
-sharpening (falsified net-zero), spectral flattening (gradient
-confirmed, inverted-U mapped, optimum at natural spec).
+(validity/grounding/flow gated separately under Gate 3). Live
+mechanism: ROUTED SPECIALIZATION (flat@starts + sharp@continuations,
+twin holds 0.665 + top1 46/566 exact, McNemar p~0.002 --
+tests/test_routed.py). Open: distinct-content banks (closed as
+class), content-gated sharpening (falsified net-zero), spectral
+flattening (gradient confirmed, inverted-U mapped, optimum at
+natural spec).

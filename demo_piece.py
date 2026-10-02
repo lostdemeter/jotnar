@@ -5,6 +5,7 @@ rank-16, bankpiece512, S=16 window) -> piece AR -> word-decode.
 Stated: piece top1 ~0.06 class (2038 choices); words come out whole
 (no UNK -- every id decodes). Read for speakability, not accuracy.
 Run: python3 demo_piece.py [seed words...] [--n 20] [--topk 12 --seed 7]
+# BPE dir: --bpdir data/bpe4000 (fewer steps/word at equal quality; default data/)
 """
 import json
 import os
@@ -26,7 +27,12 @@ WIN = 16
 
 def main():
     root = os.path.dirname(os.path.abspath(__file__))
-    dd = os.path.join(root, "data")
+    _bp = "data"
+    for _k in range(1, len(sys.argv) - 1):
+        if sys.argv[_k] == "--bpdir":
+            _bp = sys.argv[_k + 1]
+    dd = os.path.join(root, _bp)
+    dd0 = os.path.join(root, "data")
     sdir = os.path.join(root, "programs")
     vocab = json.load(open(os.path.join(dd, "bpe_vocab.json")))
     inv = {i: p for p, i in vocab.items()}
@@ -56,7 +62,7 @@ def main():
 
     Ep = np.load(os.path.join(dd, "lm_piece.npz"))
     b = np.load(os.path.join(dd, "bankpiece64.npz"))
-    d = np.load(os.path.join(dd, "lm_piece_fit.npz"))
+    d = np.load(os.path.join(dd0, "lm_piece_fit.npz"))
     B = {k: np.array(d[k]) for k in
          ["wq", "wk", "wv", "wo", "wup", "wgate", "wdown", "rms1", "rms2"]}
     text = CFG + open(os.path.join(sdir, "lm_headt.asm")).read()
@@ -84,10 +90,14 @@ def main():
 
     words, n, i, topk, seedn, nrep, rho = [], 20, 1, 12, 7, 4, 1.3
     topic, strength = [], 1.5
+    bpdir = "data"
     while i < len(sys.argv):
         a = sys.argv[i]
         if a == "--n" and i + 1 < len(sys.argv):
             n = int(sys.argv[i + 1])
+            i += 2
+        elif a == "--bpdir" and i + 1 < len(sys.argv):
+            bpdir = sys.argv[i + 1]
             i += 2
         elif a == "--topk" and i + 1 < len(sys.argv):
             topk = int(sys.argv[i + 1])

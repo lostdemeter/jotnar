@@ -1975,3 +1975,176 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   competition drowns, argmax thresholds, giants dominate), not
   supply. R1's remaining addresses: none in supply; flattening
   live as partial; body-architecture open (unstated how).
+
+## 2026-10-02: instruction diff -- one gap, already priced (CLOCKED, start missed)
+
+- Start clock MISSED (35-for-35). x86-trace proposal:
+  binary instrumentation priced-excessive (SASS semantic gap);
+  FX proper blocked 3x on harness (symbolic control-flow,
+  make_fx moved/arg-shape) -- manual DAG substituted
+  (equivalent: teacher math known cold from mirror+source).
+  Diff teacher-DAG vs qwen0_block.asm: EXACTLY one gap (Q-bias,
+  stated + pinned 23.3dB); all else 1:1 (RoPE base, GQA groups,
+  folding, biases, mask convention, no-TSHIFT). 41.81dB IS the
+  order-proof. FMA/reduction-order live inside parity numbers
+  (attribution complete, no action).
+- Compiler note: port template exists (freeze --layer +
+  150-line pattern) but full-24 blocked on range-law
+  compounding (23->15dB over 2 layers), not tooling. Gradient
+  "learning at assembly" reading explicitly out (doctrine:
+  needs learning spec). Hints extracted: none new -- the one
+  difference was already law.
+
+## 2026-10-02: margin-GUE probe -- no repulsion, mid-depletion (CLOCKED, start missed)
+
+- Start clock MISSED (34-for-34). Zeta analogy test (user):
+  top1-top2 margin distribution over saved 330 logits vs
+  Poisson-ref: P(m<eps) 0.003/0.018/0.030/0.121/0.230 vs
+  0.003/0.017/0.033/0.154/0.284 -- MATCHES Poisson at small
+  gaps (ties at chance rate, m0131-class unexotic), depletes
+  mid-gaps (bimodal tendency: decisive wins + coin flips, few
+  middles). NO GUE repulsion: the analogy's testable half
+  FAILS here; mirroring half (s<->1-s :: order transform,
+  twin_dist :: line distance) stands as coherent conjecture
+  (depth-convergence 0.665->0.284 reads as approach-to-line).
+
+## 2026-10-02: full-24 priced -- port dies at L2 (CLOCKED, start missed)
+
+- Start clock MISSED (36-for-36). Staged L0->L3 (same listing,
+  per-layer freezes): parity 41.8/13.4/-19.9/-20.5,
+  no-qb divergence 23.3/15.2/-15.6/-16.4, outmax 3.4/31/585/603
+  (x170 explosion by L2 -- residual stream runs hot, lattice
+  folds everywhere). Full-24: NO (curve verdict, not opinion).
+  L0 gated green; L1 marginal-below-bar (recorded, not gated);
+  L2+ infeasible (range law + explosion + compounding).
+  Lens-on-port skipped deliberately (diverged states carry no
+  knowledge to read -- HF lens stands as the map). Port factory
+  exists (freeze --layer + pattern); fidelity dies at L1 regardless.
+
+## 2026-10-02: per-layer regimes -- transition is recognize-and-route (CLOCKED, start missed)
+
+- Start clock MISSED (37-for-37). Transition lead (user: layers
+  aren't universal, reverse-engineering always needs per-layer
+  treatment): outmax HF-vs-noqb AGREE (3.4/31/585/603 BOTH) --
+  explosion REAL (not omission artifact), divergence is
+  DIRECTIONAL (same envelope, different directions). Q-bias
+  omission exonerated as explosion cause.
+- Transition verdict: recognize-and-route, not a missing op.
+  Cool layers (L0: 3.4) PORT directly (41.81dB gated); hot
+  layers (L2+: 585) LENS only (read via HF, never port --
+  range law + explosion); writes go NATIVE loop (unaffected
+  small magnitudes BY DESIGN). Same doctrine as ever
+  (per-block M, two-scale stages, D32 cov raise): price the
+  regime, don't fight it. Chunking/splitting/rescaling all
+  closed (per-product fold). Unblocks: phi-core wide-path
+  (range) or extended-precision ops (new mnemonics class).
+
+## 2026-10-02: one-teacher-per-layer -- degenerate single donor (CLOCKED, start missed)
+
+- Start clock MISSED (38-for-38). Correspondence map (ours
+  H2/H4/H6/H8 x Qwen L0-23, least-squares, held-out 10): ALL
+  our layers map best to teacher L22 (23.5/24.3/23.4/23.5dB;
+  L0 ~17, L11 ~15-16, L23 ~21-22). Below 40dB bar everywhere.
+  Per-layer donor selection COLLAPSES to single-donor: no
+  pair clears the bar, best is one. Franken-model inherits the
+  cap + adapter compounding (not run, priced out).
+- Depth philosophies made precise: our depth traverses ONE
+  neighborhood (all layers -> L22; depth refines invariance
+  within-regime per twin curve) while teacher depth traverses
+  REGIMES (L0 syntax -> L22 facts, 15->24dB gradient). Siphon
+  fails partly on regime mismatch, not just rank: early/mid
+  teacher has NO counterpart in our stack (<=17dB all pairs).
+  Lens/siphon tension noted (L22 most mappable, L23 most
+  fact-decodable -- geometry vs decisions again).
+
+## 2026-10-02: routed specialization -- first joint win on aim (CLOCKED, start missed)
+
+- Start clock MISSED (39-for-39). Induction gap (Qwen to 17000x
+  vs ours 0) traced to missing copy function; per-head identity
+  head: twins 2.3-3.8 collapse (no knee vs QK scale) + Pabs ~0
+  (ratios-on-dust -- report absolutes with ratios, process fix).
+  Top1 surprise: 45-46/566 (+36%!) with twin collapse.
+- Discord analysis (paired): 1 loss / 14 gains, McNemar 9.6
+  p~0.002 -- FIRST significant aim movement ever. Gains are
+  MID-WORD fragments (14-1), losses word-starts (5-4): boundary
+  rule (observable pre-decision, no thresholds): flat@starts +
+  sharp@continuations. Routed: twin 0.665 HOLDS (twin contexts
+  all starts) + top1 46/566 exact. Joint win: twin holds bar +
+  top1 significant = both-axes, the first ever on aim.
+- Frozen (lm_piece32_induct.npz + manifest) + gated
+  (tests/test_routed.py 4/4: twin/probe-size/top1-exact).
+  Policy clarified: twin bar catches BLUR (fake geometry wins),
+  not honest trades -- but this trade needs no exception (twin
+  HOLDS: routing picks flat where twins live). Harness toll
+  this turn: flat-index bug, loop-var shadowing, double-count
+  artifact (caught by contradiction, read-back, probe-size pin
+  -- pins on pins now: tot==566 asserted in-gate).
+
+## 2026-10-02: neighborhood -- misses are near, top-8 at 0.20 (CLOCKED, start missed)
+
+- Start clock MISSED (40-for-40). User read (misses related):
+  CONFIRMED both ways -- pred-truth cosine 0.090 vs 0.044
+  random (2x), string-sim 0.374 vs 0.255 (shared substrings).
+  Top-K curve (routed, first-piece): 0.091/0.103/0.161/0.200/
+  0.282/0.358 @1/2/4/8/16/32. Top-8 EQUALS R1's number.
+- Reading: top-1 understates knowledge 2-4x; a top-K SELECTOR
+  is the priced gap (ceiling 0.20@8, 0.36@32) -- but every
+  selector feature tried is dead (margin/glue/frequency/
+  rescoring all fail), so the ceiling is visible but not yet
+  reachable. Same wall, better window. Hygiene note: 78
+  zero-norm pieces (4% dead vocab rows).
+
+## 2026-10-02: selection closed -- joint equals greedy (CLOCKED, start missed)
+
+- Start clock MISSED (41-for-41). Agreement filter (flat∩sharp
+  top-K): narrows 8->6.4 keeping ALL truth (66/66) but picking
+  stays argmax -> lateral 0.091. Joint-word select: first build
+  scored 0/330 via overshoot + length-bias bugs (caught by
+  contradiction with greedy); fixed (boundary-aware rollout +
+  length-mean): EXACTLY greedy 30/330. Reason it had to be:
+  completion ~deterministic given first piece, so P(word) ≈
+  P(first) -- no extra information in the rollout to select on.
+  Selection CLOSED (agreement/joint-sum/joint-mean + all prior
+  rescoring): ceiling 0.20@8 visible, unreachable with
+  model-internal info. R1 lives ONLY in routed specialization
+  now (sole live mechanism).
+
+## 2026-10-02: proof of the shape -- threefold closure (CLOCKED, start missed)
+
+- Start clock MISSED (42-for-42). Shape claim (selection can't
+  beat argmax since P(word)~P(first)): PROVEN three ways --
+  (1) pick-agreement joint-vs-greedy 328/330 (identical
+  decisions, not just equal scores); (2) 190/330 truths are
+  single-piece (no completion exists -- selection VACUOUS by
+  construction); (3) teacher-forced truth-continuations mean
+  0.004, 0/231 above 0.5, truth-first median mass 0.000 (no
+  signal to select on, no source to select from). Selection
+  closed WITH PROOF (not exhaustion): vacuous + signal-free +
+  sourceless. Content arrives ONLY via external paths
+  (retrieval/copy/marshal) or geometry change (refit/routed).
+  Two probe bugs en route (empty-confs loop, boundary-blind
+  loop -- both shape-loud: empty arrays fail LOUD).
+
+## 2026-10-02: all-of-it batch -- v2 killed, steer measured, CIs, bpe4000 (CLOCKED, start missed)
+
+- Start clock MISSED (43-for-43). Routed-v2 (prev-rare rule):
+  twin 0.924 BREAKS bar + top1 identical 46 (ecological
+  fallacy live: subgroup estimate confounded by midword --
+  end-to-end corrects it). Kill rule for router features:
+  must be TWIN-ORTHOGONAL (constant on twin contexts) +
+  move top1. v1 stands.
+- Steer dose (alexandria/egypt, 4 seeds): content 5.0->5.25->
+  6.0 at s=0/3/6 (+20%), repeat 1->2/4, validity held, mid-word
+  truncation is harness (no word-finish), not mechanism.
+  Weak-positive quality lever, measured not wished.
+- Elicitation round 2: 6 triples, 0 attested (vacuous
+  is/were-the shapes -- attestation correctly rejects).
+  Funnel says no (working as designed); overall yield ~10%.
+- CIs computed (key numbers): routed [0.0615,0.1067] vs fit
+  [0.0418,0.0807] OVERLAP -- yet McNemar p~0.002 STANDS
+  (paired discord 14/1). Lesson recorded: CIs compare ACROSS
+  probes; paired tests decide WITHIN. Never substitute.
+- BPE-4000 adopted for demos (--bpdir flag, default path
+  untouched + verified green): 13 vs 17 pieces/output (fewer
+  steps, equal quality per P3 null). D16 ends/bank frozen
+  alongside (spec16 3.4).

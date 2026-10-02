@@ -43,8 +43,9 @@ def main():
     # torch stores out×in; listings consume in×out (+bias row) -- transpose here.
     # RANGE LAW (measured 2026-10-02): matmul products must stay ≲ ±13
     # (m-independent lattice fold; m prices precision, not range). Q/K
-    # biases (±45 rows) EXCEED it -> Q/K ship WITHOUT bias (23.3dB
-    # stated divergence from HF, below); V bias (±0.1) stays augmented.
+    # biases (±45 rows) EXCEED it -> Q/K ship WITHOUT bias (stated
+    # divergence from HF, pinned per-layer in tests; L0 23.3dB);
+    # V bias (±0.1) stays augmented.
     Wq8 = Wq.T * f
     Wk8 = Wk.T * f
     Wva = np.concatenate([Wv.T, bv[None, :]], axis=0)
@@ -59,7 +60,7 @@ def main():
            "folding": "SC/8 split balanced (/sqrt8 into Q and K sides; "
                       "rotation-linearity keeps RoPE exact; quantization-optimal)",
            "biases": "V-bias via ones-augment (exact, tiny); Q-bias OMITTED "
-                      "(23.3dB stated divergence -- substrate product-range law); "
+                      "(stated divergence, pinned per-layer in tests); "
                       "K-bias cancelled by proof (row-constant); "
                       "o_bias absent verified",
            "tshift": "omitted (teacher has none)",
