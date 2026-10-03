@@ -38,6 +38,18 @@ class NoPattern(AsmError):
     """Opcode has no pattern for this backend (missing, not wrong)."""
 
 
+def _short_site(ln):
+    """Condense an origin string for emitted comments: basename the file
+    part, keep :line and via-suffixes. Errors keep full sites."""
+    import os as _os
+    parts = str(ln).split(" via ")
+    head = parts[0]
+    if ":" in head:
+        f, rest = head.rsplit(":", 1)
+        head = f"{_os.path.basename(f) or f}:{rest}"
+    return " via ".join([head] + parts[1:])
+
+
 class Backend:
     """Target interface. Subclass per backend; the driver is shared."""
 
@@ -653,13 +665,13 @@ def _dim_expr(sh, ids_n):
 
 
 def compile_program(text, target="c", sample=None, outputs=None,
-                    registry=None, sigs=None, basedir="."):
+                    registry=None, sigs=None, basedir=".", origin=None):
     """Frontend entry: asm text -> target source. Returns dict with
     source/backend/streams/dims/config. Sample payload required (shapes).
     """
     from chain.asm_ops import REGISTRY as _R, SIGS as _S
     config, inp, bound, _ = assemble(text, registry or _R, sigs or _S,
-                                     basedir=basedir)
+                                     basedir=basedir, origin=origin)
     from chain.backends import get_backend as _gb
     _be = _gb(target)  # unknown names fail loud here
     if _be.name == "cuda":
@@ -838,7 +850,7 @@ def compile_program(text, target="c", sample=None, outputs=None,
         pat, gathered = be.pattern(mn, outs, args, sig, ctx)
         if gathered:
             ctx["gathered"][gathered[0]] = gathered[1]
-        parts.append(f"  /* L{ln}: {mn} */")
+        parts.append(f"  /* L{_short_site(ln)}: {mn} */")
         parts.append("  " + pat.replace("\n", "\n  "))
     for o in outputs:
         ok, osub, _osh2 = streams[o]

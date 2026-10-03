@@ -290,13 +290,14 @@ def expand(text, basedir=".", origin="<?>", defs=None, stack=(), stdlib=None):
     return flat, defs
 
 
-def parse(text, basedir=".", stdlib=None):
+def parse(text, basedir=".", stdlib=None, origin=None):
     """text -> (config dict, [(name, layout|None)], [(outs, mn, args, ln)], [state]).
     DEF/IMPORT/CALL expand first (origins tracked); the listing below sees
     flat lines with origin strings ("file:12", "file:12 via CALL@site:5").
     stdlib=None auto-detects the repo stdlib dir (Gate 4 search order)."""
     config, inp, prog, state = {}, [], [], []
-    flat, _ = expand(text, basedir, origin=basedir, stdlib=stdlib)
+    flat, _ = expand(text, basedir, origin=origin or basedir,
+                      stdlib=stdlib)
     for raw, org, pre_stripped in flat:
         ln = org
         line = raw if pre_stripped else raw.split("#", 1)[0].strip()
@@ -377,7 +378,8 @@ def parse(text, basedir=".", stdlib=None):
     return config, inp, prog, state
 
 
-def assemble(text, registry, sigs=None, basedir=".", stdlib=None):
+def assemble(text, registry, sigs=None, basedir=".", stdlib=None,
+             origin=None):
     """Bind mnemonics + check arity/inputs statically (before any execution).
     Returns (config, inp, bound, state) with bound entries
     (outs, mn, fn, args, ln, sig). Unknown mnemonic / arity mismatch /
@@ -386,20 +388,23 @@ def assemble(text, registry, sigs=None, basedir=".", stdlib=None):
     for parse-time conflicts. Full verifier with scales+geometry is backlog:
     range estimator + seam chart."""
     sigs = sigs or {}
-    config, inp, prog, state = parse(text, basedir, stdlib)
+    config, inp, prog, state = parse(text, basedir, stdlib, origin)
     bound, defined = [], set(n for n, _ in inp)
     for outs, mn, args, ln in prog:
         if mn not in registry:
-            raise AsmError(f"unknown mnemonic: {mn} "
-                           f"(known: {sorted(registry)})")
+            raise AsmError(f"line {ln}: unknown mnemonic: {mn} "
+                           f"(known: {len(registry)} ops)")
         fn, arity_in, arity_out = registry[mn]
         if len(args) != arity_in:
-            raise AsmError(f"{mn}: wants {arity_in} args, got {len(args)}")
+            raise AsmError(f"line {ln}: {mn} wants {arity_in} args, "
+                           f"got {len(args)}")
         if len(outs) != arity_out:
-            raise AsmError(f"{mn}: produces {arity_out}, got {len(outs)} outs")
+            raise AsmError(f"line {ln}: {mn} produces {arity_out}, got "
+                           f"{len(outs)} outs")
         for a in args:
             if a not in defined and not _is_literal(a):
-                raise AsmError(f"{mn}: input stream '{a}' not defined yet")
+                raise AsmError(f"line {ln}: {mn}: input stream '{a}' "
+                               f"not defined yet")
         bound.append((outs, mn, fn, args, ln, sigs.get(mn)))
         defined.update(outs)
     return config, inp, bound, state
@@ -466,7 +471,8 @@ def _check_layouts(outs, mn, args, ln, sig, layouts):
     return dict(zip(outs, out_lays))
 
 
-def verify(text, registry, sigs=None, basedir=".", stdlib=None):
+def verify(text, registry, sigs=None, basedir=".", stdlib=None,
+             origin=None):
     """Static layout pass (no payloads, no execution): replays unification
     over DECLARED layouts only (IN AS + concrete sig patterns). Returns
     (errors, report): errors = list of conflict strings derivable without
@@ -485,7 +491,7 @@ def verify(text, registry, sigs=None, basedir=".", stdlib=None):
                 layouts[o] = _UNKNOWN
     total = len(layouts)
     resolved = sum(1 for v in layouts.values() if v != _UNKNOWN)
-    _, defs = expand(text, basedir, origin=basedir, stdlib=stdlib)
+    _, defs = expand(text, basedir, origin=origin or basedir, stdlib=stdlib)
     iface = {n: {"formals": [(f, d["fin_lay"].get(f)) for f in d["fins"]],
                  "returns": [(f, d["fout_lay"].get(f)) for f in d["fouts"]],
                  "origin": d["origin"]} for n, d in defs.items()}
@@ -655,9 +661,10 @@ def format_trace(log):
 
 
 def run_text(text, registry, payload, sigs=None, trace=None, basedir=".",
-             stdlib=None, overrides=None):
+             stdlib=None, overrides=None, origin=None):
     """Parse + assemble + execute. Returns feeds (trace list filled if given)."""
-    config, inp, bound, _ = assemble(text, registry, sigs, basedir, stdlib)
+    config, inp, bound, _ = assemble(text, registry, sigs, basedir,
+                                            stdlib, origin)
     return run((config, inp, bound), config, inp, payload, trace=trace,
                overrides=overrides)
 

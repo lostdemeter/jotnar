@@ -113,11 +113,12 @@ class Prog:
     def compile(self, target, sample=None, outputs=None, registry=None,
                 sigs=None, basedir="."):
         """Straight to a backend (no text round-trip needed, but text()
-        always shows what compiled)."""
+        always shows what compiled). Origin marks generated code."""
         from chain.emit_c import compile_program
         return compile_program(self.text(), target, sample=sample,
                                outputs=outputs, registry=registry,
-                               sigs=sigs, basedir=basedir)
+                               sigs=sigs, basedir=basedir,
+                               origin=f"builder:{self.name}")
 
 
 # -- stdlib seed: composites as plain functions ------------------------

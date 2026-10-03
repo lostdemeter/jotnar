@@ -21,7 +21,7 @@ import subprocess
 import numpy as np
 
 from chain.asm import AsmError
-from chain.emit_c import Backend, NoPattern, _dim_expr
+from chain.emit_c import Backend, NoPattern, _dim_expr, _short_site
 
 
 KERNELS = r"""
@@ -365,13 +365,13 @@ class CUDABackend(Backend):
 
 
 def compile_cuda(text, sample=None, outputs=None, registry=None,
-                 sigs=None, basedir="."):
+                 sigs=None, basedir=".", origin=None):
     """CUDA frontend entry: asm text -> .cu source."""
     from chain.asm import assemble
     from chain.asm_ops import REGISTRY as _R, SIGS as _S
     from chain.emit_c import infer_shapes
     config, inp, bound, _ = assemble(text, registry or _R, sigs or _S,
-                                     basedir=basedir)
+                                     basedir=basedir, origin=origin)
     if sample is None:
         raise AsmError("compile_cuda needs sample payload (shapes)")
     if not outputs:
@@ -497,7 +497,7 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
         pat, gathered = be.pattern(mn, outs, args, sig, ctx)
         if gathered:
             ctx["gathered"][gathered[0]] = gathered[1]
-        parts.append(f"  /* L{ln}: {mn} */")
+        parts.append(f"  /* L{_short_site(ln)}: {mn} */")
         parts.append("  " + pat.replace("\n", "\n  "))
     for o in outputs:
         ok = streams[o][0]
