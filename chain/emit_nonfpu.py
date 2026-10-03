@@ -328,6 +328,18 @@ class NonFPUBackend(CBackend):
             return self._fx_pattern(mn, outs, args, sig, ctx)
         return super().pattern(mn, outs, args, sig, ctx)
 
+    @staticmethod
+    def _tplane(stream, comp, idx, S, ctx):
+        """Triple plane ref: array element, or baked literal when the
+        stream folded to a constant."""
+        consts = ctx.get("consts", {})
+        if stream in consts:
+            cs, ce, cz = consts[stream]
+            lit = {"s": f"(int8_t){cs}", "e": f"(int32_t){ce}",
+                   "z": f"(uint8_t){cz}"}[comp]
+            return lit
+        return f"{stream}_{comp}[{idx}]"
+
     def _fx_pattern(self, mn, outs, args, sig, ctx):
         S = ctx["streams"]
         o = outs[0]
@@ -433,8 +445,12 @@ class NonFPUBackend(CBackend):
             return (
                 f"/* {o} = MUL({a},{b}) tmul exact */\n"
                 f"for (int64_t f_i = 0; f_i < {co}; ++f_i)\n"
-                f"  nf_tmul({a}_s[f_i], {a}_e[f_i], {a}_z[f_i], "
-                f"{b}_s[f_i], {b}_e[f_i], {b}_z[f_i], "
+                f"  nf_tmul({self._tplane(a, 's', 'f_i', S, ctx)}, "
+                f"{self._tplane(a, 'e', 'f_i', S, ctx)}, "
+                f"{self._tplane(a, 'z', 'f_i', S, ctx)}, "
+                f"{self._tplane(b, 's', 'f_i', S, ctx)}, "
+                f"{self._tplane(b, 'e', 'f_i', S, ctx)}, "
+                f"{self._tplane(b, 'z', 'f_i', S, ctx)}, "
                 f"&{o}_s[f_i], &{o}_e[f_i], &{o}_z[f_i]);",
                 None)
         if mn in ("ADD", "SUB"):
@@ -445,8 +461,12 @@ class NonFPUBackend(CBackend):
             return (
                 f"/* {o} = {mn}({a},{b}) bridge @ NF_M */\n"
                 f"for (int64_t f_i = 0; f_i < {co}; ++f_i)\n"
-                f"  nf_binop({a}_s[f_i], {a}_e[f_i], {a}_z[f_i], "
-                f"{b}_s[f_i], {b}_e[f_i], {b}_z[f_i], {sub}, "
+                f"  nf_binop({self._tplane(a, 's', 'f_i', S, ctx)}, "
+                f"{self._tplane(a, 'e', 'f_i', S, ctx)}, "
+                f"{self._tplane(a, 'z', 'f_i', S, ctx)}, "
+                f"{self._tplane(b, 's', 'f_i', S, ctx)}, "
+                f"{self._tplane(b, 'e', 'f_i', S, ctx)}, "
+                f"{self._tplane(b, 'z', 'f_i', S, ctx)}, {sub}, "
                 f"&{o}_s[f_i], &{o}_e[f_i], &{o}_z[f_i]);",
                 None)
         if mn == "SQUARE":

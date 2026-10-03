@@ -66,7 +66,11 @@ def main():
     os.makedirs(work, exist_ok=True)
     exe = build(art["source"], work, name="t")
     argv = [exe]
+    consts = art.get("consts", {})
+    print("folded consts:", sorted(consts) if consts else "none")
     for n in art["inputs"]:
+        if n in consts:
+            continue
         fn = os.path.join(work, f"in_{n}.bin")
         fp[n].astype(np.float64).tofile(fn)
         argv.append(fn)
@@ -92,7 +96,10 @@ def main():
                                outputs=list(IMG_OUTS), basedir="programs")
         exe2 = build_cu(art2["source"], work, name="tu")
         argv = [exe2]
+        consts2 = art2.get("consts", {})
         for n in art2["inputs"]:
+            if n in consts2:
+                continue
             fn = os.path.join(work, f"uin_{n}.bin")
             fp[n].astype(np.float32).tofile(fn)
             argv.append(fn)
@@ -120,7 +127,10 @@ def main():
         check("img-nf-trap", False, str(e)[:120])
     exe3 = build(art3["source"], work, name="tn", libs=[])
     argv = [exe3]
+    consts3 = art3.get("consts", {})
     for n in art3["inputs"]:
+        if n in consts3:
+            continue
         for comp, arr in zip("sez", tp[n]):
             fn = os.path.join(work, f"nin_{n}_{comp}.bin")
             np.ascontiguousarray(arr).tofile(fn)

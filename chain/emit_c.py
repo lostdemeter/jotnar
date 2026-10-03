@@ -617,9 +617,14 @@ class CBackend(Backend):
                                 "lives on nonfpu)")
             co = ctx["count"][o]
             op = {"MUL": "*", "ADD": "+", "SUB": "-"}[mn]
-            return (f"/* {o} = {a} {op} {b} */\n"
+            consts = ctx.get("consts", {})
+            la = repr(float(consts[a])) if a in consts else f"{a}[e_i]"
+            lb = repr(float(consts[b])) if b in consts else f"{b}[e_i]"
+            tag = (" (const-folded %s%s)" % (a if a in consts else "",
+                                             b if b in consts else ""))
+            return (f"/* {o} = {a} {op} {b}{tag} */\n"
                     f"for (int64_t e_i = 0; e_i < {co}; ++e_i)\n"
-                    f"  {o}[e_i] = {a}[e_i] {op} {b}[e_i];",
+                    f"  {o}[e_i] = {la} {op} {lb};",
                     None)
         if mn == "SELECT":
             m, a, b = args
@@ -727,6 +732,39 @@ def _dim_expr(sh, ids_n):
     return " * ".join(ids_n if d is None else str(int(d)) for d in sh)
 
 
+
+def find_consts(bound, inp, streams, sample):
+    """Const-folding: single-valued F/T IN streams consumed SOLELY by
+    elementwise MUL/ADD/SUB become compile-time literals (no argv file,
+    no malloc). I streams never fold (ids/masks stay addressable).
+    Shared by the C and CUDA drivers (same IR, same deal)."""
+    _uses = {}
+    _, _, _prog0 = bound
+    for _outs, _mn, _fn, _args, _ln, _sg in _prog0:
+        for _a in _args:
+            _uses.setdefault(_a, set()).add(_mn)
+    consts = {}
+    for _n, _ in inp:
+        if _n not in sample or _n not in streams:
+            continue
+        _k, _sub, _sh = streams[_n]
+        if _k not in ("F", "T"):
+            continue
+        if not all(_m in ("MUL", "ADD", "SUB") for _m in _uses.get(_n, ())):
+            continue
+        if _k == "F":
+            _u = np.unique(np.ascontiguousarray(sample[_n], dtype=np.float64))
+            if len(_u) == 1:
+                consts[_n] = float(_u[0])
+        else:
+            _ss, _ee, _zz = (np.ascontiguousarray(p) for p in sample[_n])
+            _sig = (_ss.astype(np.int64) * 1000000000000
+                    + _ee.astype(np.int64) * 10 + _zz.astype(np.int64))
+            if np.unique(_sig).size == 1:
+                consts[_n] = (int(_ss.flat[0]), int(_ee.flat[0]),
+                              int(_zz.flat[0]))
+    return consts
+
 def compile_program(text, target="c", sample=None, outputs=None,
                     registry=None, sigs=None, basedir=".", origin=None,
                     use_blas=False, time_ops=False):
@@ -753,6 +791,7 @@ def compile_program(text, target="c", sample=None, outputs=None,
     be = _be
     be.use_blas = use_blas
     streams = infer_shapes((config, inp, bound), sample)
+    consts = find_consts((config, inp, bound), inp, streams, sample)
     in_names = [n for n, _ in inp]
     dims = {}
     for n in in_names:
@@ -806,7 +845,8 @@ def compile_program(text, target="c", sample=None, outputs=None,
     ctx = {"streams": streams, "dims": dims, "dyn": {}, "ids_n": ids_n,
            "inputs": in_names, "outputs": outputs, "gathered": {},
            "config": dict(config), "theta": theta, "rope": rope,
-           "count": {}, "mns": [mn for _, mn, _, _, _, _ in bound]}
+           "count": {}, "mns": [mn for _, mn, _, _, _, _ in bound],
+           "consts": consts}
     for _xn, (_xk, _xs, _xsh) in streams.items():
         if _xk in ("F", "T") and _xsh:
             ctx["count"][_xn] = "(%s)" % _dim_expr(_xsh, ids_n)
@@ -821,6 +861,8 @@ def compile_program(text, target="c", sample=None, outputs=None,
     parts.append("/* inputs: argv files, order below */")
     decls = []
     for n in in_names:
+        if n in consts:
+            continue  # compile-time literal: no storage, no argv file
         k, sub, sh = streams[n]
         if k == "T":
             st, et, zt = sub
@@ -862,12 +904,15 @@ def compile_program(text, target="c", sample=None, outputs=None,
             st, et, zt = interT[x]
             parts.append(f"{st} *{x}_s; {et} *{x}_e; {zt} *{x}_z;")
     parts.append("int main(int argc, char **argv) {")
-    n_argv = sum(3 if streams[n][0] == "T" else 1 for n in in_names)
+    live_ins = [n for n in in_names if n not in consts]
+    n_argv = sum(3 if streams[n][0] == "T" else 1 for n in live_ins)
     n_argv += sum(3 if streams[o][0] == "T" else 1 for o in outputs)
     parts.append(f"  if (argc != {n_argv + 1}) return 9;")
     idx = 1
     loads = []
     for n in in_names:
+        if n in consts:
+            continue
         k, sub, sh = streams[n]
         if k == "T":
             st, et, zt = sub
@@ -971,7 +1016,8 @@ def compile_program(text, target="c", sample=None, outputs=None,
         _libs = _libs + list(CBackend.BLAS_LIBS)
     return {"source": src, "backend": be, "streams": streams,
             "dims": dims, "config": dict(config), "inputs": in_names,
-            "outputs": outputs, "n_argv": idx - 1, "libs": _libs}
+            "outputs": outputs, "n_argv": idx - 1, "libs": _libs,
+            "consts": consts}
 
 
 def build(source, workdir, name="prog", cc="cc", cflags=None, libs=None):

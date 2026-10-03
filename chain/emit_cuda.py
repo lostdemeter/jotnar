@@ -77,6 +77,18 @@ __global__ void k_elem(const float *a, const float *b, float *o, int64_t n,
   else r = a[i] / b[i];
   o[i] = r;
 }
+/* const-folded variant: one side is a compile-time scalar. */
+__global__ void k_elemC(const float *a, float c, float *o, int64_t n, int op,
+                        int c_first) {
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= n) return;
+  float x = a[i], r = 0;
+  if (op == 0) r = c_first ? (c + x) : (x + c);
+  else if (op == 1) r = c_first ? (c - x) : (x - c);
+  else if (op == 2) r = c * x;
+  else r = c_first ? (c / x) : (x / c);
+  o[i] = r;
+}
 __global__ void k_transpose_f32(const float *x, float *o, int64_t R,
                                 int64_t C) {
   int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
@@ -230,6 +242,19 @@ class CUDABackend(Backend):
             o = outs[0]
             op = {"ADD": 0, "SUB": 1, "MUL": 2, "DIV": 3}[mn]
             co = ctx["count"][o]
+            consts = ctx.get("consts", {})
+            if a in consts or b in consts:
+                if a in consts and b in consts:
+                    arr, cval, first = b, float(consts[a]), 1
+                elif a in consts:
+                    arr, cval, first = b, float(consts[a]), 1
+                else:
+                    arr, cval, first = a, float(consts[b]), 0
+                return (
+                    f"/* {o} = {mn} const-folded */\n"
+                    f"k_elemC<<<(({co}) + TPB - 1) / TPB, TPB>>>"
+                    f"({arr}, {cval!r}f, {o}, {co}, {op}, {first});\n{launch}",
+                    None)
             return (
                 f"/* {o} = {mn} template op={op} */\n"
                 f"k_elem<<<({co} + TPB - 1) / TPB, TPB>>>"
@@ -386,6 +411,8 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
         raise AsmError("compile_cuda needs outputs=[...]")
     be = CUDABackend()
     streams = infer_shapes((config, inp, bound), sample)
+    from chain.emit_c import find_consts as _fc
+    consts = _fc((config, inp, bound), inp, streams, sample)
     in_names = [n for n, _ in inp]
     ids_n = None
     for n in in_names:
@@ -414,7 +441,9 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
             break
     ctx = {"streams": streams, "dims": {}, "dyn": {}, "ids_n": ids_n,
            "inputs": in_names, "outputs": outputs, "gathered": {},
-           "config": dict(config), "theta": theta, "count": {}}
+           "config": dict(config), "theta": theta, "count": {},
+           "consts": consts,
+           "mns": [mn for _, mn, _, _, _, _ in bound]}
     for xn, (xk, _xs, xsh) in streams.items():
         if xk == "F" and xsh:
             ctx["count"][xn] = "(%s)" % _dim_expr(xsh, ids_n)
@@ -427,6 +456,8 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
     parts = [be.prologue(ctx)]
     decls = []
     for n in in_names:
+        if n in consts:
+            continue  # compile-time literal: no storage, no argv file
         k, sub, sh = streams[n]
         if k == "F":
             decls.append(f"static float *{n}; static int64_t {n}_N;")
@@ -454,16 +485,19 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
     parts.append("static cublasHandle_t h;")
     parts.append("static const float kOne = 1.0f;")
     parts.append("int main(int argc, char **argv) {")
-    n_argv = len(in_names) + len(outputs)
+    live_ins = [n for n in in_names if n not in consts]
+    n_argv = len(live_ins) + len(outputs)
     parts.append(f"  if (argc != {n_argv + 1}) return 9;")
     parts.append("  CE(cudaSetDevice(0)); BE(cublasCreate(&h));")
     parts.append("  BE(cublasSetMathMode(h, CUBLAS_DEFAULT_MATH));")
     idx = 1
     loads = []
     for n in in_names:
+        if n in consts:
+            continue
         k, _, _ = streams[n]
         if k == "F":
-            wrow = sh[-1]
+            wrow = streams[n][2][-1]
             if wrow is None:
                 raise NoPattern(f"cuda: fully-dynamic F input '{n}' "
                                 f"(batch x width both unknown)")
@@ -521,7 +555,7 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
     parts.append(be.epilogue(ctx))
     return {"source": "\n".join(parts), "backend": be, "streams": streams,
             "dims": {}, "config": dict(config), "inputs": in_names,
-            "outputs": outputs, "n_argv": idx - 1}
+            "outputs": outputs, "n_argv": idx - 1, "consts": consts}
 
 
 def build_cu(source, workdir, name="prog", nvcc="nvcc", nvflags=None,

@@ -104,7 +104,10 @@ def run_backend(text, target, payload, work, name, libs_sentinel="dflt"):
         exe = build(art["source"], work, name=name, **kw)
     argv = [exe]
     fdt = np.float32 if target == "cuda" else np.float64
+    consts = art.get("consts", {})
     for n in art["inputs"]:
+        if n in consts:
+            continue  # folded to a compile-time literal (no file)
         k, _, _ = art["streams"][n]
         v = payload[n]
         if k == "T":

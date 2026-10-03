@@ -40,24 +40,24 @@ def main():
         return S.encode(np.ascontiguousarray(a, dtype=np.float64))
 
     dd = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data"))
-    out, man_shapes = {}, {}
+    from chain.frozen import save_shared, share_report
+    logical = {}
     for k, v in mats.items():
         s, e, z = enc(v)
-        out[f"{k}_s"] = np.ascontiguousarray(s)
-        out[f"{k}_e"] = np.ascontiguousarray(e)
-        out[f"{k}_z"] = np.ascontiguousarray(z)
-        man_shapes[k] = list(v.shape)
+        logical[f"{k}_s"] = np.ascontiguousarray(s)
+        logical[f"{k}_e"] = np.ascontiguousarray(e)
+        logical[f"{k}_z"] = np.ascontiguousarray(z)
     enc_s = time.perf_counter() - t0
-    np.savez(os.path.join(dd, "qwen7b_l0_mlp.npz"), **out)
-    man = {"snapshot": os.path.basename(SNAP), "shapes": man_shapes,
-           "dtypes": {"s": "int8", "e": "int32", "z": "uint8"},
-           "encode_seconds": round(enc_s, 1),
-           "note": "LOCAL CACHE -- never commit (see module docstring)"}
+    man, saved = save_shared(os.path.join(dd, "qwen7b_l0_mlp.npz"), logical,
+                             os.path.join(dd, "qwen7b_l0_mlp_manifest.json"))
+    man.update({"snapshot": os.path.basename(SNAP), "shapes":
+                {k: list(v.shape) for k, v in mats.items()},
+                "encode_seconds": round(enc_s, 1)})
     json.dump(man, open(os.path.join(dd, "qwen7b_l0_mlp_manifest.json"), "w"),
               indent=1)
-    nbytes = sum(v.nbytes for v in out.values())
-    print(f"froze L0 MLP triples: {nbytes / 1e9:.2f}GB in {enc_s:.0f}s "
-          f"(encode once, fread forever)")
+    nbytes = sum(v.nbytes for v in logical.values())
+    print(f"froze L0 MLP triples: {nbytes / 1e9:.2f}GB logical in {enc_s:.0f}s "
+          f"(encode once, fread forever); {share_report(man)}")
 
 
 if __name__ == "__main__":
