@@ -24,10 +24,10 @@ from chain.emit_c import Backend, CBackend, NoPattern
 INTEGER_MN = {"GATHER", "ARGMAX", "TRANSPOSE", "SLICE", "CONCAT", "SELECT",
               "MUL", "ADD", "SUB", "SQUARE", "MATMUL", "BATCH_MATMUL",
               "RMSNORM", "TSHIFT", "SOFTMAX_WIDE", "SOFTMAX",
-              "TBETA", "BETA", "ROTARY"}
+              "TBETA", "BETA", "ROTARY", "SILU"}
 FX_MN = {"MUL", "ADD", "SUB", "SQUARE", "MATMUL", "BATCH_MATMUL",
          "RMSNORM", "TSHIFT", "SOFTMAX_WIDE", "SOFTMAX",
-         "TBETA", "BETA", "ROTARY", "ARGMAX"}
+         "TBETA", "BETA", "ROTARY", "ARGMAX", "SILU"}
 SM_MN = {"TSHIFT", "SOFTMAX_WIDE", "SOFTMAX"}
 
 TRAP_RES = (
@@ -74,12 +74,13 @@ def _bake_vec(name, arr, per_line=16):
 
 
 def fx_tables_and_helpers(m_cov, m_acc, need_square, need_softmax,
-                          eps_c):
+                          eps_c, need_silu=False):
     """Bridge port: to_fixed/from_fixed + tmul + binop, tables baked.
     Faithful to phi-core lattice.py/numpy_ops semantics (int64 2^-18
     counts; BIAS 32768; e clipped to [0,65535]; int8 sign wraps).
     Softmax extras (EXP 262145 + FRAC_HI 8192 tables, isqrt, wide
-    bridge) emit only when a softmax op is present."""
+    bridge) emit only when a softmax op is present; sigmoid extras
+    (SIGX 65536 + SIG 524289 tables) only with SILU."""
     import phi_core.lattice as S
     L = [_bake_vec("NF_FRAC", S.L_FRAC()),
          _bake_vec("NF_COARSE", S.L_COARSE()),
@@ -96,10 +97,55 @@ def fx_tables_and_helpers(m_cov, m_acc, need_square, need_softmax,
         L.append(f"static const int64_t NF_QHI = {qhi}LL;")
     sm_extra = []
     sm_helpers = ""
+    import numpy as _np
+    import os as _os
+    from phi_core import numpy_ops as _N
+    if need_silu:
+        # sigmoid tables mirror numpy_ops formulas exactly (load-or-build
+        # frozen pattern); asymptotes exact, span +-16 in 2^-14 units.
+        _lp = _os.path.join(_os.path.dirname(_os.path.abspath(_N.__file__)),
+                            "..", "luts")
+        try:
+            _sigx = _np.load(_os.path.join(_lp, "sigx_lut.npy"))
+        except Exception:  # noqa: BLE001
+            _sigx = _np.round(_np.power(
+                S.PHI, (_np.arange(65536, dtype=_np.float64) - S.BIAS) / S.K
+                ) * 16384).astype(_np.int64)
+        try:
+            _sig = _np.load(_os.path.join(_lp, "sig_lut.npy"))
+        except Exception:  # noqa: BLE001
+            _k = _np.arange(2 * 16 * 16384 + 1, dtype=_np.float64)
+            _x = (_k - 16 * 16384) / 16384.0
+            _sig = _np.round(1.0 / (1.0 + _np.exp(-_x)) * 16384
+                             ).astype(_np.int64)
+        sm_extra.append(_bake_vec("NF_SIGX", _sigx, per_line=8))
+        sm_extra.append(_bake_vec("NF_SIG", _sig, per_line=8))
+        sm_helpers += r"""
+static void nf_sigmoid(int8_t s, int32_t e, uint8_t z,
+                       int8_t *os, int32_t *oe, uint8_t *oz) {
+  /* sigmoid_int port: EXPACT gather (any range, no saturation) -> LUT
+     over span +-16 (262144 in 2^-14) -> asymptotes outside. */
+  int64_t ee = (int64_t)e;
+  if (ee < 0) ee = 0;
+  if (ee > 65535) ee = 65535;
+  int64_t x14 = z ? 0 : (int64_t)s * NF_SIGX[ee];
+  int64_t y14;
+  if (x14 < -262144) y14 = 0;
+  else if (x14 > 262144) y14 = 16384;
+  else {
+    int64_t idx = x14 + 262144;
+    y14 = NF_SIG[idx];
+  }
+  nf_from_fixed(y14 * 16, 32768, os, oe, oz);
+}
+static void nf_silu(int8_t s, int32_t e, uint8_t z,
+                    int8_t *os, int32_t *oe, uint8_t *oz) {
+  int8_t gs; int32_t ge; uint8_t gz;
+  nf_sigmoid(s, e, z, &gs, &ge, &gz);
+  nf_tmul(gs, ge, gz, s, e, z, os, oe, oz);
+}
+"""
     if need_softmax:
-        import numpy as _np
-        import os as _os
-        from phi_core import numpy_ops as _N
         _lp = _os.path.join(_os.path.dirname(_os.path.abspath(_N.__file__)),
                             "..", "luts")
         try:
@@ -295,9 +341,10 @@ class NonFPUBackend(CBackend):
             mns = ctx.get("mns", [])
             need_sq = "SQUARE" in mns
             need_sm = any(mn in SM_MN or mn == "RMSNORM" for mn in mns)
+            need_silu = "SILU" in mns
             eps_c = self._eps_counts(cfg, m_cov)
             L.append(fx_tables_and_helpers(m_cov, m_acc, need_sq,
-                                           need_sm, eps_c))
+                                           need_sm, eps_c, need_silu))
         return "\n".join(L) + "\n"
 
     @staticmethod
@@ -473,6 +520,7 @@ class NonFPUBackend(CBackend):
             a = args[0]
             if S[a][0] != "T":
                 raise NoPattern("nonfpu SQUARE needs T triples")
+            co = ctx["count"][o]
             return (
                 f"/* {o} = SQUARE({a}) tmul-self + clip [NF_QLO,NF_QHI] */\n"
                 f"for (int64_t f_i = 0; f_i < {co}; ++f_i) {{\n"
@@ -615,5 +663,16 @@ class NonFPUBackend(CBackend):
                 f"      &{o}_e[f_i * {d}], &{o}_z[f_i * {d}], _num);\n"
                 f"  }}\n"
                 f"  free(_q); free(_num); }}",
+                None)
+        if mn == "SILU":
+            a = args[0]
+            if S[a][0] != "T":
+                raise NoPattern("nonfpu SILU needs T triples")
+            co = ctx["count"][o]
+            return (
+                f"/* {o} = SILU({a}) sigmoid-LUT + tmul, exact */\n"
+                f"for (int64_t f_i = 0; f_i < {co}; ++f_i)\n"
+                f"  nf_silu({a}_s[f_i], {a}_e[f_i], {a}_z[f_i], "
+                f"&{o}_s[f_i], &{o}_e[f_i], &{o}_z[f_i]);",
                 None)
         raise NoPattern(f"nonfpu: no fx pattern for {mn}")

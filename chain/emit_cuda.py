@@ -77,6 +77,14 @@ __global__ void k_elem(const float *a, const float *b, float *o, int64_t n,
   else r = a[i] / b[i];
   o[i] = r;
 }
+/* unary template (op 0 = silu; room for gelu/sigmoid ids). */
+__global__ void k_elemU(const float *a, float *o, int64_t n, int op) {
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= n) return;
+  float r = 0;
+  if (op == 0) r = a[i] / (1.0f + expf(-a[i]));
+  o[i] = r;
+}
 /* const-folded variant: one side is a compile-time scalar. */
 __global__ void k_elemC(const float *a, float c, float *o, int64_t n, int op,
                         int c_first) {
@@ -259,6 +267,17 @@ class CUDABackend(Backend):
                 f"/* {o} = {mn} template op={op} */\n"
                 f"k_elem<<<({co} + TPB - 1) / TPB, TPB>>>"
                 f"({a}, {b}, {o}, {co}, {op});\n{launch}",
+                None)
+        if mn == "SILU":
+            x = args[0]
+            if S[x][0] != "F":
+                raise NoPattern("cuda SILU needs F")
+            o = outs[0]
+            co = ctx["count"][o]
+            return (
+                f"/* {o} = SILU({x}) */\n"
+                f"k_elemU<<<(({co}) + TPB - 1) / TPB, TPB>>>"
+                f"({x}, {o}, {co}, 0);\n{launch}",
                 None)
         if mn in ("MATMUL", "BATCH_MATMUL"):
             a, b = args

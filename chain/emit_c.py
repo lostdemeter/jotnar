@@ -261,6 +261,11 @@ def infer_shapes(bound, sample):
             if sk not in ("F", "T") or len(ssh) != 2:
                 raise NoPattern(f"{where}: {mn} needs 2D F/T")
             streams[o] = (sk, ssub, ssh)
+        elif mn == "SILU":
+            sk, ssub, ssh = streams[args[0]]
+            if sk not in ("F", "T"):
+                raise NoPattern(f"{where}: SILU needs F/T")
+            streams[o] = (sk, ssub, ssh)
         elif mn == "SOFTMAX":
             sk, ssub, ssh = streams[args[0]]
             if sk not in ("F", "T") or len(ssh) != 2:
@@ -625,6 +630,17 @@ class CBackend(Backend):
             return (f"/* {o} = {a} {op} {b}{tag} */\n"
                     f"for (int64_t e_i = 0; e_i < {co}; ++e_i)\n"
                     f"  {o}[e_i] = {la} {op} {lb};",
+                    None)
+        if mn == "SILU":
+            x = args[0]
+            o = outs[0]
+            if S[x][0] != "F":
+                raise NoPattern("C backend SILU needs F (T lives "
+                                "on nonfpu)")
+            co = ctx["count"][o]
+            return (f"/* {o} = SILU({x}) */\n"
+                    f"for (int64_t e_i = 0; e_i < {co}; ++e_i)\n"
+                    f"  {o}[e_i] = {x}[e_i] / (1.0 + exp(-{x}[e_i]));",
                     None)
         if mn == "SELECT":
             m, a, b = args
