@@ -91,6 +91,12 @@ __global__ void k_slice_ax1_f32(const float *x, float *o, int64_t W,
   int64_t r = i / WID, j = i % WID;
   o[i] = x[r * W + LO + j];
 }
+__global__ void k_slice_ax0_f32(const float *x, float *o, int64_t W,
+                                int64_t LO, int64_t N) {
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= N * W) return;
+  o[i] = x[(i / W + LO) * W + (i % W)];
+}
 __global__ void k_concat_ax1_f32(const float *a, const float *b, float *o,
                                  int64_t DA, int64_t DB, int64_t N) {
   int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
@@ -280,14 +286,21 @@ class CUDABackend(Backend):
             o = outs[0]
             ax, lo, hi = (_il(args[1], "SLICE ax"), _il(args[2], "SLICE lo"),
                           _il(args[3], "SLICE hi"))
-            if S[x][0] != "F" or len(S[x][2]) != 2 or ax != 1:
-                raise NoPattern("cuda SLICE needs 2D ax1 F (v0.1)")
+            if S[x][0] != "F" or len(S[x][2]) != 2 or ax not in (0, 1):
+                raise NoPattern("cuda SLICE needs 2D ax0/1 F")
             w = S[x][2][1]
             we = str(w) if w is not None else ids_n
+            if ax == 1:
+                return (
+                    f"/* {o} = SLICE({x},1,{lo},{hi}) */\n"
+                    f"k_slice_ax1_f32<<<(({o}_N * {hi - lo}) + TPB - 1) / TPB, "
+                    f"TPB>>>({x}, {o}, {we}, {lo}, {hi - lo}, {o}_N);\n{launch}",
+                    None)
+            nrows = hi - lo
             return (
-                f"/* {o} = SLICE({x},1,{lo},{hi}) */\n"
-                f"k_slice_ax1_f32<<<(({o}_N * {hi - lo}) + TPB - 1) / TPB, "
-                f"TPB>>>({x}, {o}, {we}, {lo}, {hi - lo}, {o}_N);\n{launch}",
+                f"/* {o} = SLICE({x},0,{lo},{hi}) rows */\n"
+                f"k_slice_ax0_f32<<<(({nrows} * {we}) + TPB - 1) / TPB, "
+                f"TPB>>>({x}, {o}, {we}, {lo}, {nrows});\n{launch}",
                 None)
         if mn == "CONCAT":
             from chain.emit_c import _int_lit as _il

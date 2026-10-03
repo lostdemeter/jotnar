@@ -509,16 +509,27 @@ class CBackend(Backend):
             if in_d is None:
                 raise NoPattern("C backend: SLICE with dynamic stride")
             if S[x][0] == "T":
-                if ax != 1:
-                    raise NoPattern("C backend: SLICE-T ax0 (v0.2)")
                 st, et, zt = S[x][1]
-                L = [f"/* {o} = SLICE({x},1,{lo},{hi}) triples, exact */"]
+                if ax == 1:
+                    L = [f"/* {o} = SLICE({x},1,{lo},{hi}) triples, exact */"]
+                    for comp in ("s", "e", "z"):
+                        L.append(
+                            f"for (int64_t s_i = 0; s_i < {o}_N; ++s_i)\n"
+                            f"  memcpy(&{o}_{comp}[s_i * {hi - lo}], "
+                            f"&{x}_{comp}[s_i * {in_d} + {lo}], "
+                            f"{hi - lo} * sizeof({o}_{comp}[0]));")
+                    return ("\n".join(L), None)
+                w1 = S[x][2][1]
+                if w1 is None:
+                    raise NoPattern("C backend: SLICE-T ax0 dynamic width")
+                co = ctx["count"][o]
+                L = [f"/* {o} = SLICE({x},0,{lo},{hi}) triples, exact */"]
                 for comp in ("s", "e", "z"):
                     L.append(
                         f"for (int64_t s_i = 0; s_i < {o}_N; ++s_i)\n"
-                        f"  memcpy(&{o}_{comp}[s_i * {hi - lo}], "
-                        f"&{x}_{comp}[s_i * {in_d} + {lo}], "
-                        f"{hi - lo} * sizeof({o}_{comp}[0]));")
+                        f"  memcpy(&{o}_{comp}[s_i * {w1}], "
+                        f"&{x}_{comp}[(s_i + {lo}) * {w1}], "
+                        f"{w1} * sizeof({o}_{comp}[0]));")
                 return ("\n".join(L), None)
             if ax == 1:
                 return (
