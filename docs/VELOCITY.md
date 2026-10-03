@@ -2165,3 +2165,70 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
 - Process toll: mislabeled-field screen reported garbage
   (off-by-one indices -- caught by impossibility 532-vs-33,
   data re-analyzed clean with zero new runs).
+
+## 2026-10-02: shared axis found -- readout norms, and they're correct (CLOCKED, start missed)
+
+- Start clock MISSED (45-for-45). Gut lead (user): four walls
+  share one axis; divide-and-conquer fails on coupled systems.
+  Temperature lever: twins swing 0.656->1.107 while top1 sits
+  EXACT 33 x5 (+3 at extreme, noise) -- decoupled lever, not
+  shared axis. Then THE find: corr(log-freq, wlog-row-norm) =
+  0.776 (frequent rows 12x mean norm) -- every wall modifies
+  inputs/selection around an untouched frequency-weighted MAP.
+  Shared axis CONFIRMED mechanistically (explains PMI-inert:
+  additive debias can't cancel multiplicative norm advantage
+  scaling with |H|; explains temp-frozen argmax: uniform
+  rescale preserves norm ratios).
+- But: whitening DESTROYS (0.058->0.012 -- norms ARE the base
+  rate, real information), tempering declines monotonically
+  (33/25/29/34/7 across lam -- optimum at incumbent full
+  strength). The axis is CORRECT; the missing piece is
+  LIKELIHOOD (discriminative hidden directions -- content
+  paths, all exhausted). Divide the EXECUTION (routing works),
+  never the MAP (norms correct). Gut honored precisely:
+  shared axis located, divide-and-conquer redirected, not
+  abandoned.
+
+## 2026-10-02: inverse detector found -- it was retrieval all along (CLOCKED, start missed)
+
+- Start clock MISSED (46-for-46). Dead-write implant (catalog
+  cannae into wlog rows, full 4-piece path writes): 0/5 at
+  every gain (norm-gap x margin-gap ~= 1200x needed = total
+  capture or nothing; A=20 still 1/5). Dead space WRITABLE
+  (math exact) but UNREADABLE via argmax. Relation-forward
+  selector (subj+pred-matched edge objs, max-logit pick):
+  used 45/6, hits 0/2 -- readout can't rank rare objs either.
+  Topic-override detector: fires 90%/79%, precision at chance,
+  destroys baseline 104->6 (retrieval ranks ABOUTNESS, model
+  needs NEXTNESS -- orthogonal axes, honest negative).
+- Synthesis (user's two proposals unified): the inverse
+  detector EXISTS -- ASSOCIATIVE RECALL (dot over unit keys =
+  norm-free direction matching reads dead space exactly where
+  argmax is blind: 202/202, 0.9960, v07). Two readout physics:
+  ARGMAX (norm-biased, live-only, routing) vs DOT-RECALL
+  (norm-free, reads dead, content). USE EACH WHERE IT WORKS
+  (= fusion/hybrid, now with readout-physics justification, not
+  just engineering taste). Dead channels DO carry more
+  information (paper vindicated): writable exactly, readable
+  by dot -- argmax was simply the wrong reader all along.
+
+## 2026-10-02: the universal -- differential verification at every level (CLOCKED, start missed)
+
+- Start clock MISSED (47-for-47). User thesis: something done
+  at EVERY level, universal -- describe it. Description:
+  REFERENCE + DIFFERENCE + RESTORATION, all the way down.
+  Lattice ops (mirror + dB + exactness), listings (twins +
+  replay identity), weights (mirrors + implant/undo at 368dB
+  measured -- removal restores, not approximately),
+  data (shas + rerun bytes), gates (bars + re-bars on
+  falsification), demos (NOW expects: fact/valid/closed/
+  replay), process (audit counts + velocity deltas). Nothing
+  is ever claimed absolutely; everything is relative to a
+  reference, and every addition carries its own undo.
+  Knowledge = verified difference + exact restoration.
+- Gap-fill proof (taken seriously, both closed same turn):
+  our-wlog-implant undo 368dB (removal-exact); hybrid expects
+  gate tests/test_hybrid.py 4/4 ALL OK (fact-tail 8/8, valid
+  8/8, closed 8/8, deterministic -- first machine-checked
+  CONTENT assertions on demos: helios/summoned/pompey-defeated/
+  twenty-cities/olympias all flowing through gated outputs).
