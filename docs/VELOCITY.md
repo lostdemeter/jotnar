@@ -2232,3 +2232,101 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   8/8, closed 8/8, deterministic -- first machine-checked
   CONTENT assertions on demos: helios/summoned/pompey-defeated/
   twenty-cities/olympias all flowing through gated outputs).
+
+## 2026-10-03: instance-prescribed sweep -- three regimes, joint table (CLOCKED, start missed)
+
+- Start clock MISSED (48-for-48). w103full tau ladder twins:
+  0.292/0.415/0.500/0.520/0.528/0.528 (spec 23.2->2.2:
+  MONOTONIC rise then PLATEAU ~0.53, below groki 0.665 --
+  floors are content, curves are spectra). Plateau top-1
+  0.025 (vs knee 0.034): aim FALLS on the plateau while twins
+  hold -- knee (spec ~4.7) is optimal for both; R3 priced.
+- BPE-500 tau 0.4/0.25: twins 0.001/0.085 (COLLAPSE to
+  bit-identical endpoints!) + top1 0.046 (down from 0.070).
+  Twin~=0 is DEGENERATE (indistinguishability), not ideal
+  invariance -- twin DECREASES are ambiguous without aim.
+- Joint table (twin-direction x aim-direction) COMPLETES the
+  instrument theory: refit (down/up) = sensitivity cut;
+  peaky->sweet (up/up) = capacity gain; sweet->flat or
+  sweet->peaky (down/down) = collapse either way. Twin-only
+  readings ambiguous, PERIOD -- joint or nothing. For
+  instance adjudication into v0.3 (their process, not mine).
+
+## 2026-10-03: rank-k ladders -- knee moves, fit confounds k=64 (CLOCKED, start missed)
+
+- Start clock MISSED (49-for-49). Instance prescription (O1):
+  twin ladders at fixed corpus+fit, k=16/32/64. k=16 (fit):
+  0.511->0.410 MONOTONIC fall over spec 1.7-7.6 (NO knee in
+  range!). k=32 (fit): 0.614->0.675 peak ~6.8, dip 0.656 at
+  10.0 (knee/inflection present). k=64 (SEED only, no fit
+  exists): 1.6-1.9 FLAT across spec 2-14 (transfer band;
+  dip 1.22 at 14.0).
+- Verdict: knee is NEITHER simply k-set NOR V-set -- k=16
+  has none, k=32 has one (~6.8), k=64-seed is flat (but
+  fit-confounded: seed baselines sit in transfer band where
+  tau gradients wash out). O1 stays OPEN, narrowed: needs D64
+  REFIT first (gains/V/QK/headt at 64-dim point, ~1hr), then
+  re-ladder. Side finding: structured-transfer (1.048) beats
+  random-seed (1.6-1.9) -- structures generalize somewhat,
+  consistent everywhere. d64 listing note: lm_d64_headt.asm
+  header lies (says Dh=8/V=513; structure is D64-depth2,
+  vocab-agnostic, final H4 -- usable as-is).
+
+## 2026-10-03: review ruling -- amendments accepted, 10.0 rung run (CLOCKED, start missed)
+
+- Start clock MISSED (50-for-50). Instance review: premise
+  verification accepted (k32 peak + joint legs reproduce);
+  self-kill accepted (twin curves corpus-indexed, aim-knee
+  absolute -- multivariate factorization stands); per-rung
+  log gap admitted (my k16/k64 ladders logged twins without
+  full fixtures -- future sweeps log all six fields).
+- Amendments ruled: v0.4 numbering, Step-0 freeze, in-stack
+  transfer band (word-D64-fit recomputable per manifest --
+  verified recipe present, no blob needed), parity gate,
+  slice/TBETA verify, V-set parked explicitly, close-vs-park
+  fix (mine -- sloppy drafting, corrected), Stage -1 (RAN:
+  groki 10.0 end-rung aim 25/566, down-slope 33->27->25
+  complete), budget instrumentation, kill bounties as stated.
+- Word-D64 parked verdict re-read (entropy collapse at Dh=32):
+  headwind for piece-D64 refit expectations, honestly noted.
+  GO issued with amendments.
+
+## 2026-10-03: D64 refit -- transfer band, O-clean joint win, QK-1.0 fit (CLOCKED, start missed)
+
+- Start clock MISSED (51-for-51). Mission battery per orders (~15
+  probes + screens, inside the hour box). Step-0 freeze
+  (`scripts/freeze_piece64.py`, `data/lm_piece64.npz` spec64 5.81 +
+  `data/bankpiece64_d64.npz` + manifests; recipe ratified on word
+  probe first: g2 1.1090, QK-I0.2 0.9556). Transfer band: twin
+  0.7329 + top-1 20/566 [0.0230,0.0539], parity 50.82/52.56dB GREEN.
+- O-clean (wv=I1.0, wo=I0.5): twin 0.7329->1.1900 + top-1 20->40/566,
+  McNemar 13.88 p~0.0002 -- JOINT WIN, strongest aim movement on
+  record (beats routed v1 p~0.002). Mechanism: random 2*seed wo
+  SCRAMBLES attended content (word-D64 entropy diagnosis confirmed
+  at piece width); clean O unscrambles. V-without-O rejected
+  (McNemar p~0.84 noise). QK-dial on O-clean: aim 31/40/48/54/57/60/
+  61 monotonic, endpoints discord 4/25 p~0.0002; fit frozen at QK-1.0
+  (1.5626/61/566, `data/lm_piece64_fit.npz`). Headt lateral (discord
+  0/0, kept). P4-universal DIED (second kill: fits move C at D64,
+  S at D32 -- successor R5 regime-indexed C/S, conjecture).
+  k64-fit ladder: twins peak ~4.1, aim FLAT 59-61 (no knee, fully
+  gated flatten-side; sharpen-side RED parity, parked per-product).
+  Filed as THEORY_SPECTRAL v0.4 §9.
+
+## 2026-10-03: seed-aim legs + knee matrix -- O1 closed fit-point (CLOCKED, start missed)
+
+- Start clock MISSED (52-for-52). v0.4's prescribed measurement.
+  Unit-seed: parity -41dB RED, HELD (recipe under-scales at D64 --
+  methods find). Small-seed 0.1x (parity 64-69dB GREEN): top-1
+  30/35/38 across 5.81/4.09/2.87 -- monotonic, NO knee. McNemar:
+  smallseed-2.87 (38) vs FIT-QK-1.0 (61) discord 5/28 p~0.0001
+  (fit-required for level); smallseed (38) vs transfer (20) discord
+  26/8 p~0.0036 -- NEGATIVE transfer (word structures hurt).
+- Knee matrix: groki k32-fit below-natural 25/26 (spec 2.51/1.85) --
+  full curve 26/25->33->27/25 INVERTED-U directionally complete
+  (paired significance unpinned, preds unsaved -- rerun prescribed).
+  k16-seed 36/33/21 + k32-seed 37/32/22: monotonic DECLINE, no knees
+  anywhere unfitted. Verdict: knee iff fitted body near its natural
+  spec (fit-point law); k indexes sharpness (sharp k32, flat k64).
+  O1 + O6 CLOSED; k16-fit inverted-U peaking ~3.9 PREREGISTERED.
+  Filed as THEORY_SPECTRAL v0.5 §10.

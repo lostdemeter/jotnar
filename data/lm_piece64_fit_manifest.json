@@ -1,0 +1,31 @@
+{
+  "base": "piece64 transfer (lm_piece64 ends + recomputed word-D64-fit body + bankpiece64_d64): twin 0.7329 / top1 20/566",
+  "fit": "piece64 refit at operating point: O-clean (wv=I1.0, wo=I0.5) + QK-I1.0 + headt listing beta_b 0.25 (head2 T=4, layer-1 only)",
+  "m": "36118/35048 (parity 51-55dB all bodies, twin contexts)",
+  "joint": {
+    "transfer": [
+      0.7329,
+      "20/566"
+    ],
+    "O-clean": [
+      1.19,
+      "40/566",
+      "McNemar 13.88 p~0.0002 vs transfer"
+    ],
+    "QK-1.0": [
+      1.5626,
+      "61/566",
+      "McNemar 13.79 p~0.0002 vs O-clean; QK dial 31/40/48/54/57/60/61 across s=0.1-1.0, monotonic co-move (C-dial)"
+    ],
+    "headt": [
+      "twin 1.19->1.165@O-clean, zero decision flips (discord 0/0): LATERAL, kept (playbook shape)"
+    ]
+  },
+  "rejected": [
+    "V0.5 (1.2004), V1.0-noO (0.8836/18/566, up/down p~0.84 noise): V-without-O cannot save scramble",
+    "QK-0.1 (0.695/31/566, down/down p~0.016 worse): dial low end"
+  ],
+  "listing": "programs/lm_d64_headt.asm (beta_b 0.25); transfer/V/QK screens via lm_d64.asm",
+  "bank": "bankpiece64_d64.npz (row-sum top-64, same words as bankp32_64)",
+  "sha": "339cb9b330441dd8"
+}

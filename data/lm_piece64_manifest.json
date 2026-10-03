@@ -1,0 +1,11 @@
+{
+  "V": 2038,
+  "nnz": 29171,
+  "spec64": 5.81,
+  "spec32": 4.64,
+  "top200": 0.519,
+  "top64mass": 0.314,
+  "counts": "data/piece_bigrams.npz (groki train split, seed 0)",
+  "recipe": "log1p SVD rank-64 (E=U*sqrt(s), W=sqrt(s)*Vt) + row-sum top-64 bank (stable), same as bankp32_64",
+  "words_sha": "d41cf00fb510b9bd"
+}
