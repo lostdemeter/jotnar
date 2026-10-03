@@ -144,6 +144,17 @@ def attn_select(p, sc, vh, cmask, neg, out="CTX"):
     return p.op("BATCH_MATMUL", pr, vh, out=out)
 
 
+def attn_head(p, x, wq, wk, wv, pos, cmask, out="CTX",
+              scale_head2=False):
+    """Full single-head attention (QKV matmuls + narrow head). Kept for
+    the builder smoke test; new code prefers attn_head_narrow."""
+    q = p.op("MATMUL", x, wq)
+    k = p.op("MATMUL", x, wk)
+    v = p.op("MATMUL", x, wv)
+    return attn_head_narrow(p, q, k, v, pos, cmask, out,
+                            scale_head2=scale_head2)
+
+
 def attn_head_narrow(p, qh, kh, vh, pos, cmask, out="CTX",
                      scale_head2=False, neg=None):
     """Head-narrow attention: scores + mask-fill + select. Matches
@@ -164,8 +175,54 @@ def bank_retrieve(p, h, ukt, evb, rms_w, out="H2"):
     bdown = p.op("MATMUL", bp, evb)
     return p.op("ADD", h, bdown, out=out)
 
-def attn_head(p, x, wq, wk, wv, pos, cmask, out="CTX",
-              scale_head2=False):
+
+def qwen_layer(p, x, wq, wk, wv, wo, wup, wgate, wdown, ln1, ln2, pos,
+               cmask, nh=28, nkv=4, dh=128, pre="", bq=None, bk=None,
+               bv=None):
+    """Full Qwen2 decoder layer (GQA attention + SwiGLU MLP) for the
+    builder: per-head slices (KV groups shared), RoPE, causal select,
+    shift/wide-softmax, concat-merge, residuals. Weight layouts are
+    listing convention (K-major: wq (H,H), wk (H,KV*Dh), ...). NEG fill
+    takes cmask geometry (S,S). bq/bk/bv: optional QKV bias PLANES
+    (S,H)-tiled host-side (broadcast-as-input doctrine); None skips.
+    Returns the layer output stream."""
+    xn = p.op("RMSNORM", x, ln1, out=f"XN{pre}")
+    q = p.op("MATMUL", xn, wq, out=f"Q{pre}")
+    k = p.op("MATMUL", xn, wk, out=f"K{pre}")
+    v = p.op("MATMUL", xn, wv, out=f"V{pre}")
+    if bq is not None:
+        q = p.op("ADD", q, bq, out=f"Q{pre}b")
+    if bk is not None:
+        k = p.op("ADD", k, bk, out=f"K{pre}b")
+    if bv is not None:
+        v = p.op("ADD", v, bv, out=f"V{pre}b")
+    neg = p.op("BETA", cmask, out=f"NEG{pre}")
+    per = nh // nkv
+    # NOTE: no temperature scale here by design -- fold 1/sqrt(dh) into
+    # the Q weights offline (exact: RoPE and matmul are linear in Q).
+    # A scale op would need scalar broadcast (not in v0.1 ISA).
+    ctx = None
+    for h in range(nh):
+        gh = h // per
+        qh = p.op("SLICE", q, 1, h * dh, (h + 1) * dh)
+        kh = p.op("SLICE", k, 1, gh * dh, (gh + 1) * dh)
+        vh = p.op("SLICE", v, 1, gh * dh, (gh + 1) * dh)
+        qr = p.op("ROTARY", qh, pos)
+        kr = p.op("ROTARY", kh, pos)
+        sc = p.op("BATCH_MATMUL", qr, p.op("TRANSPOSE", kr))
+        ms = p.op("SELECT", cmask, sc, neg)
+        pr = p.op("SOFTMAX_WIDE", p.op("TSHIFT", ms))
+        ch = p.op("BATCH_MATMUL", pr, vh)
+        ctx = ch if ctx is None else p.op("CONCAT", ctx, ch, 1)
+    o = p.op("MATMUL", ctx, wo, out=f"O{pre}")
+    h1 = p.op("ADD", x, o, out=f"H{pre}")
+    hn = p.op("RMSNORM", h1, ln2, out=f"HN{pre}")
+    up = p.op("MATMUL", hn, wup, out=f"UP{pre}")
+    gate = p.op("MATMUL", hn, wgate, out=f"GATE{pre}")
+    gs = p.op("SILU", gate, out=f"GS{pre}")
+    mid = p.op("MUL", gs, up, out=f"MID{pre}")
+    down = p.op("MATMUL", mid, wdown, out=f"DOWN{pre}")
+    return p.op("ADD", h1, down, out=f"Y{pre}")
     """Single attention head over (S,D)->(S,Dh): QKV, RoPE, scores,
     head-temp, causal mask, shift+wide-softmax, context. Returns the
     context stream name. Matches lm_headt head structure (head2 gets

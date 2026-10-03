@@ -60,13 +60,14 @@ def build_H7(g, tok, prompt, n=8):
         return x / torch.sqrt((x ** 2).mean(-1, keepdim=True) + eps) * w
 
     def rope(x, base=1000000.0):
-        Sq, D = x.shape[-2], x.shape[-1]
+        # x: (seq, heads, dim). Positions arange(seq), shared across
+        # heads (explicit layout -- no dim guessing).
+        Sq, Hh, D = x.shape
         i = torch.arange(D // 2, dtype=dt)
         th = base ** (-2.0 * i / D)
         ang = torch.arange(Sq, dtype=dt)[:, None] * th[None, :]
         c, s = torch.cos(ang), torch.sin(ang)
-        while c.dim() < x.dim():
-            c, s = c.unsqueeze(0), s.unsqueeze(0)
+        c, s = c[:, None, :], s[:, None, :]
         y = torch.empty_like(x)
         y[..., 0::2] = x[..., 0::2] * c - x[..., 1::2] * s
         y[..., 1::2] = x[..., 0::2] * s + x[..., 1::2] * c
@@ -86,8 +87,8 @@ def build_H7(g, tok, prompt, n=8):
     rep = N_HEADS // N_KV
     K = K.repeat_interleave(rep, dim=1)
     V = V.repeat_interleave(rep, dim=1)
-    _QR, _KR, _V = (rope(t) for t in (Q, K, V))
-    _QR, _KR, _V = (t.permute(1, 0, 2) for t in (_QR, _KR, _V))
+    _QR, _KR = rope(Q), rope(K)
+    _QR, _KR, _V = (t.permute(1, 0, 2) for t in (_QR, _KR, V))
     SC = (_QR @ _KR.transpose(-1, -2)) / math.sqrt(DH)
     P = torch.softmax(SC + torch.triu(
         torch.full((n, n), float("-inf"), dtype=dt), 1), dim=-1)

@@ -222,10 +222,14 @@ def infer_shapes(bound, sample):
                 raise NoPattern(f"{where}: v0.2 TRANSPOSE handles 2D F/T")
             streams[o] = (sk, streams[args[0]][1], (ssh[1], ssh[0]))
         elif mn in ("TBETA", "BETA"):
+            # ref is PURELY geometric (constant fill takes its shape;
+            # values never read -- op_beta doctrine). F/T refs preserve
+            # kind; I refs (masks) yield F fills (nonfpu callers pass T).
             rk, rsub, rsh = streams[args[0]]
-            if rk not in ("F", "T"):
-                raise NoPattern(f"{where}: {mn} needs F/T ref")
-            streams[o] = (rk, rsub, rsh)
+            if rk == "I":
+                streams[o] = ("F", "double", rsh)
+            else:
+                streams[o] = (rk, rsub, rsh)
         elif mn in ("MUL", "ADD", "SUB"):
             ak, asub, ash = streams[args[0]]
             bk, _, bsh = streams[args[1]]
@@ -604,9 +608,7 @@ class CBackend(Backend):
         if mn in ("TBETA", "BETA"):
             ref = args[0]
             o = outs[0]
-            if S[ref][0] != "F":
-                raise NoPattern(f"C backend {mn} needs F ref (T fills "
-                                "live on nonfpu)")
+            # ref is geometric only (constant fill); any kind accepted.
             co = ctx["count"][o]
             val = float(cfg.get("beta_b", float(cfg.get("beta", 0.5)))) \
                 if mn == "TBETA" else float(cfg.get("beta", 0.5))
