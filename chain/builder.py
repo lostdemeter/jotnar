@@ -123,6 +123,47 @@ class Prog:
 
 # -- stdlib seed: composites as plain functions ------------------------
 
+def attn_scores(p, qh, kh, pos, scale_head2=False):
+    """Head scores phase: RoPE + K-transpose + QK^T + optional head-temp
+    scaling. Returns the score stream (caller owns masking/select)."""
+    qr = p.op("ROTARY", qh, pos)
+    kr = p.op("ROTARY", kh, pos)
+    kt = p.op("TRANSPOSE", kr)
+    sc = p.op("BATCH_MATMUL", qr, kt)
+    if scale_head2:
+        ht = p.op("TBETA", sc)
+        sc = p.op("MUL", sc, ht)
+    return sc
+
+
+def attn_select(p, sc, vh, cmask, neg, out="CTX"):
+    """Head select phase: causal mask + shift/wide-softmax + context."""
+    ms = p.op("SELECT", cmask, sc, neg)
+    s = p.op("TSHIFT", ms)
+    pr = p.op("SOFTMAX_WIDE", s)
+    return p.op("BATCH_MATMUL", pr, vh, out=out)
+
+
+def attn_head_narrow(p, qh, kh, vh, pos, cmask, out="CTX",
+                     scale_head2=False, neg=None):
+    """Head-narrow attention: scores + mask-fill + select. Matches
+    lm_headt head structure. neg: shared mask-fill stream (BETA emitted
+    once per layer by the caller); None emits it here."""
+    sc = attn_scores(p, qh, kh, pos, scale_head2)
+    neg = p.op("BETA", sc) if neg is None else neg
+    return attn_select(p, sc, vh, cmask, neg, out)
+
+
+def bank_retrieve(p, h, ukt, evb, rms_w, out="H2"):
+    """Bank retrieval path: RMSNorm + key-match + shift/softmax +
+    value-down + residual. Matches lm_headt bank structure."""
+    hn = p.op("RMSNORM", h, rms_w)
+    bc = p.op("MATMUL", hn, ukt)
+    bs = p.op("TSHIFT", bc)
+    bp = p.op("SOFTMAX_WIDE", bs)
+    bdown = p.op("MATMUL", bp, evb)
+    return p.op("ADD", h, bdown, out=out)
+
 def attn_head(p, x, wq, wk, wv, pos, cmask, out="CTX",
               scale_head2=False):
     """Single attention head over (S,D)->(S,Dh): QKV, RoPE, scores,
