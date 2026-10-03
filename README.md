@@ -1,4 +1,110 @@
-# Jotnar: geometric assembly for bespoke AI on the phi lattice
+# Jotnar: a compiler for geometric assembly AI programs
+
+Write AI programs once in geometric assembly — a small shader-like ISA
+over typed streams — and compile them to **C** (portable, 20x over the
+reference), **CUDA** (kernels + cuBLAS on the GPU), or **integer-only C**
+(bit-exact, no FPU, no libm). Python frontend included: build programs
+with `chain.builder` instead of hand-writing listings. Every backend is
+gated against the others; agreement is leveled (bit-exact where
+integer, epsilon where float, decisions where saturated).
+
+```
+python3 demo_img.py                 # image pipeline on 3 backends + gallery/
+python3 demo_gen.py alexander the great --n 12 --backend cuda   # the LLM speaks
+python3 tests/test_emit_c.py tests/test_emit_cuda.py tests/test_emit_nonfpu.py
+```
+
+## Showcase
+
+One 43-op program (`programs/img_demo.asm`, builder-generated),
+three backends. Before|blur strip and unsharp mask:
+
+![before|blur](gallery/c_strip.png)
+![unsharp](gallery/c_us.png)
+
+Agreement on 352x288 real pixels: CUDA-vs-C ~1e-4, non-FPU-vs-C
+PSNR 56-69dB (lattice-quantum floor). The same toolchain also runs the
+word-level transformer (`demo_gen.py`): identical strings on
+lattice/C/CUDA/non-FPU.
+
+## Opcode table (47 mnemonics)
+
+Kinds: F float, T lattice-triples, I integer. Backends admit per-kind
+overloads; missing = loud `NoPattern`, never silent.
+
+| Op | In -> Out | C | CUDA | non-FPU | Notes |
+|---|---|---|---|---|---|
+| ADD | 2 -> 1 | F | F | T | |
+| ARGMAX | 2 -> 1 | T,F | F | T | ties-first; lattice order on T |
+| BATCH_MATMUL | 2 -> 1 | F | F/cuBLAS | T | |
+| BETA | 1 -> 1 | F | F | T | const fill from CONFIG |
+| BETA_V5 | 2 -> 1 | — | — | — | vision legacy |
+| CLIP | 3 -> 1 | — | — | — | |
+| CONCAT | 3 -> 1 | F,T | F | T | ax1 |
+| CONV | 2 -> 1 | — | — | — | phi_conv audit-first |
+| DECONV | 4 -> 1 | — | — | — | |
+| DIV | 2 -> 1 | — | F | — | template op=3 |
+| GAIN | 3 -> 1 | — | — | — | |
+| GATHER | 2 -> 1 | T,F | F | T | rows materialized + views |
+| GAUSS | 3 -> 1 | — | — | — | |
+| GELU | 1 -> 1 | — | — | — | |
+| INTERP | 3 -> 1 | — | — | — | nearest-x2 audited |
+| ISO_BLUR | 1 -> 1 | — | — | — | |
+| LAYERNORM | 3 -> 1 | — | — | — | shares RMSNORM scaffolding |
+| LUMA | 1 -> 1 | — | — | — | |
+| MATMUL | 2 -> 1 | F/BLAS | F/cuBLAS | T | ikj+restrict; GSL hook |
+| MIXDYAD | 3 -> 1 | — | — | — | |
+| MUL | 2 -> 1 | F | F | T | tmul-exact on T |
+| PERMUTE3 | 4 -> 1 | — | — | — | meta (strides, zero code) |
+| POOLAVG | 1 -> 1 | — | — | — | |
+| PRELU | 2 -> 1 | — | — | — | k_leaky audit donor |
+| RESCALE | 2 -> 1 | — | — | — | |
+| RESHAPE2/3 | 3/4 -> 1 | — | — | — | meta |
+| RMSNORM | 2 -> 1 | F | F | T | eps via CONFIG/baked counts |
+| ROTARY | 2 -> 1 | F | F | T | tables baked at compile time |
+| SCAN | 3 -> 1 | — | — | — | mamba path |
+| SELECT | 3 -> 1 | F,T | F | T | runtime count guard |
+| SIGMOID | 1 -> 1 | — | — | — | LUT spans ahead |
+| SILU | 1 -> 1 | — | — | — | = x*sigmoid |
+| SLICE | 4 -> 1 | F,T | F | T | ax0/ax1 |
+| SOFTMAX | 1 -> 1 | — | — | T | legacy narrow path |
+| SOFTMAX_WIDE | 1 -> 1 | F | F | T | online/stable; T via EXP LUT |
+| SPLAT_BLUR | 1 -> 2 | — | — | — | vision legacy |
+| SQRT | 1 -> 1 | — | — | — | |
+| SQUARE | 1 -> 1 | — | — | T | tmul-self + clip |
+| SRGB_DECODE/ENCODE | 1 -> 1 | — | — | — | |
+| STATIC | 1 -> 1 | — | — | — | |
+| SUB | 2 -> 1 | F | F | T | |
+| TBETA | 1 -> 1 | F | F | T | head-temp fill |
+| TRANSPOSE | 1 -> 1 | F,T | F | T | 2D (tiled later) |
+| TSHIFT | 1 -> 1 | F | F | T | row-max; fuses into softmax |
+| WARP | 2 -> 1 | — | — | — | |
+
+Coverage: C 17, CUDA 18, non-FPU 19. Missing ops fail loud with the
+extension recipe (`chain/backends.py`); vision Tier-3 and activations
+are named backlog, not gaps.
+
+## Quick start (compiler)
+
+```
+python3 tests/test_emit_c.py        # C backend: bigram bit-exact, headt block, BLAS hook
+python3 tests/test_emit_cuda.py     # CUDA backend (needs nvcc + GPU)
+python3 tests/test_emit_nonfpu.py   # integer backend (trap-clean, no libm)
+python3 tests/test_img_demo.py      # one image program, three backends
+python3 tests/test_gen.py           # LLM generation, four backends, golden string
+python3 tests/test_builder.py tests/test_builder_block.py   # Python frontend
+python3 demo_img.py                 # gallery/ screenshots
+python3 demo_gen.py "alexander the great" --n 12 --backend nonfpu
+```
+
+Contract: missing ops/backends fail loud (`NoPattern`); float paths
+agree within calibrated eps; integer paths agree bit-exactly;
+saturated regions agree on decisions (`docs/THEORY_SPECTRAL.md` v0.5:
+leveled agreement). Adding a backend = five methods
+(`chain/emit_c.py:Backend`); adding an opcode = registry row + shape
+rule + one pattern per backend.
+
+## Research program (history)
 
 Jotnar grew out of `holographic_enhancement` (true-amplitude holographic
 enhancement, below) into an assembly language for composing geometric AI
@@ -9,7 +115,7 @@ One-line history: old `holographic_enhancement` claimed `A=sqrt(I)` but never to
 square root; this repo actually does `A=sqrt(Y)` via exponent-halve, blurs in
 amplitude domain, boosts, and squares back with exact `tmul`.
 
-## Results
+## Results (research gates, all green at merge)
 
 Check | Result
 ---|---
@@ -90,7 +196,7 @@ Check | Result
 `test_stranger.py` | ALL OK (v1.0 Gate 6: docs-only 5-line listing green first try + self-rescue errors; frictions -> docs/V1_1_BACKLOG.md)
 `demo.py --selftest` | GO 68.5dB
 
-## Quick start
+## Quick start (research tree)
 
 ```
 pip install -r requirements.txt
@@ -133,7 +239,7 @@ Library notes live in docs/LIBRARY_NOTES.md (kept while using the library:
 tutorial + contribution process). Velocity log: docs/VELOCITY.md. Specs: docs/SPLAT_OP.md, docs/BETA_CTRL.md, docs/COMPOSE.md
 (step 3a depth built L1; temporal + L2 stay spec), docs/PROGRESS.md.
 
-## Showcase (seeing every state)
+## Showcase history (research tree, seeing every state)
 
 `showcase.py` runs iso / splat / splat+ctrl / v4-soft / v5-gate / strong on
 one image, checks parity per mode, asserts the modes actually differ, and saves:
