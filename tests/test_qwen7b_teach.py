@@ -58,15 +58,13 @@ def resolve_weights():
     W, how, secs, fresh = None, None, None, None
     if os.path.isfile(frozen):
         t0 = time.perf_counter()
-
-        def trip(z, prefix):
-            return (np.ascontiguousarray(z[f"{prefix}_s"]),
-                    np.ascontiguousarray(z[f"{prefix}_e"]),
-                    np.ascontiguousarray(z[f"{prefix}_z"]))
-
-        z = np.load(frozen)
-        W = {"wup": trip(z, "wupT"), "wgate": trip(z, "wgateT"),
-             "wdown": trip(z, "wdownT"), "ln": trip(z, "ln")}
+        from chain.frozen import load_shared
+        man_p = os.path.join(dd, "qwen7b_l0_mlp_manifest.json")
+        z = load_shared(frozen, man_p)
+        W = {"wup": (z["wupT_s"], z["wupT_e"], z["wupT_z"]),
+             "wgate": (z["wgateT_s"], z["wgateT_e"], z["wgateT_z"]),
+             "wdown": (z["wdownT_s"], z["wdownT_e"], z["wdownT_z"]),
+             "ln": (z["ln_s"], z["ln_e"], z["ln_z"])}
         how, secs = "frozen", time.perf_counter() - t0
     if has_snap:
         import phi_core.lattice as S
