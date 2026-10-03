@@ -152,10 +152,97 @@ def main():
 
     headt_case()
 
+    fp16_case()
+
     widths_cu_cases()
 
     print("FAILURES:", FAIL if FAIL else "none")
     sys.exit(1 if FAIL else 0)
+
+
+def fp16_case():
+    """FP16 storage + FP32 compute: halves input VRAM, weight-quantum
+    agreement class. F16 = 2 bytes/elem on device; compute identical."""
+    dd = os.path.join(ROOT, "data")
+    sdir = os.path.join(ROOT, "programs")
+    for f in ("lm_svd_IvoQ.npz", "bankhn.npz"):
+        if not os.path.isfile(os.path.join(dd, f)):
+            print(f"SKIP fp16 (missing {f})")
+            return
+    CFG = ("CONFIG m_acc 36118\nCONFIG m_cov 35048\nCONFIG beta -30.0\n"
+           "CONFIG beta_b 0.25\n")
+    text = CFG + open(os.path.join(sdir, "lm_headt.asm")).read()
+    d = np.load(os.path.join(dd, "lm_svd_IvoQ.npz"))
+    b = np.load(os.path.join(dd, "bankhn.npz"))
+    ids = [12, 471, 59]
+    toks = np.array(ids, dtype=np.int64)
+    pos = np.arange(len(ids), dtype=np.int64)
+    cm = np.tril(np.ones((len(ids), len(ids)), dtype=np.int64))
+
+    def enc(a):
+        return S.encode(np.ascontiguousarray(a, dtype=np.float64))
+
+    def dec(t):
+        return (S.decode(np.ascontiguousarray(t[0]), np.ascontiguousarray(t[1]))
+                * (1 - np.ascontiguousarray(t[2]).astype(np.float64)))
+
+    trip = {"emb": enc(d["emb"]), "wq": enc(d["wq"]), "wk": enc(d["wk"]),
+            "wv": enc(d["wv"]), "wo": enc(d["wo"]), "wup": enc(d["wup"]),
+            "wgate": enc(d["wgate"]), "wdown": enc(d["wdown"]),
+            "rms_w1": enc(d["rms1"]), "rms_w2": enc(d["rms2"]),
+            "wlog": enc(d["wlog"]), "ukt": enc(b["ukt"]),
+            "evb": enc(b["evb"])}
+    payload = {"tok": toks, "pos": pos, "cmask": cm}
+    payload.update(trip)
+    feeds = ASM.run_text(text, REGISTRY, payload, sigs=SIGS, basedir=sdir)
+    ref_logits = dec(feeds["LOGITS"])
+    ref_out = np.ascontiguousarray(feeds["OUT"]).reshape(-1)
+    fpayload = {"tok": toks, "pos": pos, "cmask": cm}
+    fpayload.update({k: np.ascontiguousarray(dec(v))
+                     for k, v in trip.items()})
+    art = compile_program(text, "cuda", sample=fpayload,
+                          outputs=["LOGITS", "OUT"], basedir=sdir,
+                          use_fp16=True)
+    work = "/tmp/emit_cuda_fp16"
+    os.makedirs(work, exist_ok=True)
+    from chain.emit_cuda import build_cu
+    exe = build_cu(art["source"], work, name="h16")
+    argv = [exe]
+    f16bytes = 0
+    for n in art["inputs"]:
+        k, _, _ = art["streams"][n]
+        fn = os.path.join(work, f"in_{n}.bin")
+        if k == "F":
+            fpayload[n].astype(np.float16).tofile(fn)
+            f16bytes += fpayload[n].size * 2
+        else:
+            fpayload[n].astype(np.int64).tofile(fn)
+            f16bytes += fpayload[n].size * 8
+        argv.append(fn)
+    outs = []
+    for o in art["outputs"]:
+        fn = os.path.join(work, f"out_{o}.bin")
+        outs.append(fn)
+        argv.append(fn)
+    r = subprocess.run(argv, capture_output=True, text=True)
+    check("cu-fp16-run", r.returncode == 0,
+          f"rc={r.returncode} {r.stderr[:200]}")
+    if r.returncode != 0:
+        return
+    got = np.fromfile(outs[0], dtype=np.float32).reshape(ref_logits.shape)
+    dmax = float(np.abs(got - ref_logits).max())
+    print(f"cu-fp16-logits: maxabs={dmax:.3e} (cal 6e-02, weight-quantum)")
+    check("cu-fp16-eps", np.isfinite(dmax) and dmax < 6e-2, f"maxabs={dmax:.3e}")
+    got_o = np.fromfile(outs[1], dtype=np.int64)
+    check("cu-fp16-out-exact", bool((got_o == ref_out).all()),
+          f"{int((got_o == ref_out).sum())}/{len(ref_out)}")
+    f32bytes = sum(fpayload[n].size * 8 for n in art["inputs"]
+                   if art["streams"][n][0] == "F")
+    fbytes = sum(fpayload[n].size * (2 if art["streams"][n][0] == "F" else 8)
+                 for n in art["inputs"])
+    print(f"cu-fp16-vram: f64 {f32bytes / 1e6:.2f}MB -> mixed {fbytes / 1e6:.2f}MB")
+    check("cu-fp16-smaller", fbytes < f32bytes,
+          "quarter residency on our path (f64->f16); 7B bf16-native 14GB, fits 24GB)")
 
 
 CU_CAL = {"d32": {"LOGITS": 1e-1}, "d64": {"H2": 2e-2, "LOGITS": None}}

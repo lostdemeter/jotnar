@@ -783,7 +783,7 @@ def find_consts(bound, inp, streams, sample):
 
 def compile_program(text, target="c", sample=None, outputs=None,
                     registry=None, sigs=None, basedir=".", origin=None,
-                    use_blas=False, time_ops=False):
+                    use_blas=False, time_ops=False, use_fp16=False):
     """Frontend entry: asm text -> target source. Returns dict with
     source/backend/streams/dims/config. Sample payload required (shapes).
     """
@@ -792,10 +792,14 @@ def compile_program(text, target="c", sample=None, outputs=None,
                                      basedir=basedir, origin=origin)
     from chain.backends import get_backend as _gb
     _be = _gb(target)  # unknown names fail loud here
+    _be.use_blas = use_blas
+    _be.use_fp16 = use_fp16
     if _be.name == "cuda":
         from chain.emit_cuda import compile_cuda as _cc
         return _cc(text, sample=sample, outputs=outputs,
-                   registry=registry, sigs=sigs, basedir=basedir)
+                   registry=registry, sigs=sigs, basedir=basedir,
+                   origin=origin,
+                   use_fp16=getattr(_be, "use_fp16", False))
     if not _be.emits:
         # stub backend: surface its extension recipe, don't compile air.
         raise NoPattern(getattr(_be, "stub_note",
@@ -805,7 +809,6 @@ def compile_program(text, target="c", sample=None, outputs=None,
     if not outputs:
         raise AsmError("compile_program needs outputs=[...] (OUT streams)")
     be = _be
-    be.use_blas = use_blas
     streams = infer_shapes((config, inp, bound), sample)
     consts = find_consts((config, inp, bound), inp, streams, sample)
     in_names = [n for n, _ in inp]

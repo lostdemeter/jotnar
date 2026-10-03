@@ -34,6 +34,34 @@ __global__ void k_gather_f32(const float *t, const int64_t *ids, float *o,
   float *dst = o + i * C;
   for (int64_t j = 0; j < C; ++j) dst[j] = row[j];
 }
+__global__ void k_gather_f16(const __half *t, const int64_t *ids, float *o,
+                             int64_t C, int64_t N) {
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= N) return;
+  int64_t base = ids[i] * C;
+  float *dst = o + i * C;
+  for (int64_t j = 0; j < C; ++j) dst[j] = __half2float(t[base + j]);
+}
+__global__ void k_rmsnorm_w16(const float *x, const __half *w, float *o,
+                              int64_t D, int64_t N, float eps) {
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= N) return;
+  double ss = 0;
+  for (int64_t j = 0; j < D; ++j) { double v = x[i * D + j]; ss += v * v; }
+  float rs = (float)(1.0 / sqrt(ss / (double)D + (double)eps));
+  for (int64_t j = 0; j < D; ++j)
+    o[i * D + j] = x[i * D + j] * rs * __half2float(w[j]);
+}
+__global__ void k_cvt_f16(const __half *x, float *o, int64_t n) {
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= n) return;
+  o[i] = __half2float(x[i]);
+}
+__global__ void k_cvt_f16_from_f32(const float *x, __half *o, int64_t n) {
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= n) return;
+  o[i] = __float2half(x[i]);
+}
 __global__ void k_argmax_f32(const float *x, int64_t *o, int64_t C,
                              int64_t N) {
   int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
@@ -163,6 +191,7 @@ class CUDABackend(Backend):
 
     name = "cuda"
     emits = True
+    use_fp16 = False  # F16 storage + FP32 compute (halves VRAM)
     DEFAULT_NVCC = ("-O2", "-std=c++17")
     DEFAULT_ARCH = "sm_86"
 
@@ -177,7 +206,8 @@ class CUDABackend(Backend):
         return ("\n".join([
             "#include <stdint.h>", "#include <stdio.h>",
             "#include <stdlib.h>", "#include <string.h>",
-            "#include <cuda_runtime.h>", "#include <cublas_v2.h>", "",
+            "#include <cuda_runtime.h>", "#include <cublas_v2.h>",
+            "#include <cuda_fp16.h>", "",
             "#define CE(x) do { cudaError_t _e = (x); if (_e) { fprintf(stderr, \"cuda %d\\n\", (int)_e); return 10; } } while (0)",
             "#define BE(x) do { cublasStatus_t _e = (x); if (_e) { fprintf(stderr, \"cublas %d\\n\", (int)_e); return 11; } } while (0)",
             KERNELS,
@@ -201,6 +231,12 @@ class CUDABackend(Backend):
                 raise NoPattern(f"cuda GATHER needs F table (v0.1; "
                                 f"decode at data-prep)")
             w = self._we(S, t, ctx, f"GATHER {outs[0]}")
+            if getattr(self, "use_fp16", False) and t in ctx.get("inputs", []):
+                return (
+                    f"/* {outs[0]} = GATHER({t}, {ids}) F16 table */\n"
+                    f"k_gather_f16<<<({ids}_N + TPB - 1) / TPB, TPB>>>"
+                    f"({t}, {ids}, {outs[0]}, {w}, {ids}_N);\n{launch}",
+                    (outs[0], w))
             return (
                 f"/* {outs[0]} = GATHER({t}, {ids}) */\n"
                 f"k_gather_f32<<<({ids}_N + TPB - 1) / TPB, TPB>>>"
@@ -226,6 +262,12 @@ class CUDABackend(Backend):
             o = outs[0]
             d = self._we(S, x, ctx, f"RMSNORM {o}")
             eps = float(cfg["eps_rms"])
+            if getattr(self, "use_fp16", False) and w in ctx.get("inputs", []):
+                return (
+                    f"/* {o} = RMSNORM({x}) F16 weight */\n"
+                    f"k_rmsnorm_w16<<<({o}_N + TPB - 1) / TPB, TPB>>>"
+                    f"({x}, {w}, {o}, {d}, {o}_N, {eps!r}f);\n{launch}",
+                    None)
             return (
                 f"/* {o} = RMSNORM({x}) */\n"
                 f"k_rmsnorm_f32<<<({o}_N + TPB - 1) / TPB, TPB>>>"
@@ -279,6 +321,15 @@ class CUDABackend(Backend):
                 f"k_elemU<<<(({co}) + TPB - 1) / TPB, TPB>>>"
                 f"({x}, {o}, {co}, 0);\n{launch}",
                 None)
+        if mn == "CONVERT":
+            x = args[0]
+            o = outs[0]
+            co = ctx["count"][o]
+            return (
+                f"/* {o} = CONVERT({x}) F16->F32 upcast */\n"
+                f"k_cvt_f16<<<(({co}) + TPB - 1) / TPB, TPB>>>"
+                f"({x}, {o}, {co});\n{launch}",
+                None)
         if mn in ("MATMUL", "BATCH_MATMUL"):
             a, b = args
             if S[a][0] != "F" or S[b][0] != "F":
@@ -286,11 +337,63 @@ class CUDABackend(Backend):
             o = outs[0]
             ash, bsh = S[a][2], S[b][2]
             # alpha lives in managed-symbol storage (no literal addresses).
+            _fp = getattr(self, "use_fp16", False)
+            _inputs = ctx.get("inputs", [])
+            # Operand storage: F16 inputs stay half; F32 streams convert
+            # to half temps ONLY when paired with an F16 input (cuBLAS
+            # needs uniform A/B types; activations are small, weights
+            # stay half -- the VRAM point). Both-F32 pairs use Sgemm.
+            def _is16(x):
+                return _fp and x in _inputs and S[x][0] == "F"
+
+            def _ty(x):
+                return "CUDA_R_16F" if _is16(x) else "CUDA_R_32F"
+
+            def _need_cvt(x, other):
+                return (_is16(other) and not _is16(x)
+                        and S[x][0] == "F")
+
+            def _cvt(x, cnt):
+                # F32 stream -> F16 temp (activation-side convert; weights
+                # never convert). Returns (code, operand expression).
+                # Lifetime: to program end (freed at exit; one malloc per
+                # stream, stated). Declared once (ctx set).
+                t = f"{x}_h16"
+                done = ctx.setdefault("h16done", set())
+                if t in done:
+                    return "", t
+                done.add(t)
+                code = (
+                    f"__half *{t} = 0; "
+                    f"CE(cudaMallocManaged((void**)&{t}, ({cnt}) * 2));\n"
+                    f"  k_cvt_f16_from_f32<<<(({cnt}) + TPB - 1) / TPB, TPB>>>"
+                    f"({x}, {t}, {cnt});\n"
+                    f"  CE(cudaGetLastError()); CE(cudaDeviceSynchronize());\n  ")
+                return code, t
+
             if len(ash) == 2:
                 m, k, n = ash[0], ash[1], bsh[1]
                 me = str(m) if m is not None else ids_n
                 ke = str(k) if k is not None else ids_n
                 ne = str(n) if n is not None else ids_n
+                if _fp and (_is16(a) or _is16(b)):
+                    # Uniform F16 operands for GemmEx: convert any F32
+                    # side to a half temp (activations only, small).
+                    pre, ea, eb = "", a, b
+                    if _need_cvt(a, b):
+                        c, ea = _cvt(a, f"({me}) * ({ke})")
+                        pre += c
+                    if _need_cvt(b, a):
+                        c, eb = _cvt(b, f"({ke}) * ({ne})")
+                        pre += c
+                    return (
+                        f"/* {o} = {mn} cublasGemmEx F16->F32 */\n  " + pre +
+                        f"BE(cublasGemmEx(h, CUBLAS_OP_N, CUBLAS_OP_N, "
+                        f"{ne}, {me}, {ke}, &kOne, {eb}, CUDA_R_16F, {ne}, "
+                        f"{ea}, CUDA_R_16F, {ke}, &kOne, {o}, CUDA_R_32F, "
+                        f"{ne}, CUBLAS_COMPUTE_32F, "
+                        f"CUBLAS_GEMM_DEFAULT));\n{launch}",
+                        None)
                 return (
                     f"/* {o} = {mn} cuBLAS */\n"
                     f"BE(cublasSgemm(h, CUBLAS_OP_N, CUBLAS_OP_N, {ne}, "
@@ -304,11 +407,32 @@ class CUDABackend(Backend):
             me = str(m) if m is not None else ids_n
             ke = str(k) if k is not None else ids_n
             ne = str(n) if n is not None else ids_n
+            _bb = bsh[0]
+            _strideB = "0" if _bb == 1 else f"{ke}*{ne}"
+            if _fp and (_is16(a) or _is16(b)) and (_bb == 1 or _bb == ash[0]):
+                pre, ea, eb = "", a, b
+                if _need_cvt(a, b):
+                    c, ea = _cvt(a, f"({B}) * ({me}) * ({ke})")
+                    pre += c
+                if _need_cvt(b, a):
+                    _bcnt = f"({ke}) * ({ne})" if _bb == 1 \
+                        else f"({B}) * ({ke}) * ({ne})"
+                    c, eb = _cvt(b, _bcnt)
+                    pre += c
+                return (
+                    f"/* {o} = {mn} GemmEx-strided F16->F32 */\n  " + pre +
+                    f"BE(cublasGemmStridedBatchedEx(h, CUBLAS_OP_N, "
+                    f"CUBLAS_OP_N, {ne}, {me}, {ke}, &kOne, {eb}, "
+                    f"CUDA_R_16F, {ne}, {_strideB}, {ea}, CUDA_R_16F, {ke}, "
+                    f"{me}*{ke}, &kOne, {o}, CUDA_R_32F, {ne}, {me}*{ne}, "
+                    f"{B}, CUBLAS_COMPUTE_32F, "
+                    f"CUBLAS_GEMM_DEFAULT));\n{launch}",
+                    None)
             return (
                 f"/* {o} = {mn} cuBLAS strided-batched */\n"
                 f"BE(cublasSgemmStridedBatched(h, CUBLAS_OP_N, "
                 f"CUBLAS_OP_N, {ne}, {me}, {ke}, &kOne, {b}, {ne}, "
-                f"{ke}*{ne}, {a}, {ke}, {me}*{ke}, &kOne, {o}, {ne}, "
+                f"{_strideB}, {a}, {ke}, {me}*{ke}, &kOne, {o}, {ne}, "
                 f"{me}*{ne}, {B}));\n{launch}",
                 None)
         if mn == "TRANSPOSE":
@@ -417,7 +541,7 @@ class CUDABackend(Backend):
 
 
 def compile_cuda(text, sample=None, outputs=None, registry=None,
-                 sigs=None, basedir=".", origin=None):
+                 sigs=None, basedir=".", origin=None, use_fp16=False):
     """CUDA frontend entry: asm text -> .cu source."""
     from chain.asm import assemble
     from chain.asm_ops import REGISTRY as _R, SIGS as _S
@@ -429,10 +553,38 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
     if not outputs:
         raise AsmError("compile_cuda needs outputs=[...]")
     be = CUDABackend()
+    be.use_fp16 = use_fp16
     streams = infer_shapes((config, inp, bound), sample)
+    in_names = [n for n, _ in inp]
+    if use_fp16:
+        # CONVERT pre-pass: F16 inputs consumed outside F16-capable
+        # positions (matmul either side, GATHER table, RMSNORM weight)
+        # get one F32 upcast; consumers rewritten. Weights feeding only
+        # matmuls stay F16 (zero extra memory -- the whole point).
+        CAP = {"MATMUL", "BATCH_MATMUL", "GATHER", "RMSNORM"}
+        conv = {}
+        for _outs, _mn, _fn, _args, _ln, _sg in bound:
+            for _pos, _a in enumerate(_args):
+                if _a not in in_names or streams[_a][0] != "F":
+                    continue
+                if _mn in CAP and not (_mn == "RMSNORM" and _pos == 0):
+                    continue
+                if _a not in conv:
+                    conv[_a] = f"{_a}_f32"
+                    streams[conv[_a]] = ("F", "double",
+                                         streams[_a][2])
+        if conv:
+            new_bound = []
+            for _a, _c in conv.items():
+                new_bound.append(([conv[_a]], "CONVERT", None, [_a],
+                                  "convert", None))
+            for _outs, _mn, _fn, _args, _ln, _sg in bound:
+                new_bound.append(
+                    (_outs, _mn, _fn,
+                     [conv.get(_a, _a) for _a in _args], _ln, _sg))
+            bound = new_bound
     from chain.emit_c import find_consts as _fc
     consts = _fc((config, inp, bound), inp, streams, sample)
-    in_names = [n for n, _ in inp]
     ids_n = None
     for n in in_names:
         k, _, sh = streams[n]
@@ -473,13 +625,15 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
             else:
                 ctx["count"][xn] = "(%s)" % ids_n
     parts = [be.prologue(ctx)]
+    _fp16 = getattr(be, "use_fp16", False)
     decls = []
     for n in in_names:
         if n in consts:
             continue  # compile-time literal: no storage, no argv file
         k, sub, sh = streams[n]
         if k == "F":
-            decls.append(f"static float *{n}; static int64_t {n}_N;")
+            decls.append(f"static {'__half' if _fp16 else 'float'} *{n};"
+                         f" static int64_t {n}_N;")
         elif k == "T":
             raise NoPattern(f"cuda: T input '{n}' -- decode at data-prep")
         else:
@@ -511,6 +665,7 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
     parts.append("  BE(cublasSetMathMode(h, CUBLAS_DEFAULT_MATH));")
     idx = 1
     loads = []
+    _elb = 2 if getattr(be, "use_fp16", False) else 4
     for n in in_names:
         if n in consts:
             continue
@@ -524,7 +679,7 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
                 f"  {{ FILE *f = fopen(argv[{idx}], \"rb\"); if (!f) return 1;\n"
                 f"    fseek(f, 0, SEEK_END); long {n}_B = ftell(f);"
                 f" fseek(f, 0, SEEK_SET);\n"
-                f"    {n}_N = {n}_B / ({int(wrow)} * 4);\n"
+                f"    {n}_N = {n}_B / ({int(wrow)} * {_elb});\n"
                 f"    CE(cudaMallocManaged((void**)&{n}, {n}_B));\n"
                 f"    if (fread({n}, 1, {n}_B, f) != (size_t){n}_B) return 2;"
                 f" fclose(f); }}")
