@@ -22,8 +22,13 @@ from chain.asm import AsmError
 from chain.emit_c import Backend, CBackend, NoPattern
 
 INTEGER_MN = {"GATHER", "ARGMAX", "TRANSPOSE", "SLICE", "CONCAT", "SELECT",
-              "MUL", "ADD", "SUB", "SQUARE", "MATMUL", "BATCH_MATMUL"}
-FX_MN = {"MUL", "ADD", "SUB", "SQUARE", "MATMUL", "BATCH_MATMUL"}
+              "MUL", "ADD", "SUB", "SQUARE", "MATMUL", "BATCH_MATMUL",
+              "RMSNORM", "TSHIFT", "SOFTMAX_WIDE", "SOFTMAX",
+              "TBETA", "BETA", "ROTARY"}
+FX_MN = {"MUL", "ADD", "SUB", "SQUARE", "MATMUL", "BATCH_MATMUL",
+         "RMSNORM", "TSHIFT", "SOFTMAX_WIDE", "SOFTMAX",
+         "TBETA", "BETA", "ROTARY", "ARGMAX"}
+SM_MN = {"TSHIFT", "SOFTMAX_WIDE", "SOFTMAX"}
 
 TRAP_RES = (
     re.compile(r"\b(float|double)\b"),
@@ -68,10 +73,13 @@ def _bake_vec(name, arr, per_line=16):
             f" = {{\n {body}\n}};")
 
 
-def fx_tables_and_helpers(m_cov, m_acc, need_square):
+def fx_tables_and_helpers(m_cov, m_acc, need_square, need_softmax,
+                          eps_c):
     """Bridge port: to_fixed/from_fixed + tmul + binop, tables baked.
     Faithful to phi-core lattice.py/numpy_ops semantics (int64 2^-18
-    counts; BIAS 32768; e clipped to [0,65535]; int8 sign wraps)."""
+    counts; BIAS 32768; e clipped to [0,65535]; int8 sign wraps).
+    Softmax extras (EXP 262145 + FRAC_HI 8192 tables, isqrt, wide
+    bridge) emit only when a softmax op is present."""
     import phi_core.lattice as S
     L = [_bake_vec("NF_FRAC", S.L_FRAC()),
          _bake_vec("NF_COARSE", S.L_COARSE()),
@@ -86,6 +94,112 @@ def fx_tables_and_helpers(m_cov, m_acc, need_square):
         qhi = int(S.to_fixed(qs[1:2], qe[1:2], qz[1:2], int(m_cov))[0])
         L.append(f"static const int64_t NF_QLO = {qlo}LL;")
         L.append(f"static const int64_t NF_QHI = {qhi}LL;")
+    sm_extra = []
+    sm_helpers = ""
+    if need_softmax:
+        import numpy as _np
+        import os as _os
+        from phi_core import numpy_ops as _N
+        _lp = _os.path.join(_os.path.dirname(_os.path.abspath(_N.__file__)),
+                            "..", "luts")
+        try:
+            _exp = _np.load(_os.path.join(_lp, "exp_lut.npy"))
+        except Exception:  # noqa: BLE001 -- build frozen formula
+            _d = _np.arange(262145, dtype=_np.float64)
+            _exp = _np.round((2.0 ** 24) * _np.exp(-_d / 16384.0)
+                             ).astype(_np.int64)
+        try:
+            _fhi = _np.load(_os.path.join(_lp, "frac_hi_lut.npy"))
+        except Exception:  # noqa: BLE001
+            _fhi = _np.round(_np.power(
+                S.PHI, _np.arange(1, 8193, dtype=_np.float64) / S.K
+                ) * (1 << 18)).astype(_np.int64)
+        sm_extra = [_bake_vec("NF_EXP", _exp, per_line=8),
+                    _bake_vec("NF_FRACHI", _fhi, per_line=8),
+                    f"static const int64_t NF_EPSC = {int(eps_c)}LL;"]
+        sm_helpers = r"""
+static uint64_t nf_isqrt(uint64_t a) {
+  /* Integer floor sqrt (Newton, pure integer, no libm). */
+  if (a < 2) return a;
+  uint64_t x = a;
+  uint64_t y = (x + 1) >> 1;
+  while (y < x) { x = y; y = (x + a / x) >> 1; }
+  return x;
+}
+static int64_t nf_to_fixed_wide(int8_t s, int32_t e, uint8_t z, int m) {
+  if (z) return 0;
+  int64_t d = (int64_t)m - (int64_t)e;
+  if (d < 0) {
+    if (d < -8192) return (int64_t)s * NF_BASE;
+    return (int64_t)s * NF_FRACHI[(int)(-d) - 1];
+  }
+  if (d > 13312) return 0;
+  return (int64_t)s * NF_FRAC[d];
+}
+static void nf_softmax_tail(const int64_t *num, int64_t den, int64_t n,
+                            int8_t *os, int32_t *oe, uint8_t *oz) {
+  /* Authored normalization (matches op_softmax/softmax_wide): den
+     broadcasts per row; tdiv truncates C-style; from_fixed @ BIAS. */
+  for (int64_t j = 0; j < n; ++j) {
+    int64_t dd = (den == 0) ? 1 : den;
+    int64_t c = (num[j] * (int64_t)(1 << 18)) / dd; /* tdiv trunc */
+    nf_from_fixed(c, 32768, &os[j], &oe[j], &oz[j]);
+  }
+}
+static void nf_softmax_row(const int64_t *q, int64_t n,
+                           int8_t *os, int32_t *oe, uint8_t *oz,
+                           int64_t *num) {
+  /* softmaxN_fixed @ BIAS: 2^-18 -> 2^-14, rowwise max, EXP LUT. */
+  int64_t s0 = (q[0] >= 0) ? (q[0] / 16) : -(((-q[0]) + 15) / 16);
+  int64_t vmax = s0;
+  for (int64_t j = 1; j < n; ++j) {
+    int64_t s14 = (q[j] >= 0) ? (q[j] / 16) : -(((-q[j]) + 15) / 16);
+    if (s14 > vmax) vmax = s14;
+  }
+  int64_t den = 0;
+  for (int64_t j = 0; j < n; ++j) {
+    int64_t s14 = (q[j] >= 0) ? (q[j] / 16) : -(((-q[j]) + 15) / 16);
+    int64_t dd = vmax - s14;
+    if (dd < 0) dd = 0;
+    if (dd > 262144) dd = 262144;
+    num[j] = NF_EXP[dd];
+    den += num[j];
+  }
+  if (den == 0) den = 1;
+  nf_softmax_tail(num, den, n, os, oe, oz);
+}
+static void nf_rmsnorm_row(const int8_t *xs, const int32_t *xe,
+                           const uint8_t *xz, const int8_t *ws,
+                           const int32_t *we, const uint8_t *wz,
+                           int64_t C, int m,
+                           int8_t *os, int32_t *oe, uint8_t *oz,
+                           int64_t *q, int64_t *wq) {
+  for (int64_t j = 0; j < C; ++j) {
+    q[j] = nf_to_fixed(xs[j], xe[j], xz[j], m);
+    wq[j] = nf_to_fixed(ws[j], we[j], wz[j], m);
+  }
+  __int128 ss = 0;
+  for (int64_t j = 0; j < C; ++j) ss += (__int128)q[j] * q[j];
+  /* tdiv(sum, C): truncation toward zero on signed __int128. */
+  int64_t ms = (ss >= 0) ? (int64_t)(ss / C) : -(int64_t)((-ss) / C);
+  ms += NF_EPSC;
+  uint64_t rms = nf_isqrt((ms >= 0) ? (uint64_t)ms : 0);
+  for (int64_t j = 0; j < C; ++j) {
+    int64_t norm;
+    if (rms == 0) norm = 0;
+    else {
+      __int128 scaled = (__int128)q[j] * (int64_t)(1 << 18);
+      norm = (scaled >= 0) ? (int64_t)(scaled / (int64_t)rms)
+                           : -(int64_t)((-scaled) / (int64_t)rms);
+    }
+    __int128 aff = (__int128)norm * wq[j];
+    int64_t av = (aff >= 0) ? (int64_t)(aff / (int64_t)(1 << 18))
+                            : -(int64_t)((-aff) / (int64_t)(1 << 18));
+    nf_from_fixed(av, m, &os[j], &oe[j], &oz[j]);
+  }
+}
+"""
+    L.extend(sm_extra)
     L.append(r"""
 static int64_t nf_to_fixed(int8_t s, int32_t e, uint8_t z, int m) {
   if (z) return 0;
@@ -140,7 +254,9 @@ static void nf_tmul(int8_t sa, int32_t ea, uint8_t za,
   *oe = (int32_t)pe;
   *oz = (uint8_t)(za | zb);
 }
+SOFTMAX_HELPERS
 """)
+    L[-1] = L[-1].replace("SOFTMAX_HELPERS", sm_helpers)
     return "\n".join(L)
 
 
@@ -158,19 +274,50 @@ class NonFPUBackend(CBackend):
              "#include <stdlib.h>", "#include <string.h>", ""]
         for k, v in ctx["dims"].items():
             L.append(f"#define DIM_{k} {v}L")
+        rope = ctx.get("rope")
+        if rope is not None and any(mn == "ROTARY" for mn in ctx.get("mns", [])):
+            import phi_core.lattice as _S
+            import numpy as _np
+            P, D = rope["P"], rope["D"]
+            L.append(f"static const int NF_RP = {P};")
+            for tag, mat in (("C", rope["cos"]), ("S", rope["sin"])):
+                cs, ce, cz = _S.encode(_np.ascontiguousarray(mat))
+                L.append(_bake_vec(f"NF_R{tag}S",
+                                   _np.ascontiguousarray(cs, dtype=_np.int8)))
+                L.append(_bake_vec(f"NF_R{tag}E",
+                                   _np.ascontiguousarray(ce, dtype=_np.int32)))
+                L.append(_bake_vec(f"NF_R{tag}Z",
+                                   _np.ascontiguousarray(cz, dtype=_np.uint8)))
         if any(mn in FX_MN for mn in ctx.get("mns", [])):
             cfg = ctx.get("config", {})
             m_cov = int(cfg.get("m_cov", _FROZEN_COV))
             m_acc = int(cfg.get("m_acc", _FROZEN_ACC))
-            need_sq = "SQUARE" in ctx.get("mns", [])
-            L.append(fx_tables_and_helpers(m_cov, m_acc, need_sq))
+            mns = ctx.get("mns", [])
+            need_sq = "SQUARE" in mns
+            need_sm = any(mn in SM_MN or mn == "RMSNORM" for mn in mns)
+            eps_c = self._eps_counts(cfg, m_cov)
+            L.append(fx_tables_and_helpers(m_cov, m_acc, need_sq,
+                                           need_sm, eps_c))
         return "\n".join(L) + "\n"
+
+    @staticmethod
+    def _eps_counts(cfg, m_cov):
+        """eps_rms (true float) -> ambient counts (mirror op_rmsnorm).
+        Legacy eps_rms_c honored; default 4514. Compile-time only."""
+        import math as _math
+        import phi_core.lattice as _S
+        if "eps_rms" in cfg:
+            _um = _S.PHI ** ((m_cov - _S.BIAS) / _S.K)
+            return int(round(float(cfg["eps_rms"]) * float(1 << 36)
+                             / (_um * _um)))
+        return int(cfg.get("eps_rms_c", 4514))
 
     def pattern(self, mn, outs, args, sig, ctx):
         if mn not in INTEGER_MN:
             raise NoPattern(
                 f"nonfpu: no integer pattern for {mn} (fixed-point core "
-                f"covers moves + MUL/ADD/SUB/SQUARE; matmul/norms ahead)")
+                f"covers moves + arithmetic + norms + softmax; "
+                f"layernorm/silu/gelu/convs ahead)")
         S = ctx["streams"]
         for a in args:
             if a in S and S[a][0] == "F":
@@ -178,12 +325,106 @@ class NonFPUBackend(CBackend):
                     f"nonfpu: float stream '{a}' refused (no FPU on this "
                     f"target -- decode nothing, quantize first)")
         if mn in FX_MN:
-            return self._fx_pattern(mn, outs, args, ctx)
+            return self._fx_pattern(mn, outs, args, sig, ctx)
         return super().pattern(mn, outs, args, sig, ctx)
 
-    def _fx_pattern(self, mn, outs, args, ctx):
+    def _fx_pattern(self, mn, outs, args, sig, ctx):
         S = ctx["streams"]
         o = outs[0]
+        if mn == "ARGMAX":
+            src = args[0]
+            if src in ctx.get("gathered", {}):
+                return super().pattern(mn, outs, args, sig, ctx)
+            if S[src][0] != "T" or len(S[src][2]) != 2:
+                raise NoPattern("nonfpu ARGMAX needs 2D T")
+            w = S[src][2][1]
+            we = str(int(w)) if w is not None else ctx["ids_n"]
+            return (
+                f"/* {o} = ARGMAX({src}) lattice class/exponent order, "
+                f"ties first */\n"
+                f"for (int64_t a_i = 0; a_i < {o}_N; ++a_i) {{\n"
+                f"  int64_t best = 0; int bcls = -1; int64_t bkey = 0;\n"
+                f"  for (int64_t a_j = 0; a_j < {we}; ++a_j) {{\n"
+                f"    int8_t s = {src}_s[a_i * {we} + a_j];\n"
+                f"    int32_t e = {src}_e[a_i * {we} + a_j];\n"
+                f"    uint8_t z = {src}_z[a_i * {we} + a_j];\n"
+                f"    int cls = (!z && s > 0) ? 2 : (z ? 1 : 0);\n"
+                f"    int64_t key = (!z && s > 0) ? (int64_t)e : "
+                f"(z ? 0 : -(int64_t)e);\n"
+                f"    if (bcls < 0 || cls > bcls || "
+                f"(cls == bcls && key > bkey)) {{\n"
+                f"      best = a_j; bcls = cls; bkey = key;\n"
+                f"    }}\n"
+                f"  }}\n"
+                f"  {o}[a_i] = best;\n"
+                f"}}",
+                None)
+        if mn in ("TBETA", "BETA"):
+            ref = args[0]
+            if S[ref][0] != "T":
+                raise NoPattern(f"nonfpu {mn} needs T ref")
+            import phi_core.lattice as _S
+            import numpy as _np
+            cfg = ctx["config"]
+            val = float(cfg.get("beta_b", float(cfg.get("beta", 0.5)))) \
+                if mn == "TBETA" else float(cfg.get("beta", 0.5))
+            cs, ce, cz = _S.encode(_np.array([val]))
+            co = ctx["count"][o]
+            return (
+                f"/* {o} = {mn} ({val}) baked triples */\n"
+                f"for (int64_t k_i = 0; k_i < {co}; ++k_i) {{\n"
+                f"  {o}_s[k_i] = (int8_t){int(cs[0])};\n"
+                f"  {o}_e[k_i] = (int32_t){int(ce[0])};\n"
+                f"  {o}_z[k_i] = (uint8_t){int(cz[0])};\n}}",
+                None)
+        if mn == "ROTARY":
+            x, pos = args
+            if S[x][0] != "T" or S[pos][0] != "I":
+                raise NoPattern("nonfpu ROTARY needs T + I pos")
+            d = S[x][2][-1]
+            if d is None:
+                raise NoPattern("nonfpu ROTARY needs baked head dim")
+            _rope = ctx.get("rope") or {}
+            if _rope.get("D") != d:
+                raise NoPattern("nonfpu ROTARY needs baked tables "
+                                "(compile-time rope)")
+            return (
+                f"/* {o} = ROTARY({x}) tmul/binop pairs, exact */\n"
+                f"for (int64_t t_i = 0; t_i < {o}_N; ++t_i) {{\n"
+                f"  int64_t pp = {pos}[t_i];\n"
+                f"  if (pp < 0 || pp >= NF_RP) return 31;\n"
+                f"  for (int64_t t_h = 0; t_h < {d // 2}; ++t_h) {{\n"
+                f"    int8_t a0s = {x}_s[(t_i * {d}) + 2 * t_h];\n"
+                f"    int32_t a0e = {x}_e[(t_i * {d}) + 2 * t_h];\n"
+                f"    uint8_t a0z = {x}_z[(t_i * {d}) + 2 * t_h];\n"
+                f"    int8_t a1s = {x}_s[(t_i * {d}) + 2 * t_h + 1];\n"
+                f"    int32_t a1e = {x}_e[(t_i * {d}) + 2 * t_h + 1];\n"
+                f"    uint8_t a1z = {x}_z[(t_i * {d}) + 2 * t_h + 1];\n"
+                f"    int64_t co = pp * {d // 2} + t_h;\n"
+                f"    int8_t y0s, y1s; int32_t y0e, y1e; uint8_t y0z, y1z;\n"
+                f"    int8_t t0s, t1s;\n"
+                f"    int32_t t0e, t1e; uint8_t t0z, t1z;\n"
+                f"    nf_tmul(a0s, a0e, a0z, NF_RCS[co], NF_RCE[co], "
+                f"NF_RCZ[co], &t0s, &t0e, &t0z);\n"
+                f"    nf_tmul(a1s, a1e, a1z, NF_RSS[co], NF_RSE[co], "
+                f"NF_RSZ[co], &t1s, &t1e, &t1z);\n"
+                f"    nf_binop(t0s, t0e, t0z, t1s, t1e, t1z, 1,\n"
+                f"      &y0s, &y0e, &y0z);\n"
+                f"    nf_tmul(a0s, a0e, a0z, NF_RSS[co], NF_RSE[co], "
+                f"NF_RSZ[co], &t0s, &t0e, &t0z);\n"
+                f"    nf_tmul(a1s, a1e, a1z, NF_RCS[co], NF_RCE[co], "
+                f"NF_RCZ[co], &t1s, &t1e, &t1z);\n"
+                f"    nf_binop(t0s, t0e, t0z, t1s, t1e, t1z, 0,\n"
+                f"      &y1s, &y1e, &y1z);\n"
+                f"    {o}_s[(t_i * {d}) + 2 * t_h] = y0s;\n"
+                f"    {o}_e[(t_i * {d}) + 2 * t_h] = y0e;\n"
+                f"    {o}_z[(t_i * {d}) + 2 * t_h] = y0z;\n"
+                f"    {o}_s[(t_i * {d}) + 2 * t_h + 1] = y1s;\n"
+                f"    {o}_e[(t_i * {d}) + 2 * t_h + 1] = y1e;\n"
+                f"    {o}_z[(t_i * {d}) + 2 * t_h + 1] = y1z;\n"
+                f"  }}\n"
+                f"}}",
+                None)
         co = ctx["count"][o]
         if mn == "MUL":
             a, b = args
@@ -285,5 +526,74 @@ class NonFPUBackend(CBackend):
                 f"        &{o}_e[(w_b * {me} + w_i) * {ne} + w_j],\n"
                 f"        &{o}_z[(w_b * {me} + w_i) * {ne} + w_j]);\n"
                 f"    }}",
+                None)
+        if mn == "RMSNORM":
+            x, w = args
+            if S[x][0] != "T" or S[w][0] != "T":
+                raise NoPattern("nonfpu RMSNORM needs T triples")
+            o = outs[0]
+            d = S[x][2][-1]
+            if d is None:
+                raise NoPattern("nonfpu RMSNORM needs baked width")
+            return (
+                f"/* {o} = RMSNORM({x},{w}) integer rows @ NF_M */\n"
+                f"{{ int64_t *_q = malloc({d} * 8);\n"
+                f"  int64_t *_wq = malloc({d} * 8);\n"
+                f"  for (int64_t r_i = 0; r_i < {o}_N; ++r_i)\n"
+                f"    nf_rmsnorm_row(&{x}_s[r_i * {d}], &{x}_e[r_i * {d}],\n"
+                f"      &{x}_z[r_i * {d}], {w}_s, {w}_e, {w}_z, {d}, NF_M,\n"
+                f"      &{o}_s[r_i * {d}], &{o}_e[r_i * {d}], "
+                f"&{o}_z[r_i * {d}], _q, _wq);\n"
+                f"  free(_q); free(_wq); }}",
+                None)
+        if mn == "TSHIFT":
+            x = args[0]
+            if S[x][0] != "T":
+                raise NoPattern("nonfpu TSHIFT needs T triples")
+            o = outs[0]
+            _dw = S[x][2][-1]
+            d = str(int(_dw)) if _dw is not None else ctx["ids_n"]
+            return (
+                f"/* {o} = TSHIFT({x}) wide bridge @ NF_MACC */\n"
+                f"{{ int64_t *_q = malloc({d} * 8);\n"
+                f"  for (int64_t f_i = 0; f_i < {o}_N; ++f_i) {{\n"
+                f"    for (int64_t f_j = 0; f_j < {d}; ++f_j)\n"
+                f"      _q[f_j] = nf_to_fixed_wide({x}_s[f_i * {d} + f_j],\n"
+                f"        {x}_e[f_i * {d} + f_j], {x}_z[f_i * {d} + f_j], "
+                f"NF_MACC);\n"
+                f"    int64_t _mx = _q[0];\n"
+                f"    for (int64_t f_j = 1; f_j < {d}; ++f_j)\n"
+                f"      if (_q[f_j] > _mx) _mx = _q[f_j];\n"
+                f"    for (int64_t f_j = 0; f_j < {d}; ++f_j)\n"
+                f"      nf_from_fixed(_q[f_j] - _mx, NF_MACC,\n"
+                f"        &{o}_s[f_i * {d} + f_j], &{o}_e[f_i * {d} + f_j],\n"
+                f"        &{o}_z[f_i * {d} + f_j]);\n"
+                f"  }}\n"
+                f"  free(_q); }}",
+                None)
+        if mn in ("SOFTMAX_WIDE", "SOFTMAX"):
+            x = args[0]
+            if S[x][0] != "T":
+                raise NoPattern(f"nonfpu {mn} needs T triples")
+            o = outs[0]
+            _dw = S[x][2][-1]
+            d = str(int(_dw)) if _dw is not None else ctx["ids_n"]
+            bridge = ("nf_to_fixed_wide({x}_s[f_i * {d} + f_j], "
+                      "{x}_e[f_i * {d} + f_j], {x}_z[f_i * {d} + f_j], "
+                      "32768)" if mn == "SOFTMAX_WIDE"
+                      else "nf_to_fixed({x}_s[f_i * {d} + f_j], "
+                      "{x}_e[f_i * {d} + f_j], {x}_z[f_i * {d} + f_j], "
+                      "32768)").format(x=x, d=d)
+            return (
+                f"/* {o} = {mn}({x}) row softmax @ BIAS */\n"
+                f"{{ int64_t *_q = malloc({d} * 8);\n"
+                f"  int64_t *_num = malloc({d} * 8);\n"
+                f"  for (int64_t f_i = 0; f_i < {o}_N; ++f_i) {{\n"
+                f"    for (int64_t f_j = 0; f_j < {d}; ++f_j)\n"
+                f"      _q[f_j] = {bridge};\n"
+                f"    nf_softmax_row(_q, {d}, &{o}_s[f_i * {d}],\n"
+                f"      &{o}_e[f_i * {d}], &{o}_z[f_i * {d}], _num);\n"
+                f"  }}\n"
+                f"  free(_q); free(_num); }}",
                 None)
         raise NoPattern(f"nonfpu: no fx pattern for {mn}")

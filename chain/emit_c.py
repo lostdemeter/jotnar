@@ -172,12 +172,13 @@ def infer_shapes(bound, sample):
                                f"2D-axis-1, got {ssh} ax {ax}")
             streams[o] = ("I", "int64_t", out_sh)
         elif mn == "RMSNORM":
-            xk, _, xsh = streams[args[0]]
+            xk, xsub, xsh = streams[args[0]]
             wk, _, wsh = streams[args[1]]
-            if xk != "F" or wk != "F" or len(xsh) < 1 \
+            if xk not in ("F", "T") or xk != wk or len(xsh) < 1 \
                     or tuple(wsh) != (xsh[-1],):
-                raise NoPattern(f"{where}: RMSNORM needs F x(...,D)+w(D,) (v0.2)")
-            streams[o] = ("F", "double", xsh)
+                raise NoPattern(f"{where}: RMSNORM needs same-kind "
+                                "x(...,D)+w(D,)")
+            streams[o] = (xk, xsub, xsh)
         elif mn in ("MATMUL", "BATCH_MATMUL"):
             ak, asub, ash = streams[args[0]]
             bk, _, bsh = streams[args[1]]
@@ -205,25 +206,26 @@ def infer_shapes(bound, sample):
             dd[ax] = hi - lo
             streams[o] = (sk, ssub, tuple(dd))
         elif mn == "ROTARY":
-            xk, _, xsh = streams[args[0]]
+            xk, xsub, xsh = streams[args[0]]
             pk, _, psh = streams[args[1]]
-            if xk != "F" or len(xsh) != 2 or xsh[1] is None or xsh[1] % 2 \
-                    or pk != "I" or len(psh) != 1:
-                raise NoPattern(f"{where}: ROTARY needs F (S,Deven) + I pos (S,) (v0.2)")
+            if xk not in ("F", "T") or len(xsh) != 2 or xsh[1] is None \
+                    or xsh[1] % 2 or pk != "I" or len(psh) != 1:
+                raise NoPattern(f"{where}: ROTARY needs F/T (S,Deven) + "
+                                "I pos (S,)")
             if xsh[0] is not None and tuple(psh) != (xsh[0],):
                 raise AsmError(f"{where}: ROTARY pos len {psh} vs rows "
                                f"{xsh[0]}")
-            streams[o] = ("F", "double", xsh)
+            streams[o] = (xk, xsub, xsh)
         elif mn == "TRANSPOSE":
             sk, _, ssh = streams[args[0]]
             if sk not in ("F", "T") or len(ssh) != 2:
                 raise NoPattern(f"{where}: v0.2 TRANSPOSE handles 2D F/T")
             streams[o] = (sk, streams[args[0]][1], (ssh[1], ssh[0]))
         elif mn in ("TBETA", "BETA"):
-            rk, _, rsh = streams[args[0]]
-            if rk != "F":
-                raise NoPattern(f"{where}: {mn} needs F ref (v0.2)")
-            streams[o] = ("F", "double", rsh)
+            rk, rsub, rsh = streams[args[0]]
+            if rk not in ("F", "T"):
+                raise NoPattern(f"{where}: {mn} needs F/T ref")
+            streams[o] = (rk, rsub, rsh)
         elif mn in ("MUL", "ADD", "SUB"):
             ak, asub, ash = streams[args[0]]
             bk, _, bsh = streams[args[1]]
@@ -255,10 +257,15 @@ def infer_shapes(bound, sample):
                 raise AsmError(f"{where}: SELECT rank mismatch")
             streams[o] = (ak, streams[args[1]][1], ash)
         elif mn in ("TSHIFT", "SOFTMAX_WIDE"):
-            sk, _, ssh = streams[args[0]]
-            if sk != "F" or len(ssh) != 2:
-                raise NoPattern(f"{where}: {mn} needs 2D F (v0.2)")
-            streams[o] = ("F", "double", ssh)
+            sk, ssub, ssh = streams[args[0]]
+            if sk not in ("F", "T") or len(ssh) != 2:
+                raise NoPattern(f"{where}: {mn} needs 2D F/T")
+            streams[o] = (sk, ssub, ssh)
+        elif mn == "SOFTMAX":
+            sk, ssub, ssh = streams[args[0]]
+            if sk not in ("F", "T") or len(ssh) != 2:
+                raise NoPattern(f"{where}: SOFTMAX needs 2D F/T")
+            streams[o] = (sk, ssub, ssh)
         elif mn == "CONCAT":
             ak, asub, ash = streams[args[0]]
             bk, _, bsh = streams[args[1]]
@@ -334,14 +341,22 @@ class CBackend(Backend):
                 st, et, zt = S[t][1]
                 w = self._we(S, t, ctx, f"GATHER {o}")
                 return (
-                    f"/* {o} = GATHER({t}, {ids}) -- zero-copy rows */\n"
+                    f"/* {o} = GATHER({t}, {ids}) materialized + row views */\n"
+                    f"for (int64_t g_i = 0; g_i < {ids}_N; ++g_i) {{\n"
+                    f"  memcpy(&{o}_s[g_i * {w}], &{t}_s[{ids}[g_i] * {w}], "
+                    f"{w} * sizeof({o}_s[0]));\n"
+                    f"  memcpy(&{o}_e[g_i * {w}], &{t}_e[{ids}[g_i] * {w}], "
+                    f"{w} * sizeof({o}_e[0]));\n"
+                    f"  memcpy(&{o}_z[g_i * {w}], &{t}_z[{ids}[g_i] * {w}], "
+                    f"{w} * sizeof({o}_z[0]));\n"
+                    f"}}\n"
                     f"const {st} *g_rows_s[{ids}_N];\n"
                     f"const {et} *g_rows_e[{ids}_N];\n"
                     f"const {zt} *g_rows_z[{ids}_N];\n"
                     f"for (int64_t g_i = 0; g_i < {ids}_N; ++g_i) {{\n"
-                    f"  g_rows_s[g_i] = {t}_s + {ids}[g_i] * {w};\n"
-                    f"  g_rows_e[g_i] = {t}_e + {ids}[g_i] * {w};\n"
-                    f"  g_rows_z[g_i] = {t}_z + {ids}[g_i] * {w};\n"
+                    f"  g_rows_s[g_i] = &{o}_s[g_i * {w}];\n"
+                    f"  g_rows_e[g_i] = &{o}_e[g_i * {w}];\n"
+                    f"  g_rows_z[g_i] = &{o}_z[g_i * {w}];\n"
                     f"}}",
                     (o, w))
             if tk == "F":
@@ -403,6 +418,9 @@ class CBackend(Backend):
         if mn == "RMSNORM":
             x, w = args
             o = outs[0]
+            if S[x][0] != "F" or S[w][0] != "F":
+                raise NoPattern("C backend RMSNORM needs F (T lives "
+                                "on nonfpu)")
             eps = float(cfg.get("eps_rms", 0.0)) if "eps_rms" in cfg \
                 else (_ for _ in ()).throw(
                     AsmError("RMSNORM C pattern needs CONFIG eps_rms "
@@ -505,6 +523,9 @@ class CBackend(Backend):
         if mn == "ROTARY":
             x, pos = args
             o = outs[0]
+            if S[x][0] != "F":
+                raise NoPattern("C backend ROTARY needs F (T lives "
+                                "on nonfpu)")
             d = self._w(S, x, f"ROTARY {o}")
             nh = d // 2
             return (
@@ -553,6 +574,9 @@ class CBackend(Backend):
         if mn in ("TBETA", "BETA"):
             ref = args[0]
             o = outs[0]
+            if S[ref][0] != "F":
+                raise NoPattern(f"C backend {mn} needs F ref (T fills "
+                                "live on nonfpu)")
             co = ctx["count"][o]
             val = float(cfg.get("beta_b", float(cfg.get("beta", 0.5)))) \
                 if mn == "TBETA" else float(cfg.get("beta", 0.5))
@@ -602,6 +626,9 @@ class CBackend(Backend):
         if mn == "TSHIFT":
             x = args[0]
             o = outs[0]
+            if S[x][0] != "F":
+                raise NoPattern("C backend TSHIFT needs F (T lives "
+                                "on nonfpu)")
             d = self._we(S, x, ctx, f"TSHIFT {o}")
             return (
                 f"/* {o} = TSHIFT({x}) row-max shift */\n"
@@ -617,6 +644,9 @@ class CBackend(Backend):
         if mn == "SOFTMAX_WIDE":
             x = args[0]
             o = outs[0]
+            if S[x][0] != "F":
+                raise NoPattern("C backend SOFTMAX_WIDE needs F (T lives "
+                                "on nonfpu)")
             d = self._we(S, x, ctx, f"SOFTMAX_WIDE {o}")
             return (
                 f"/* {o} = SOFTMAX_WIDE({x}) stable rows */\n"
@@ -708,8 +738,11 @@ def compile_program(text, target="c", sample=None, outputs=None,
     dims = {}
     for n in in_names:
         k, sub, sh = streams[n]
-        if k == "T" and len(sh) == 2 and all(d is not None for d in sh):
-            dims[f"V_{n}"], dims[f"C_{n}"] = sh
+        if k == "T" and sh and all(d is not None for d in sh):
+            for ax, d in enumerate(sh):
+                dims[f"D{n}_{ax}"] = d
+            if len(sh) == 2:
+                dims[f"V_{n}"], dims[f"C_{n}"] = sh
     # batch-ids stream: first (N,) I input (drives dynamic dims);
     # else a dynamic-row F input (rows from file bytes / baked width).
     ids_n = None
@@ -737,10 +770,24 @@ def compile_program(text, target="c", sample=None, outputs=None,
                           -2.0 * np.arange(d // 2, dtype=np.float64) / d)
             theta = [float(t) for t in th]
             break
+    rope = None
+    for _on, _mn, _fn, _aa, _ln, _sg in bound:
+        if _mn == "ROTARY" and len(_aa) > 1 and _aa[1] in sample:
+            _d = streams[_aa[0]][2][-1]
+            if _d is None:
+                continue
+            _pos = np.ascontiguousarray(sample[_aa[1]], dtype=np.int64)
+            _P = int(_pos.max(initial=0)) + 1
+            from chain.asm_ops import rope_tables as _rt
+            _base = float(config.get("rope_base", 10000.0))
+            _ct, _st = _rt(_P, _d, _base)
+            rope = {"P": _P, "D": _d, "cos": np.ascontiguousarray(_ct),
+                    "sin": np.ascontiguousarray(_st)}
+            break
     ctx = {"streams": streams, "dims": dims, "dyn": {}, "ids_n": ids_n,
            "inputs": in_names, "outputs": outputs, "gathered": {},
-           "config": dict(config), "theta": theta, "count": {},
-           "mns": [mn for _, mn, _, _, _, _ in bound]}
+           "config": dict(config), "theta": theta, "rope": rope,
+           "count": {}, "mns": [mn for _, mn, _, _, _, _ in bound]}
     for _xn, (_xk, _xs, _xsh) in streams.items():
         if _xk in ("F", "T") and _xsh:
             ctx["count"][_xn] = "(%s)" % _dim_expr(_xsh, ids_n)
@@ -805,17 +852,21 @@ def compile_program(text, target="c", sample=None, outputs=None,
         k, sub, sh = streams[n]
         if k == "T":
             st, et, zt = sub
-            loads.append(f"  {n}_N = DIM_V_{n}; /* rows (tables 2D-baked) */")
-            loads.append(f"  /* load {n} (V x C triples) */")
+            if not sh or any(d is None for d in sh):
+                raise NoPattern(f"C backend: T input '{n}' must be fully "
+                                f"baked {sh}")
+            cnt = " * ".join(f"DIM_D{n}_{ax}" for ax in range(len(sh)))
+            loads.append(f"  {n}_N = {f'DIM_D{n}_0' if len(sh) else '1'}; "
+                         f"/* rows */")
+            loads.append(f"  /* load {n} triples ({' x '.join(str(d) for d in sh)}) */")
             for comp, ct in (("s", st), ("e", et), ("z", zt)):
                 loads.append(
                     f"  {{ FILE *f = fopen(argv[{idx}], \"rb\");"
                     f" if (!f) return 1;\n"
-                    f"    {n}_{comp} = malloc(DIM_V_{n} * DIM_C_{n}"
+                    f"    {n}_{comp} = malloc(({cnt})"
                     f" * sizeof({ct}));"
-                    f" if (fread({n}_{comp}, sizeof({ct}), DIM_V_{n}"
-                    f" * DIM_C_{n}, f)"
-                    f" != (size_t)(DIM_V_{n} * DIM_C_{n})) return 2;"
+                    f" if (fread({n}_{comp}, sizeof({ct}), ({cnt}), f)"
+                    f" != (size_t)({cnt})) return 2;"
                     f" fclose(f); }}")
                 idx += 1
         elif k == "F":

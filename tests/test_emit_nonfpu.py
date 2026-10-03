@@ -245,6 +245,97 @@ def main():
             ok = ok and same
         check("nonfpu-mm-exact", ok, "matmul_int bit-identical")
 
+    # -- full headt-D16 block on non-FPU, bit-exact --------------------
+    # Every op in programs/lm_headt.asm now has a T pattern: the whole
+    # transformer runs integer-only. Payload is TRIPLES (nothing decoded).
+    hdd = os.path.join(ROOT, "data")
+    sdir = os.path.join(ROOT, "programs")
+    dh = {}
+    for f in ("lm_svd_IvoQ.npz", "bankhn.npz"):
+        if not os.path.isfile(os.path.join(hdd, f)):
+            print(f"SKIP headt-nf (missing {f})")
+            dh["skip"] = True
+    if "skip" not in dh:
+        CFG = ("CONFIG m_acc 36118\nCONFIG m_cov 35048\nCONFIG beta -30.0\n"
+               "CONFIG beta_b 0.25\nCONFIG eps_rms 1e-6\n")
+        htext = CFG + open(os.path.join(sdir, "lm_headt.asm")).read()
+        hd = np.load(os.path.join(hdd, "lm_svd_IvoQ.npz"))
+        hb = np.load(os.path.join(hdd, "bankhn.npz"))
+        hids = [12, 471, 59]
+        htoks = np.array(hids, dtype=np.int64)
+        hpos = np.arange(len(hids), dtype=np.int64)
+        hcm = np.tril(np.ones((len(hids), len(hids)), dtype=np.int64))
+
+        def henc(a):
+            return S.encode(np.ascontiguousarray(a, dtype=np.float64))
+
+        hpay = {"tok": htoks, "pos": hpos, "cmask": hcm,
+                "emb": henc(hd["emb"]), "wq": henc(hd["wq"]),
+                "wk": henc(hd["wk"]), "wv": henc(hd["wv"]),
+                "wo": henc(hd["wo"]), "wup": henc(hd["wup"]),
+                "wgate": henc(hd["wgate"]), "wdown": henc(hd["wdown"]),
+                "rms_w1": henc(hd["rms1"]), "rms_w2": henc(hd["rms2"]),
+                "wlog": henc(hd["wlog"]), "ukt": henc(hb["ukt"]),
+                "evb": henc(hb["evb"])}
+        hf = ASM.run_text(htext, REGISTRY, hpay, sigs=SIGS, basedir=sdir)
+        hart = compile_program(htext, "nonfpu", sample=hpay,
+                               outputs=["LOGITS", "OUT"], basedir=sdir)
+        try:
+            float_trap(hart["source"])
+            check("nonfpu-headt-trap-clean", True, "2MB tables, still int")
+        except Exception as e:  # noqa: BLE001
+            check("nonfpu-headt-trap-clean", False, str(e)[:200])
+        hwork = "/tmp/emit_nonfpu_headt"
+        os.makedirs(hwork, exist_ok=True)
+        hexe = build(hart["source"], hwork, name="headt_nf", libs=[])
+        hargv = [hexe]
+        for n in hart["inputs"]:
+            k, _, _ = hart["streams"][n]
+            if k == "T":
+                for comp, arr in zip("sez", hpay[n]):
+                    fn = os.path.join(hwork, f"in_{n}_{comp}.bin")
+                    np.ascontiguousarray(arr).tofile(fn)
+                    hargv.append(fn)
+            else:
+                fn = os.path.join(hwork, f"in_{n}.bin")
+                hpay[n].astype(np.int64).tofile(fn)
+                hargv.append(fn)
+        houts = []
+        for o in hart["outputs"]:
+            ok = hart["streams"][o][0]
+            if ok == "T":
+                for c in "sez":
+                    fn = os.path.join(hwork, f"out_{o}_{c}.bin")
+                    houts.append((o, c, fn))
+                    hargv.append(fn)
+            else:
+                fn = os.path.join(hwork, f"out_{o}.bin")
+                houts.append((o, None, fn))
+                hargv.append(fn)
+        r = subprocess.run(hargv, capture_output=True, text=True)
+        check("nonfpu-headt-run", r.returncode == 0,
+              f"rc={r.returncode} {r.stderr[:300]}")
+        if r.returncode == 0:
+            ref_l = hf["LOGITS"]
+            ok = True
+            for o, c, fn in houts:
+                if o == "OUT":
+                    gotp = np.fromfile(fn, dtype=np.int64)
+                    same = bool((gotp == np.ascontiguousarray(
+                        hf["OUT"]).reshape(-1)).all())
+                    ok = ok and same
+                else:
+                    dt = {"s": np.int8, "e": np.int32, "z": np.uint8}[c]
+                    gotp = np.fromfile(fn, dtype=dt).reshape(
+                        np.shape(ref_l[0]))
+                    same = bool((gotp == np.ascontiguousarray(
+                        ref_l["sez".index(c)])).all())
+                    ok = ok and same
+                    if not same:
+                        print(f"headt {c} mismatch: "
+                              f"{np.argwhere(gotp != np.ascontiguousarray(ref_l['sez'.index(c)]))[:4].tolist()}")
+            check("nonfpu-headt-exact", ok, "LOGITS 3 planes + OUT exact")
+
     print("FAILURES:", FAIL if FAIL else "none")
     sys.exit(1 if FAIL else 0)
 
