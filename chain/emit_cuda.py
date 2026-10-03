@@ -323,12 +323,7 @@ class CUDABackend(Backend):
             if S[m][0] != "I" or S[a][0] != "F" or S[b][0] != "F":
                 raise NoPattern("cuda SELECT needs I mask + F (v0.1)")
             co = ctx["count"][o]
-            msh = S[m][2]
-            guard = ""
-            if all(d is not None for d in msh):
-                import numpy as _np
-                mc = int(_np.prod(msh, dtype=_np.int64))
-                guard = f"if ((int64_t){mc} != {co}) return 21;\n  "
+            guard = f"if ({m}_N != {co}) return 21;\n  "
             return (
                 f"/* {o} = SELECT({m}) */\n  {guard}"
                 f"k_select_f32<<<(({co}) + TPB - 1) / TPB, TPB>>>"

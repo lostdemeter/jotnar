@@ -625,13 +625,10 @@ class CBackend(Backend):
             m, a, b = args
             o = outs[0]
             co = ctx["count"][o]
+            # Runtime shape contract (mask file elements vs branch count):
+            # sample-S may differ from runtime-S; static baked counts lie.
+            guard = f"if ({m}_N != {co}) return 21;\n  "
             if S[a][0] == "T":
-                msh = S[m][2]
-                guard = ""
-                if all(d is not None for d in msh):
-                    import numpy as _np
-                    mc = int(_np.prod(msh, dtype=_np.int64))
-                    guard = f"if ((int64_t){mc} != {co}) return 21;\n  "
                 L = [f"/* {o} = SELECT({m}) triples, exact */\n  {guard}"
                      f"for (int64_t v_i = 0; v_i < {co}; ++v_i) {{"]
                 for comp in ("s", "e", "z"):
@@ -639,11 +636,6 @@ class CBackend(Backend):
                              f"{a}_{comp}[v_i] : {b}_{comp}[v_i];")
                 L.append("}")
                 return ("\n".join(L), None)
-            msh = S[m][2]
-            guard = ""
-            if all(d is not None for d in msh):
-                mc = int(np.prod(msh, dtype=np.int64))
-                guard = (f"if ((int64_t){mc} != {co}) return 21;\n  ")
             return (f"/* {o} = SELECT({m}) nonzero picks A */\n  {guard}"
                     f"for (int64_t v_i = 0; v_i < {co}; ++v_i)\n"
                     f"  {o}[v_i] = {m}[v_i] ? {a}[v_i] : {b}[v_i];",
