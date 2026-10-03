@@ -179,15 +179,17 @@ def infer_shapes(bound, sample):
                 raise NoPattern(f"{where}: RMSNORM needs F x(...,D)+w(D,) (v0.2)")
             streams[o] = ("F", "double", xsh)
         elif mn in ("MATMUL", "BATCH_MATMUL"):
-            ak, _, ash = streams[args[0]]
+            ak, asub, ash = streams[args[0]]
             bk, _, bsh = streams[args[1]]
-            if ak != "F" or bk != "F":
-                raise NoPattern(f"{where}: {mn} needs F inputs (v0.2)")
+            if ak not in ("F", "T") or ak != bk:
+                raise NoPattern(f"{where}: {mn} needs same-kind inputs")
+            tsub = asub if ak == "T" else "double"
             if len(ash) == 2 and len(bsh) == 2 and ash[1] == bsh[0]:
-                streams[o] = ("F", "double", (ash[0], bsh[1]))
-            elif len(ash) == 3 and len(bsh) == 3 and ash[0] == bsh[0] \
+                streams[o] = (ak, tsub, (ash[0], bsh[1]))
+            elif len(ash) == 3 and len(bsh) == 3 \
+                    and (ash[0] == bsh[0] or bsh[0] == 1) \
                     and ash[2] == bsh[1]:
-                streams[o] = ("F", "double", (ash[0], ash[1], bsh[2]))
+                streams[o] = (ak, tsub, (ash[0], ash[1], bsh[2]))
             else:
                 raise AsmError(f"{where}: {mn} shape mismatch {ash}/{bsh}")
         elif mn == "SLICE":
@@ -222,12 +224,20 @@ def infer_shapes(bound, sample):
             if rk != "F":
                 raise NoPattern(f"{where}: {mn} needs F ref (v0.2)")
             streams[o] = ("F", "double", rsh)
-        elif mn in ("MUL", "ADD"):
-            ak, _, ash = streams[args[0]]
+        elif mn in ("MUL", "ADD", "SUB"):
+            ak, asub, ash = streams[args[0]]
             bk, _, bsh = streams[args[1]]
-            if ak != "F" or bk != "F" or tuple(ash) != tuple(bsh):
-                raise NoPattern(f"{where}: {mn} needs same-shape F (no broadcast in v0.2)")
-            streams[o] = ("F", "double", ash)
+            if ak not in ("F", "T") or ak != bk \
+                    or tuple(ash) != tuple(bsh):
+                raise NoPattern(f"{where}: {mn} needs same-kind "
+                                "same-shape (no broadcast in v0.2)")
+            streams[o] = (ak, asub, ash)
+        elif mn == "SQUARE":
+            sk, ssub, ssh = streams[args[0]]
+            if sk != "T":
+                raise NoPattern(f"{where}: SQUARE needs T (integer "
+                                "exactness lives in triples)")
+            streams[o] = ("T", ssub, ssh)
         elif mn == "SELECT":
             mk, _, msh = streams[args[0]]
             ak, asub, ash = streams[args[1]]
@@ -413,6 +423,9 @@ class CBackend(Backend):
         if mn in ("MATMUL", "BATCH_MATMUL"):
             a, b = args
             o = outs[0]
+            if S[a][0] != "F" or S[b][0] != "F":
+                raise NoPattern(f"C backend {mn} needs F (T matmul "
+                                "lives on nonfpu)")
             co = ctx["count"][o]
             ash, bsh = S[a][2], S[b][2]
             zero = f"memset({o}, 0, {co} * sizeof(double));"
@@ -547,11 +560,14 @@ class CBackend(Backend):
                     f"for (int64_t k_i = 0; k_i < {co}; ++k_i)\n"
                     f"  {o}[k_i] = {val!r};",
                     None)
-        if mn in ("MUL", "ADD"):
+        if mn in ("MUL", "ADD", "SUB"):
             a, b = args
             o = outs[0]
+            if S[a][0] != "F" or S[b][0] != "F":
+                raise NoPattern(f"C backend {mn} needs F (T arithmetic "
+                                "lives on nonfpu)")
             co = ctx["count"][o]
-            op = "*" if mn == "MUL" else "+"
+            op = {"MUL": "*", "ADD": "+", "SUB": "-"}[mn]
             return (f"/* {o} = {a} {op} {b} */\n"
                     f"for (int64_t e_i = 0; e_i < {co}; ++e_i)\n"
                     f"  {o}[e_i] = {a}[e_i] {op} {b}[e_i];",
@@ -723,7 +739,8 @@ def compile_program(text, target="c", sample=None, outputs=None,
             break
     ctx = {"streams": streams, "dims": dims, "dyn": {}, "ids_n": ids_n,
            "inputs": in_names, "outputs": outputs, "gathered": {},
-           "config": dict(config), "theta": theta, "count": {}}
+           "config": dict(config), "theta": theta, "count": {},
+           "mns": [mn for _, mn, _, _, _, _ in bound]}
     for _xn, (_xk, _xs, _xsh) in streams.items():
         if _xk in ("F", "T") and _xsh:
             ctx["count"][_xn] = "(%s)" % _dim_expr(_xsh, ids_n)

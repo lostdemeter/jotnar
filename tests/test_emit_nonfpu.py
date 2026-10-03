@@ -142,6 +142,109 @@ def main():
     except NoPattern as e:
         check("nonfpu-float-refused", True, str(e)[:100])
 
+    # -- fixed-point arithmetic, bit-exact ------------------------------
+    arith = ("CONFIG m_cov 35048\nIN a\nIN b\n"
+             "C = ADD(a, b)\nD = MUL(C, a)\nE = SUB(D, b)\nQ = SQUARE(a)\n")
+    rng3 = np.random.default_rng(5)
+    av = rng3.integers(-3, 4, size=(2, 8))
+    bv = rng3.integers(-3, 4, size=(2, 8))
+
+    def enc_grid(g):
+        ss = np.zeros_like(g, np.int8)
+        ee = np.zeros_like(g, np.int32)
+        zz = np.zeros_like(g, np.uint8)
+        for v in np.unique(g):
+            ws, we, wz = S.encode(np.array([float(v)]))
+            m = g == v
+            ss[m], ee[m], zz[m] = ws[0], we[0], wz[0]
+        return (np.ascontiguousarray(ss), np.ascontiguousarray(ee),
+                np.ascontiguousarray(zz))
+
+    ta, tb = enc_grid(av), enc_grid(bv)
+    pay3 = {"a": ta, "b": tb}
+    f3 = ASM.run_text(arith, REGISTRY, pay3, sigs=SIGS, basedir=sdir)
+    art3 = compile_program(arith, "nonfpu", sample=pay3,
+                           outputs=["E", "Q"], basedir=sdir)
+    try:
+        float_trap(art3["source"])
+        check("nonfpu-fx-trap-clean", True, "tables are int64 const")
+    except Exception as e:  # noqa: BLE001
+        check("nonfpu-fx-trap-clean", False, str(e)[:150])
+    exe3 = build(art3["source"], work, name="arith_nf", libs=[])
+    fns = []
+    for nm, tt in (("a", ta), ("b", tb)):
+        for comp, arr in zip("sez", tt):
+            fn = os.path.join(work, f"{nm}_{comp}.bin")
+            np.ascontiguousarray(arr).tofile(fn)
+            fns.append(fn)
+    fos = [os.path.join(work, f"out_{o}_{c}.bin")
+           for o in ("E", "Q") for c in "sez"]
+    r = subprocess.run([exe3] + fns + fos, capture_output=True, text=True)
+    check("nonfpu-fx-run", r.returncode == 0,
+          f"rc={r.returncode} {r.stderr[:300]}")
+    if r.returncode == 0:
+        ok = True
+        for o, ref in (("E", f3["E"]), ("Q", f3["Q"])):
+            for comp, dt in (("s", np.int8), ("e", np.int32),
+                             ("z", np.uint8)):
+                gotp = np.fromfile(
+                    os.path.join(work, f"out_{o}_{comp}.bin"),
+                    dtype=dt).reshape(np.shape(ref[0]))
+                same = bool((gotp == np.ascontiguousarray(
+                    ref["sez".index(comp)])).all())
+                ok = ok and same
+        check("nonfpu-fx-exact", ok, "ADD/MUL/SUB/SQUARE bit-identical")
+
+    # -- fixed-point matmul, bit-exact --------------------------------
+    mm = ("CONFIG m_acc 36118\nCONFIG m_cov 35048\nIN a\nIN b\n"
+          "OUT = MATMUL(a, b)\n")
+    rng4 = np.random.default_rng(9)
+    ma = rng4.integers(-3, 4, size=(3, 8))
+    mb = rng4.integers(-3, 4, size=(8, 5))
+
+    def enc_grid2(g):
+        ss = np.zeros_like(g, np.int8)
+        ee = np.zeros_like(g, np.int32)
+        zz = np.zeros_like(g, np.uint8)
+        for v in np.unique(g):
+            ws, we, wz = S.encode(np.array([float(v)]))
+            m = g == v
+            ss[m], ee[m], zz[m] = ws[0], we[0], wz[0]
+        return (np.ascontiguousarray(ss), np.ascontiguousarray(ee),
+                np.ascontiguousarray(zz))
+
+    ta2, tb2 = enc_grid2(ma), enc_grid2(mb)
+    pay4 = {"a": ta2, "b": tb2}
+    f4 = ASM.run_text(mm, REGISTRY, pay4, sigs=SIGS, basedir=sdir)
+    art4 = compile_program(mm, "nonfpu", sample=pay4, outputs=["OUT"],
+                           basedir=sdir)
+    try:
+        float_trap(art4["source"])
+        check("nonfpu-mm-trap-clean", True, "")
+    except Exception as e:  # noqa: BLE001
+        check("nonfpu-mm-trap-clean", False, str(e)[:150])
+    exe4 = build(art4["source"], work, name="mm_nf", libs=[])
+    fns = []
+    for nm, tt in (("a", ta2), ("b", tb2)):
+        for comp, arr in zip("sez", tt):
+            fn = os.path.join(work, f"mm_{nm}_{comp}.bin")
+            np.ascontiguousarray(arr).tofile(fn)
+            fns.append(fn)
+    fos = [os.path.join(work, f"out_MM_{c}.bin") for c in "sez"]
+    # argv order: a_s/a_e/a_z, b_s/b_e/b_z, then OUT planes
+    r = subprocess.run([exe4] + fns + fos, capture_output=True, text=True)
+    check("nonfpu-mm-run", r.returncode == 0,
+          f"rc={r.returncode} {r.stderr[:300]}")
+    if r.returncode == 0:
+        ok = True
+        for comp, dt in (("s", np.int8), ("e", np.int32), ("z", np.uint8)):
+            gotp = np.fromfile(os.path.join(work, f"out_MM_{comp}.bin"),
+                               dtype=dt).reshape((3, 5))
+            same = bool((gotp == np.ascontiguousarray(
+                f4["OUT"]["sez".index(comp)])).all())
+            ok = ok and same
+        check("nonfpu-mm-exact", ok, "matmul_int bit-identical")
+
     print("FAILURES:", FAIL if FAIL else "none")
     sys.exit(1 if FAIL else 0)
 
