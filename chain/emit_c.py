@@ -179,17 +179,17 @@ def infer_shapes(bound, sample):
             else:
                 raise AsmError(f"{where}: {mn} shape mismatch {ash}/{bsh}")
         elif mn == "SLICE":
-            sk, _, ssh = streams[args[0]]
+            sk, ssub, ssh = streams[args[0]]
             ax = _int_lit(args[1], f"{where} axis")
             lo = _int_lit(args[2], f"{where} lo")
             hi = _int_lit(args[3], f"{where} hi")
-            if sk != "F" or len(ssh) != 2 or ax not in (0, 1):
-                raise NoPattern(f"{where}: v0.2 SLICE handles 2D ax0/1 F")
+            if sk not in ("F", "T") or len(ssh) != 2 or ax not in (0, 1):
+                raise NoPattern(f"{where}: v0.2 SLICE handles 2D ax0/1 F/T")
             dd = list(ssh)
             if dd[ax] is not None and not (0 <= lo <= hi <= dd[ax]):
                 raise AsmError(f"{where}: SLICE [{lo},{hi}) of dim {dd[ax]}")
             dd[ax] = hi - lo
-            streams[o] = ("F", "double", tuple(dd))
+            streams[o] = (sk, ssub, tuple(dd))
         elif mn == "ROTARY":
             xk, _, xsh = streams[args[0]]
             pk, _, psh = streams[args[1]]
@@ -202,9 +202,9 @@ def infer_shapes(bound, sample):
             streams[o] = ("F", "double", xsh)
         elif mn == "TRANSPOSE":
             sk, _, ssh = streams[args[0]]
-            if sk != "F" or len(ssh) != 2:
-                raise NoPattern(f"{where}: v0.2 TRANSPOSE handles 2D F")
-            streams[o] = ("F", "double", (ssh[1], ssh[0]))
+            if sk not in ("F", "T") or len(ssh) != 2:
+                raise NoPattern(f"{where}: v0.2 TRANSPOSE handles 2D F/T")
+            streams[o] = (sk, streams[args[0]][1], (ssh[1], ssh[0]))
         elif mn in ("TBETA", "BETA"):
             rk, _, rsh = streams[args[0]]
             if rk != "F":
@@ -218,11 +218,12 @@ def infer_shapes(bound, sample):
             streams[o] = ("F", "double", ash)
         elif mn == "SELECT":
             mk, _, msh = streams[args[0]]
-            ak, _, ash = streams[args[1]]
+            ak, asub, ash = streams[args[1]]
             bk, _, bsh = streams[args[2]]
-            if mk != "I" or ak != "F" or bk != "F" \
+            if mk != "I" or ak not in ("F", "T") or ak != bk \
                     or tuple(ash) != tuple(bsh):
-                raise NoPattern(f"{where}: SELECT needs I mask + same-shape F branches (v0.2)")
+                raise NoPattern(f"{where}: SELECT needs I mask + same-kind "
+                                "same-shape branches (v0.2)")
             # mask may be baked while branches are batch-dynamic: allow
             # axis-wise (equal OR branch-dynamic), guarded at runtime.
             for dm, da in zip(msh, ash):
@@ -230,21 +231,22 @@ def infer_shapes(bound, sample):
                     raise AsmError(f"{where}: SELECT mask {msh} vs {ash}")
             if len(msh) != len(ash):
                 raise AsmError(f"{where}: SELECT rank mismatch")
-            streams[o] = ("F", "double", ash)
+            streams[o] = (ak, streams[args[1]][1], ash)
         elif mn in ("TSHIFT", "SOFTMAX_WIDE"):
             sk, _, ssh = streams[args[0]]
             if sk != "F" or len(ssh) != 2:
                 raise NoPattern(f"{where}: {mn} needs 2D F (v0.2)")
             streams[o] = ("F", "double", ssh)
         elif mn == "CONCAT":
-            ak, _, ash = streams[args[0]]
+            ak, asub, ash = streams[args[0]]
             bk, _, bsh = streams[args[1]]
             ax = _int_lit(args[2], f"{where} axis") if args[2] not in \
                 streams else None
-            if ak != "F" or bk != "F" or len(ash) != 2 or ax != 1 \
+            if ak not in ("F", "T") or ak != bk or len(ash) != 2 or ax != 1 \
                     or ash[0] != bsh[0] or ash[1] is None or bsh[1] is None:
-                raise NoPattern(f"{where}: v0.2 CONCAT handles 2D ax1 F, same rows, baked widths")
-            streams[o] = ("F", "double", (ash[0], ash[1] + bsh[1]))
+                raise NoPattern(f"{where}: v0.2 CONCAT handles 2D ax1 "
+                                "same-kind, same rows, baked widths")
+            streams[o] = (ak, asub, (ash[0], ash[1] + bsh[1]))
         else:
             raise NoPattern(f"C backend: no pattern for {mn} ({where})")
     return streams
@@ -449,6 +451,18 @@ class CBackend(Backend):
             in_d = S[x][2][ax]
             if in_d is None:
                 raise NoPattern("C backend: SLICE with dynamic stride")
+            if S[x][0] == "T":
+                if ax != 1:
+                    raise NoPattern("C backend: SLICE-T ax0 (v0.2)")
+                st, et, zt = S[x][1]
+                L = [f"/* {o} = SLICE({x},1,{lo},{hi}) triples, exact */"]
+                for comp in ("s", "e", "z"):
+                    L.append(
+                        f"for (int64_t s_i = 0; s_i < {o}_N; ++s_i)\n"
+                        f"  memcpy(&{o}_{comp}[s_i * {hi - lo}], "
+                        f"&{x}_{comp}[s_i * {in_d} + {lo}], "
+                        f"{hi - lo} * sizeof({o}_{comp}[0]));")
+                return ("\n".join(L), None)
             if ax == 1:
                 return (
                     f"/* {o} = SLICE({x},1,{lo},{hi}) */\n"
@@ -485,6 +499,21 @@ class CBackend(Backend):
         if mn == "TRANSPOSE":
             x = args[0]
             o = outs[0]
+            if S[x][0] == "T":
+                st, et, zt = S[x][1]
+                c = S[x][2][1]
+                if c is None:
+                    raise NoPattern("C backend: TRANSPOSE-T dynamic width")
+                r = S[x][2][0]
+                re = str(int(r)) if r is not None else f"{x}_N"
+                L = [f"/* {o} = TRANSPOSE({x}) triples, exact move */"]
+                for comp, ct in (("s", st), ("e", et), ("z", zt)):
+                    L.append(
+                        f"for (int64_t t_i = 0; t_i < {re}; ++t_i)\n"
+                        f"  for (int64_t t_j = 0; t_j < {c}; ++t_j)\n"
+                        f"    {o}_{comp}[t_j * {re} + t_i] = "
+                        f"{x}_{comp}[t_i * {c} + t_j];")
+                return ("\n".join(L), None)
             c = self._we(S, x, ctx, f"TRANSPOSE {o}")
             r = S[x][2][0]
             if r is None and x in ctx["inputs"]:
@@ -519,6 +548,20 @@ class CBackend(Backend):
             m, a, b = args
             o = outs[0]
             co = ctx["count"][o]
+            if S[a][0] == "T":
+                msh = S[m][2]
+                guard = ""
+                if all(d is not None for d in msh):
+                    import numpy as _np
+                    mc = int(_np.prod(msh, dtype=_np.int64))
+                    guard = f"if ((int64_t){mc} != {co}) return 21;\n  "
+                L = [f"/* {o} = SELECT({m}) triples, exact */\n  {guard}"
+                     f"for (int64_t v_i = 0; v_i < {co}; ++v_i) {{"]
+                for comp in ("s", "e", "z"):
+                    L.append(f"  {o}_{comp}[v_i] = {m}[v_i] ? "
+                             f"{a}_{comp}[v_i] : {b}_{comp}[v_i];")
+                L.append("}")
+                return ("\n".join(L), None)
             msh = S[m][2]
             guard = ""
             if all(d is not None for d in msh):
@@ -567,6 +610,18 @@ class CBackend(Backend):
             a, b = args[0], args[1]
             o = outs[0]
             da, db = S[a][2][1], S[b][2][1]
+            if S[a][0] == "T":
+                L = [f"/* {o} = CONCAT({a},{b},1) triples, exact */"]
+                for comp in ("s", "e", "z"):
+                    L.append(
+                        f"for (int64_t n_i = 0; n_i < {o}_N; ++n_i) {{\n"
+                        f"  memcpy(&{o}_{comp}[n_i * {da + db}], "
+                        f"&{a}_{comp}[n_i * {da}], "
+                        f"{da} * sizeof({o}_{comp}[0]));\n"
+                        f"  memcpy(&{o}_{comp}[n_i * {da + db} + {da}], "
+                        f"&{b}_{comp}[n_i * {db}], "
+                        f"{db} * sizeof({o}_{comp}[0]));\n}}")
+                return ("\n".join(L), None)
             return (
                 f"/* {o} = CONCAT({a},{b},1) */\n"
                 f"for (int64_t n_i = 0; n_i < {o}_N; ++n_i) {{\n"
@@ -580,6 +635,15 @@ class CBackend(Backend):
 
     def epilogue(self, ctx):
         return ""
+
+
+def _rows_expr(sh, ids_n):
+    """Row-count value: first dim baked, batch source when dynamic, 1."""
+    if not sh:
+        return "1"
+    if sh[0] is None:
+        return "(%s)" % ids_n
+    return str(int(sh[0]))
 
 
 def _dim_expr(sh, ids_n):
@@ -649,7 +713,7 @@ def compile_program(text, target="c", sample=None, outputs=None,
            "inputs": in_names, "outputs": outputs, "gathered": {},
            "config": dict(config), "theta": theta, "count": {}}
     for _xn, (_xk, _xs, _xsh) in streams.items():
-        if _xk == "F" and _xsh:
+        if _xk in ("F", "T") and _xsh:
             ctx["count"][_xn] = "(%s)" % _dim_expr(_xsh, ids_n)
         elif _xk == "I" and _xn in outputs:
             _osh = _xsh
@@ -666,33 +730,45 @@ def compile_program(text, target="c", sample=None, outputs=None,
         if k == "T":
             st, et, zt = sub
             decls.append(f"static {st} *{n}_s; static {et} *{n}_e;"
-                         f" static {zt} *{n}_z;")
+                         f" static {zt} *{n}_z; static int64_t {n}_N;")
         elif k == "F":
             decls.append(f"static double *{n}; static int64_t {n}_N;")
         else:
             decls.append(f"static int64_t *{n}; static int64_t {n}_N;")
     for o in outputs:
-        ok, _, osh = streams[o]
+        ok, osub, osh = streams[o]
         if ok == "F":
             decls.append(f"static double *{o};")
+        elif ok == "T":
+            st, et, zt = osub
+            decls.append(f"static {st} *{o}_s; static {et} *{o}_e;"
+                         f" static {zt} *{o}_z; static int64_t {o}_N;")
         else:
             decls.append(f"static int64_t *{o}; static int64_t {o}_N;")
     parts.append("\n".join(decls))
-    # intermediate declarations (F streams malloc'd per op in-body)
+    # intermediate declarations (F/T streams malloc'd per op in-body)
     inter = set()
+    interT = {}
     _, _, prog = (config, inp, bound)
     for outs, _mn2, _fn2, _aa2, _ln2, _sg2 in prog:
         for x in outs:
             if x not in in_names and x not in outputs:
-                k, _, _ = streams[x]
+                k, ksub, _ = streams[x]
                 if k == "F":
                     inter.add(x)
+                elif k == "T":
+                    interT[x] = ksub
     if inter:
         parts.append("/* intermediates */")
         parts.append("\n".join(f"double *{x};" for x in sorted(inter)))
+    if interT:
+        parts.append("/* triple intermediates */")
+        for x in sorted(interT):
+            st, et, zt = interT[x]
+            parts.append(f"{st} *{x}_s; {et} *{x}_e; {zt} *{x}_z;")
     parts.append("int main(int argc, char **argv) {")
     n_argv = sum(3 if streams[n][0] == "T" else 1 for n in in_names)
-    n_argv += len(outputs)
+    n_argv += sum(3 if streams[o][0] == "T" else 1 for o in outputs)
     parts.append(f"  if (argc != {n_argv + 1}) return 9;")
     idx = 1
     loads = []
@@ -700,6 +776,7 @@ def compile_program(text, target="c", sample=None, outputs=None,
         k, sub, sh = streams[n]
         if k == "T":
             st, et, zt = sub
+            loads.append(f"  {n}_N = DIM_V_{n}; /* rows (tables 2D-baked) */")
             loads.append(f"  /* load {n} (V x C triples) */")
             for comp, ct in (("s", st), ("e", et), ("z", zt)):
                 loads.append(
@@ -742,15 +819,20 @@ def compile_program(text, target="c", sample=None, outputs=None,
         _k, _s, xsh = streams[x]
         cnt = _dim_expr(xsh, ids_n)
         allocs.append(f"  {x} = malloc(({cnt}) * sizeof(double));")
-        # per-stream row-count var for patterns (<stream>_N)
-        if xsh and any(d is None for d in xsh):
-            allocs.append(f"  int64_t {x}_N = {ids_n};")
-        else:
-            allocs.append(f"  int64_t {x}_N = "
-                          f"{int(np.prod(list(xsh), dtype=np.int64))};")
+        # per-stream ROW-count var for patterns (<stream>_N)
+        allocs.append(f"  int64_t {x}_N = {_rows_expr(xsh, ids_n)};")
     for o in outputs:
         if streams[o][0] == "I":
-            allocs.append(f"  {o}_N = {ids_n}; {o} = malloc({o}_N * 8);")
+            _osh = streams[o][2]
+            allocs.append(f"  {o}_N = {_rows_expr(_osh, ids_n)}; "
+                          f"{o} = malloc({o}_N * 8);")
+    for x in sorted(interT) + [o for o in outputs if streams[o][0] == "T"]:
+        _k, _tsub, xsh = streams[x]
+        _st, _et, _zt = _tsub
+        cnt = _dim_expr(xsh, ids_n)
+        for _comp, _ct in (("s", _st), ("e", _et), ("z", _zt)):
+            allocs.append(f"  {x}_{_comp} = malloc(({cnt}) * sizeof({_ct}));")
+        allocs.append(f"  int64_t {x}_N = {_rows_expr(xsh, ids_n)};")
     parts.append("\n".join(allocs))
     for outs, mn, _fn, args, ln, sig in prog:
         pat, gathered = be.pattern(mn, outs, args, sig, ctx)
@@ -759,7 +841,18 @@ def compile_program(text, target="c", sample=None, outputs=None,
         parts.append(f"  /* L{ln}: {mn} */")
         parts.append("  " + pat.replace("\n", "\n  "))
     for o in outputs:
-        ok = streams[o][0]
+        ok, osub, _osh2 = streams[o]
+        if ok == "T":
+            st, et, zt = osub
+            co = ctx["count"][o]
+            for comp, ct in (("s", st), ("e", et), ("z", zt)):
+                parts.append(
+                    f"  {{ FILE *f = fopen(argv[{idx}], \"wb\"); if (!f)"
+                    f" return 3;\n"
+                    f"    fwrite({o}_{comp}, sizeof({ct}), {co}, f);"
+                    f" fclose(f); }}")
+                idx += 1
+            continue
         el = "8" if ok == "I" else "sizeof(double)"
         co = ctx["count"][o]
         parts.append(f"  {{ FILE *f = fopen(argv[{idx}], \"wb\"); if (!f)"

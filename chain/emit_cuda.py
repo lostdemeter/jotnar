@@ -482,11 +482,9 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
         _k, _s, xsh = streams[x]
         cnt = _dim_expr(xsh, ids_n)
         allocs.append(f"  CE(cudaMallocManaged((void**)&{x}, ({cnt}) * 4));")
-        if xsh and any(d is None for d in xsh):
-            allocs.append(f"  int64_t {x}_N = {ids_n};")
-        else:
-            allocs.append(f"  int64_t {x}_N = "
-                          f"{int(np.prod(list(xsh), dtype=np.int64))};")
+        # ROW-count var (first dim); element counts live in count[].
+        from chain.emit_c import _rows_expr as _rr
+        allocs.append(f"  int64_t {x}_N = {_rr(xsh, ids_n)};")
     for o in outputs:
         if streams[o][0] == "I":
             _osh = streams[o][2]

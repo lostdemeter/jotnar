@@ -18,6 +18,12 @@ from chain.emit_c import Backend, CBackend, NoPattern
 
 
 try:
+    from chain.emit_nonfpu import NonFPUBackend as _RealNonFPU
+    _REAL_NONFPU_AVAILABLE = True
+except ImportError:
+    _RealNonFPU = None
+    _REAL_NONFPU_AVAILABLE = False
+try:
     from chain.emit_cuda import CUDABackend as _RealCUDA
     _REAL_CUDA = True
 except ImportError:
@@ -62,7 +68,7 @@ class NonFPUBackend(Backend):
 REGISTRY = {
     "c": CBackend,
     "cuda": _RealCUDA if _REAL_CUDA_AVAILABLE else CUDABackendStub,
-    "nonfpu": NonFPUBackend,
+    "nonfpu": _RealNonFPU if _REAL_NONFPU_AVAILABLE else NonFPUBackend,
 }
 
 
