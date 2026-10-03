@@ -598,6 +598,10 @@ def compile_program(text, target="c", sample=None, outputs=None,
                                      basedir=basedir)
     from chain.backends import get_backend as _gb
     _be = _gb(target)  # unknown names fail loud here
+    if _be.name == "cuda":
+        from chain.emit_cuda import compile_cuda as _cc
+        return _cc(text, sample=sample, outputs=outputs,
+                   registry=registry, sigs=sigs, basedir=basedir)
     if not _be.emits:
         # stub backend: surface its extension recipe, don't compile air.
         raise NoPattern(getattr(_be, "stub_note",
@@ -614,13 +618,20 @@ def compile_program(text, target="c", sample=None, outputs=None,
         k, sub, sh = streams[n]
         if k == "T" and len(sh) == 2 and all(d is not None for d in sh):
             dims[f"V_{n}"], dims[f"C_{n}"] = sh
-    # batch-ids stream: first (N,) I input (drives dynamic dims)
+    # batch-ids stream: first (N,) I input (drives dynamic dims);
+    # else a dynamic-row F input (rows from file bytes / baked width).
     ids_n = None
     for n in in_names:
         k, _, sh = streams[n]
         if k == "I" and len(sh) == 1:
             ids_n = f"{n}_N"
             break
+    if ids_n is None:
+        for n in in_names:
+            k, _, sh = streams[n]
+            if k == "F" and sh and sh[0] is None and sh[-1] is not None:
+                ids_n = f"{n}_N"
+                break
     if ids_n is None:
         ids_n = "1"
     # rotary theta constants from head dim (baked by construction)
@@ -641,7 +652,12 @@ def compile_program(text, target="c", sample=None, outputs=None,
         if _xk == "F" and _xsh:
             ctx["count"][_xn] = "(%s)" % _dim_expr(_xsh, ids_n)
         elif _xk == "I" and _xn in outputs:
-            ctx["count"][_xn] = "(%s)" % ids_n
+            _osh = _xsh
+            if _osh and all(d is not None for d in _osh):
+                ctx["count"][_xn] = "(%s)" % int(
+                    np.prod(list(_osh), dtype=np.int64))
+            else:
+                ctx["count"][_xn] = "(%s)" % ids_n
     parts = [be.prologue(ctx)]
     parts.append("/* inputs: argv files, order below */")
     decls = []
@@ -652,7 +668,7 @@ def compile_program(text, target="c", sample=None, outputs=None,
             decls.append(f"static {st} *{n}_s; static {et} *{n}_e;"
                          f" static {zt} *{n}_z;")
         elif k == "F":
-            decls.append(f"static double *{n};")
+            decls.append(f"static double *{n}; static int64_t {n}_N;")
         else:
             decls.append(f"static int64_t *{n}; static int64_t {n}_N;")
     for o in outputs:
@@ -697,11 +713,16 @@ def compile_program(text, target="c", sample=None, outputs=None,
                     f" fclose(f); }}")
                 idx += 1
         elif k == "F":
+            _k2, _s2, _sh2 = streams[n]
+            if _sh2 and _sh2[-1] is None:
+                raise NoPattern(f"C backend: fully-dynamic F input '{n}'")
+            _wr = f"({_sh2[-1]} * 8)" if _sh2 else "8"
             loads.append(
                 f"  {{ FILE *f = fopen(argv[{idx}], \"rb\"); if (!f) return 1;\n"
                 f"    fseek(f, 0, SEEK_END); long {n}_B = ftell(f);"
                 f" fseek(f, 0, SEEK_SET);\n"
-                f"    {n} = malloc({n}_B);"
+                f"    {n}_N = {_sh2[0] if _sh2 and _sh2[0] is not None else f'{n}_B / {_wr}'};"
+                f"\n    {n} = malloc({n}_B);"
                 f" if (fread({n}, 1, {n}_B, f) != (size_t){n}_B) return 2;"
                 f" fclose(f); }}")
             idx += 1

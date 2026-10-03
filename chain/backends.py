@@ -17,12 +17,19 @@ from chain.asm import AsmError
 from chain.emit_c import Backend, CBackend, NoPattern
 
 
-class CUDABackend(Backend):
-    """CUDA target (stub). Intended patterns: one kernel (or cublas call)
-    per opcode, prologue owns module/stream/kernel-preamble, epilogue owns
-    device<->host marshalling. c_core/ in phi-core holds candidate kernels
-    (ops.cu/conv.cu) -- inventory vs ISA mnemonics is the first real step.
-    """
+try:
+    from chain.emit_cuda import CUDABackend as _RealCUDA
+    _REAL_CUDA = True
+except ImportError:
+    _RealCUDA = None
+    _REAL_CUDA = _REAL_CUDA  # placeholder (kept explicit)
+    _REAL_CUDA_AVAILABLE = False
+else:
+    _REAL_CUDA_AVAILABLE = True
+
+
+class CUDABackendStub(Backend):
+    """CUDA target before chain.emit_cuda exists (import fallback only)."""
 
     name = "cuda"
     stub_note = ("cuda backend is a stub -- see chain/backends.py extension "
@@ -54,7 +61,7 @@ class NonFPUBackend(Backend):
 
 REGISTRY = {
     "c": CBackend,
-    "cuda": CUDABackend,
+    "cuda": _RealCUDA if _REAL_CUDA_AVAILABLE else CUDABackendStub,
     "nonfpu": NonFPUBackend,
 }
 
