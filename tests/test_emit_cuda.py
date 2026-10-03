@@ -152,8 +152,109 @@ def main():
 
     headt_case()
 
+    widths_cu_cases()
+
     print("FAILURES:", FAIL if FAIL else "none")
     sys.exit(1 if FAIL else 0)
+
+
+CU_CAL = {"d32": {"LOGITS": 1e-1}, "d64": {"H2": 2e-2, "LOGITS": None}}
+CU_CASES = {
+    "d32": {"fit": "lm_piece32_fit.npz", "bank": "bankp32_64.npz",
+            "listing": "lm_d32_headt.asm"},
+    "d64": {"fit": "lm_piece64_fit.npz", "bank": "bankpiece64_d64.npz",
+            "listing": "lm_d64_headt.asm"},
+}
+CU_CFG = ("CONFIG m_acc 36118\nCONFIG m_cov 35048\nCONFIG beta -30.0\n"
+          "CONFIG beta_b 0.25\n")
+
+
+def widths_cu_cases():
+    import time as _t
+    sys.path.insert(0, os.path.join(ROOT, "scripts"))
+    from d64_lib import encode as _enc, load_bpe as _lb
+    dd = os.path.join(ROOT, "data")
+    sdir = os.path.join(ROOT, "programs")
+    vocab, rank = _lb()
+
+    def _dec(t):
+        return (S.decode(np.ascontiguousarray(t[0]), np.ascontiguousarray(t[1]))
+                * (1 - np.ascontiguousarray(t[2]).astype(np.float64)))
+
+    def _enc3(a):
+        return S.encode(np.ascontiguousarray(a, dtype=np.float64))
+
+    for tag, c in CU_CASES.items():
+        for f in (c["fit"], c["bank"]):
+            if not os.path.isfile(os.path.join(dd, f)):
+                print(f"SKIP {tag}-cu (missing {f})")
+                continue
+        ids = _enc("alexander founded alexandria and ruled egypt well",
+                   vocab, rank)[:8]
+        toks = np.array(ids, dtype=np.int64)
+        pos = np.arange(len(ids), dtype=np.int64)
+        cm = np.tril(np.ones((len(ids), len(ids)), dtype=np.int64))
+        w = np.load(os.path.join(dd, c["fit"]))
+        b = np.load(os.path.join(dd, c["bank"]))
+        text = CU_CFG + open(os.path.join(sdir, c["listing"])).read()
+        trip = {"emb": _enc3(w["emb"]), "wq": _enc3(w["wq"]),
+                "wk": _enc3(w["wk"]), "wv": _enc3(w["wv"]),
+                "wo": _enc3(w["wo"]), "wup": _enc3(w["wup"]),
+                "wgate": _enc3(w["wgate"]), "wdown": _enc3(w["wdown"]),
+                "rms_w1": _enc3(w["rms1"]), "rms_w2": _enc3(w["rms2"]),
+                "wlog": _enc3(w["wlog"]), "ukt": _enc3(b["ukt"]),
+                "evb": _enc3(b["evb"])}
+        payload = {"tok": toks, "pos": pos, "cmask": cm}
+        payload.update(trip)
+        t0 = _t.perf_counter()
+        feeds = ASM.run_text(text, REGISTRY, payload, sigs=SIGS,
+                             basedir=sdir)
+        t_lat = _t.perf_counter() - t0
+        ref_out = np.ascontiguousarray(feeds["OUT"]).reshape(-1)
+        fpayload = {"tok": toks, "pos": pos, "cmask": cm}
+        fpayload.update({k: np.ascontiguousarray(_dec(v))
+                         for k, v in trip.items()})
+        gate_names = list(CU_CAL[tag])
+        art = compile_program(text, "cuda", sample=fpayload,
+                              outputs=gate_names + ["OUT"], basedir=sdir)
+        work = f"/tmp/emit_cuda_{tag}"
+        os.makedirs(work, exist_ok=True)
+        r, art, outs = run_cu(art, fpayload, work, tag)
+        check(f"cu-{tag}-run", r.returncode == 0,
+              f"rc={r.returncode} {r.stderr[:200]}")
+        if r.returncode != 0:
+            continue
+        got = {}
+        for o, fn in zip(art["outputs"], outs):
+            ok = art["streams"][o][0]
+            got[o] = np.fromfile(
+                fn, dtype=np.int64 if ok == "I" else np.float32)
+        for g in gate_names:
+            ref = _dec(feeds[g])
+            dmax = float(np.abs(got[g].reshape(ref.shape) - ref).max())
+            cal = CU_CAL[tag][g]
+            if cal is None:
+                print(f"cu-{tag}-{g}: maxabs={dmax:.3e} (informational, "
+                      f"saturated -- no gate)")
+                continue
+            print(f"cu-{tag}-{g}: maxabs={dmax:.3e} (cal {cal:.0e})")
+            check(f"cu-{tag}-{g}-eps", dmax < cal, f"maxabs={dmax:.3e}")
+        same = bool((got["OUT"].reshape(ref_out.shape) == ref_out).all())
+        check(f"cu-{tag}-out-exact", same, "8/8" if same else "MISMATCH")
+        # timing: binary wall (incl. GPU init) vs lattice
+        t0 = _t.perf_counter()
+        argv = [os.path.join(work, tag)]
+        for n in art["inputs"]:
+            argv.append(os.path.join(work, f"in_{n}.bin"))
+        for o in art["outputs"]:
+            argv.append(os.path.join(work, f"out_{o}.bin"))
+        subprocess.run(argv, capture_output=True)
+        t_cu = _t.perf_counter() - t0
+        print(f"cu-{tag}-time: lattice={t_lat:.2f}s cuda={t_cu:.3f}s "
+              f"(cold wall incl. one-time GPU init + ~100 launches; "
+              f"at S=8 single-shot the C backend (2-3ms) wins -- GPU "
+              f"throughput needs batching work, listed finishing touch; "
+              f"no speed gate here, correctness only)")
 
 
 def headt_case():
