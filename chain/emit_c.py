@@ -294,7 +294,9 @@ class CBackend(Backend):
 
     name = "c"
     emits = True
+    use_blas = False
     DEFAULT_CFLAGS = ("-O2", "-march=native", "-std=c99", "-Wall")
+    BLAS_LIBS = ("-lgslcblas",)
 
     def value_repr(self, layout):
         kind = (layout or "").split(":")[0]
@@ -303,7 +305,9 @@ class CBackend(Backend):
     def prologue(self, ctx):
         L = ["#include <stdint.h>", "#include <stdio.h>",
              "#include <stdlib.h>", "#include <string.h>",
-             "#include <math.h>", ""]
+             "#include <math.h>", "#include <time.h>", ""]
+        if getattr(self, "use_blas", False):
+            L.append("#include <gsl/gsl_cblas.h>")
         for k, v in ctx["dims"].items():
             L.append(f"#define DIM_{k} {v}L")
         th = ctx.get("theta", [])
@@ -472,6 +476,16 @@ class CBackend(Backend):
             me = str(m) if m is not None else ids_n
             ke = str(k) if k is not None else ids_n
             ne = str(n) if n is not None else ids_n
+            if getattr(self, "use_blas", False):
+                return (
+                    f"/* {o} = {mn} batched cblas_dgemm x{B} */\n"
+                    f"for (int64_t m_b = 0; m_b < {B}; ++m_b)\n"
+                    f"  cblas_dgemm(CblasRowMajor, CblasNoTrans, "
+                    f"CblasNoTrans, {me}, {ne}, {ke}, 1.0,\n"
+                    f"    &{a}[m_b * ({me}) * ({ke})], {ke},\n"
+                    f"    &{b}[m_b * ({ke}) * ({ne})], {ne}, 0.0,\n"
+                    f"    &{o}[m_b * ({me}) * ({ne})], {ne});",
+                    None)
             return (
                 f"/* {o} = {mn} batched ikj */\n{zero}\n"
                 f"for (int64_t m_b = 0; m_b < {B}; ++m_b)\n"
@@ -479,10 +493,10 @@ class CBackend(Backend):
                 f"    for (int64_t m_k = 0; m_k < {ke}; ++m_k) {{\n"
                 f"      double aik = {a}[(m_b * {me} + m_i) * {ke} + m_k];\n"
                 f"      double *restrict crow = &{o}[(m_b * {me} + m_i)"
-                f" * {n}];\n"
-                f"      const double *restrict brow = &{b}[(m_b * {k} + m_k)"
-                f" * {n}];\n"
-                f"      for (int64_t m_j = 0; m_j < {n}; ++m_j)\n"
+                f" * {ne}];\n"
+                f"      const double *restrict brow = &{b}[(m_b * {ke} + m_k)"
+                f" * {ne}];\n"
+                f"      for (int64_t m_j = 0; m_j < {ne}; ++m_j)\n"
                 f"        crow[m_j] += aik * brow[m_j];\n"
                 f"    }}",
                 None)
@@ -711,7 +725,8 @@ def _dim_expr(sh, ids_n):
 
 
 def compile_program(text, target="c", sample=None, outputs=None,
-                    registry=None, sigs=None, basedir=".", origin=None):
+                    registry=None, sigs=None, basedir=".", origin=None,
+                    use_blas=False, time_ops=False):
     """Frontend entry: asm text -> target source. Returns dict with
     source/backend/streams/dims/config. Sample payload required (shapes).
     """
@@ -733,6 +748,7 @@ def compile_program(text, target="c", sample=None, outputs=None,
     if not outputs:
         raise AsmError("compile_program needs outputs=[...] (OUT streams)")
     be = _be
+    be.use_blas = use_blas
     streams = infer_shapes((config, inp, bound), sample)
     in_names = [n for n, _ in inp]
     dims = {}
@@ -919,7 +935,12 @@ def compile_program(text, target="c", sample=None, outputs=None,
         if gathered:
             ctx["gathered"][gathered[0]] = gathered[1]
         parts.append(f"  /* L{_short_site(ln)}: {mn} */")
-        parts.append("  " + pat.replace("\n", "\n  "))
+        body = pat.replace("\n", "\n  ")
+        if time_ops:
+            body = ("{ clock_t _t0 = clock();\n  " + body +
+                    f"\n  fprintf(stderr, \"op {mn} %f\\n\", "
+                    f"(double)(clock() - _t0) / CLOCKS_PER_SEC); }}")
+        parts.append("  " + body)
     for o in outputs:
         ok, osub, _osh2 = streams[o]
         if ok == "T":
@@ -942,9 +963,12 @@ def compile_program(text, target="c", sample=None, outputs=None,
     parts.append("  return 0;\n}")
     parts.append(be.epilogue(ctx))
     src = "\n".join(parts)
+    _libs = ["-lm"]
+    if getattr(be, "use_blas", False) and be.name == "c":
+        _libs = _libs + list(CBackend.BLAS_LIBS)
     return {"source": src, "backend": be, "streams": streams,
             "dims": dims, "config": dict(config), "inputs": in_names,
-            "outputs": outputs, "n_argv": idx - 1}
+            "outputs": outputs, "n_argv": idx - 1, "libs": _libs}
 
 
 def build(source, workdir, name="prog", cc="cc", cflags=None, libs=None):

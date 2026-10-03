@@ -101,6 +101,29 @@ def main():
     except NoPattern as e:
         check("c-unknown-target-loud", True, str(e)[:80])
 
+    # BLAS hook: same math via cblas_dgemm, timer lines on stderr.
+    # (At S=8 sizes GSL ties hand-ikj -- hook is structural; the win
+    # threshold is measurable past these sizes, not claimed here.)
+    rng = np.random.default_rng(4)
+    ba = np.ascontiguousarray(rng.normal(size=(8, 16)))
+    bb = np.ascontiguousarray(rng.normal(size=(16, 32)))
+    art_b = compile_program("IN a\nIN b\nOUT = MATMUL(a, b)\n", "c",
+                            sample={"a": ba, "b": bb}, outputs=["OUT"],
+                            use_blas=True, time_ops=True)
+    check("c-blas-libs", art_b["libs"] == ["-lm", "-lgslcblas"],
+          str(art_b["libs"]))
+    exe_b = build(art_b["source"], work, name="mmb", libs=art_b["libs"])
+    fa, fb, fo = (os.path.join(work, f"blas_{x}.bin") for x in "a b o".split())
+    ba.astype(np.float64).tofile(fa)
+    bb.astype(np.float64).tofile(fb)
+    r = subprocess.run([exe_b, fa, fb, fo], capture_output=True, text=True)
+    check("c-blas-run", r.returncode == 0, f"rc={r.returncode}")
+    if r.returncode == 0:
+        got_b = np.fromfile(fo, dtype=np.float64).reshape((8, 32))
+        dmax = float(np.abs(got_b - ba @ bb).max())
+        check("c-blas-agrees", dmax < 1e-12, f"maxabs={dmax:.1e}")
+        check("c-timer-lines", "op MATMUL" in r.stderr, r.stderr.strip()[:60])
+
     print("FAILURES:", FAIL if FAIL else "none")
     sys.exit(1 if FAIL else 0)
 
