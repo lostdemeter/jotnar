@@ -150,8 +150,67 @@ def main():
         check("cu-argmax", bool((got == ref).all()),
               f"{int((got == ref).sum())}/{len(ref)} (tie row -> {got[2]})")
 
+    headt_case()
+
     print("FAILURES:", FAIL if FAIL else "none")
     sys.exit(1 if FAIL else 0)
+
+
+def headt_case():
+    dd = os.path.join(ROOT, "data")
+    sdir = os.path.join(ROOT, "programs")
+    for f in ("lm_svd_IvoQ.npz", "bankhn.npz"):
+        if not os.path.isfile(os.path.join(dd, f)):
+            print(f"SKIP headt-cu (missing {f})")
+            return
+    CFG = ("CONFIG m_acc 36118\nCONFIG m_cov 35048\nCONFIG beta -30.0\n"
+           "CONFIG beta_b 0.25\n")
+    text = CFG + open(os.path.join(sdir, "lm_headt.asm")).read()
+    d = np.load(os.path.join(dd, "lm_svd_IvoQ.npz"))
+    b = np.load(os.path.join(dd, "bankhn.npz"))
+    ids = [12, 471, 59]
+    toks = np.array(ids, dtype=np.int64)
+    pos = np.arange(len(ids), dtype=np.int64)
+    cm = np.tril(np.ones((len(ids), len(ids)), dtype=np.int64))
+
+    def enc(a):
+        return S.encode(np.ascontiguousarray(a, dtype=np.float64))
+
+    def dec(t):
+        return (S.decode(np.ascontiguousarray(t[0]), np.ascontiguousarray(t[1]))
+                * (1 - np.ascontiguousarray(t[2]).astype(np.float64)))
+
+    trip = {"emb": enc(d["emb"]), "wq": enc(d["wq"]), "wk": enc(d["wk"]),
+            "wv": enc(d["wv"]), "wo": enc(d["wo"]), "wup": enc(d["wup"]),
+            "wgate": enc(d["wgate"]), "wdown": enc(d["wdown"]),
+            "rms_w1": enc(d["rms1"]), "rms_w2": enc(d["rms2"]),
+            "wlog": enc(d["wlog"]), "ukt": enc(b["ukt"]),
+            "evb": enc(b["evb"])}
+    payload = {"tok": toks, "pos": pos, "cmask": cm}
+    payload.update(trip)
+    feeds = ASM.run_text(text, REGISTRY, payload, sigs=SIGS, basedir=sdir)
+    ref_logits = dec(feeds["LOGITS"])
+    ref_out = np.ascontiguousarray(feeds["OUT"]).reshape(-1)
+    fpayload = {"tok": toks, "pos": pos, "cmask": cm}
+    fpayload.update({k: np.ascontiguousarray(dec(v))
+                     for k, v in trip.items()})
+    art = compile_program(text, "cuda", sample=fpayload,
+                          outputs=["LOGITS", "OUT"], basedir=sdir)
+    work = "/tmp/emit_cuda_headt"
+    os.makedirs(work, exist_ok=True)
+    r, art, outs = run_cu(art, fpayload, work, "headt")
+    check("cu-headt-run", r.returncode == 0,
+          f"rc={r.returncode} {r.stderr[:300]}")
+    if r.returncode != 0:
+        return
+    got_logits = np.fromfile(outs[0], dtype=np.float32
+                             ).reshape(ref_logits.shape)
+    got_out = np.fromfile(outs[1], dtype=np.int64)
+    dmax = float(np.abs(got_logits - ref_logits).max())
+    print(f"cu-headt-logits: maxabs={dmax:.3e} (cal 6e-02, same as C)")
+    check("cu-headt-logits-eps", dmax < 6e-2, f"maxabs={dmax:.3e}")
+    check("cu-headt-out-exact", bool((got_out == ref_out).all()),
+          f"{int((got_out == ref_out).sum())}/{len(ref_out)}")
 
 
 if __name__ == "__main__":

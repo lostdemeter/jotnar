@@ -77,6 +77,58 @@ __global__ void k_elem(const float *a, const float *b, float *o, int64_t n,
   else r = a[i] / b[i];
   o[i] = r;
 }
+__global__ void k_transpose_f32(const float *x, float *o, int64_t R,
+                                int64_t C) {
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= R * C) return;
+  int64_t r = i / C, c = i % C;
+  o[c * R + r] = x[i];
+}
+__global__ void k_slice_ax1_f32(const float *x, float *o, int64_t W,
+                                int64_t LO, int64_t WID, int64_t N) {
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= N * WID) return;
+  int64_t r = i / WID, j = i % WID;
+  o[i] = x[r * W + LO + j];
+}
+__global__ void k_concat_ax1_f32(const float *a, const float *b, float *o,
+                                 int64_t DA, int64_t DB, int64_t N) {
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  int64_t W = DA + DB;
+  if (i >= N * W) return;
+  int64_t r = i / W, j = i % W;
+  o[i] = (j < DA) ? a[r * DA + j] : b[r * DB + (j - DA)];
+}
+__global__ void k_select_f32(const int64_t *m, const float *a, const float *b,
+                             float *o, int64_t n) {
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= n) return;
+  o[i] = m[i] ? a[i] : b[i];
+}
+__global__ void k_rotary_f32(const float *x, const int64_t *pos, float *o,
+                             int64_t D, int64_t N, const float *theta) {
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  int64_t H = D / 2;
+  if (i >= N * H) return;
+  int64_t r = i / H, h = i % H;
+  float ang = (float)pos[r] * theta[h];
+  float c = cosf(ang), s = sinf(ang);
+  float x0 = x[r * D + 2 * h], x1 = x[r * D + 2 * h + 1];
+  o[r * D + 2 * h] = x0 * c - x1 * s;
+  o[r * D + 2 * h + 1] = x0 * s + x1 * c;
+}
+__global__ void k_tshift_f32(const float *x, float *o, int64_t D, int64_t N) {
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= N) return;
+  float mx = x[i * D];
+  for (int64_t j = 1; j < D; ++j) mx = fmaxf(mx, x[i * D + j]);
+  for (int64_t j = 0; j < D; ++j) o[i * D + j] = x[i * D + j] - mx;
+}
+__global__ void k_fill_f32(float *o, int64_t n, float v) {
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= n) return;
+  o[i] = v;
+}
 """
 
 
@@ -93,6 +145,9 @@ class CUDABackend(Backend):
         return {"I": "int64_t", "F": "float"}.get(kind, "void/*T*/")
 
     def prologue(self, ctx):
+        th = ctx.get("theta", [])
+        thal = ("static const float THETA[] = {%s};" %
+                ", ".join(repr(float(t)) + "f" for t in th)) if th else ""
         return ("\n".join([
             "#include <stdint.h>", "#include <stdio.h>",
             "#include <stdlib.h>", "#include <string.h>",
@@ -100,6 +155,7 @@ class CUDABackend(Backend):
             "#define CE(x) do { cudaError_t _e = (x); if (_e) { fprintf(stderr, \"cuda %d\\n\", (int)_e); return 10; } } while (0)",
             "#define BE(x) do { cublasStatus_t _e = (x); if (_e) { fprintf(stderr, \"cublas %d\\n\", (int)_e); return 11; } } while (0)",
             KERNELS,
+            thal,
         ]) + "\n")
 
     @staticmethod
@@ -205,6 +261,103 @@ class CUDABackend(Backend):
                 f"{ke}*{ne}, {a}, {ke}, {me}*{ke}, &kOne, {o}, {ne}, "
                 f"{me}*{ne}, {B}));\n{launch}",
                 None)
+        if mn == "TRANSPOSE":
+            x = args[0]
+            o = outs[0]
+            if S[x][0] != "F" or len(S[x][2]) != 2:
+                raise NoPattern("cuda TRANSPOSE needs 2D F (v0.1)")
+            rsh = S[x][2]
+            re_ = str(rsh[0]) if rsh[0] is not None else ids_n
+            ce = str(rsh[1]) if rsh[1] is not None else ids_n
+            return (
+                f"/* {o} = TRANSPOSE({x}) */\n"
+                f"k_transpose_f32<<<(({re_}*{ce}) + TPB - 1) / TPB, TPB>>>"
+                f"({x}, {o}, {re_}, {ce});\n{launch}",
+                None)
+        if mn == "SLICE":
+            from chain.emit_c import _int_lit as _il
+            x = args[0]
+            o = outs[0]
+            ax, lo, hi = (_il(args[1], "SLICE ax"), _il(args[2], "SLICE lo"),
+                          _il(args[3], "SLICE hi"))
+            if S[x][0] != "F" or len(S[x][2]) != 2 or ax != 1:
+                raise NoPattern("cuda SLICE needs 2D ax1 F (v0.1)")
+            w = S[x][2][1]
+            we = str(w) if w is not None else ids_n
+            return (
+                f"/* {o} = SLICE({x},1,{lo},{hi}) */\n"
+                f"k_slice_ax1_f32<<<(({o}_N * {hi - lo}) + TPB - 1) / TPB, "
+                f"TPB>>>({x}, {o}, {we}, {lo}, {hi - lo}, {o}_N);\n{launch}",
+                None)
+        if mn == "CONCAT":
+            from chain.emit_c import _int_lit as _il
+            a, b = args[0], args[1]
+            o = outs[0]
+            ax = _il(args[2], "CONCAT axis") if args[2] not in S else None
+            if S[a][0] != "F" or S[b][0] != "F" or ax != 1:
+                raise NoPattern("cuda CONCAT needs 2D ax1 F (v0.1)")
+            da, db = S[a][2][1], S[b][2][1]
+            if da is None or db is None:
+                raise NoPattern("cuda CONCAT needs baked widths (v0.1)")
+            return (
+                f"/* {o} = CONCAT({a},{b},1) */\n"
+                f"k_concat_ax1_f32<<<(({o}_N * ({da} + {db})) + TPB - 1) / "
+                f"TPB, TPB>>>({a}, {b}, {o}, {da}, {db}, {o}_N);\n{launch}",
+                None)
+        if mn == "SELECT":
+            m, a, b = args
+            o = outs[0]
+            if S[m][0] != "I" or S[a][0] != "F" or S[b][0] != "F":
+                raise NoPattern("cuda SELECT needs I mask + F (v0.1)")
+            co = ctx["count"][o]
+            msh = S[m][2]
+            guard = ""
+            if all(d is not None for d in msh):
+                import numpy as _np
+                mc = int(_np.prod(msh, dtype=_np.int64))
+                guard = f"if ((int64_t){mc} != {co}) return 21;\n  "
+            return (
+                f"/* {o} = SELECT({m}) */\n  {guard}"
+                f"k_select_f32<<<(({co}) + TPB - 1) / TPB, TPB>>>"
+                f"({m}, {a}, {b}, {o}, {co});\n{launch}",
+                None)
+        if mn == "ROTARY":
+            x, pos = args
+            o = outs[0]
+            if S[x][0] != "F" or S[pos][0] != "I":
+                raise NoPattern("cuda ROTARY needs F + I pos (v0.1)")
+            d = S[x][2][1]
+            if d is None:
+                raise NoPattern("cuda ROTARY needs baked head dim")
+            return (
+                f"/* {o} = ROTARY({x}) */\n"
+                f"k_rotary_f32<<<(({o}_N * ({d} / 2)) + TPB - 1) / TPB, "
+                f"TPB>>>({x}, {pos}, {o}, {d}, {o}_N, THETA);\n{launch}",
+                None)
+        if mn == "TSHIFT":
+            x = args[0]
+            o = outs[0]
+            if S[x][0] != "F":
+                raise NoPattern("cuda TSHIFT needs F (v0.1)")
+            d = S[x][2][1]
+            de = str(d) if d is not None else ids_n
+            return (
+                f"/* {o} = TSHIFT({x}) */\n"
+                f"k_tshift_f32<<<({o}_N + TPB - 1) / TPB, TPB>>>"
+                f"({x}, {o}, {de}, {o}_N);\n{launch}",
+                None)
+        if mn in ("TBETA", "BETA"):
+            ref = args[0]
+            o = outs[0]
+            cfg = ctx["config"]
+            val = float(cfg.get("beta_b", float(cfg.get("beta", 0.5)))) \
+                if mn == "TBETA" else float(cfg.get("beta", 0.5))
+            co = ctx["count"][o]
+            return (
+                f"/* {o} = {mn} ({val}) */\n"
+                f"k_fill_f32<<<(({co}) + TPB - 1) / TPB, TPB>>>"
+                f"({o}, {co}, {val!r}f);\n{launch}",
+                None)
         return super().pattern(mn, outs, args, sig, ctx)
 
     def epilogue(self, ctx):
@@ -242,9 +395,18 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
                 break
     if ids_n is None:
         ids_n = "1"
+    theta = []
+    for _on, _mn, _fn, _aa, _ln, _sg in bound:
+        if _mn == "ROTARY":
+            _d = streams[_aa[0]][2][1]
+            _base = float(config.get("rope_base", 10000.0))
+            _th = np.power(float(_base),
+                           -2.0 * np.arange(_d // 2, dtype=np.float64) / _d)
+            theta = [float(t) for t in _th]
+            break
     ctx = {"streams": streams, "dims": {}, "dyn": {}, "ids_n": ids_n,
            "inputs": in_names, "outputs": outputs, "gathered": {},
-           "config": dict(config), "theta": [], "count": {}}
+           "config": dict(config), "theta": theta, "count": {}}
     for xn, (xk, _xs, xsh) in streams.items():
         if xk == "F" and xsh:
             ctx["count"][xn] = "(%s)" % _dim_expr(xsh, ids_n)
