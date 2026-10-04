@@ -2330,3 +2330,22 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   spec (fit-point law); k indexes sharpness (sharp k32, flat k64).
   O1 + O6 CLOSED; k16-fit inverted-U peaking ~3.9 PREREGISTERED.
   Filed as THEORY_SPECTRAL v0.5 §10.
+
+## 2026-10-03: geometric Qwen2-7B speaks -- 28 layers vs HF original (CLOCKED, start missed)
+
+- Start clock MISSED (53-for-53). Builder emits all 28 decoder layers
+  + norm + unembed + sampler as ONE 9859-op program (qwen_layer x28);
+  CUDA/FP16 runs it with ~14GB weights in VRAM (nvcc 3min, ~9s/tok
+  full-recompute, no KV cache -- stated).
+- HF: "The capital of France is Paris. It is the most populous city
+  in the". GEO: "The capital of France is Paris. The capital of
+  Germany is Berlin. The". Both fluent, fork after "Paris.".
+- Fork adjudicated, not hand-waved: geo's pick (" The") is HF's #2 at
+  margin 0.18 << measurement noise 4.74. Greedy amplifies sub-noise
+  diffs into different paths; same distribution, different sample.
+  Parity 4.74 abs on hot logits (2-layer gate was 1.7e-4 rel -- 28
+  layers compound fp16 weight-quantum, priced honestly).
+- Bugs killed en route: missing QKV biases (0.3 rel), unfolded
+  temperature (bias must scale too -- 0.5 rel alone), wrong RoPE in
+  torch mirrors (positions over heads; emitted ROTARY always right).
+  Filed as tests/test_qwen7b_gen.py (fork-aware gates, heavy).
