@@ -411,6 +411,56 @@ def op_batch_matmul(vals, config, feeds):
     return N.matmul_int(vals[0], vals[1], m_acc)
 
 
+def op_bmmv(vals, config, feeds):
+    """Strided-view batched matmul, natural (BATCH*M, N) output.
+
+    Batch b reads A at b*SA+i*LAA+j and B at b*SB+i*LAB+j, where B's
+    stored view is (K,N) normally or (N,K) with TRANSB=1 (then used
+    transposed). Views are exact index gathers into the same
+    matmul_int primitive as MATMUL, so per-head composition agrees
+    bit-exactly. Layout literals are the contract: wrong views =
+    wrong bytes, policed by bit-exact gates, never silently.
+    Args: A, B (2D bases) + BATCH, M, N, K, LDA_A, STRIDE_A, LDA_B,
+    STRIDE_B, LDC, STRIDE_C, TRANSB (int literals). LDC/STRIDE_C are
+    carried for the strided-CTX phase (count-checked here); this
+    phase writes contiguous (B*M, N).
+    """
+    N, _S = _phi_ops()
+    m_acc, _ = _scales(config)
+    (ta, tb) = vals[:2]
+    (BB, M, N_, K, LAA, SA, LAB, SB, LAC, SC, TB) = [
+        _int_arg(v, f"BMMV {w}") for v, w in zip(
+            vals[2:], ["BATCH", "M", "N", "K", "LDA_A", "STRIDE_A",
+                       "LDA_B", "STRIDE_B", "LDC", "STRIDE_C", "TRANSB"])]
+    if TB not in (0, 1):
+        raise ValueError(f"BMMV: TRANSB must be 0/1, got {TB}")
+    ia = (np.arange(BB)[:, None, None] * SA
+          + np.arange(M)[None, :, None] * LAA
+          + np.arange(K)[None, None, :])
+    if TB:
+        # stored (N,K): math (K,N) element (i,j) lives at stored (j,i)
+        ib = (np.arange(BB)[:, None, None] * SB
+              + np.arange(N_)[None, None, :] * LAB
+              + np.arange(K)[None, :, None])
+    else:
+        ib = (np.arange(BB)[:, None, None] * SB
+              + np.arange(K)[None, :, None] * LAB
+              + np.arange(N_)[None, None, :])
+    trip_a, trip_b = [], []
+    for arr_a, arr_b in zip(ta, tb):
+        fa = np.ascontiguousarray(arr_a).reshape(-1)
+        fb = np.ascontiguousarray(arr_b).reshape(-1)
+        if int(ia.max(initial=0)) >= fa.size \
+                or int(ib.max(initial=0)) >= fb.size:
+            raise ValueError(
+                f"BMMV: view overruns base (A {int(ia.max(initial=0))} vs "
+                f"{fa.size}, B {int(ib.max(initial=0))} vs {fb.size})")
+        trip_a.append(np.ascontiguousarray(fa[ia]))
+        trip_b.append(np.ascontiguousarray(fb[ib]))
+    cc = N.matmul_int(tuple(trip_a), tuple(trip_b), m_acc)
+    return tuple(np.ascontiguousarray(c).reshape(BB * M, N_) for c in cc)
+
+
 def op_transpose(vals, config, feeds):
     """Last-two-axes swap (IR move family). Exact: no arithmetic, only layout.
     Needed wherever scores need K^T (attention) -- the probe demanded it."""
@@ -736,6 +786,7 @@ REGISTRY = {
     "GELU": (op_gelu, 1, 1),
     "ROTARY": (op_rotary, 2, 1),
     "BATCH_MATMUL": (op_batch_matmul, 2, 1),
+    "BMMV": (op_bmmv, 13, 1),
     "TRANSPOSE": (op_transpose, 1, 1),
     "GAUSS": (op_gauss, 3, 1),
     "RESHAPE2": (op_reshape2, 3, 1),
@@ -792,6 +843,7 @@ SIGS = {
     "GELU": (["$A"], ["$A"]),
     "ROTARY": (["$X", "*"], ["$X"]),
     "BATCH_MATMUL": (["*", "*"], ["*"]),
+    "BMMV": (["*", "*"] + ["F:SCALAR"] * 11, ["*"]),
     "TRANSPOSE": (["$A"], ["$A^T"]),
     "GAUSS": (["$A", "F:SCALAR", "F:SCALAR"], ["$A"]),
     "RESHAPE2": (["*", "F:SCALAR", "F:SCALAR"], ["*"]),

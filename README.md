@@ -27,7 +27,7 @@ PSNR 56-69dB (lattice-quantum floor). The same toolchain also runs the
 word-level transformer (`demo_gen.py`): identical strings on
 lattice/C/CUDA/non-FPU.
 
-## Opcode table (47 mnemonics)
+## Opcode table (48 mnemonics)
 
 Kinds: F float, T lattice-triples, I integer. Backends admit per-kind
 overloads; missing = loud `NoPattern`, never silent.
@@ -39,6 +39,7 @@ overloads; missing = loud `NoPattern`, never silent.
 | BATCH_MATMUL | 2 -> 1 | F | F/cuBLAS | T | |
 | BETA | 1 -> 1 | F | F | T | const fill from CONFIG |
 | BETA_V5 | 2 -> 1 | — | — | — | vision legacy |
+| BMMV | 13 -> 1 | F | F | — | strided-view batched matmul (head-batched attention) |
 | CLIP | 3 -> 1 | — | — | — | |
 | CONCAT | 3 -> 1 | F,T | F | T | ax1 |
 | CONV | 2 -> 1 | — | — | — | phi_conv audit-first |
@@ -80,7 +81,7 @@ overloads; missing = loud `NoPattern`, never silent.
 | TSHIFT | 1 -> 1 | F | F | T | row-max; fuses into softmax |
 | WARP | 2 -> 1 | — | — | — | |
 
-Coverage: C 17, CUDA 18, non-FPU 19. Missing ops fail loud with the
+Coverage: C 18, CUDA 19, non-FPU 19. Missing ops fail loud with the
 extension recipe (`chain/backends.py`); vision Tier-3 and activations
 are named backlog, not gaps.
 

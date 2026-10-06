@@ -222,7 +222,187 @@ def qwen_layer(p, x, wq, wk, wv, wo, wup, wgate, wdown, ln1, ln2, pos,
     gs = p.op("SILU", gate, out=f"GS{pre}")
     mid = p.op("MUL", gs, up, out=f"MID{pre}")
     down = p.op("MATMUL", mid, wdown, out=f"DOWN{pre}")
+    hn2 = p.op("ADD", h1, down, out=f"Y{pre}")
+    return hn2
+
+
+def qwen_dec_full_layer(p, x, Kp, Vp, wq, wk, wv, wo, wup, wgate,
+                        wdown, ln1, ln2, pos, attmask7, onehot, ones,
+                        allrows, S, nh=28, nkv=4, dh=128, pre="",
+                        bq=None, bk=None, bv=None):
+    """One full decoder layer for per-layer decode binaries (no new ops).
+
+    x is the previous layer's output (1,H) (raw embed at L0); Kp/Vp are
+    this layer's fp16 cache files, upcast losslessly in-graph (GATHER
+    over arange rows); knew/vnew broadcast via MATMUL(ones, k/v) and
+    merged by SELECT(onehot, new, prev); the host relay only copies
+    files (fp32 out -> fp16 file, standard KV-cache precision).
+    Attention runs the bmmv group path; mask is live attmask7.
+    K rows are rotated once at insert (never re-rotated); Q rotary
+    stays per-head (theta period Dh). Returns (y, Kf, Vf).
+    """
+    xn = p.op("RMSNORM", x, ln1, out=f"XN{pre}")
+    q = p.op("MATMUL", xn, wq, out=f"Q{pre}")
+    k = p.op("MATMUL", xn, wk, out=f"K{pre}")
+    v = p.op("MATMUL", xn, wv, out=f"V{pre}")
+    if bq is not None:
+        q = p.op("ADD", q, bq, out=f"Q{pre}b")
+    if bk is not None:
+        k = p.op("ADD", k, bk, out=f"K{pre}b")
+    if bv is not None:
+        v = p.op("ADD", v, bv, out=f"V{pre}b")
+    per = nh // nkv
+    kp32 = p.op("GATHER", Kp, allrows, out=f"KP32{pre}")
+    vp32 = p.op("GATHER", Vp, allrows, out=f"VP32{pre}")
+    # Pin dynamic gather rows to baked S (static assertion as an op;
+    # the ids file is frozen arange(S), so rows == S every step).
+    kps = p.op("SLICE", kp32, 0, 0, S, out=f"KPS{pre}")
+    vps = p.op("SLICE", vp32, 0, 0, S, out=f"VPS{pre}")
+    vn = p.op("MATMUL", ones, v, out=f"VN{pre}")
+    # NOTE: k is rotated per group below into kr; the knew broadcast
+    # must use the ROTATED row: rotate first, then broadcast.
+    qr = None
+    for h in range(nh):
+        qh = p.op("SLICE", q, 1, h * dh, (h + 1) * dh)
+        qrh = p.op("ROTARY", qh, pos)
+        qr = qrh if qr is None else p.op("CONCAT", qr, qrh, 1)
+    kr = None
+    for g in range(nkv):
+        kh = p.op("SLICE", k, 1, g * dh, (g + 1) * dh)
+        krh = p.op("ROTARY", kh, pos)
+        kr = krh if kr is None else p.op("CONCAT", kr, krh, 1)
+    knr = p.op("MATMUL", ones, kr, out=f"KNR{pre}")
+    Kfull = p.op("SELECT", onehot, knr, kps, out=f"KF{pre}")
+    Vfull = p.op("SELECT", onehot, vn, vps, out=f"VF{pre}")
+    neg = p.op("BETA", attmask7, out=f"NEG{pre}")
+    ctx = None
+    for g in range(nkv):
+        qg = p.op("SLICE", qr, 1, g * per * dh, (g + 1) * per * dh)
+        kg = p.op("SLICE", Kfull, 1, g * dh, (g + 1) * dh)
+        vg = p.op("SLICE", Vfull, 1, g * dh, (g + 1) * dh)
+        sc = p.op("BMMV", qg, kg, per, 1, S, dh,
+                  per * dh, dh, dh, 0, S, S, 1)
+        ms = p.op("SELECT", attmask7, sc, neg)
+        pr = p.op("SOFTMAX_WIDE", p.op("TSHIFT", ms))
+        ch = p.op("BMMV", pr, vg, per, 1, dh, S,
+                  S, S, dh, 0, dh, dh, 0)
+        for j in range(per):
+            chh = p.op("SLICE", ch, 0, j, j + 1)
+            ctx = chh if ctx is None else p.op("CONCAT", ctx, chh, 1)
+    o = p.op("MATMUL", ctx, wo, out=f"O{pre}")
+    h1 = p.op("ADD", x, o, out=f"H{pre}")
+    hn = p.op("RMSNORM", h1, ln2, out=f"HN{pre}")
+    up = p.op("MATMUL", hn, wup, out=f"UP{pre}")
+    gate = p.op("MATMUL", hn, wgate, out=f"GATE{pre}")
+    gs = p.op("SILU", gate, out=f"GS{pre}")
+    mid = p.op("MUL", gs, up, out=f"MID{pre}")
+    down = p.op("MATMUL", mid, wdown, out=f"DOWN{pre}")
+    return p.op("ADD", h1, down, out=f"Y{pre}"), Kfull, Vfull
+
+
+def qwen_attn_layer(p, x, qr, K, V, wo, wup, wgate, wdown, ln2, attmask7,
+                    S, nh=28, nkv=4, dh=128, pre=""):
+    """Single-token attention+MLP (decode phase 2): K/V caches arrive as
+    F16 files and upcast losslessly in-graph (GATHER over arange rows);
+    the host relay does exact row-assign (no arithmetic outside the
+    listings). BMMV group path over the caches; mask is the live
+    host-tiled attmask7. Returns y (1,H).
+    """
+    per = nh // nkv
+    kf = p.op("GATHER", K, "allrows", out=f"KF{pre}")
+    vf = p.op("GATHER", V, "allrows", out=f"VF{pre}")
+    neg = p.op("BETA", attmask7, out=f"NEG{pre}")
+    ctx = None
+    for g in range(nkv):
+        qg = p.op("SLICE", qr, 1, g * per * dh, (g + 1) * per * dh)
+        kg = p.op("SLICE", kf, 1, g * dh, (g + 1) * dh)
+        vg = p.op("SLICE", vf, 1, g * dh, (g + 1) * dh)
+        sc = p.op("BMMV", qg, kg, per, 1, S, dh,
+                  per * dh, dh, dh, 0, S, S, 1)
+        ms = p.op("SELECT", attmask7, sc, neg)
+        pr = p.op("SOFTMAX_WIDE", p.op("TSHIFT", ms))
+        ch = p.op("BMMV", pr, vg, per, 1, dh, S,
+                  S, S, dh, 0, dh, dh, 0)
+        for j in range(per):
+            chh = p.op("SLICE", ch, 0, j, j + 1)
+            ctx = chh if ctx is None else p.op("CONCAT", ctx, chh, 1)
+    o = p.op("MATMUL", ctx, wo, out=f"O{pre}")
+    h1 = p.op("ADD", x, o, out=f"H{pre}")
+    hn = p.op("RMSNORM", h1, ln2, out=f"HN{pre}")
+    up = p.op("MATMUL", hn, wup, out=f"UP{pre}")
+    gate = p.op("MATMUL", hn, wgate, out=f"GATE{pre}")
+    gs = p.op("SILU", gate, out=f"GS{pre}")
+    mid = p.op("MUL", gs, up, out=f"MID{pre}")
+    down = p.op("MATMUL", mid, wdown, out=f"DOWN{pre}")
     return p.op("ADD", h1, down, out=f"Y{pre}")
+
+
+def qwen_bmmv_layer(p, x, wq, wk, wv, wo, wup, wgate, wdown, ln1, ln2, pos,
+                    cmask, cmask7, S, nh=28, nkv=4, dh=128, pre="",
+                    bq=None, bk=None, bv=None, cache_outs=False):
+    """Qwen2 decoder layer with head-batched attention (BMMV, 48th op).
+
+    Same math as qwen_layer, bit-exact (same products, same order):
+    per-head RoPE is kept (theta repeats every Dh -- a wide ROTARY
+    would read the wrong table), then rotated heads re-concatenate to
+    QR and each GQA group runs ONE strided BMMV for scores and ONE for
+    contexts (no per-head transpose/BMM, no 27-merge re-slicing from
+    scattered heads). cmask7 is the host-tiled (per*S, S) causal mask
+    (frozen); neg fills from it. S is the baked sequence slots.
+    Returns the layer output stream, or (y, [krg...], [vg...]) with
+    cache_outs=True (parallel-prefill cache outputs: rotated K groups
+    + V groups, assembled host-side into (S,KV) caches)."""
+    xn = p.op("RMSNORM", x, ln1, out=f"XN{pre}")
+    q = p.op("MATMUL", xn, wq, out=f"Q{pre}")
+    k = p.op("MATMUL", xn, wk, out=f"K{pre}")
+    v = p.op("MATMUL", xn, wv, out=f"V{pre}")
+    if bq is not None:
+        q = p.op("ADD", q, bq, out=f"Q{pre}b")
+    if bk is not None:
+        k = p.op("ADD", k, bk, out=f"K{pre}b")
+    if bv is not None:
+        v = p.op("ADD", v, bv, out=f"V{pre}b")
+    neg = p.op("BETA", cmask7, out=f"NEG{pre}")
+    per = nh // nkv
+    # NOTE: temperature folded offline (see qwen_layer); RoPE stays
+    # per-head (theta period is Dh, not H).
+    qr = None
+    for h in range(nh):
+        qh = p.op("SLICE", q, 1, h * dh, (h + 1) * dh)
+        qrh = p.op("ROTARY", qh, pos)
+        qr = qrh if qr is None else p.op("CONCAT", qr, qrh, 1)
+    ctx = None
+    krgs, vgs = [], []
+    for g in range(nkv):
+        qg = p.op("SLICE", qr, 1, g * per * dh, (g + 1) * per * dh)
+        kg = p.op("SLICE", k, 1, g * dh, (g + 1) * dh)
+        vg = p.op("SLICE", v, 1, g * dh, (g + 1) * dh)
+        # One K head per group (GQA sharing): single rotary, shared by
+        # all `per` Q heads via the stride-0 B view (no concat needed).
+        krg = p.op("ROTARY", kg, pos)
+        krgs.append(krg)
+        vgs.append(vg)
+        sc = p.op("BMMV", qg, krg, per, S, S, dh,
+                  per * dh, dh, dh, 0, S, S * S, 1)
+        ms = p.op("SELECT", cmask7, sc, neg)
+        pr = p.op("SOFTMAX_WIDE", p.op("TSHIFT", ms))
+        ch = p.op("BMMV", pr, vg, per, S, dh, S,
+                  S, S * S, dh, 0, dh, S * dh, 0)
+        for j in range(per):
+            chh = p.op("SLICE", ch, 0, j * S, (j + 1) * S)
+            ctx = chh if ctx is None else p.op("CONCAT", ctx, chh, 1)
+    o = p.op("MATMUL", ctx, wo, out=f"O{pre}")
+    h1 = p.op("ADD", x, o, out=f"H{pre}")
+    hn = p.op("RMSNORM", h1, ln2, out=f"HN{pre}")
+    up = p.op("MATMUL", hn, wup, out=f"UP{pre}")
+    gate = p.op("MATMUL", hn, wgate, out=f"GATE{pre}")
+    gs = p.op("SILU", gate, out=f"GS{pre}")
+    mid = p.op("MUL", gs, up, out=f"MID{pre}")
+    down = p.op("MATMUL", mid, wdown, out=f"DOWN{pre}")
+    y = p.op("ADD", h1, down, out=f"Y{pre}")
+    if cache_outs:
+        return y, krgs, vgs
+    return y
     """Single attention head over (S,D)->(S,Dh): QKV, RoPE, scores,
     head-temp, causal mask, shift+wide-softmax, context. Returns the
     context stream name. Matches lm_headt head structure (head2 gets

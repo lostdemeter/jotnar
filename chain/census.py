@@ -36,7 +36,7 @@ ACCESS = {
     "SELECT": "select",
     "BETA": "broadcast", "TBETA": "broadcast", "GAIN": "broadcast",
     # reductions (many-to-fewer)
-    "MATMUL": "reduce", "BATCH_MATMUL": "reduce", "POOLAVG": "reduce",
+    "MATMUL": "reduce", "BATCH_MATMUL": "reduce", "BMMV": "reduce", "POOLAVG": "reduce",
     "ARGMAX": "reduce", "RMSNORM": "reduce", "LUMA": "reduce",
     "LAYERNORM": "reduce",    "SOFTMAX": "reduce", "ROTARY": "elementwise",
     "TSHIFT": "reduce", "SOFTMAX_WIDE": "reduce",    # neighborhood / sample reads

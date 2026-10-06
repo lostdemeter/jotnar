@@ -2349,3 +2349,270 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   temperature (bias must scale too -- 0.5 rel alone), wrong RoPE in
   torch mirrors (positions over heads; emitted ROTARY always right).
   Filed as tests/test_qwen7b_gen.py (fork-aware gates, heavy).
+
+## 2026-10-05: memory budget after the SSD kill -- 7B fits physical RAM (CLOCKED, start missed)
+
+- Start clock MISSED (54-for-54). The story: 28-layer geo run held
+  every weight float64 in one process (sample ~61GiB + safetensor
+  cache ~15GiB + HF model on top) on a 61GiB box; swap thrashed
+  through a power cut and the SSD bricked itself read-only at
+  hardware level. Priced from code, not memory: old CPU peak
+  60.8GiB bulk-f64 + 14.2GiB cache vs streaming 1.6GiB (37x).
+- New: chain/mem.py (stdlib-only estimator + guard: refuses over-cap
+  plans with "Refusing to swap", default cap 60% of phys, override
+  via JOTNAR_MEM_CAP_GB/--mem-cap-gb) + FRef/IRef shape stubs in
+  chain/emit_c.py (zero-RAM codegen; stub sources byte-identical to
+  real-array sources, proven) + chain/qwen7b.py shapes_7b/
+  prep_7b_weight/clear_7b_cache (stream fp16 bins one weight at a
+  time, E resident fp16 1.1GiB / memmapped in bench).
+- Combined HF+geo in one process now REFUSED by default
+  (--allow-combined to override); test_qwen7b_gen ranks host-side
+  from geo_first_id. Full 9859-op/341-input graph compiles from
+  stubs at 524MB peak RSS (measured). Gate tests/test_mem_budget.py
+  20/20 ALL OK (pins 7617551872 params, refusal + allowance legs,
+  stub-shape pins, 28-layer graph leg).
+- Surprises:
+  1. My own wup stub shipped transposed the wrong way -- the shape
+     gate (MATMUL mismatch at programs:691) caught it in seconds.
+     Gates earning keep on the author's own edit, same turn.
+  2. Box came back without numpy/pip/HF weights at all: guard is
+     stdlib-only so it runs anyway; bootstrapped pip --user +
+     numpy 2.5.3 to verify (user-local, no sudo). Weights still
+     absent -- 7B rerun waits on re-download, RAM side unblocked.
+  3. One `%` in a --help string crashed argparse (%o format) --
+     escaped to %%. Format strings in CLI help are load-bearing.
+  4. Pre-existing env gaps, not regressions: gsl header (emit_c
+     BLAS leg), nvcc (cuda legs SKIP), both from the fresh OS.
+
+## 2026-10-05: 7B runs again -- toolchain rebuilt, full 28-layer green (CLOCKED, start missed)
+
+- Start clock MISSED (55-for-55). Continuation of the memory-budget
+  round: re-download Qwen2-7B-Instruct at the pinned revision
+  (scripts/download_qwen7b.py, 14.19GiB to the exact SNAP path --
+  no code changes) and rebuild the stack user-local (no sudo):
+  torch 2.14.1 + transformers + safetensors + hub + accelerate,
+  nvcc 13.4 (pip) + cuda-cccl headers + cublas/cudart stubs,
+  python3.12-dev headers via apt-download + dpkg -x. All captured
+  in scripts/cuda_env.sh (source before CUDA work).
+- Fixes en route: nvcc via symlink couldn't find cudafe++ (real
+  bin dir on PATH instead); nvcc 13.2 vs 13.4-era headers (PTX 9.4
+  vs ptxas 9.2 -- matched at 13.4, SASS to sm_86 so the 13.2
+  driver is fine); torch 2.14 routes RoPE bmm through triton JIT
+  (needs Python.h + libcuda link -- killed via supported
+  deregister_op_overrides(disable_dsl_names="triton") in
+  chain/qwen7b.py hf_no_triton(), aten numerics for reference);
+  my streaming name-split misread ln1@L10 ("ln110") -- replaced
+  by chain/qwen7b.py input_sources() exact-match map, gated
+  (mem-inputs-resolve + mem-ln-lookup); geo-only subprocess can't
+  self-check parity -- prompt-end logits sidecar (.promptlogits.npy)
+  ranked host-side.
+- Results: smoke 5/5, test_emit_cuda full suite, mem_budget 22/22
+  (incl. prep-equiv on real weights), teach/probe green,
+  depth rel 1.7e-4 (bar 1e-3), full gen: parity 4.84 (< 10),
+  first-pick rank 1 (<= 8), fluent. GEO: "...Paris. The capital
+  of" vs HF "...Paris. It is the" -- agree on " Paris" (rank 1),
+  fork on the next token: same distribution, different sample.
+- Surprise: pip's nvidia wheels land mixed CUDA 13.0-13.4 in one
+  cu13/ dir (headers newer than the first nvcc) -- pin the
+  toolchain as a set (nvcc 13.4 + crt 13.4), not one package.
+
+## 2026-10-05: first profile -- reload+recompute dominate, graphs wait (CLOCKED, start missed)
+
+- Start clock MISSED (56-for-56). scripts/bench_perf.py's first real
+  run (S=16, ntok=8): HF 278ms prefill / 24.3ms decode; geo wall
+  11.6s (min 7.2s) vs GPU-busy 3.3s, of which MATMUL 3.1s (93.7%,
+  197 calls) and all 9747 other launches ~0.2s. Filed as
+  docs/PERF.md (the analysis bench_perf.py always promised).
+- Reading: wall-GPU gap (~4-8s) is fresh-process reload (341 bins,
+  ~15GB fread + managed-memory migration per token); MATMUL time
+  itself is migration-inflated (cold pages inside the timed region).
+  Order: persistent process first, KV cache second (STATE-carried,
+  SCAN precedent), re-profile, graphs only iff launches dominate
+  the remainder. Cached-decode target ~50-200ms/token.
+- Surprise: my "launches must dominate 10k ops" prior died on
+  contact (~20us each) -- the profile exists to kill exactly such
+  priors. nvcc profile builds cost 3.6x clean (133s vs 475s).
+
+## 2026-10-05: serve mode closes the reload gap + beta=1 kill (CLOCKED, start missed)
+
+- Start clock MISSED (57-for-57). Loop binaries (live=[...] in
+  compile_cuda/compile_program + chain/serve.py ServedExe over
+  stdin/READY): bigram serve 9/9 incl. bank-poison frozen-proof;
+  7B geo serves at 143-146ms/step (was 7-11s wall, ~60x) with
+  parity 4.84 == one-shot, rank 1, fluent. test_emit_cuda still
+  22 green (one-shot untouched by construction).
+- The loop caught a REAL emitter bug: cuBLAS beta=1 at all four
+  call sites (outputs accumulated; one-shot hid behind zero-pages;
+  step0-vs-step1 drifted 17.9 identical inputs). Fixed to kZero;
+  regression gate serve-mm-no-accum reads 0.00e+00. Bisection,
+  not theorizing: manual two-step determinism probe found it.
+- Next: KV cache (STATE-carried) -- the remaining ~6x to HF.
+
+## 2026-10-05: sync gap closed + KV-cache physics check (CLOCKED, start missed)
+
+- Start clock MISSED (58-for-58). Weight-traffic arithmetic first:
+  every token streams all 15GB on BOTH sides (HF 24ms proves the
+  ~15-30ms floor), so KV cache saves FLOPs but ~no wall at S<=32
+  -- deferred to S-scaling, honestly (was the stated next step;
+  measurement overruled it). The ~115ms overhead is syncs+launches.
+- sync_each=False (same-stream ordering, stores still sync):
+  145ms -> 100ms/step, bit-exact (serve-nosync-equiv). Default
+  stays synced (debug-friendly); --no-sync for runs. h16 temps
+  hoisted (per-step mallocs would leak in serve mode).
+- Remaining ~4x is launch + cublas-call overhead -> CUDA graphs
+  next (single launch, dependencies by construction).
+
+## 2026-10-05: graphs close launches (+10%, parity-identical) (CLOCKED, start missed)
+
+- Start clock MISSED (59-for-59). Stream-parameterized all 19
+  kernel sites (`, 0, capStream`, default empty = zero diff);
+  cublas needed no pattern edits (one handle, SetStream before
+  capture). Warmup + capture + instantiate once, replay per step.
+  bigram graph legs green first try; 7B: 100ms -> 88-91ms/step,
+  parity 4.836e+00 identical to serve/one-shot (QWEN_GRAPH=1).
+- Only ~10%: launches were never the wall (my PERF.md prior said
+  as much; graphs confirmed it). Remaining ~3.7x is cublas-call +
+  small-kernel time over the 15-30ms weight floor. Next candidates:
+  cublas stream-order tuning, elementwise fusion, TF32-vs-parity
+  pricing -- or accept ~90ms (HF does 24ms with the same 15GB).
+
+## 2026-10-05: BMMV, 48th mnemonic -- head-batched attention at same parity (CLOCKED, start missed)
+
+- Start clock MISSED (60-for-60). Strided-view batched matmul
+  (2 streams + 11 int literals, natural (B*M,N) out): per-GQA-group
+  ONE call for scores + ONE for contexts (28 transposes + 48 BMMs
+  die per layer; 9859 -> 5351 ops, cublas 1765 -> ~420 calls).
+  Five touchpoints (registry+shape+lattice, C, CUDA fp32+fp16,
+  non-FPU loud refusal, LANGUAGE row) + tests/test_bmmv.py 6/6
+  (lattice bit-exact both groups, C 8.9e-16, CUDA 2e-7).
+- 7B (--bmmv): 88-91ms -> 76-83ms/step, parity 4.84 identical,
+  rank 1, same fork. Only ~10%: cublas-call overhead wasn't
+  dominant either -- weight streaming + small-node replay is the
+  floor fight now (~3.3x to HF).
+- Bugs caught by the new gates (both mine): KVD-vs-DH stride on a
+  sliced base (overrun guard fired), Q-group slicing for GQA
+  (group-1 mismatch), trans flag on the wrong cublas operand
+  (INVALID_VALUE). Registry fallout handled legitimately
+  (LANGUAGE row, census reduce class, pin updates 341->342).
+- Quality held throughout: every transform exactly invariant
+  (same products, same order) -- lattice legs are bit-exact, and
+  7B parity is unchanged (4.836e+00 baseline vs 4.842e+00 bmmv:
+  same 4.84, sub-percent).
+
+## 2026-10-06: decode serves (KV caches, same distribution) (CLOCKED, start missed)
+
+- Start clock MISSED (62-for-62). Single chained decode program
+  (28x qwen_dec_full_layer): in-graph cache update
+  (broadcast-MATMUL + SELECT on one-hot, GATHER-upcast fp16 files,
+  host relays fp32->fp16 rows). Prefill 5 toks 0.5s; decode
+  ~90-100ms/tok; prefill parity 1.08 vs recompute, 5.15 vs HF;
+  first-pick rank 2 (gap 0.1: fork physics again, gated as such
+  in tests/test_decode.py -- never string equality).
+- Two real bugs en route: (1) split-phase design broke the
+  residual chain (all-28 QKV from raw embed -- per-layer
+  interleave is load-bearing; single chained program restored);
+  (2) fp16-file/F32-consumer mismatch (silent garbage from step
+  1; fixed by GATHER upcast + standard fp16 relay). Plus one
+  reverted idea (baked-GATHER static rows broke varying-length
+  generation ids -- dynamic is load-bearing; SLICE-pinning
+  instead) and one caught-by-gate (test_gen rc=21 proved it).
+- Wall-neutral at S=16 by physics (same 15GB); the payoff is
+  S-scaling, next.
+
+## 2026-10-06: S-curve maps the crossover (decode wins at 64) (CLOCKED, start missed)
+
+- Start clock MISSED (63-for-63). Recompute 80/111/132ms vs
+  decode 95/104/108ms at S=16/32/64 (bmmv+graph+nosync both;
+  QWEN_WORKDIR isolates S-artifacts). No crossover at 32;
+  modest-but-real at 64, trend widening (recompute ~linear,
+  decode ~flat). S=64 quality: prefill parity 0.92 same argmax;
+  both sides byte-identical 6-token text.
+- Warmup transient named: S=64 recompute climbed 146->285ms
+  within one run, flat 132ms on rerun (cold managed pages, not
+  scaling -- first-run effect, bigger footprint warms slower).
+  Measure steady-state, not first steps.
+- BMMV fp16 path gated at last (1.2e-3, fp16 class): no untested
+  paths remain in the op.
+
+## 2026-10-06: S=128 widens the crossover, quality holds (CLOCKED, start missed)
+
+- Start clock MISSED (64-for-64). S=128: recompute ~241ms vs
+  decode ~124ms (prefill 142ms/tok); prefill parity 0.71 same
+  argmax; both fluent, fork after "tourist attractions.". Curve
+  complete (80/111/132/241 vs 95/104/108/124): crossover between
+  32-64, widening -- the compounding payoff of the decode build.
+- Battery at S=32 holds the floor (4/12 identical, 3.83/5).
+
+## 2026-10-06: chat talks (usable surface, argv-order trap) (CLOCKED, start missed)
+
+- Start clock MISSED (66-for-66). demo_chat.py: multi-turn REPL
+  over the decode server (Qwen chat template, host sampling
+  top-k/temp/seed, /quit /reset /seed /topk /temp). "What is the
+  capital of France?" -> "The capital of France is Paris.";
+  "And Germany?" -> "Berlin" (context carried, 512 slots).
+- Trap: hand-rolled argv ordered all-kP-then-all-vP against the
+  program's interleaved kP0,vP0,kP1,vP1.. -- every layer past 0
+  read garbage caches (word salad, silent: argc checks count,
+  never order). Name-based argv (serve_decode's lives dict) is
+  immune; chat now matches program order with the trap commented
+  as the pin. Lesson: positional interfaces need order oracles.
+- S=512 recompute pathology noted: 14s/step (VRAM oversubscription
+  in the legacy full-forward path -- intermediates alone exceed
+  comfortable residency). Decode holds 144ms. The legacy path's
+  ceiling is mapped, not fixed: decode is the future.
+
+## 2026-10-06: breadth closes -- S=512 parity, pos determinism (CLOCKED, start missed)
+
+- Start clock MISSED (67-for-67). S=512 three-way first read
+  10.04 (decode-vs-recomp) with top5 2/5 -- real movement, placed
+  by bisection: recomp-vs-HF was 8.97 (shared), decode-vs-HF 5.05.
+  Mechanism: short pos files read OOB heap on padding rows
+  (benign-by-luck <=128, biting at 512). Fix: full arange(S)
+  everywhere (gen/decode/battery/chat/bench) -- valid positions
+  for all rows, never luck again. After: 0.8 same argmax.
+- Gates re-run green (gen 5.07 rank 2, decode 4.12 rank 1; the
+  pos change flipped one razor pick, rank-gated as designed).
+- Breadth ledger: S=512 parity + 24-tok battery + S=512 chat --
+  the usable milestone holds at every rung measured.
+
+## 2026-10-06: backend hygiene -- no rot, loud everywhere (CLOCKED, start missed)
+
+- Start clock MISSED (68-for-68). CUDA execution modes
+  (live/graph/sync_each=False) on non-CUDA targets now refuse
+  loudly (was silently dropped). Gates: BMMV->nonfpu refusal
+  pinned, C-mode refusals pinned, C-target stub/source
+  equivalence (was CUDA-only). Width spot-check
+  (tests/test_cross_width.py): depth-1 full-width C-f64 vs
+  CUDA-f32 rel 1.2e-6 (80x inside bar) -- C honest at scale.
+- Capability matrix filed as docs/BACKENDS.md (value models,
+  op deltas, modes, agreement classes, per-backend scale story).
+- Certification: non-FPU green, CUDA green, C green except the
+  known-missing system gsl header (environmental, no sudo).
+
+## 2026-10-06: block-parallel reductions halve the step (CLOCKED, start missed)
+
+- Start clock MISSED (65-for-65). Warm profile said RMSNORM was
+  21% (one thread per row, ~400us of serial loop): rewrote
+  rmsnorm/softmax/tshift as one-block-per-row cooperative
+  reductions (shared-mem trees) + row-count grids. 76-83ms ->
+  44-46ms/step at S=16, quality untouched: unit eps unchanged,
+  7B parity 4.84 identical, battery re-run 3/12 + 3.83/5 (zero
+  fork flips from the new summation order).
+- The stamp guard earned its keep once more (refused a non-bmmv
+  binary for the bmmv battery instead of mixing artifacts).
+
+## 2026-10-06: quality battery + parity ladder (compounding instruments) (CLOCKED, start missed)
+
+- Start clock MISSED (61-for-61). scripts/eval_battery.py (12
+  prompts x 8 tokens, HF vs geo serve, fork/top5 records):
+  3/12 identical, mean top-5 overlap 3.83/5, forks mostly late,
+  never below 3/5. Filed as docs/EVAL_BATTERY.md with a floor
+  (identical >= 3/12, overlap >= 3.5/5) every future optimization
+  must hold -- pace without quality is motion. Geo side reuses
+  /tmp/gen7b artifacts on stamp match (build.json + reuse
+  refusal on mismatch).
+- scripts/ladder_7b.py (parity vs depth, full width): L=1/2/4 rel
+  1.9e-4/1.7e-4/3.9e-5 -- NON-monotonic (cancellation across
+  layers, not compounding drift). L=8/16 came back 2.3e-5/2.8e-5:
+  flat ~1e-5 across 1-16 (no knee) -- fidelity work is officially
+  unnecessary; all future effort goes to speed at fixed quality.

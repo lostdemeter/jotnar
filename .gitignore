@@ -25,3 +25,5 @@ data/w103full_piece_bigrams.npz
 data_ingest/*_bigrams.npz
 # teacher block ports (119MB/layer float64, regenerable via scripts/freeze_qwen0.py + HF cache; manifests tracked, parity gates compensate)
 data/qwen*_block.npz
+# 7B L0 MLP freeze (972MB int triples, regenerable via scripts/freeze_qwen7b_l0.py + HF snapshot; manifest tracked, teach test falls back to snapshot)
+data/qwen7b_l0_mlp.npz

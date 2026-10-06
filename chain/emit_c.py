@@ -87,7 +87,40 @@ def _c_type(dt):
     raise AsmError(f"C backend: no C type for dtype {dt}")
 
 
+class FRef:
+    """Zero-RAM float stream reference (shape stub for codegen).
+
+    Carries (shape, dtype) with no storage so compile_program can infer
+    shapes for multi-GB weights without loading them. Values must never
+    be read through a stub: every value-reading site fails loud
+    (find_consts skips, rope-pos refuses). Small streams (pos/cmask/x0)
+    stay real arrays; stubs are for the large weights only.
+    """
+    def __init__(self, shape, dtype="float16"):
+        self.shape = tuple(int(d) for d in shape)
+        self.dtype = np.dtype(dtype)
+
+    def __repr__(self):
+        return f"FRef({self.shape}, {self.dtype.name})"
+
+
+class IRef:
+    """Zero-RAM integer stream reference (shape stub, same contract)."""
+    def __init__(self, shape, dtype="int64"):
+        self.shape = tuple(int(d) for d in shape)
+        self.dtype = np.dtype(dtype)
+        if not np.issubdtype(self.dtype, np.integer):
+            raise AsmError(f"IRef needs integer dtype, got {self.dtype}")
+
+    def __repr__(self):
+        return f"IRef({self.shape}, {self.dtype.name})"
+
+
 def _kind_of_sample(v):
+    if isinstance(v, FRef):
+        return "F"
+    if isinstance(v, IRef):
+        return "I"
     if isinstance(v, tuple) and len(v) == 3:
         return "T"
     v = np.asanyarray(v)
@@ -125,9 +158,16 @@ def infer_shapes(bound, sample):
                                 _c_type(z.dtype)),
                           tuple(np.shape(s)))
         elif k == "I":
+            if isinstance(sample[n], IRef):
+                r = sample[n]
+                streams[n] = ("I", _c_type(r.dtype), tuple(r.shape))
+                continue
             a = np.ascontiguousarray(sample[n])
             streams[n] = ("I", _c_type(a.dtype), tuple(a.shape))
         elif k == "F":
+            if isinstance(sample[n], FRef):
+                streams[n] = ("F", "double", tuple(sample[n].shape))
+                continue
             a = np.ascontiguousarray(sample[n], dtype=np.float64)
             streams[n] = ("F", "double", tuple(a.shape))
 
@@ -193,6 +233,24 @@ def infer_shapes(bound, sample):
                 streams[o] = (ak, tsub, (ash[0], ash[1], bsh[2]))
             else:
                 raise AsmError(f"{where}: {mn} shape mismatch {ash}/{bsh}")
+        elif mn == "BMMV":
+            ak, _, ash = streams[args[0]]
+            bk, _, bsh = streams[args[1]]
+            if ak != "F" or bk != "F" or len(ash) != 2 or len(bsh) != 2:
+                raise NoPattern(f"{where}: BMMV needs 2D F bases (v0.1)")
+            (BB, M, N_, K, LAA, SA, LAB, SB, _LAC, _SC, TB) = tuple(
+                _int_lit(args[i], f"{where} BMMV") for i in range(2, 13))
+            if TB not in (0, 1):
+                raise AsmError(f"{where}: BMMV TRANSB must be 0/1")
+            if ash[0] is not None and ash[1] is not None and \
+                    (BB - 1) * SA + (M - 1) * LAA + K > ash[0] * ash[1]:
+                raise AsmError(f"{where}: BMMV A view overruns base")
+            rb = N_ if TB else K
+            cb = K if TB else N_
+            if bsh[0] is not None and bsh[1] is not None and \
+                    (BB - 1) * SB + (rb - 1) * LAB + cb > bsh[0] * bsh[1]:
+                raise AsmError(f"{where}: BMMV B view overruns base")
+            streams[o] = ("F", "double", (BB * M, N_))
         elif mn == "SLICE":
             sk, ssub, ssh = streams[args[0]]
             ax = _int_lit(args[1], f"{where} axis")
@@ -509,6 +567,35 @@ class CBackend(Backend):
                 f"        crow[m_j] += aik * brow[m_j];\n"
                 f"    }}",
                 None)
+        if mn == "BMMV":
+            a, b = args[0], args[1]
+            o = outs[0]
+            if S[a][0] != "F" or S[b][0] != "F":
+                raise NoPattern(f"C backend BMMV needs F bases")
+            (BB, M, N_, K, LAA, SA, LAB, SB, _LAC, _SC, TB) = tuple(
+                _int_lit(args[i], "BMMV") for i in range(2, 13))
+            if TB not in (0, 1):
+                raise NoPattern(f"C backend BMMV TRANSB must be 0/1")
+            co = ctx["count"][o]
+            zero = f"memset({o}, 0, {co} * sizeof(double));"
+            if TB:
+                inner = (f"      const double *restrict bcol = &{b}[m_b * {SB} + m_k];\n"
+                         f"      for (int64_t m_j = 0; m_j < {N_}; ++m_j)\n"
+                         f"        crow[m_j] += aik * bcol[m_j * {LAB}];\n")
+            else:
+                inner = (f"      const double *restrict brow = &{b}[m_b * {SB} + m_k * {LAB}];\n"
+                         f"      for (int64_t m_j = 0; m_j < {N_}; ++m_j)\n"
+                         f"        crow[m_j] += aik * brow[m_j];\n")
+            return (
+                f"/* {o} = BMMV strided ikj, restrict */\n{zero}\n"
+                f"for (int64_t m_b = 0; m_b < {BB}; ++m_b)\n"
+                f"  for (int64_t m_i = 0; m_i < {M}; ++m_i)\n"
+                f"    for (int64_t m_k = 0; m_k < {K}; ++m_k) {{\n"
+                f"      double aik = {a}[m_b * {SA} + m_i * {LAA} + m_k];\n"
+                f"      double *restrict crow = &{o}[(m_b * {M} + m_i) * {N_}];\n"
+                f"{inner}"
+                f"  }}",
+                None)
         if mn == "SLICE":
             x, ax, lo, hi = args[0], _int_lit(args[1], "SLICE ax"), \
                 _int_lit(args[2], "SLICE lo"), _int_lit(args[3], "SLICE hi")
@@ -765,6 +852,9 @@ def find_consts(bound, inp, streams, sample):
     for _n, _ in inp:
         if _n not in sample or _n not in streams:
             continue
+        if isinstance(sample[_n], (FRef, IRef)):
+            continue  # shape stub: no values to fold (weights never fold;
+            # they feed MATMUL/RMSNORM, excluded by the uses-check anyway)
         _k, _sub, _sh = streams[_n]
         if _k not in ("F", "T"):
             continue
@@ -785,9 +875,14 @@ def find_consts(bound, inp, streams, sample):
 
 def compile_program(text, target="c", sample=None, outputs=None,
                     registry=None, sigs=None, basedir=".", origin=None,
-                    use_blas=False, time_ops=False, use_fp16=False):
+                    use_blas=False, time_ops=False, use_fp16=False,
+                    live=None, sync_each=True, graph=False):
     """Frontend entry: asm text -> target source. Returns dict with
     source/backend/streams/dims/config. Sample payload required (shapes).
+    live: persistent-loop live inputs (CUDA only; None = one-shot).
+    sync_each: per-op device-sync (False trusts same-stream ordering).
+    graph: capture the step into a CUDA graph (needs live, refuses
+    time_ops, forces sync_each=False).
     """
     from chain.asm_ops import REGISTRY as _R, SIGS as _S
     config, inp, bound, _ = assemble(text, registry or _R, sigs or _S,
@@ -796,12 +891,22 @@ def compile_program(text, target="c", sample=None, outputs=None,
     _be = _gb(target)  # unknown names fail loud here
     _be.use_blas = use_blas
     _be.use_fp16 = use_fp16
+    if _be.name != "cuda" and (live is not None or graph or not sync_each):
+        # Serve/graph/stream-sync are CUDA execution modes (persistent
+        # binaries, captured graphs). Other backends are one-shot by
+        # construction: refuse loudly rather than silently dropping the
+        # request (a dropped live= would run once and look served).
+        raise NoPattern(
+            f"target '{target}': live/graph/sync_each are CUDA-only "
+            f"(got live={live} graph={graph} sync_each={sync_each})")
     if _be.name == "cuda":
         from chain.emit_cuda import compile_cuda as _cc
         return _cc(text, sample=sample, outputs=outputs,
                    registry=registry, sigs=sigs, basedir=basedir,
                    origin=origin,
-                   use_fp16=getattr(_be, "use_fp16", False))
+                   use_fp16=getattr(_be, "use_fp16", False),
+                   time_ops=time_ops, live=live, sync_each=sync_each,
+                   graph=graph)
     if not _be.emits:
         # stub backend: surface its extension recipe, don't compile air.
         raise NoPattern(getattr(_be, "stub_note",
@@ -855,6 +960,10 @@ def compile_program(text, target="c", sample=None, outputs=None,
             _d = streams[_aa[0]][2][-1]
             if _d is None:
                 continue
+            if isinstance(sample[_aa[1]], (FRef, IRef)):
+                raise AsmError(
+                    f"ROTARY pos '{_aa[1]}' is a shape stub: rope tables "
+                    f"need real (small) position values, not a stub")
             _pos = np.ascontiguousarray(sample[_aa[1]], dtype=np.int64)
             _P = int(_pos.max(initial=0)) + 1
             from chain.asm_ops import rope_tables as _rt

@@ -1,0 +1,122 @@
+{
+ "refs": {
+  "wupT_s": {
+   "blob": "b_d08437e35c3edbe1",
+   "shape": [
+    3584,
+    18944
+   ],
+   "dtype": "int8"
+  },
+  "wupT_e": {
+   "blob": "b_79959918456a604e",
+   "shape": [
+    3584,
+    18944
+   ],
+   "dtype": "int32"
+  },
+  "wupT_z": {
+   "const": 0,
+   "shape": [
+    3584,
+    18944
+   ],
+   "dtype": "uint8"
+  },
+  "wgateT_s": {
+   "blob": "b_38a613f0a9c2e34a",
+   "shape": [
+    3584,
+    18944
+   ],
+   "dtype": "int8"
+  },
+  "wgateT_e": {
+   "blob": "b_8ae93a5ca659dcf0",
+   "shape": [
+    3584,
+    18944
+   ],
+   "dtype": "int32"
+  },
+  "wgateT_z": {
+   "const": 0,
+   "shape": [
+    3584,
+    18944
+   ],
+   "dtype": "uint8"
+  },
+  "wdownT_s": {
+   "blob": "b_9bdd60e36d220f0e",
+   "shape": [
+    18944,
+    3584
+   ],
+   "dtype": "int8"
+  },
+  "wdownT_e": {
+   "blob": "b_ffd6c14bfcdae942",
+   "shape": [
+    18944,
+    3584
+   ],
+   "dtype": "int32"
+  },
+  "wdownT_z": {
+   "const": 0,
+   "shape": [
+    18944,
+    3584
+   ],
+   "dtype": "uint8"
+  },
+  "ln_s": {
+   "blob": "b_21c6270481db75bd",
+   "shape": [
+    3584
+   ],
+   "dtype": "int8"
+  },
+  "ln_e": {
+   "blob": "b_99df4782f453f007",
+   "shape": [
+    3584
+   ],
+   "dtype": "int32"
+  },
+  "ln_z": {
+   "const": 0,
+   "shape": [
+    3584
+   ],
+   "dtype": "uint8"
+  }
+ },
+ "saved_bytes": {
+  "blobs": 1018447360,
+  "shared": 0,
+  "const": 203689472
+ },
+ "note": "lossless content-addressed triples (chain/frozen.py)",
+ "snapshot": "f2826a00ceef68f0f2b946d945ecc0477ce4450c",
+ "shapes": {
+  "wupT": [
+   3584,
+   18944
+  ],
+  "wgateT": [
+   3584,
+   18944
+  ],
+  "wdownT": [
+   18944,
+   3584
+  ],
+  "ln": [
+   3584
+  ]
+ },
+ "encode_seconds": 5.8
+}

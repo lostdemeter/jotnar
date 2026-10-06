@@ -140,6 +140,13 @@ loud-failure. Arithmetic core (`ADD SUB MUL DIV`) refuses float inputs
 
 **Transformer (block):**
 - `MATMUL/BATCH_MATMUL(*,* -> *)` — triples matmul @ m_acc (batch dims + B-broadcast). Inner dims must agree or fail WITH the transpose hint. Honor CONFIG `m_acc` (multi-regime listings). Ex: `Q = MATMUL(XN, wq)`.
+- `BMMV(A,B + 11 int literals -> *)` — strided-view batched matmul,
+  natural `(BATCH*M, N)` output: batch b reads A at `b*SA+i*LAA+j`,
+  B at `b*SB+i*LAB+j` (stored `(K,N)`, or `(N,K)` with TRANSB=1).
+  Literals are the view contract (overruns fail loud); same
+  products in the same order as per-head composition (bit-exact on
+  lattice, eps on float). Head-batched attention without per-head
+  transpose/BMM. Ex: `SC = BMMV(QG, KG, 7, 16, 16, 128, 896, 128, 128, 0, 16, 256, 1)`.
 - `SOFTMAX($A -> $A)` — row softmax to probability triples. CONTRACT: inputs ≤1.0 abs (`to_fixed` saturates above it at BIAS — the T-transformation doctrine; out-of-contract saturates to softmax-of-clipped, pinned by gate). Ex: `P = SOFTMAX(SCORES)`.
 - `TSHIFT($A -> $A)` — row-max shift to ~0 (T-transform half 1, integer
   max+subtract at m_acc). Composes with SOFTMAX_WIDE; TILE-decomposed
