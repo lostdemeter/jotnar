@@ -212,25 +212,26 @@ def main():
     import gc as _gc
     _gc.collect()
     import json as _js
-    _js.dump({"bmmv": bool(args.bmmv), "graph": bool(args.graph),
-              "no_sync": bool(args.no_sync), "oneshot": bool(args.oneshot),
-              "smax": S, "live": live},
-             open(os.path.join(work, "build.json"), "w"))
+    import hashlib as _hl
+    # Stamp covers flags AND program text (input-count changes from new
+    # streams like cmask7 must invalidate reuse: argc mismatches are rc=9,
+    # silent-wrong-shape is worse -- fail loud here instead).
+    stamp = {"bmmv": bool(args.bmmv), "graph": bool(args.graph),
+             "no_sync": bool(args.no_sync), "oneshot": bool(args.oneshot),
+             "smax": S, "live": live,
+             "prog": _hl.sha256(prog.text().encode()).hexdigest()[:16]}
     exe = os.path.join(work, "q7b")
     if os.environ.get("QWEN_REUSE_BIN") != "1":
         t0 = time.perf_counter()
         exe = build_cu(art["source"], work, name="q7b")
         print(f"nvcc: {time.perf_counter() - t0:.0f}s", flush=True)
+        _js.dump(stamp, open(os.path.join(work, "build.json"), "w"))
     else:
-        import json as _js2
         try:
-            old = _js2.load(open(os.path.join(work, "build.json")))
+            old = _js.load(open(os.path.join(work, "build.json")))
         except OSError:
             old = {}
-        want = {"bmmv": bool(args.bmmv), "graph": bool(args.graph),
-                "no_sync": bool(args.no_sync),
-                "oneshot": bool(args.oneshot), "smax": S}
-        bad = [k for k in want if old.get(k) != want[k]]
+        bad = [k for k in stamp if old.get(k) != stamp[k]]
         if bad:
             sys.exit(f"refusing QWEN_REUSE_BIN=1: stale binary differs on "
                      f"{bad} (rebuild without the env key)")

@@ -2616,3 +2616,293 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   layers, not compounding drift). L=8/16 came back 2.3e-5/2.8e-5:
   flat ~1e-5 across 1-16 (no knee) -- fidelity work is officially
   unnecessary; all future effort goes to speed at fixed quality.
+
+## 2026-10-06: siphon demo installs through listings (CLOCKED, start missed)
+
+- Start clock MISSED (80-for-80). demo_siphon.py one command:
+  Germany blank-50 baseline -> gain 1.0 Paris rank-1, Italy AND
+  Japan hold blanks throughout (gain 0.0/0.5/0.7/1.0 sweep with
+  same-path baselines). CALIBRATED line printed. Installs are
+  listings (prefix taps + suffix steering + scalar gate), not
+  torch tricks -- the siphon as product, first curve point:
+  one late direction + one lexical key + calibrated dose.
+
+## 2026-10-06: dose calibration -- installs collide by geography (CLOCKED, start missed)
+
+- Start clock MISSED (77-for-77). research/dose_cal.py (6 facts x
+  3 gains x full control rows): France/Germany install self high
+  but move each other + neighbors; Italy weak-self (r2-3) moderate
+  collateral; Spain clean diagonal but Madrid lands on France at
+  high dose; Japan uninstallable (4322) AND vandalizes (destroys
+  neighbors at a=0.5); China clean at 0.8+ (rank 1, all controls
+  far). Destructive power exceeds constructive for weak
+  directions: bad stores are worse than useless (catalog safety).
+- Map verdict: dose-response non-monotonic per fact; collisions
+  follow semantic neighborhoods; only China is strictly clean.
+  Next: multi-install composition (all live at once).
+
+## 2026-10-06: siphon re-opens -- late directions steer (CLOCKED, start missed)
+
+- Start clock MISSED (71-for-71). Lens-directed re-runs (take
+  late): trajectory geometry (every layer moves 0.34-1.4 rel,
+  path 14x net, biggest step LAST -- movement everywhere,
+  decisions late); L26 France-vs-Germany direction reads
+  Paris/France tokens at rank 2 by dot product (extractable,
+  readout-physics as predicted); implant steers Paris-rank
+  54->2/5/3 but top lands on near-tie blanks (steers, doesn't
+  install -- needs gain/shape work). Scripts: research/late_dir.py
+  + research/late_implant.py (torch-mirror stage; geo port queued).
+- Verdict: extract->implant loop closes directionally at 7B.
+  Clean installation is the open half (same shape as the old
+  implant findings: strength was never the problem).
+
+## 2026-10-06: steering caps at region-overwrite (falsified clean) (CLOCKED, start missed)
+
+- Start clock MISSED (72-for-72). Cleanliness screen (48 cells)
+  + far controls + gain micro-sweep: NO clean cell anywhere.
+  Best shape is L27 additive: rank 1 from a=0.6, margin to 1.31,
+  but Italy/Germany/Japan ALL land on Paris -- global overwrite
+  of the region. L26 stalls at rank 3 with Italy captured.
+  Decoder-form overshoots to 150k+ junk past a=0.5.
+- Falsifier landed: single-direction additive steering cannot
+  separate (sensitivity without specificity, at every gain and
+  layer tried). Specificity needs CONDITIONAL application (keyed
+  stores retrieved iff context matches -- the assoc/bankhn route,
+  not additive). research/clean_screen.py + far_control.py +
+  shared mirror research/qwen_torch.py (third copy refused).
+
+## 2026-10-06: addressing confirmed -- lex-gated installs hold controls (CLOCKED, start missed)
+
+- Start clock MISSED (73-for-73). Key-gated steering (country
+  token early residual as key, ^6 sharpened): Germany installs
+  Paris (rank 3), Italy holds Rome, Japan holds -- ALL controls
+  hold where full-state cosine gating failed (keys too parallel).
+  Reader finding alongside: steered hidden aligns German by
+  cosine (Paris 46022!) while argmax picks Paris on norm weight
+  -- grade installs by the dot reader. Filed as
+  docs/SIPHON_ADDRESSING.md (region falsifier + reader effect +
+  gated confirmation + product shape).
+
+## 2026-10-06: margin fragility -- random flips too (CLOCKED, start missed)
+
+- Start clock MISSED (74-for-74). Two bugs then one finding.
+  Bugs: serve_steer cached x0 across prompts (every control was
+  secretly Germany -- identical gates gave it away); fixed (live
+  inputs always rewrite). Finding: RANDOM direction at the same
+  whisper dose ALSO installs Paris on Italy. The controls were
+  never holding on content -- razor margins fall to any breeze,
+  and high-norm giants collect the pieces.
+- Consequence, filed in docs/SIPHON_ADDRESSING.md: cleanliness
+  needs MARGIN above the local decision-noise floor (measurable
+  per prompt), or a different reader. Bits that merely move ranks
+  are not installation. The geo port stands (installs through
+  listings, gated); the bar for calling one clean just rose.
+
+## 2026-10-06: controls hold -- dose discipline restores specificity (CLOCKED, start missed)
+
+- Start clock MISSED (75-for-75). The fragility verdict above
+  was VOID (stale dose file: every control ran at 220). True
+  per-prompt doses through listings: Germany 220 -> Paris rank
+  1; Italy 13.5 -> blank, Paris 45; Japan 14.4 -> blank, Paris
+  99; random 13.5 -> blank, Paris 45. Lex-gating + dose
+  discipline = clean install, both paths agreeing.
+- Tripwire (third instance): identical gates across different
+  prompts mean cached inputs. Live inputs always rewrite --
+  served binaries can't tell stale from fresh.
+
+## 2026-10-06: per-layer lens -- funnel gradual, decision late (CLOCKED, start missed)
+
+- Start clock MISSED (70-for-70). scripts/lens_7b.py (all 28
+  residuals through unembed, 3 prompts): rank of final falls
+  100k+ -> 1 smoothly, locks at L27 every time; early tops are
+  code-flavored, surface resolves late (blanks -> 巴黎 ->
+  Paris); entropy peaks mid, collapses L21-24, rises at the
+  last layer. Filed as docs/LENS_7B.md.
+- Verdict on funnel/filter: both gradual, no staged boundary on
+  these prompts. Siphon consequence: take late (L22+), skip
+  early. Per-layer-training claim: not in the public record
+  (card says pretrain+SFT+DPO); shape measured, story declined.
+
+## 2026-10-06: specificity matrix -- first curve segment (CLOCKED, start missed)
+
+- Start clock MISSED (76-for-76). research/spec_matrix.py (6
+  country facts, full 6x6 gated installs): diagonal rank-1 2/6
+  (Spain, China), rank-3 3/6, Japan uninstallable (4322: no
+  anchor -- unsteered top is junk); off-diagonal holds 23/30.
+  Strictly clean (rank-1 + all hold): China alone. Interference
+  mirrors semantic neighborhoods (France<->Germany contrast
+  pair cross-talk; Spain moves Iberia+Europe; Japan install
+  scatters). Installs compose with geography, not collisions
+  at random -- the curve's first segment, priced.
+- Tripwire (third instance, kept): identical gates across
+  different prompts mean cached inputs; the stale-dose episode
+  is filed under the dose-discipline entry (void evidence
+  withdrawn, lex-gating + true doses verified).
+
+## 2026-10-06: composition holds -- gates sharp enough (CLOCKED, start missed)
+
+- Start clock MISSED (78-for-78). research/compose_all.py (all
+  six installs live, one forward per prompt): composed == alone
+  on all six cells (tops AND ranks identical, incl. Japan junk).
+  No washout, no resonance, no new collisions -- the ^6 gates
+  (1.00 vs <=0.09) admit only the matching install. Catalog
+  turns unblocked at this dose regime. Gate cross-talk mirrors
+  geography again (Fr-Ge 0.09 highest; China <=0.03 isolated).
+
+## 2026-10-06: memory-vs-highway falsified, address-channel confirmed (CLOCKED, start missed)
+
+- Start clock MISSED (79-for-79). Rank-1 MLP write (ROME-form,
+  keyed on MID match) behaves EXACTLY like residual add: a=0.25
+  rank 4 + holds; a>=0.5 Paris rank 1 + Italy/Japan captured.
+  Late keys are as parallel as late residuals (same template),
+  so matrix retrieval self-gates nothing. The missing component
+  was never memory-vs-highway (falsified); it is address-CHANNEL
+  (early/lexical vs late/contextual -- confirmed by lex-gating).
+- Siphon shape, sharpened: content (late) x address (early) x
+  dose, with the address READ EARLY. research/mlp_vs_highway.py;
+  shared mirror gained edits{} + MID capture (no fifth copy).
+
+## 2026-10-07: reravel gates green; steered battery 10/11 (CLOCKED, start missed)
+
+- Start clock MISSED (81-for-81). tests/test_reravel.py ALL OK:
+  served prefix byte-identical across reruns (LOGITS/Y2/Y26) +
+  prefix-vs-gen LOGITS bit-exact (0.000e+00 across binaries --
+  unravel/reravel exactness where determinism promises it).
+- Stamp discipline generalized: gen build.json now covers program
+  text hash (a 341-vs-342-input stale binary passed flag-only
+  stamps with rc=9; now fails loud). Canonical /tmp/gen7b rebuilt.
+- Steered battery (install live, 12 prompts): target flipped
+  Berlin->Paris, controls hold 10/11; the mover is France
+  (contrast-pair cross-talk, known from the spec matrix).
+  Multi-token persistence next (mirror first, then listings).## 2026-10-07: install persists across generation (CLOCKED, start missed)
+
+- Start clock MISSED (82-for-82). Mirror-level 8-token steered
+  rollout (steer every step): Paris, ., Paris, is, the, capital,
+  of, France -- stays Paris-coherent throughout, never reverts
+  to Berlin (echo-loop is greedy-decoding texture, separate
+  concern; sampling exists at the host boundary). Persistence
+  holds in principle; steered generation through listings
+  (decode-server steering support) unbuilt -- stated, queued.
+
+## 2026-10-07: install order is free (commutativity closes) (CLOCKED, start missed)
+
+- Start clock MISSED (83-for-83). research/order_commute.py
+  (rank-1 writes, both orders with keys re-measured inside the
+  written model, plus joint): all three orders give IDENTICAL
+  outcomes (Paris-54/Berlin-79/Rome-holds) with key drift exactly
+  1.0000. Order is free -- catalog turns need no scheduler, no
+  curriculum is demanded by the data (anchors-first untested and
+  unmotivated). Keys stable + gates parallel = no serial order
+  tax on traversal (the yarn-ball latency constraint, satisfied).
+- Footnote, honest: ranks identical at ALPHA 0.3 and 0.5 --
+  opposite co-resident installs reach a dose-insensitive
+  equilibrium (competition, not saturation). Plus one caught
+  metric bug (drift score divided by ||k|| twice: 0.0027 meant
+  cosine 1.0 -- absurd numbers are data, read them).
+
+## 2026-10-07: search tiers all green, prices labeled (CLOCKED, start missed)
+
+- Start clock MISSED (84-for-84). research/search_tiers.py:
+  A exact sign-hash tier 6/6 self-hits + 0/30 cross-hits, but
+  12/12 paraphrase misses (total generality price -- exact tier
+  is dedup/canonical-query only, needs template normalization
+  for open queries); B hierarchical (data-driven Europe-pair vs
+  rest) 6/6 item accuracy with fewer comparisons; C orthogonal
+  bank cross-talk 0.504->0.0 with installs still rank-1
+  (whitening free at this dose -- unexpected, kept).
+- Division of labor confirmed: exact tier for the known,
+  resonance for the novel; sorting buys cost, never quality.
+  Plus one caught probe bug (frag picker took "The" every time:
+  all keys identical, cosine 1.0 -- read the diagnostics).
+
+## 2026-10-07: transfer splits -- address yes, content no (CLOCKED, start missed)
+
+- Start clock MISSED (86-for-86). research/transfer_v1.py with
+  shared residual map (xfer_map.py, promoted third-use): addrR
+  (teacher key x2 + native Rome value) retrieves 4/4 with Rome-
+  rank 86 (matches native4x) at the cost of 4 containment holds
+  (key-scale trades retrieval-vs-containment: calibration queued).
+  fullR retrieves 4/4 but Rome-rank 222 (WORSE than base): mapped
+  teacher direction cosines -0.334 with the native Rome readout
+  (points away -- state-maps don't preserve direction-to-logit
+  relations). Native ladder reaches rank 55 at 8x, monotonic.
+- Transfer number, honestly: ADDRESS transfers (teacher-derived
+  keys retrieve in our space); CONTENT does not (yet). Working
+  product shape: teacher address x native content. Queued: key-
+  scale calibration (x1.5, hold recovery), value-side correspondence.
+
+## 2026-10-07: transfer v1 negative, precisely (CLOCKED, start missed)
+
+- Start clock MISSED (85-for-85). research/transfer_v1.py (teacher
+  Italy key+dir -> our D16 bankhn store 129, 8 arms): hold-rate
+  16/16 every arm (no degradation anywhere -- clean). Native
+  addressing retrieves 3/4 with Rome-rank scaling by dose
+  (198->136->105 at 0/1/2x: content direction right, needs dose).
+  Teacher keys retrieve 0/4 under BOTH random-projection and a
+  499-anchor fitted map (which disagree at cosine -0.131 -- the
+  map is underdetermined 3584>499, suspect itself). Address must
+  live in receiver geometry and we haven't put it there yet.
+- Verdict: transfer number unearned. Next: map-quality diagnostic
+  (held-out anchor cosine) + native dose ladder (install ceiling
+  in our space bounds what transfer must reach). Plus one caught
+  metric bug (containment measured accuracy 4/16, not hold-rate).
+
+## 2026-10-07: content-transfer fails validly; V2 falsified (CLOCKED, start missed)
+
+- Start clock MISSED (87-for-87). The mine() direction line mixed
+  unpacked/tuple indexing (scalar-minus-vector garbage) -- voiding
+  ALL prior fullT/fullF/fullR content failures back to v1. Only
+  addrR (correct key + native value) ever stood. Fixed, cache
+  re-mined, full screen re-run: fullR rank 296, fullR2
+  (normalize-anchors-first, the doll-theory variant) rank 328 --
+  both worse than base 198, V2 worse than V1.
+- Findings: (1) content transfer genuinely fails with correct
+  directions too (mapped arrow anti-aligned -0.334 with Rome
+  readout); (2) magnitudes carry signal -- normalizing them away
+  costs (V2<V1); doll theory refined, not killed (support sets
+  matter, but so do their weights). Tops never flip anywhere
+  (UNK-attractor holds our model; install ceiling unreached).
+- Standing: address transfers (4/4, rank 86), native ladder climbs
+  (55 at 8x), content waits on direction-to-logit correspondence.
+## 2026-10-07: behavior-fit loses; coarse-vs-precise principle (CLOCKED, start missed)
+
+- Start clock MISSED (88-for-88). research/behavior_keys.py
+  (keys fit to teacher match patterns, no geometry map): pattern-
+  corr 0.68 but retrieval 0/4 vs mapped-vector keys 4/4. Caveat
+  kept honest: fit saw 1 positive (Italy contexts are 4/319
+  lines), so inconclusive-to-negative, not clean falsification.
+- Principle REFINED (evidence-backed, stronger than the original
+  hypothesis): COARSE relations transfer by vector (key matching
+  survives map distortion: addrR 4/4); PRECISE relations don't
+  (direction-to-logit needs exactness: fullR hurts). So: map keys,
+  grow values natively. The hybrid stands vindicated with a
+  mechanism -- and "relations not vectors" narrows to "coarse
+  relations by vector, precise relations native-grown".
+
+## 2026-10-07: catalog turn partial-pass (2/3 install, holds short) (CLOCKED, start missed)
+
+- Start clock MISSED (89-for-89). research/catalog_turn.py (3
+  transferred facts, one K131 bank, listings): Italy 299->58,
+  Caesar 67->58, Alexander holds 6; all three retrieve own
+  store; rand3 control inert (identical to base). Holds 11/16
+  vs 15/16 bar -- key-scale x2 costs containment at catalog
+  scale exactly as at single scale (known trade, now priced
+  in the setting that matters).
+- Verdict: installs land + coexist + retrieve (no collision
+  catastrophe incl. shared Rome target); containment needs
+  key-scale calibration. Shared map cache works (no refit).
+
+## 2026-10-07: decoupling wins Italy clean; transfer ledger closed (CLOCKED, start missed)
+
+- Start clock MISSED (90-for-90). nat3 (native emb keys x2 +
+  8x values): Italy rank 31, holds 16/16 -- best single-fact
+  result anywhere (vs cat3's 58 + 5 broken). Addressing and
+  strength are independent knobs (values don't enter matching).
+  Caesar still retrieval-bound (0/3 both families: its address
+  is the wall, not its value).
+- Full transfer ledger, unsparing: teacher keys retrieve broader
+  (3/3 vs 1/3) at a containment price (11/16); native keys hold
+  everything but reach less; teacher content fails everywhere
+  (-0.334); the winning row is fully native. ADDRESS transfers
+  (reach), CONTENT does not (precision). The transfer number
+  splits and stays half-earned -- stated plainly.

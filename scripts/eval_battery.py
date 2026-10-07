@@ -83,8 +83,11 @@ def geo_run(out, n_gen=N_GEN, smax=SMAX, workdir=WORKDIR):
     from chain.emit_c import compile_program
     from chain.serve import ServedExe
     S, HID = smax, 3584
+    import hashlib as _hl
+    prog = build_program(S, bmmv=True)
     want = {"bmmv": True, "graph": True, "no_sync": True,
-            "oneshot": False, "smax": S}
+            "oneshot": False, "smax": S,
+            "prog": _hl.sha256(prog.text().encode()).hexdigest()[:16]}
     work = workdir
     try:
         stamp = json.load(open(os.path.join(work, "build.json")))
@@ -93,7 +96,6 @@ def geo_run(out, n_gen=N_GEN, smax=SMAX, workdir=WORKDIR):
     if any(stamp.get(k) != v for k, v in want.items()):
         sys.exit(f"{work} stamp {stamp} != {want}: run gen_qwen7b_geo.py "
                  f"--bmmv --graph --no-sync once first (builds bins+binary)")
-    prog = build_program(S, bmmv=True)
     art = compile_program(prog.text(), "cuda", sample=shapes_7b(S),
                           outputs=["LOGITS", "OUT"],
                           basedir=os.path.join(ROOT, "programs"),
