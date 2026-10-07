@@ -2864,6 +2864,24 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   (UNK-attractor holds our model; install ceiling unreached).
 - Standing: address transfers (4/4, rank 86), native ladder climbs
   (55 at 8x), content waits on direction-to-logit correspondence.
+
+## 2026-10-07: containment recalibrated -- catalog fully green (CLOCKED, start missed)
+
+- Start clock MISSED (91-for-91). Gap-map follow-ups closed:
+  (1) orphaned facts are retrieved by family (Italy<-129,
+  Caesar<-128: backup coverage, redundancy confirmed);
+  (2) no store is necessary (graceful degradation: shared Rome
+  value covers -- dolls inside dolls); (3) seriation ring
+  neighborhoods are generic words (life/coinage/power: layout
+  does NOT navigate -- measured gate-clusters do; respin filed
+  as possible-but-not-predictive); (4) base margins separate
+  perfectly: the 5 breaking holds are exactly the 5 thinnest
+  (<=0.62) vs holders >=5.0.
+- Metric fix (doctrine-level): holds measured on stable tops
+  (margin>=1 bar), razor flips tracked as expected-fragile
+  class. Under it the catalog turn is FULLY GREEN (installs +
+  retrieval + 11/11 stable + razor as predicted). Margin bars
+  belong in every future battery.
 ## 2026-10-07: behavior-fit loses; coarse-vs-precise principle (CLOCKED, start missed)
 
 - Start clock MISSED (88-for-88). research/behavior_keys.py
