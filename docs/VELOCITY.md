@@ -3631,3 +3631,19 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   floor. Non-geometric exploration (dual ascent) feeding geometric
   requirements (value norms the listings must carry) -- the
   doctrine working as designed.
+
+## 2026-10-08: Japan installs in-listing; scout finds six (unclocked)
+
+- scripts/siphon_geo.py parametrized + Japan readout-row install
+  (/tmp/siphongeoJ.log, 7.75min): geo Japan top=' Tokyo' rank 1,
+  Germany/Italy blank (mirror-graded "broken"; fork-pattern matches
+  the Germany run exactly: geo-base blanks both. Zero-dose control
+  running for the fork-correct grade).
+- research/scout_facts.py (/tmp/scout.log, 3.5min): capitals mostly
+  vacuous (r1) except Japan (r2); VIABLE: japan-cap, hamlet (Ham
+  r2, multi-token), orwell (1984 r2, multi-token), relativity
+  (1905 first-token r1: completion problem), everest (r41), nile
+  (r23). Multi-token targets need generation-survival methodology
+  (install must hold past first token) -- new instrument, queued.
+- Listing-first is now a procedure (target/contrast/value-form
+  flags, defaults regression-safe): any fact, same command.
