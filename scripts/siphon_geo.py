@@ -81,6 +81,12 @@ def main():
     ap.add_argument("--gain", type=float, default=1.0)
     ap.add_argument("--smax", type=int, default=8)
     ap.add_argument("--key-scale", type=float, default=8.0)
+    ap.add_argument("--target", type=str, default="Germany")
+    ap.add_argument("--contrast", type=str, default="France")
+    ap.add_argument("--value-form", type=str, default="contrast",
+                    choices=("contrast", "readout"))
+    ap.add_argument("--value-token", type=str, default=" Paris",
+                    help="readout token iff --value-form readout")
     ap.add_argument("--out-json", type=str, default="/tmp/siphon_geo.json")
     ap.add_argument("--base-json", type=str, default=None,
                     help="geo zero-dose arms for hold grading (fork doctrine:"
@@ -103,31 +109,44 @@ def main():
     from siphon_ball import early_key
     from chain.engram import yarnball_bank
     g, tok = load7b()
+    TGT = args.target
+    assert TGT in COUNTRIES, f"--target {TGT} not in battery {COUNTRIES}"
     promp = {c: f"The capital of {c} is" for c in COUNTRIES}
-    paris = tok(" Paris", return_tensors="pt")["input_ids"][0].tolist()[0]
+    tv = args.value_token if args.value_form == "readout" else " Paris"
+    tgtid = tok(tv, return_tensors="pt")["input_ids"][0].tolist()[0]
     base = {}
     for c in COUNTRIES:
         lg, _ = fwd(promp[c])
         base[c] = int(lg.argmax())
     print("mirror unsteered:", {c: tok.decode([v]) for c, v in base.items()},
           flush=True)
-    tfr, _ = fwdH("The capital of France is")
-    tde, _ = fwdH("The capital of Germany is")
-    d = tfr[27] - tde[27]
-    d /= np.linalg.norm(d)
+    from siphon_battery import country_pos
+    tfr, _ = fwdH(f"The capital of {args.contrast} is")
+    tde, _ = fwdH(promp[TGT])
     mag27 = float(np.linalg.norm(tde[27]))
-    print(f"|x27| Germany prompt-end = {mag27:.1f}", flush=True)
-    keys = {c: early_key(promp[c])[0] for c in COUNTRIES}
+    print(f"|x27| {TGT} prompt-end = {mag27:.1f}", flush=True)
+    if args.value_form == "contrast":
+        d = tfr[27] - tde[27]
+        d /= np.linalg.norm(d)
+        sup = f"L27 {args.contrast}-minus-{TGT} contrast"
+    else:
+        Wlog = np.asarray(g("lm_head.weight"), dtype=np.float64)
+        d = Wlog[tgtid] / np.linalg.norm(Wlog[tgtid])
+        sup = f"readout row {tv.strip()} (exact native content)"
+    keys = {}
+    for c in COUNTRIES:
+        _, pos = country_pos(promp[c], c, tok)
+        k, _ = early_key(promp[c], pos=pos)
+        keys[c] = k
     D = HID
-    Ua, Vc, ledger = yarnball_bank(
-        np.zeros((D, 0)), np.zeros((0, D)),
-        [{"key": keys["Germany"], "value": d, "dose": args.gain * mag27,
-          "tier": "assoc", "support": "L27 France-minus-Germany contrast"},
-         {"key": keys["Italy"], "value": np.zeros(D),
-          "tier": "null", "support": "background"},
-         {"key": keys["Japan"], "value": np.zeros(D),
-          "tier": "null", "support": "background"}],
-        key_scale=args.key_scale)
+    stores = [{"key": keys[TGT], "value": d, "dose": args.gain * mag27,
+               "tier": "assoc", "support": sup}]
+    for c in COUNTRIES:
+        if c != TGT:
+            stores.append({"key": keys[c], "value": np.zeros(D),
+                           "tier": "null", "support": "background"})
+    Ua, Vc, ledger = yarnball_bank(np.zeros((D, 0)), np.zeros((0, D)),
+                                   stores, key_scale=args.key_scale)
     json.dump([{"tier": r["tier"], "support": r["support"],
                 "dose": r["dose"], "sha": r["sha"]} for r in ledger],
               open("/tmp/siphon_geo_ledger.json", "w"), indent=2)
@@ -237,9 +256,10 @@ def main():
             n = len(pids[c])
             top = int(ou[n - 1])
             rec["arms"][c] = {"top": tok.decode([top]),
-                              "paris_rank": int((lg[n - 1] > lg[n - 1][paris]).sum()) + 1}
+                              "tgt_rank": int((lg[n - 1] > lg[n - 1][tgtid]).sum()) + 1,
+                              "paris_rank": int((lg[n - 1] > lg[n - 1][tgtid]).sum()) + 1}
             print(f"geo {c}: top={rec['arms'][c]['top']!r} "
-                  f"paris-rank={rec['arms'][c]['paris_rank']}", flush=True)
+                  f"tgt-rank={rec['arms'][c]['tgt_rank']}", flush=True)
     finally:
         sv.close()
     json.dump(rec, open(args.out_json, "w"), indent=2)
@@ -247,9 +267,9 @@ def main():
     if args.base_json:
         hb = json.load(open(args.base_json))
         hold_base = {c: hb["arms"][c]["top"] for c in COUNTRIES}
-    ok = (rec["arms"]["Germany"]["paris_rank"] == 1
-          and rec["arms"]["Italy"]["top"] == hold_base["Italy"]
-          and rec["arms"]["Japan"]["top"] == hold_base["Japan"])
+    ok = (rec["arms"][TGT]["tgt_rank"] == 1
+          and all(rec["arms"][c]["top"] == hold_base[c]
+                  for c in COUNTRIES if c != TGT))
     print("SIPHON-GEO:", "INSTALL+HOLD" if ok else "see arms", flush=True)
 
 
