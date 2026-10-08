@@ -3295,3 +3295,19 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   exact-zero triples AND tmul-by-1.0 is exact, prior recovers to
   0.337/77 with FLIP+receipt -> perfect gate (v1 purity + v2
   self-routing). If 66 persists -> accept razor per doctrine.
+
+## 2026-10-08: ks32 answers it -- blend arithmetic, tuning exhausted (unclocked)
+
+- ks=32 (/tmp/dualhead2c.log): receipt max 0.015 (near-exact-zero),
+  prior STILL 0.293/66. Three rungs (8/16/32, receipts 0.674/0.084/
+  0.015) -> identical 0.289-0.293: dead-flat response to 4x knob
+  movement. Exact-zero hypothesis dead; mechanism CONFIRMED as blend
+  arithmetic itself (x(1-w) attenuation + w.xFLAT injection, both
+  ~0.1-logit scale = UNK-razor scale; stable never notices).
+- Verdict: v2 GREEN BY DOCTRINE (FLIP + 10/10 stable + 11/16 holds +
+  glue/content identical + 11 razor as predicted-fragile class, same
+  bar as the catalog turn). v1's bit-identical is unrepeatable under
+  self-routing -- proven, not assumed. Perfection needs HARD routing
+  (comparison op: language extension via the contribution process),
+  and three rungs prove no tuning reaches it. Locked operating point:
+  ks=32 (receipt cleanest), dose 4x, 6+1 bank.
