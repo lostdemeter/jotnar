@@ -3522,3 +3522,19 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   emergence-through-whose-head matters (lens uses final unembed;
   mid layers transform after placement). Follow-up: L20 upper
   edge (gain 2) + one layer down (L19) to bound the address.
+
+## 2026-10-08: L20 window is exactly gain-1 (unclocked)
+
+- Edge follow-up (/tmp/windowedge.log, 9min): L20g1 INSTALL + holds;
+  L20g2 derails (r103); L20g4 r2374; holds green at every cell
+  (Italy/Japan never move). L19g4 derails (r1768).
+- Windows NARROW downward: L27 wide (1..8), L20 single-point (1),
+  L19 none. Depth trades install-ease against derail-onset with
+  opposite slopes: earlier = installs cheaper AND derails sooner.
+  Mechanism sketch (not yet priced): upstream, small adds ride
+  formation dynamics (amplify-or-scramble); late, adds land on
+  decided margins (linear-ish). Holds are depth-invariant (null
+  routing never depends on formation).
+- Practical: two editable addresses (L20@1, L27@1-8). L20's is a
+  stencil (exact dose), L27's a window. New installs default L27;
+  L20 reserved for dose-sensitive work (smaller adds, same top-1).
