@@ -95,15 +95,21 @@ def main():
         print(f"neg {name}: ret={ret} {'OK' if good else 'FALSE-POSITIVE'}",
               flush=True)
     print(f"invariance {ok_pos}/8, exclusion {ok_neg}/3", flush=True)
-    # contrast key: unit(HN_italy - HN_caesar), same filler, pos 3 --
-    # discriminative addressing (the maximin lesson, now for keys).
-    # argmax is scale-invariant per-row; only DIRECTION separates overlap.
-    fI = run([6, 0, 3, 261, 11, 2, 7, 5])
-    fC = run([6, 0, 3, 40, 11, 2, 7, 5])
-    hI = dec(fI["HN"])[3]
-    hC = dec(fC["HN"])[3]
-    ck = hI - hC
-    ck /= np.linalg.norm(ck)
+    # contrast key, position-AVERAGED: mean over slots of
+    # (HN_italy - HN_caesar) -- broad AND discriminative, if HN
+    # overlap is positional noise rather than class essence.
+    d = np.zeros(16)
+    for p in range(8):
+        idsI = list(FILL[:8])
+        idsI[p] = 261
+        idsC = list(FILL[:8])
+        idsC[p] = 40
+        d += dec(run(idsI)["HN"])[p] - dec(run(idsC)["HN"])[p]
+    d /= np.linalg.norm(d)
+    print(f"avg-contrast |.| check: {float(np.linalg.norm(d)):.3f} "
+          f"(8-slot mean, should be <<8: positional variance dominates)",
+          flush=True)
+    ck = d
     ukt3 = np.concatenate([ukt0, (ck * 2.0)[:, None]], axis=1)
 
     def run3(ids):
@@ -137,47 +143,43 @@ def main():
     print(f"contrast invariance {okc}/8, exclusion {okn}/3", flush=True)
     if ok_neg == 3:
         return
-    # negmine pass: false-positive HNB... HN-space rows as null stores
-    # (the loop is the product: addressing that learns its mistakes)
+    # negmine pass x null-scale sweep: the null must beat Italy-key on
+    # Caesar rows but lose on Italy rows. Asymmetry exists (it fixed
+    # Caesar); find the scale holding both (receipt tripwire per cell).
     import phi_core.lattice as S2
     from chain import asm as ASM2
     fneg = run([6, 0, 3, 40, 11, 2, 7, 5])
     xa = dec(fneg["XA"])[-1:]
-    e40 = np.ascontiguousarray(dE["emb"][40])
-    e40 /= np.linalg.norm(e40)
-    ukt2 = np.concatenate([ukt, (xa[0] / np.linalg.norm(xa[0]) * 2.0)[:, None]],
-                          axis=1)
+    xaN = xa[0] / np.linalg.norm(xa[0])
+    for nks in (0.5, 1.0, 2.0, 4.0):
+        ukt2 = np.concatenate([ukt, (xaN * nks)[:, None]], axis=1)
 
-    def run2(ids):
-        toks = np.array(ids, dtype=np.int64)
-        n = len(ids)
-        pos = np.arange(n, dtype=np.int64)
-        cm = np.tril(np.ones((n, n), dtype=np.int64))
-        return ASM2.run_text(text, REGISTRY,
-                             {"tok": toks, "pos": pos, "cmask": cm,
-                              "emb": enc(dE["emb"]), "wq": enc(dE["wq"]),
-                              "wk": enc(dE["wk"]), "wv": enc(dE["wv"]),
-                              "wo": enc(dE["wo"]),
-                              "rms_w1": enc(dE["rms1"]),
-                              "rms_w2": enc(dE["rms2"]),
-                              "ukt": enc(ukt2), "ckey": enc(ckey)},
-                             sigs=SIGS, basedir=sdir)
+        def run2(ids, _u=ukt2):
+            toks = np.array(ids, dtype=np.int64)
+            n = len(ids)
+            pos = np.arange(n, dtype=np.int64)
+            cm = np.tril(np.ones((n, n), dtype=np.int64))
+            return ASM2.run_text(text, REGISTRY,
+                                 {"tok": toks, "pos": pos, "cmask": cm,
+                                  "emb": enc(dE["emb"]), "wq": enc(dE["wq"]),
+                                  "wk": enc(dE["wk"]), "wv": enc(dE["wv"]),
+                                  "wo": enc(dE["wo"]),
+                                  "rms_w1": enc(dE["rms1"]),
+                                  "rms_w2": enc(dE["rms2"]),
+                                  "ukt": enc(_u), "ckey": enc(ckey)},
+                                 sigs=SIGS, basedir=sdir)
 
-    ok2 = 0
-    for ent, name in ((40, "caesar"), (12, "alexander"), (7, "as")):
-        ids = list(FILL[:8])
-        ids[3] = ent
-        ret = ival2(run2(ids)["RET"])
-        good = (ret != KIT) if ent != 261 else (ret == KIT)
-        ok2 += good
-        print(f"negmine neg {name}: ret={ret} "
-              f"{'OK' if good else 'STILL-POSITIVE'}", flush=True)
-    okp = 0
-    for p in range(8):
-        ids = list(FILL[:8])
-        ids[p] = 261
-        okp += ival2(run2(ids)["RET"]) == KIT
-    print(f"negmine invariance {okp}/8, exclusion {ok2}/3", flush=True)
+        ok2 = okp = 0
+        for ent, name in ((40, "caesar"), (12, "alexander"), (7, "as")):
+            ids = list(FILL[:8])
+            ids[3] = ent
+            ok2 += ival2(run2(ids)["RET"]) != KIT
+        for p in range(8):
+            ids = list(FILL[:8])
+            ids[p] = 261
+            okp += ival2(run2(ids)["RET"]) == KIT
+        print(f"negmine nullx{nks}: invariance {okp}/8, exclusion {ok2}/3",
+              flush=True)
 
 
 if __name__ == "__main__":
