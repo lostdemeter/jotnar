@@ -43,6 +43,7 @@ def main():
     vocab = json.load(open(os.path.join(dd, "lm_vocab.json")))
     inv = {i: w for w, i in vocab.items()}
     dE = np.load(os.path.join(dd, "lm_svd_IvoQ.npz"))
+    emb = np.ascontiguousarray(dE["emb"])
     b = np.load(os.path.join(dd, "bankhn.npz"))
     ukt0, evb0 = b["ukt"], b["evb"]
     wlog = np.ascontiguousarray(dE["wlog"])
