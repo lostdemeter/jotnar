@@ -3211,3 +3211,21 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   independently of the steering results. (4) Mid-layer ladder next:
   L14 (heavy mass) and L22 (donor precedent) vs L27 baseline --
   amplification vs derailment decides install-point law.
+
+## 2026-10-08: teacher is flat -- skew is ours, glue lives in alignment (unclocked)
+
+- research/qwen_readout.py (statics, CPU): Qwen lm_head rows --
+  Paris 0.58, Berlin 0.56, Rome 0.57, Tokyo 0.52 (content within
+  +-10%); max 1.1 (junk/code fragments), p99 0.9, median 0.6. Skew
+  max/content ~2x vs OURS 8.3x (unk 6.98 vs rome 0.84).
+- Double dissociation with probe 2: our flat head flips (install
+  needs flat) but kills glue (our glue lived in norms); Qwen flat
+  AND fluent (its glue lives in alignment: d=3584 trained vs our
+  d=16 counts). Skew is a construction artifact, not intrinsic.
+- Redesign fork, priced: (a) grow alignments (representation
+  capacity: dim + training -- the actual ceiling, big); (b)
+  dual-head routing (skewed prior head + flat install head,
+  addressed -- preserves everything built, architecture-sized).
+  Selective norm promotion (lengthen content rows) is DEAD:
+  Qwen content rows are SHORT (~0.55, same as ours) -- its
+  competitors are short, not its targets long.
