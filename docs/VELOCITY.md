@@ -3573,3 +3573,14 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   levers, if any, are quieter than top-energy. NVERIFY=12 screen
   queued (top-12 predicted, top-3 + Paris rank each): max
   Paris-move per dB decides whether selectivity exists here.
+
+## 2026-10-08: energy != selectivity, fingerprints queued (unclocked)
+
+- read14 NVERIFY=12 (/tmp/read14sel.log, 5min): all 12 verify within
+  ~5dB (predictor sound), ALL tops frozen Berlin, Paris r50-65
+  (base ~45: unmoved). Zero selective levers in top-12 energy:
+  content selectivity does NOT live in loud directions at L14.
+- research/select14.py queued: 36-dir sweep (every 100th) scoring
+  specialist = mean(tokdb) - paris-tokdb per ablation (fingerprints
+  are free once forwards run). Top-5 selective decides whether L14
+  holds addressable content levers or only broadcasters + quiet.
