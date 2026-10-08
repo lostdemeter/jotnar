@@ -3506,3 +3506,19 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   measure install-dose (margin/gain) and leak-dose (hold breakage)
   per layer; operate where window exists. L27 currently the only
   known address with a window.
+
+## 2026-10-08: window curve -- L20 is a second address (unclocked)
+
+- research/window_curve.py (/tmp/windowcurve.log, 25min): natives
+  L20-27, gains 1/4. L20g1: Paris r1 INSTALL + full holds (Italy
+  Rome^73, Japan blank); L20g4 derails (r2374, holds intact).
+  L21/L24/L25/L26: move, never install (r3-r13 at best), holds
+  green. L22g4 + L23g4: INSTALL but Italy MOVED (windowless,
+  known). L27g1: INSTALL + holds (known window).
+- L27 does NOT stand alone: L20 has a window (install@1, holds
+  through 4). The window law predicts addresses, this one
+  discovered blind by mapping both doses. Tension noted: content
+  emergence measured @L23 (final-head lens) yet L20 installs --
+  emergence-through-whose-head matters (lens uses final unembed;
+  mid layers transform after placement). Follow-up: L20 upper
+  edge (gain 2) + one layer down (L19) to bound the address.
