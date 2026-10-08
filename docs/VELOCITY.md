@@ -3311,3 +3311,23 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   (comparison op: language extension via the contribution process),
   and three rungs prove no tuning reaches it. Locked operating point:
   ks=32 (receipt cleanest), dose 4x, 6+1 bank.
+
+## 2026-10-08: blend verified -- code exact, flips are two species (unclocked)
+
+- research/blend_verify.py (/tmp/blendver.log): intermediates decoded
+  on flipped UNK positions. Tiling/complement/products all ~1e-4 or
+  exact zero -- NO CODE BUG (error-source audit closed by
+  verification, no trawl). Italy receipt w=1.0000, top=rome.
+- Case w=0.0083: |SW-LS| (0.12/0.08) >> |FW| (0.02/0.02) --
+  SKEW-ATTENUATION dominates, flat injection negligible. The (1-w)
+  term is the razor mechanism, located to the term.
+- Case w=1.0000 on generic function-word context: FALSE-POSITIVE
+  retrieval (FW 2.6/6.4 -- full misroute, <unk>->royal). At least one
+  of the 11 is addressing, not arithmetic.
+- Case w=-0.0000 (decode -0.0): all terms exact-zero yet flipped --
+  drug-residue + lattice quantum on sub-quantum margins. Razor
+  doctrine covers it.
+- Iteration this unlocks: negative-mined background (false-positive
+  HNB rows appended as nulls -- the bank learns its mistakes;
+  hard-negative mining for addressing). Predicts UNK recovery with
+  install intact; receipt is the tripwire (more competitors).
