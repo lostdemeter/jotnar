@@ -3584,3 +3584,18 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   specialist = mean(tokdb) - paris-tokdb per ablation (fingerprints
   are free once forwards run). Top-5 selective decides whether L14
   holds addressable content levers or only broadcasters + quiet.
+
+## 2026-10-08: no Paris lever in 48 L14 dirs; write/erase asymmetry (unclocked)
+
+- select14 sweep (/tmp/select14.log, 10min) + verify (/tmp/specverify.log):
+  top-5 specialists (spec +14 to +16, incl. giant dir0) move Paris
+  rank 54 -> 51-55 (noise; one worsens). Tops bit-identical. 36
+  swept + 12 top-energy = 48/3584 dirs (1.3%): no selective lever;
+  absence-of-evidence stated at stated coverage, not a universal.
+- Asymmetry (the finding): L14 content is WRITABLE (installs land
+  @1: L14-L20 windows) but not selectively REMOVABLE (no ablation
+  lever in 48 tries). Addition needs one good direction + dose;
+  removal must fight distributed support. Same geometry explains
+  implant-easy (rank-1 writes, gated long ago) vs prune-with-care.
+  Distributed support, consistent -- not proven exhaustive (full
+  3584-dir sweep ~30+h, priced not run).
