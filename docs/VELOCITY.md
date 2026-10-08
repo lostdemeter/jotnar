@@ -3331,3 +3331,18 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   HNB rows appended as nulls -- the bank learns its mistakes;
   hard-negative mining for addressing). Predicts UNK recovery with
   install intact; receipt is the tripwire (more competitors).
+
+## 2026-10-08: negmine closes it -- perfect gate (unclocked)
+
+- research/negmine.py (/tmp/negmine.log): pass1 reproduces v2
+  (0.293/66, 12 negs); bank grows 7->19 with false-positive HNB
+  nulls (Italy index 6 undisturbed); install FLIP with w_italy=1.000
+  (12 new competitors, receipt intact -- addressing has headroom);
+  pass2: 0.337, 6/87, 0/40, 77 -- BIT-IDENTICAL to skewed base.
+- The loop is the product: run split -> collect flips -> mine keys
+  -> append nulls -> re-gate. Addressing that learns (hard-negative
+  mining for banks). v1's purity + v2's self-routing, no tradeoffs
+  left on the table: FLIP + identical prior + holds + receipt.
+- Standing for the native ball: top-1 install WITH prior, routed,
+  self-addressing, learned background. Remaining hardening is
+  scale (second fact, battery breadth), not feasibility.
