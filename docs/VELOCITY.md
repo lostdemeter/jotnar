@@ -3413,3 +3413,21 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   belong in E-space (dualbank.asm exists for retrieval; extend the
   AND to install addressing next). Caesar-weakness separate (dose?
   key?); swap-leak is the structural one.
+
+## 2026-10-08: 4/4 FLIP -- maximin value closes Caesar (unclocked)
+
+- research/caesar_maximin.py (/tmp/caesarmm.log): flat zero-bank
+  base reads content-coherent (thebes/tyre/olympias top -- no UNK
+  tyranny); Rome flat-rank 122 but deficits tiny (2.1-2.4);
+  maximin t=0.98, req norm 2.41 (4.5x smaller than Rome-row 12x).
+  Install: rank 1, rome 4.02 vs his 3.97 (thin, top-1), wsum 0.999.
+- Raw rows are a starting value, not the answer: optimal direction
+  beats the readout row 4.5x on dose. Per-fact values (Italy 8x row,
+  Alex 16x row, Caesar 2.4-norm maximin) + per-fact keys + routed
+  flat head = 4/4 native top-1 with prior. The install product is
+  now fully specified: address x OPTIMAL content x calibrated dose.
+- En route: Alex dose ladder proved dose-invariant stall at wsum
+  0.487 (routing-bound, not dose-bound -- ladder without receipt is
+  blind); PR-flat diagnosis located m_cov ADD saturation (Ch~114
+  clipped to 17.04) -> ks=2 both channels; UNK-row finder hijack
+  (7.67 vs 2.06) -> cosine matching via RMSNorm-to-unity.

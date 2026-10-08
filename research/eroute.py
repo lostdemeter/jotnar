@@ -26,8 +26,14 @@ sys.path.insert(0, ROOT)
 CFG = "CONFIG m_acc 36118\nCONFIG m_cov 35048\n"
 MARGIN_BAR = 1.0
 NBG = 6
-KS = 32.0
-DOSE = 4.0
+# KS=2 both channels: dual-variable ADD saturates at m_cov envelope
+# (~17; ks=32 drove Ch~114/Ce~57 into the clip -> flat routing).
+# Single-channel paths are immune (softmax normalizes); fusion is not.
+KS = 2.0
+# Per-fact dose windows (global 16x flips Alex but breaks Italy/italy2
+# to neighbor-hijack 'a'/'egypt'; global 8x leaves Alex at rank 2.
+# Italy flips 4-8x, Alex needs 16x for margin 10.08, Caesar TBD ~12x).
+DOSES = {"italy": 8.0, "alex": 16.0, "caesar": 24.0}
 MAXNEG = 16
 CONTENT_WORDS = ["italy", "rome", "caesar", "alexander", "alexandria",
                  "city", "son", "syria", "egypt", "her", "his"]
@@ -78,6 +84,7 @@ def main():
                              "rms_w1": enc(dE["rms1"]), "rms_w2": enc(dE["rms2"]),
                              "wlog": enc(wlog), "wlogU": enc(wlogU),
                              "Uhn": enc(Uhn), "Ue": enc(Ue), "Vc": enc(Vc),
+                             "unity": enc(np.ones(16)),
                              "onesS1": enc(np.ones((n, 1))),
                              "ones1V": enc(np.ones((1, V))),
                              "onesSV": enc(np.ones((n, V))),
@@ -117,15 +124,21 @@ def main():
               flush=True)
     order = ["italy", "alex", "caesar"]
     eids = {"italy": 261, "alex": 12, "caesar": 40}
+    # HN install keys AT entity rows (position-bound keys must be read
+    # where mined: the finder reads the entity row, so keys come from
+    # entity rows, not end rows. epos: entity index per fact prompt.
+    epos = {"italy": 3, "alex": 0, "caesar": 1}
     fkeys, fvals = {}, {}
     for f in order:
-        h = dec(run0(inst[f][0])["HN"])[-1]
+        ids, epos_f = inst[f][0], epos[f]
+        assert ids[epos_f] == {"italy": 261, "alex": 12, "caesar": 40}[f], (f, ids)
+        h = dec(run0(ids)["HN"])[epos_f]
         fkeys[f] = h / np.linalg.norm(h)
     romeU = np.ascontiguousarray(wlogU[:, 98])
     alexU = np.ascontiguousarray(wlogU[:, 59])
-    fvals = {"italy": (DOSE * evn * romeU)[None, :],
-             "alex": (DOSE * evn * alexU)[None, :],
-             "caesar": (DOSE * evn * romeU)[None, :]}
+    fvals = {"italy": (DOSES["italy"] * evn * romeU)[None, :],
+             "alex": (DOSES["alex"] * evn * alexU)[None, :],
+             "caesar": (DOSES["caesar"] * evn * romeU)[None, :]}
     bgE = []
     for w in ["city", "son", "syria", "egypt", "her", "his", "without",
               "amid", "victory", "sources", "battle", "army"]:
@@ -146,17 +159,30 @@ def main():
         if len(bgHN) >= NBG:
             break
 
+    # supervised distractor nulls: swap prompts are KNOWN non-installs.
+    # E-keys tie with install keys by construction (same entity) -- the
+    # HN channel must discriminate template (measured, not assumed).
+    swapHN, swapE = [], []
+    for name, (ids, t) in swaps.items():
+        h = dec(run0(ids)["HN"])[3]
+        swapHN.append(h / np.linalg.norm(h))
+        e = np.ascontiguousarray(emb[ids[3]])
+        swapE.append(e / np.linalg.norm(e))
+
     def bank(negHN, negE):
         U = np.concatenate([k[:, None] for k in bgHN]
                            + [fkeys[f][:, None] for f in order]
+                           + [k[:, None] for k in swapHN]
                            + [k[:, None] for k in negHN], axis=1) * KS
         E = np.concatenate([k[:, None] for k in bgE]
                            + [(np.ascontiguousarray(emb[eids[f]])
                                / np.linalg.norm(emb[eids[f]]))[:, None]
                               for f in order]
+                           + [k[:, None] for k in swapE]
                            + [k[:, None] for k in negE], axis=1) * KS
         Vc = np.concatenate([np.zeros((NBG, 16))]
                             + [fvals[f] for f in order]
+                            + [np.zeros((len(swapHN), 16))]
                             + [np.zeros((1, 16))] * len(negHN), axis=0)
         return U, E, Vc
 
@@ -207,6 +233,7 @@ def main():
         assert "PR" in fi, sorted(fi.keys())
         pr = dec(fi["PR"])[0]
         w = float(pr[NBG:NBG + 3].sum()) if pr is not None else -1
+        wv = np.round(pr[NBG:NBG + 3], 3).tolist() if pr is not None else []
         if t is None:
             t0 = int(dec(run0(ids)["LOGITS2"])[-1].argmax())
             print(f"swap {name}: top={inv.get(int(li.argmax()), '?')} "
@@ -214,7 +241,7 @@ def main():
                   f"{'HOLD' if int(li.argmax()) == t0 else 'LEAK'}", flush=True)
         else:
             print(f"install {name:7}: rank={int((li > li[t]).sum()) + 1} "
-                  f"top={inv.get(int(li.argmax()), '?')} wsum={w:.3f} "
+                  f"top={inv.get(int(li.argmax()), '?')} wsum={w:.3f} wvec={wv} "
                   f"{'FLIP' if int(li.argmax()) == t else ''}", flush=True)
     m2 = split(Ua2, Ea2, Vc2)
     print(f"pass2: top1={m2[0]:.3f} glue={m2[1]}/{m2[2]} content={m2[3]}/{m2[4]} "
