@@ -85,3 +85,23 @@ Remaining: static verifier extensions (per-op m override, typical-magnitude
 reasoning -- stated limits) + WHILE (data-dependent termination: needs a
 termination semantics + verdict integration design conversation first; all
 current iteration needs are bounded, so no demand yet -- stated, not missing).
+
+## CALL in emit backends (CLOSED 2026-10-07, fix + gates)
+
+Was: CALL-namespaced streams (`name#k.P`) lowered verbatim -- nvcc
+died (97 errors). Fix: `sanitize_cnames()` in chain/emit_c.py (shared
+by the C/non-FPU path and compile_cuda): non-word chars -> '_',
+leading-digit guard, collisions fail loud naming both streams, known
+stream names only (numeric-literal args pass through). art carries
+`cname` alias {sanitized: original} for host weight-source lookup
+(gen scripts resolve by_input through it). Clean-name programs map
+identically (zero diff by construction).
+Gates: test_emit_nonfpu ALL OK, test_emit_cuda ALL OK,
+test_builder(_block) ALL OK (identity); new: CALL program through
+nvcc BUILD OK (alias recorded); C CALL-vs-inline BIT-EXACT (rename
+adds nothing); in-contract C-vs-lattice 2.2e-04 (epsilon class).
+Out-of-contract random-normal probe diverges 3.75 (expected float-
+vs-fixed class, not the fix -- verified by the bit-exact twin).
+test_emit_c has a pre-existing environmental failure (missing system
+header gsl/gsl_cblas.h, unrelated -- fails at gcc include, no stream
+names involved).

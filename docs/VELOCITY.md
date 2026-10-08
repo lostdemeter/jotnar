@@ -2865,6 +2865,22 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
 - Standing: address transfers (4/4, rank 86), native ladder climbs
   (55 at 8x), content waits on direction-to-logit correspondence.
 
+## 2026-10-07: minimum-size curve 1 -- floor at all sizes (CLOCKED, start missed)
+
+- Start clock MISSED (92-for-92). research/min_size.py (bank K
+  128->8, gate-comparable top1 + glue/content/unk split): top1
+  0.34-0.36 at every K (gate parity: the earlier 0.07 was UNK-
+  truth exclusion, my metric bug, fixed); UNK carries the WHOLE
+  score (77/77 identical all K); glue 7-11; content 0/40 ALL K.
+  Bank size is irrelevant to top-1 (K8==K128: glue lives in base
+  weights, bank adds nothing measurable here).
+- Reframe (the finding): content-aim starts at ZERO at every
+  size of this organization -- curve 2 (organization) must
+  CREATE content tops, not preserve them. Install = dose >
+  local margin + correct direction (unified with steering
+  physics); next rung is margins + extended dose on best
+  candidates.
+
 ## 2026-10-07: containment recalibrated -- catalog fully green (CLOCKED, start missed)
 
 - Start clock MISSED (91-for-91). Gap-map follow-ups closed:
@@ -2924,3 +2940,203 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   (-0.334); the winning row is fully native. ADDRESS transfers
   (reach), CONTENT does not (precision). The transfer number
   splits and stays half-earned -- stated plainly.
+
+## 2026-10-07: no flips to 64x; injection point diagnosed (CLOCKED, start missed)
+
+- Start clock MISSED (93-for-93). research/content_flip.py
+  (thinnest-margin content positions, native key + readout value
+  at 8/16/32/64x): tops move with dose but PAST truth (64x lands
+  antony/he, never the target). Correct direction + overwhelming
+  dose still fails: the add happens at H (pre-layer-2) and layer-2
+  nonlinearity derails it; readout-row correlations finish the job.
+- Prescription with mechanism (not more dose): inject POST-layer-2
+  (HN2-stream bank: RMSNorm preserves direction, head is linear --
+  steering survives to logits by construction). New listing
+  variant queued. Install physics stands (dose > margin), with the
+  injection point now load-bearing alongside dose and direction.
+## 2026-10-07: MVYB gate -- yarn ball as runnable structure (unclocked, gap admitted)
+
+- Build: stdlib/yarnball.asm (DEF yarnball_apply: MATMUL+TSHIFT+
+  SOFTMAX_WIDE soft gate, zero new mnemonics) + programs/lm_yarnball.asm
+  (lm_bankhn bank via CALL) + chain/engram.py yarnball_bank() (address
+  keys x key_scale, dose-folded values, tier/support/sha ledger rows)
+  + tests/test_yarnball.py (parity + retrieve + install + hold, one listing).
+- Gates (ALL OK): parity bit-exact vs inline bank (max|dlogit|=0);
+  Italy retrieves own store 128; Rome-rank 299->24 (dose 8x value,
+  key-scale 8.0); 10/10 stable holds (6 razor, 5 flipped as predicted).
+- Surprises:
+  1. Key-scale 2.0 (catalog winner for teacher keys) retrieves native
+     store 127, installs only 299->98. Sweep 2/4/8 -> own-retrieval and
+     rank 24 land at 8.0 with stable holds untouched throughout --
+     addressing/strength independent knobs, confirmed again.
+  2. Install top is still <unk>, not Rome (rank 24, Rome-cos 0.518 vs
+     top 0.792): content moves correctly per the dot-reader, argmax
+     stays norm-dominated. Modify-with-accuracy (top-1 install) remains
+     the open gap -- stated, not rounded up.
+
+## 2026-10-07: install ceiling -- three independent blockings (unclocked)
+
+- Dose ladder at ks=8 (value 8/16/32/64x): Rome rank 24->15->10->8,
+  then frozen; blockers (the/a/his) OUTCLIMB Rome (+7-8 vs +6 per
+  8x-step); stable holds break past 8x (/tmp/doseladder.log).
+- Key-scale ladder at 8x (ks=8/16/32): own-weight 0.07->0.84->1.00,
+  rank 24->8, holds UNCHANGED 11/16 + 10/10 stable. Sharpening is
+  pure win; dose is the dirty knob (/tmp/ksladder.log).
+- Combo (ks=32 x dose): rank floor 7-8 at every dose; <unk> drops
+  out at 16x (negative projection -- UNK attractor beatable) but
+  the/a/his accelerate away. Raw readout values cannot top-1 at
+  any dose with containment (/tmp/combo.log).
+- research/lin_map.py: 16-probe layer-2 Jacobian at the Italy point
+  (corr 0.956 vs 8x-Rome delta -- linearization VALID); maximin
+  value through it predicts req norm 4.37 < 8x-Rome 7.23; install
+  collapses the scale instead (rank 336, top logit 0.4 -- expansive
+  small-signal |M|=25 vs saturating large-signal). Aiming through
+  the linearized map fails validly: direction right, regime wrong.
+- Standing: single-vector top-1 install through OUR d=16 SVD readout
+  blocked three independent ways (blocker outclimb / saturation /
+  post-L2 overwrite ceiling). Teacher late layers DO install top-1
+  (siphon pair-contrast) -- geometry permits it there, not here.
+
+## 2026-10-07: siphon install through the ball, mirror-side green (unclocked)
+
+- research/siphon_ball.py (7B mirror): ball = [Germany: L27
+  France-minus-Germany contrast value | Italy/Japan: null stores]
+  via yarnball_bank + ledger; apply = yarnball_apply math (softmax
+  routes, non-targets land on nulls). Live-mined, no caches.
+- Ladder (/tmp/siphonball.log): gain1-2 Germany TOP=Paris rank 1
+  (INSTALL), Italy=Rome + Japan=blank hold, all retrieve own;
+  gain4-8 Germany=Paris-surface rank 3, controls hold; gain16 Italy
+  MOVED (leakage species, same as native dose ladder). Operating
+  point locked: gain 1. First accurate modify through the generic
+  structure (target top-1 + holds + retrieval, one ball).
+- research/addr_sep.py (/tmp/addrsep.log): all prompts len 5,
+  country@3, end@4 (one binary serves the battery). Country row
+  separates 1.0 vs <=0.64; prompt-end row TIES (~0.42, Japan
+  ahead) -- per-row self-gating would misroute; the listing must
+  SLICE the country row and route explicitly. Design input recorded
+  before building, not after failing.
+
+## 2026-10-07: rung 1 green -- siphon install IN-LISTING (unclocked)
+
+- scripts/siphon_geo.py: 28-layer builder program (9866 ops = 9859 +
+  SLICE/MATMUL/TSHIFT/SOFTMAX_WIDE/MATMUL/MATMUL/ADD = the
+  yarnball_apply body at L27 output, explicit country-row routing per
+  addr_sep) + ball data from yarnball_bank (keys x8, Paris value at
+  mirror-gain-1 x |x27|=536.6 dose, 2 null stores, ledger).
+- Mirror side first (research/siphon_ball.py): gain1-2 INSTALL + holds
+  + own-retrieval, gain16 breaks Italy (operating point: gain 1).
+- Geo verdict (/tmp/siphongeo.log vs /tmp/siphongeo0.log): Germany
+  blank(paris45) -> ' Paris'(paris1) INSTALL (effect 45->1); Italy
+  blank->blank (paris-rank 75->75 BIT-IDENTICAL); Japan blank->blank
+  (137->137). Null-store routing leaks exactly zero in-listing.
+- Fork caveat (load-bearing): geo FP16 base ALREADY blanks Germany
+  (mirror: Berlin) and Italy (mirror: Rome) -- near-tie fork per the
+  test_qwen7b_gen doctrine. Holds therefore grade vs geo zero-dose
+  base (--base-json), never mirror. First grading caught this live:
+  initial mirror-graded verdict read Italy as broken; the control
+  proved it pre-existing. Tripwire species: cross-baseline grading.
+- Toolchain gap filed (docs/GAPS.md): CALL-namespaced streams
+  (name#k.P) are not valid C identifiers -- emit_cuda dies. No
+  builder program ever shipped a CALL to a backend (seam never
+  tripwired). Workaround: DEF body inlined, explicit names.
+- Two self-inflicted wounds, same species (shape/index): keep=all
+  vs keep=last mix (3D bank array, fail-loud caught) + norm(t[27][-1])
+  scalar-vs-row mix (dose 0.6 vs 536.6, caught by reading the number:
+  RMS 0.01 impossible at H=3584). Species: post-edit invariant
+  re-check -- every edit re-touches the line below it.
+
+## 2026-10-07: CALL emitter fix CLOSED (unclocked)
+
+- `sanitize_cnames()` (chain/emit_c.py, shared by C/non-FPU +
+  compile_cuda): valid-C rewrite at the emit seam, collisions fail
+  loud, literals untouched, alias in art for host lookups.
+- Gates: nonfpu ALL OK, emit_cuda ALL OK, builder suites ALL OK
+  (identity zero-diff); CALL->nvcc BUILD OK; C CALL-vs-inline
+  BIT-EXACT; in-contract C-vs-lattice 2.2e-04. test_emit_c GSL-header
+  failure pre-existing/environmental (noted, not ours).
+- Scare en route: out-of-contract probe diverged 3.75 -- resolved by
+  the twin design (CALL-vs-inline bit-exact isolates the rename;
+  remainder is priced float-vs-fixed class). Doctrine note: when a
+  fix touches lowering, the twin gate (fixed-vs-fixed across the
+  seam) decides before any cross-substrate comparison is read.
+
+## 2026-10-07: curve 2 -- the cliff runs backward (unclocked)
+
+- research/min_size2.py (/tmp/minsize2.log): curve-1 truncation rule
+  + organized ball (yarnball_bank + MVYB Italy store, lm_yarnball.asm).
+  Rome-rank by K: 128->24, 64->17, 32->11, 16->10, 8->8. Retrieval
+  own at every K; holds 11/16 + stable 10-11/11 throughout;
+  top1/glue/content/unk identical to curve 1 (content 0/40 -- one
+  install, not general content).
+- Reading: no cliff in either curve -- but curve 2's rank IMPROVES
+  as the bank shrinks (thinning native field concentrates softmax
+  on the install). Organization's value is not "shifts the cliff
+  left"; it is install+holds coexisting at EVERY size, sharpest
+  smallest. Minimum viable re-prices itself: K=8+1, rank 8.
+
+## 2026-10-07: generality battery green; multi-fact queued (unclocked)
+
+- research/siphon_battery.py (/tmp/siphonbatt.log): single Germany
+  ball over 6 countries. Gain1: INSTALL + 5/5 hold, all RETR own.
+  Gain8: Germany Paris-surface r3, all 5 hold (France/Italy/Spain/
+  Japan/China keep unsteered tops), all RETR. Offset-mapping miner
+  replaced fragile substring frags (Spain/China splits killed the
+  first run: StopIteration, fail-loud caught; siphon_ball.early_key
+  takes pos= now, no third inline copy).
+- Scouting: France/Italy/Spain/China unsteered already correct
+  (vacuous controls); Japan blank/Tokyo-runner = second non-vacuous
+  fact. research/siphon_multi.py queued: [Germany Paris-value |
+  Japan Tokyo-value | 4 nulls], coexistence question.
+
+## 2026-10-08: multi-fact coexistence -- routing proven, value invalid (unclocked)
+
+- research/siphon_multi.py (/tmp/siphonmulti.log): one bank, two
+  installs ([Germany Paris-value | Japan Tokyo-value | 4 nulls]).
+  Germany INSTALLs at every gain; all 4 controls hold; all retrieve
+  own. Japan does NOT install Tokyo -- top goes Paris, Tokyo rank
+  DETERIORATES with gain (3382->152010): the France-minus-Japan
+  "Tokyo value" is Paris-contaminated (d_de.d_jp = 0.254); the pair
+  recipe isolates the CONTRAST's capital, not the target's.
+- Reading: coexistence MECHANICS proven (routing exact under two
+  live values, holds green); the failure is value-mining, same
+  species as the transfer ledger (content doesn't transfer by
+  vector). Tokyo needs a Tokyo-carrying direction (Tokyo-evocative
+  prompt contrast), not France-minus-Japan. Queued behind rung 2:
+  value-mining IS the precise-relations problem.
+- Note the frame honestly: "Germany->Paris install" transplants
+  France's capital onto Germany (capability demo: arbitrary content
+  to rank-1 with specificity), not a factual correction. Paris on
+  Japan is the same operation succeeding with the wrong payload.
+
+## 2026-10-08: Tokyo screen -- contrasts carry the contrast's capital (unclocked)
+
+- research/mine_tokyo.py (/tmp/minetokyo.log): Japan base blank with
+  Tokyo runner-up (rank 2). Dot-readouts vs Tokyo row: cn-jp -0.051,
+  es-jp -0.117, big-jp +0.016 (all empty -- predicted fail upfront).
+- Ladder confirms: cn-jp installs BEIJING, es-jp installs MADRID
+  (contrast's capital, twice more), Tokyo rank decays with dose;
+  big-jp drifts (r8->610); all broadcast (ungated screen, expected).
+- Rule promoted (3 instances + Germany): pair-contrast isolates the
+  CONTRAST's capital, never the target's. France-minus-X is a Paris
+  hose with an address label.
+- Twist: wrow (Tokyo readout row, predicted-fail control per siphon
+  section 6 decoder-form) installs Tokyo r1 at every gain -- in a
+  friendlier dose regime than section 6's. Exact native content wins
+  where vectors fail (precise-relations principle, second instance).
+  Graduated to the multi-fact bank (siphon_multi.py rerun with Japan
+  value = readout row; coexistence re-tested with a valid payload).
+
+## 2026-10-08: multi-fact coexistence GREEN (unclocked)
+
+- research/siphon_multi.py rerun (/tmp/siphonmulti.log) with valid
+  payloads: [Germany: contrast Paris value | Japan: Tokyo readout-row
+  value | 4 nulls]. Gain1-2: BOTH INSTALL (Paris r1, Tokyo r1),
+  4/4 holds, 6/6 retrieve own. Gain4: Japan holds Tokyo, Germany
+  Paris-surface r2, France+China leak to Tokyo (readout-row values
+  are hot: partial-weight x 4x-mag transplants; operating window
+  1-2, same discipline as every ladder before it).
+- Value alignment -0.004: the two species are nearly ORTHOGONAL --
+  coexistence rides disjoint content, not sharing. Taxonomy earns
+  its keep: contrast hose + readout row, one bank, no entanglement.
+- Item 2 CLOSED: single-fact generality (6-country) + two-species
+  coexistence (2 installs + 4 holds + 6 retrievals, ledgered).

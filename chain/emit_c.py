@@ -27,6 +27,7 @@ finishing touches, not this cut.
 """
 import math
 import os
+import re
 import subprocess
 
 import numpy as np
@@ -873,6 +874,50 @@ def find_consts(bound, inp, streams, sample):
                               int(_zz.flat[0]))
     return consts
 
+def sanitize_cnames(inp, bound, sample, outputs, live=None):
+    """Rewrite stream names to valid C identifiers at the emit seam.
+
+    CALL expansion names streams `name#k.stream` (assembler convention,
+    CPU path green); verbatim lowering emits `name#k.P_h16`, which is
+    not C (nvcc dies -- siphon_geo found it; no CALL program ever
+    reached a backend before). Mapping: non-word chars -> '_', leading
+    digit guarded; collisions fail loud naming both streams. Only known
+    stream names are rewritten (numeric-literal args like "8" pass
+    through untouched). Clean-name programs map identically (zero diff
+    by construction). Returns (inp, bound, sample, outputs, live,
+    alias) with alias {sanitized: original} for changed names only
+    (host weight-source lookup).
+    """
+    known = {n for n, _ in inp}
+    for _outs, _mn, _fn, _args, _ln, _sg in bound:
+        known.update(_outs)
+    mp, seen, alias = {}, {}, {}
+    for n in known:
+        c = re.sub(r"\W", "_", n)
+        if c and c[0].isdigit():
+            c = "_" + c
+        if c in seen and seen[c] != n:
+            raise AsmError(f"emit: stream names {seen[c]!r} and {n!r} "
+                           f"collide as C identifier {c!r} (rename one)")
+        seen[c] = n
+        mp[n] = c
+        if c != n:
+            alias[c] = n
+
+    def _m(x):
+        return mp.get(x, x) if isinstance(x, str) else x
+
+    inp2 = [(mp[n], rest) for n, rest in inp]
+    bound2 = [([mp[o] for o in _outs], _mn, _fn, [_m(a) for a in _args],
+               _ln, _sg)
+              for _outs, _mn, _fn, _args, _ln, _sg in bound]
+    sample2 = {(mp[k] if isinstance(k, str) and k in mp else k): v
+               for k, v in sample.items()} if sample is not None else None
+    outputs2 = [_m(o) for o in outputs] if outputs is not None else None
+    live2 = [_m(v) for v in live] if live is not None else None
+    return inp2, bound2, sample2, outputs2, live2, alias
+
+
 def compile_program(text, target="c", sample=None, outputs=None,
                     registry=None, sigs=None, basedir=".", origin=None,
                     use_blas=False, time_ops=False, use_fp16=False,
@@ -887,6 +932,8 @@ def compile_program(text, target="c", sample=None, outputs=None,
     from chain.asm_ops import REGISTRY as _R, SIGS as _S
     config, inp, bound, _ = assemble(text, registry or _R, sigs or _S,
                                      basedir=basedir, origin=origin)
+    inp, bound, sample, outputs, _, _alias = sanitize_cnames(
+        inp, bound, sample, outputs)
     from chain.backends import get_backend as _gb
     _be = _gb(target)  # unknown names fail loud here
     _be.use_blas = use_blas
@@ -1147,7 +1194,7 @@ def compile_program(text, target="c", sample=None, outputs=None,
     return {"source": src, "backend": be, "streams": streams,
             "dims": dims, "config": dict(config), "inputs": in_names,
             "outputs": outputs, "n_argv": idx - 1, "libs": _libs,
-            "consts": consts}
+            "consts": consts, "cname": _alias}
 
 
 def build(source, workdir, name="prog", cc="cc", cflags=None, libs=None):

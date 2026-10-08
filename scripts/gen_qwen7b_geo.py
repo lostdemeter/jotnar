@@ -181,6 +181,7 @@ def main():
     # Exact-match lookup (never parse trailing digits: ln1@L0 is "ln10",
     # ln1@L10 is "ln110"). Unknown inputs fail loud below.
     by_input = input_sources()
+    _alias = art.get("cname", {})
     for n in art["inputs"]:
         k, _, _ = art["streams"][n]
         fn = os.path.join(work, f"fr_{n}.bin")
@@ -198,8 +199,8 @@ def main():
             prep_7b_weight(g, by_input["lnf"][1], "lnf", S).tofile(fn)
         elif n == "wlog":
             prep_7b_weight(g, by_input["wlog"][1], "wlog", S).tofile(fn)
-        elif n in by_input:
-            short, src = by_input[n]
+        elif _alias.get(n, n) in by_input:
+            short, src = by_input[_alias.get(n, n)]
             w16 = prep_7b_weight(g, src, short, S)
             if k == "F":
                 w16.tofile(fn)

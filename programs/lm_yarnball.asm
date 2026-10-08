@@ -1,12 +1,16 @@
-# LM depth-2 weight-tied (2x H=2 blocks, S<=8, V=513 frozen).
+# LM depth-2 weight-tied with the yarn-ball bank (v1: MVYB gate).
 #
-# First depth run (compounding decider): layer 1 from toks via GATHER,
-# layer 2 from H2 directly (no gather), SAME weights both layers
-# (tied -- isolates compounding from cross-regime effects; distinct
-# L0/L1 banks are the follow-up). Per-head Dh=8, WIDE throughout.
+# Identical to lm_bankhn.asm EXCEPT the layer-1 bank applies through
+# stdlib/yarnball.asm's yarnball_apply (address × content × dose, soft
+# gate over MATMUL + TSHIFT + SOFTMAX_WIDE) instead of inline ops.
+# Same data, same math, named structure: listings read as what they
+# are (bank application through the generic ball) rather than four
+# anonymous ops. Parity vs lm_bankhn.asm is the 0-diff gate
+# (CALL is textual macro expansion of the identical four ops).
 CONFIG eps_rms 1e-6
 CONFIG beta -30.0
 IMPORT "mlp.asm"
+IMPORT "yarnball.asm"
 
 IN tok
 IN pos
@@ -24,8 +28,6 @@ IN rms_w2
 IN wlog
 IN ukt
 IN evb
-IN ukt2
-IN evb2
 
 E = GATHER(emb, tok)
 XN = RMSNORM(E, rms_w1)
@@ -59,10 +61,7 @@ CTX = CONCAT(C1, C2, 1)
 O = MATMUL(CTX, wo)
 H = ADD(E, O)
 HN = RMSNORM(H, rms_w2)
-BC1 = MATMUL(HN, ukt)
-BS1 = TSHIFT(BC1)
-BP1 = SOFTMAX_WIDE(BS1)
-BDOWN = MATMUL(BP1, evb)
+BDOWN = CALL yarnball_apply(HN, ukt, evb)
 H2 = ADD(H, BDOWN)
 XN2 = RMSNORM(H2, rms_w1)
 Q2A = MATMUL(XN2, wq)
@@ -99,16 +98,3 @@ DOWN2 = CALL swiglu_block(HN2, wup, wgate, wdown)
 H4 = ADD(H3, DOWN2)
 LOGITS = MATMUL(H4, wlog)
 OUT = ARGMAX(LOGITS, 1)
-# Post-layer-2 bank (linear path to logits: HNB norm preserves direction,
-# head matmul is linear -- steering survives by construction, unlike the
-# layer-1 bank whose output crosses layer-2 nonlinearity). rms_w2 reused
-# (H-dim norm weight, stated); ukt2/evb2 arrive as IN (assembler data).
-HNB = RMSNORM(H4, rms_w2)
-BC2 = MATMUL(HNB, ukt2)
-BS2 = TSHIFT(BC2)
-BP2 = SOFTMAX_WIDE(BS2)
-BDOWN2 = MATMUL(BP2, evb2)
-H5 = ADD(H4, BDOWN2)
-LOGITS2 = MATMUL(H5, wlog)
-OUT2 = ARGMAX(LOGITS2, 1)
-

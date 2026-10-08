@@ -177,6 +177,7 @@ Check | Result
 `test_lm_bankhn.py` | counts-structured DOWN: layer-1 MLP replaced by softmax storebank over 128 next-word stores (HN@ukt->WIDE->@evb, m_acc 36118 priced): twin_dist 0.781, top1 0.350 no-collapse, parity 54.5/53.5 (MID-space bank failed first: content-free space, re-grounded in emb-space)
 `test_lm_headt.py` | head specialization (47th mnemonic TBETA, head2 T=4 fitted, head1 control): twin_dist 0.700, top1 0.350, parity 52.3/52.5 (drift gate fired 46/47, greened on documenting)
 `test_lm_bankhn2.py` | both-layer bank MLP (tied stores, last random structure gone): twin_dist 0.743, top1 0.350, parity 53.5/53.1 -- every matrix counts-derived or content-structured
+`test_yarnball.py` | MVYB gate: yarnball_apply DEF 0-diff vs inline bank (bit-exact), Italy Rome-rank 299->24 with own-store retrieval, 10/10 stable holds (5 razor flipped as predicted-fragile) -- generic ball runs
 `docs/T_TRANSFORM.md` | v1.4 gate 4: full-range attention specified (fold obstruction, 9-layer ranges, one-assert phi-core fix + our composition; DDColor L0 needs m_of(~16))
 `test_layer1.py` | ALL OK (CRUD Q5: layer-1 pattern reproduces -- spectrum 12x, giant 14dB, tracking -0.54; SKIPs without HF cache)
 `test_engram.py` | ALL OK (native storage: freeze/load roundtrip 6.4e-16, deterministic bytes, store-IO bit-exact; DDColor query/refine stores frozen; SKIPs without HF cache)
@@ -188,8 +189,7 @@ Check | Result
 `test_v4.py` | ALL OK (noise 40.27dB BARRED, real 52dB, structured 55dB, rotation 0.04, flat, sharpens)
 `test_v5.py` | ALL OK (grain 47.95dB barred, real 47.61, structured 50.43, rotation 0.04, detail-order, noise measured 37.10)
 `test_substitute.py` | ALL OK (sigmoid swaps numpy<->torch/CUDA exact on 2007 triples; chain-swap bit-identical live 2x; replicate-vs-zero refusal characterized)
-`test_asm.py` | ALL OK (flagship listing bit-exact vs chain + 4 discipline gates)
-`test_stabilize.py` | ALL OK (flicker -26%, no smear, parity 64dB linear, static-exact, frame0-still)
+`test_asm.py` | ALL OK (flagship listing bit-exact vs chain + 4 discipline gates)`test_stabilize.py` | ALL OK (flicker -26%, no smear, parity 64dB linear, static-exact, frame0-still)
 `test_motion.py` | ALL OK (compass 14, rescue-V 0.36->0.81, zeroflow-exact bytes, pan-preserve, parity 42.94dB, pan-e2e ratio 0.504, rotation 0.04)
 `test_temporal.py` | ALL OK (mix-frozen, warp-parity 73dB, warp-identity, static-converged + firststep bounds, firstframe-still, memory, step-settles, seq 64dB)
 `test_router.py` | ALL OK (decisions incl. boundary, seamless-static exact, flicker-wins, sharpness-bounded, routed parity 60-63dB)

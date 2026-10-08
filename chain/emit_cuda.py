@@ -687,6 +687,9 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
         raise AsmError("compile_cuda needs outputs=[...]")
     be = CUDABackend()
     be.use_fp16 = use_fp16
+    from chain.emit_c import sanitize_cnames as _san
+    inp, bound, sample, outputs, live, _alias = _san(
+        inp, bound, sample, outputs, live)
     streams = infer_shapes((config, inp, bound), sample)
     in_names = [n for n, _ in inp]
     if use_fp16:
@@ -968,7 +971,7 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
             "dims": {}, "config": dict(config), "inputs": in_names,
             "outputs": outputs, "n_argv": idx - 1, "consts": consts,
             "live": list(live) if live is not None else None,
-            "graph": bool(graph)}
+            "graph": bool(graph), "cname": _alias}
 
 
 def build_cu(source, workdir, name="prog", nvcc="nvcc", nvflags=None,

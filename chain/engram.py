@@ -70,3 +70,59 @@ def bank(tag, idx=None):
         idx = list(range(s.shape[0]))
     idx = list(idx)
     return U[:, idx] * s[idx], Vt[idx]
+
+
+def yarnball_bank(base_ukt, base_evb, stores, key_scale=2.0):
+    """Yarn-ball bank as listing data for yarnball_apply.
+
+    base_ukt (D,K0), base_evb (K0,D): the unstructured ball (native bank).
+    stores: list of dicts, one per strand, each with:
+      key (D,) unit address direction in RECEIVER geometry (native-grown
+        or emb; mapped-teacher keys allowed but tier-tagged as such),
+      value (D,) unit content direction (native readout dir),
+      dose (float): install dose folded into the value row (HOW MUCH),
+      tier (str): 'exact' | 'assoc' | 'opt' (operating-point refit) |
+        'null' (zero value: background store so the softmax has
+        somewhere to route non-targets -- hold by construction),
+      support (str): provenance (corpus-mined prompt / label id),
+    key_scale (float): address key norm (2.0 = winner scale from the
+      key-rank gate; addressing/strength are independent knobs).
+
+    Returns (Ua, Vc, ledger): Ua (D,K0+N) address keys with gains folded
+    (key*key_scale), Vc (K0+N,D) content values with dose folded
+    (value*dose), ledger (list of rows: tier, support, key_norm,
+    value_norm, dose, sha of key bytes). Base stores get ledger rows
+    with tier 'base', dose 1.0. Cost preview stays in chain/read.py
+    (predict_db before emitting); this function is STORAGE + ledger.
+    """
+    import hashlib
+    Ua = [np.ascontiguousarray(base_ukt, dtype=np.float64)]
+    Vc = [np.ascontiguousarray(base_evb, dtype=np.float64)]
+    ledger = [{"tier": "base", "support": f"native-{i}",
+               "key_norm": None, "value_norm": float(np.linalg.norm(
+                   np.ascontiguousarray(base_evb, dtype=np.float64)[i])),
+               "dose": 1.0, "sha": None}
+              for i in range(np.ascontiguousarray(base_evb).shape[0])]
+    for st in stores:
+        k = np.ascontiguousarray(st["key"], dtype=np.float64)
+        v = np.ascontiguousarray(st["value"], dtype=np.float64)
+        kn, vn = float(np.linalg.norm(k)), float(np.linalg.norm(v))
+        if not kn > 0:
+            raise ValueError("yarnball_bank: key must be nonzero "
+                             f"(got norm {kn:.3g})")
+        if st.get("tier", "assoc") not in ("exact", "assoc", "opt", "null"):
+            raise ValueError(f"yarnball_bank: bad tier {st.get('tier')!r} "
+                             "(want exact|assoc|opt|null)")
+        ku = k / kn * float(key_scale)
+        vr = np.zeros_like(v) if vn == 0 else v / vn * float(st.get("dose", 1.0))
+        Ua.append(ku[:, None])
+        Vc.append(vr[None, :])
+        ledger.append({"tier": st.get("tier", "assoc"),
+                       "support": str(st.get("support", "?")),
+                       "key_norm": float(key_scale),
+                       "value_norm": float(np.linalg.norm(vr)),
+                       "dose": float(st.get("dose", 1.0)),
+                       "sha": hashlib.sha256(np.ascontiguousarray(
+                           k).tobytes()).hexdigest()[:16]})
+    return (np.concatenate(Ua, axis=1),
+            np.concatenate(Vc, axis=0), ledger)
