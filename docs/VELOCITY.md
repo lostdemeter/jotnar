@@ -3528,8 +3528,10 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
 - Edge follow-up (/tmp/windowedge.log, 9min): L20g1 INSTALL + holds;
   L20g2 derails (r103); L20g4 r2374; holds green at every cell
   (Italy/Japan never move). L19g4 derails (r1768).
-- Windows NARROW downward: L27 wide (1..8), L20 single-point (1),
-  L19 none. Depth trades install-ease against derail-onset with
+- Windows NARROW downward: L27 wide (1..8), L20 single-point (1);
+  then L19g1 INSTALLS too (correction within the hour -- the edge
+  keeps descending; mapping continues). Depth trades install-ease
+  against derail-onset with
   opposite slopes: earlier = installs cheaper AND derails sooner.
   Mechanism sketch (not yet priced): upstream, small adds ride
   formation dynamics (amplify-or-scramble); late, adds land on
