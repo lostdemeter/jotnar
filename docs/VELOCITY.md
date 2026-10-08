@@ -3452,3 +3452,22 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   values carry margin. Gate pins 3 FLIPs + caesar<=10 + swap + glue>=5
   + stable; cutting-plane iteration queued for the egypt residue.
 - tests/test_eroute.py promoted green (first full run).
+
+## 2026-10-08: content emergence is a boundary at L23 (unclocked)
+
+- research/midlens.py (/tmp/midlens.log, 46s): per-layer lens tracking
+  CONTENT ranks (not final pick) on 3 prompts. L0-22: Paris/Rome/Tokyo
+  at 10k-150k under junk/code tops (substrate). L23: Rome r3 + Tokyo
+  r4 (top-10 entry, all prompts with content); L24-27 sharpen with
+  cross-content slosh (rival contents swing 27->291->94 as decision
+  lands). Germany prompt: Paris never enters (correct: unsteered top
+  is Berlin -- absence of content is itself a reading).
+- Rank collapses smoothly (LENS) BUT content arrives discretely:
+  funnel everywhere, content at L23, filter at L26-27. Three-stage
+  depth with an address each: substrate (skip), L23 content
+  (edit-at-depth target: content lives, decision unmade), L27
+  decision (proven install point). Mid-stream injection failed at
+  L14/L22 for a reason now visible: nothing to amplify yet (L14)
+  or mid-formation (L22) -- placement must land ON or AFTER L23.
+- Blanks veil L19-26 tops throughout: the norm-map doctrine seen
+  developmentally (fillers outshout content until the decision).

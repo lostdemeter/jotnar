@@ -52,14 +52,14 @@ def main():
             o = np.argsort(-lg)
             top5 = [(tok.decode([int(i)]), round(float(lg[int(i)]), 1))
                     for i in o[:5]]
-            r = {t: int((lg > lg[tids[t]]).sum()) + 1 for t in tids.values()}
+            r = {name: int((lg > lg[tids[name]]).sum()) + 1
+                 for name in COUNTRIES}
             mark = ""
-            for tname, tid in TARGETS.items():
-                if r[tid] <= 10 and tname not in entered:
-                    entered[tname] = L
-                    mark += f" [{tname}-content enters top10 @L{L}]"
-            print(f"  L{L:02}: top5={top5} ranks=" +
-                  str({k: r[tids[k]] for k in TARGETS}) + mark, flush=True)
+            for name in COUNTRIES:
+                if r[name] <= 10 and name not in entered:
+                    entered[name] = L
+                    mark += f" [{TARGETS[name]}-content enters top10 @L{L}]"
+            print(f"  L{L:02}: top5={top5} ranks=" + str(r) + mark, flush=True)
         print(f"  entry layers: {entered}", flush=True)
 
 
