@@ -3616,3 +3616,18 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   (none occurred); doses stay in-envelope (m_cov saturation binds
   fusion, proven). Composition of ADDRESSES (two keys) untested --
   values compose, routing interaction does not yet.
+
+## 2026-10-08: synthesis replaces ladders, 6.8x better (unclocked)
+
+- chain/synth.py (assembler-side QP, host math, doctrine-clean) +
+  research/synth_test.py (/tmp/synthtest.log, seconds): solver
+  receipt on amid full-vocab: req=5.83, all 512-row constraints
+  satisfied (maximin-DIRECTION was 39.85 -- fixed directions are 7x
+  loose; true optimum far smaller). Caesar synth req=4.84 (raw row
+  10.84); installs italy/alex/caesar ALL rank-1 in the 9-store bank.
+- Ladders are now legacy: specify target ranking -> solve -> emit
+  value+dose with predicted receipt. Every historical ladder dose
+  was an upper bound found by walking; the solver computes the
+  floor. Non-geometric exploration (dual ascent) feeding geometric
+  requirements (value norms the listings must carry) -- the
+  doctrine working as designed.
