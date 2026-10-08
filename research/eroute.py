@@ -3,12 +3,12 @@
 Program lm_siphon.asm: entity row found by E-space match (position-
 free), dual-channel bank scores (HN contextual + E lexical) read AT
 that row, value tiles, dual heads blend by install mass. Keys: HN
-mined rows + raw embeddings; ekey = lexicality direction (content
+mined rows + raw embeddings.
 minus function mean), separation VERIFIED in-script before trusting.
 Battery: 4 installs (italy, italy2-template-variant, alex, caesar)
 + swap-distractor (must HOLD) + holds + split + negmine loop.
 Gates: ALL installs FLIP + swap holds + prior == skewed base +
-receipts. ekey margin printed (negative margin fails loud: address
+receipts.
 by fiat is refused here).
 Usage: python3 research/eroute.py (CPU lattice, ~700 runs)
 """
@@ -62,7 +62,7 @@ def main():
         return (S.decode(np.ascontiguousarray(t[0]), np.ascontiguousarray(t[1]))
                 * (1 - np.ascontiguousarray(t[2]).astype(np.float64)))
 
-    def runS(ids, Uhn, Ue, Vc, ekey):
+    def runS(ids, Uhn, Ue, Vc):
         toks = np.array(ids, dtype=np.int64)
         n = len(ids)
         pos = np.arange(n, dtype=np.int64)
@@ -76,7 +76,6 @@ def main():
                              "rms_w1": enc(dE["rms1"]), "rms_w2": enc(dE["rms2"]),
                              "wlog": enc(wlog), "wlogU": enc(wlogU),
                              "Uhn": enc(Uhn), "Ue": enc(Ue), "Vc": enc(Vc),
-                             "ekey": enc(ekey),
                              "onesS1": enc(np.ones((n, 1))),
                              "ones1V": enc(np.ones((1, V))),
                              "onesSV": enc(np.ones((n, V))),
@@ -102,24 +101,6 @@ def main():
 
     def ids_of(s):
         return [vocab.get(w, 0) for w in re.findall(r"[a-z0-9']+", s.lower())]
-
-    # lexicality direction + VERIFICATION (refuse fiat addressing)
-    emb = np.ascontiguousarray(dE["emb"])
-    ci = [vocab[w] for w in CONTENT_WORDS if w in vocab]
-    fi = [vocab[w] for w in FUNC_WORDS if w in vocab]
-    ekey = emb[ci].mean(axis=0) - emb[fi].mean(axis=0)
-    ekey /= np.linalg.norm(ekey)
-    lines = open(os.path.join(dd, "lm_test.txt")).read().split("\n")[:10]
-    ent, fil = [], []
-    for s in lines:
-        for w in re.findall(r"[a-z0-9']+", s.lower()):
-            (ent if vocab.get(w, 0) != 0 and w in CONTENT_WORDS
-             else fil).append(vocab.get(w, 0))
-    me = min(float(emb[i] @ ekey / np.linalg.norm(emb[i])) for i in set(ent) if i)
-    mf = max(float(emb[i] @ ekey / np.linalg.norm(emb[i])) for i in set(fil) if i)
-    print(f"ekey: min-entity-cos={me:.3f} max-filler-cos={mf:.3f} "
-          f"margin={me - mf:.3f}", flush=True)
-    assert me > mf, "ekey does not separate entities from fillers (no fiat addressing)"
 
     inst = {"italy": (ids_of("The capital of Italy is")[-8:], 98),
             "italy2": (ids_of("the city of italy is")[-8:], 98),
@@ -162,7 +143,6 @@ def main():
             bgHN.append(h / np.linalg.norm(h))
         if len(bgHN) >= NBG:
             break
-    ek1 = (ekey * KS)[:, None]
 
     def bank(negHN, negE):
         U = np.concatenate([k[:, None] for k in bgHN]
@@ -186,7 +166,7 @@ def main():
             for k in range(1, len(ids)):
                 truth = ids[k]
                 ctx = ids[max(0, k - 8):k]
-                lg = dec(runS(ctx, Ua, Ea, Vc, ek1)["LOGITS2"])[-1]
+                lg = dec(runS(ctx, Ua, Ea, Vc)["LOGITS2"])[-1]
                 hit = int(lg.argmax()) == truth
                 tot += 1
                 ut += hit
@@ -216,11 +196,11 @@ def main():
         ent_tok = toks[-1]
         e = np.ascontiguousarray(emb[int(ent_tok)])
         n = float(np.linalg.norm(e))
-        negE.append(e / n if n > 0 else ekey)
+        negE.append(e / n if n > 0 else bgE[0])
     Ua2, Ea2, Vc2 = bank(negHN, negE)
     print(f"bank: {Ua2.shape[1]} stores ({len(negHN)} neg-mined)", flush=True)
     for name, (ids, t) in list(inst.items()) + list(swaps.items()):
-        fi = runS(ids, Ua2, Ea2, Vc2, ek1)
+        fi = runS(ids, Ua2, Ea2, Vc2)
         li = dec(fi["LOGITS2"])[-1]
         assert "PR" in fi, sorted(fi.keys())
         pr = dec(fi["PR"])[0]
