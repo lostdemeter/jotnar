@@ -29,6 +29,7 @@ IN wlogU
 IN Uhn
 IN Ue
 IN Vc
+IN unity
 IN onesS1
 IN ones1V
 IN onesSV
@@ -112,7 +113,7 @@ OUT = ARGMAX(LOGITS, 1)
 # (only the end row is read: post-final-attention doctrine). Blend
 # mass = install weights (either install context reads flat).
 # All streams IN (assembler data); ones* frozen per geometry.
-YB, PR = CALL entity_route(E, HN, Uhn, Ue, Vc, onesS1)
+YB, PR = CALL entity_route(E, HN, Uhn, Ue, Vc, onesS1, unity)
 H5 = ADD(H4, YB)
 WI = SLICE(PR, 1, 6, 7)
 WJ = SLICE(PR, 1, 7, 8)

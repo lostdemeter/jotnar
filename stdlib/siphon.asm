@@ -10,14 +10,13 @@
 # final-attention doctrine, siphon_geo precedent). All existing ops.
 # Returns (y, Pr): y the tiled value add (S,H), Pr the (1,K) routing
 # (caller slices install mass by baked indices: layout-specific).
-# Entity rows are found by the bank's own vocabulary, not a generic
-# direction (a mean-difference "lexicality" direction FAILED live:
-# min-entity-cos -0.001 vs max-filler-cos 0.194 -- content is not
-# linearly separable from fillers; the assert refused fiat
-# addressing). Entity-ness = summed install-key scores (ADD of baked
-# columns -- bank layout [bg x6, I(6), A(7), C(8)] assumed, stated).
-DEF entity_route(xe, xh, Uh, Ue, V, ones) -> (y, Pr)
-  CeF = MATMUL(xe, Ue)
+# E rows enter by COSINE (RMSNorm to unity first): raw dot matching
+# is norm-hijacked by long central rows (OOV/UNK emb outscores exact
+# entity matches 7.67 vs 2.06 live -- the UNK attractor in emb space).
+# unity arrives as IN (frozen ones, cmask class).
+DEF entity_route(xe, xh, Uh, Ue, V, ones, unity) -> (y, Pr)
+  XEn = RMSNORM(xe, unity)
+  CeF = MATMUL(XEn, Ue)
   eI = SLICE(CeF, 1, 6, 7)
   eJ = SLICE(CeF, 1, 7, 8)
   eK = SLICE(CeF, 1, 8, 9)
