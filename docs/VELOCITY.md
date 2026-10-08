@@ -3229,3 +3229,21 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   Selective norm promotion (lengthen content rows) is DEAD:
   Qwen content rows are SHORT (~0.55, same as ours) -- its
   competitors are short, not its targets long.
+
+## 2026-10-08: install late is law, downstream distorts (unclocked)
+
+- research/siphon_mid.py (/tmp/siphonmid.log): same gated ball
+  placed at L14/L22/L27, gains 1/2/4. L14: Paris r6->r53->r378
+  (tops blank/most/so). L22: r8->r169->r125 + Italy MOVED at g4.
+  L27: r1/r1/r3 INSTALL (recipe re-baselined identical across
+  reruns). Retrieval own in ALL 27 cells -- addressing never fails;
+  content transport does.
+- Law: downstream blocks DISTORT placed directions
+  dose-dependently, never amplify (lin_map saturation writ across
+  depth). Later install strictly dominates. Native probe-1 (same
+  floor 1-block vs 0-block downstream) + teacher ladder agree:
+  install at the last addressable point. Mid-stream injection is
+  WITHDRAWN as a rung-2 path (second mechanism-first negative of
+  the reversing loop, after head-targeting).
+- Remaining rung-2 paths: (a) grow alignments (capacity, big);
+  (b) dual-head routing (architecture-sized, everything preserved).
