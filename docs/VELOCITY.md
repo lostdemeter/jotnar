@@ -3431,3 +3431,24 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   blind); PR-flat diagnosis located m_cov ADD saturation (Ch~114
   clipped to 17.04) -> ks=2 both channels; UNK-row finder hijack
   (7.67 vs 2.06) -> cosine matching via RMSNorm-to-unity.
+
+## 2026-10-08: eroute arc -- cosine, swap-null, per-fact dose, near-miss (unclocked)
+
+- Entity routing defeated three hijacks in one day, each with a
+  number: m_cov ADD saturation (Ch~114 clipped to 17.04 -> ks=2 both
+  channels; single-channel paths immune since softmax normalizes);
+  UNK-row finder hijack (7.67 vs 2.06 -> cosine E-match via
+  RMSNorm-to-unity); template-leak (swap w=1.0 -> supervised HN null,
+  E tied: AND-split vindicated, swap w 0.994->0.401 HOLD).
+- Dose: global 16x overshoots (Italy breaks to neighbor-hijack
+  'a'/'egypt) while Alex needs 16x for margin 10.08 -> per-fact
+  windows (Italy 8x, Alex 16x, Caesar 12x). Encoding verified clean
+  to 32x (rel-err 3e-4): ceilings are dynamical, not lattice.
+- Caesar: raw row stalls 7->5->6 (egypt absorbs dose ~equally);
+  per-store ks BACKFIRES (spillover: all installs + glue die);
+  maximin value wins 9-store (rank 1, margin 0.05) but needs
+  headroom norm in 26-store (1.75x: rank 6, glue 5). Optimal values
+  are maximally fragile (zero headroom by construction); robust
+  values carry margin. Gate pins 3 FLIPs + caesar<=10 + swap + glue>=5
+  + stable; cutting-plane iteration queued for the egypt residue.
+- tests/test_eroute.py promoted green (first full run).

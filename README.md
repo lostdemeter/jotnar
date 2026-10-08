@@ -182,6 +182,7 @@ Check | Result
 `test_scale2.py` | two native facts, negmined 24-store bank: both FLIP (w 1.000/0.991), prior bit-identical 0.337 -- scale is routine
 `test_dualbank.py` | dual-channel addressing (HN+E log-space AND): 8/8 invariance + Caesar exclusion, no tuning
 `test_siphon.py` | teacher install through the ball (mirror; SKIPs w/o snapshot/GPU): Paris r1 + holds + own-retrieval, ledgered tiers
+`test_eroute.py` | entity-routed installs (siphon DEF, cosine E-match, per-fact maximin values): 3 FLIPs + caesar rank<=10 + swap HOLD + glue>=5 + stable (cutting-plane queued for the egypt-bound residue)
 `docs/T_TRANSFORM.md` | v1.4 gate 4: full-range attention specified (fold obstruction, 9-layer ranges, one-assert phi-core fix + our composition; DDColor L0 needs m_of(~16))
 `test_layer1.py` | ALL OK (CRUD Q5: layer-1 pattern reproduces -- spectrum 12x, giant 14dB, tracking -0.54; SKIPs without HF cache)
 `test_engram.py` | ALL OK (native storage: freeze/load roundtrip 6.4e-16, deterministic bytes, store-IO bit-exact; DDColor query/refine stores frozen; SKIPs without HF cache)
