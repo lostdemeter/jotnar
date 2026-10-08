@@ -3540,3 +3540,19 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
 - Practical: two editable addresses (L20@1, L27@1-8). L20's is a
   stencil (exact dose), L27's a window. New installs default L27;
   L20 reserved for dose-sensitive work (smaller adds, same top-1).
+
+## 2026-10-08: churn falsified; three depth regimes (unclocked)
+
+- research/deadband.py (/tmp/deadband.log): L18g1 INSTALLS (holds),
+  L18g4 derails; L19g2 derails. Editable: L18/L19/L20 (single-point
+  @1) + L27 (wide). Dead band L21-26 stands.
+- Churn profile (all prompts, both rows): peaks at L7 (~0.9) and L27
+  (~1.1-1.3, LARGEST step = the decision moves most); dead band
+  0.4-0.6 unremarkable. Kinetics hypothesis FALSIFIED as stated
+  (velocity does not mark the dead band). Early country-formation
+  step large at L1 (0.98-1.13, country rows only).
+- Three regimes replace two: (1) pre-content L18-20: ride formation
+  (exact dose, derail above); (2) open-competition L21-26: no
+  window (move/derail, leak first); (3) decided L27: tip margins
+  (wide). research/lower_edge.py queued (L14-17 natives): bounds
+  regime 1 below -- ride starts deep, or something changes at L18.
