@@ -3247,3 +3247,22 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   the reversing loop, after head-targeting).
 - Remaining rung-2 paths: (a) grow alignments (capacity, big);
   (b) dual-head routing (architecture-sized, everything preserved).
+
+## 2026-10-08: rung 2 lands -- dual-head triple gate green (unclocked)
+
+- programs/lm_dualhead.asm + research/dualhead.py (/tmp/dualhead.log):
+  post-L2 bank ALWAYS carries unit-Rome 4x (broadcast drug); readout
+  routes per prompt (host-tiled mask, onehot precedent): flat head on
+  install contexts, skewed head elsewhere.
+- prior (mask0+drug): 0.337, 6/87, 0/40, 77 -- BIT-IDENTICAL to skewed
+  base. install (mask1): rank 1, top=rome, FLIP. holds: 11/16,
+  stable 10/10. ALL THREE in one listing.
+- Rung-2 verdict: architecture, not refit. Prior and install are
+  routed tiers (DISCOVERIES section 8, now running readings, not
+  doctrine). Track (a) closed by statics (skew 15.4->9.9 over
+  d16->d64, max frozen 6.99, frequency order in counts AND fit:
+  the prior is the objective; dim/fit can't remove it).
+- Remaining hardening: mask from in-listing addressing (bank-weight
+  blend; host mask is the v1 seam, stated in the listing header),
+  second fact coexistence natively (two drugs, two masks), flat-head
+  tier provenance (wlogU is derived data -- freeze manifest).
