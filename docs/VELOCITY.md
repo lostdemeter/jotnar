@@ -3487,3 +3487,22 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   L23/L24, place AT same): native directions installing cleanly
   would open edit-at-depth properly; failing too would price
   formation itself as uneditable (decision-only installs).
+
+## 2026-10-08: natives install, windows decide (unclocked)
+
+- research/depth_native.py (/tmp/depthnative.log, 10min): mine-AT +
+  place-AT L23/L24. L23g4: Germany Paris r1 INSTALL (formation IS
+  editable with native directions) -- but Italy MOVED at the same
+  gain (no clean window: install-dose == leak-dose == 4). L24:
+  r4->r38->r13, Italy breaks at g4. Retrieval own + Japan holds
+  throughout (addressing never the failure, for the sixth time).
+- LAW, refined past "install late": editability = thin margins +
+  leakage discipline, per layer. L27: install needs gain 1 (decision
+  nearly made), leak needs 16 -> window 1..8, wide. L23: install
+  needs 4 (open competition), leak needs 4 -> window EMPTY. Late
+  wins not because content is special there but because MARGINS are
+  thin there: small pushes suffice, small pushes stay silent.
+- Install-point selection is now a computation, not a preference:
+  measure install-dose (margin/gain) and leak-dose (hold breakage)
+  per layer; operate where window exists. L27 currently the only
+  known address with a window.
