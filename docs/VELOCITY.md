@@ -3397,3 +3397,19 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
 - Language clarification (docs/LANGUAGE.md): multi-out CALL binds
   DEF outputs to caller names; only internals namespace (bit us on
   first run: Pkey found nothing; CPU feed keys proved it).
+
+## 2026-10-08: breadth -- entity rides, template dominates, Caesar leaks (unclocked)
+
+- research/breadth.py (/tmp/breadth.log): 3 facts x templates +
+  swap-distractor + loop. italy FLIP (w 1.0); italy2 ("the city of
+  italy is", NO store) FLIP (w 1.0) -- install rides the ENTITY
+  across templates; alex FLIP (0.990); caesar rank 52 (base 67,
+  wsum 0.663 -- weak, open); swap caesar-city LEAKS (top=rome from
+  <unk>, wsum 1.000). pass2 identical 0.337/77 throughout.
+- Reading: HNB-space keys match TEMPLATE more than entity ("the
+  city of Y is" fires at 1.0 for either Y). Late-state addressing
+  sees syntax; lexical addressing sees words -- the siphon lesson
+  re-appears natively (address early, content late). Install keys
+  belong in E-space (dualbank.asm exists for retrieval; extend the
+  AND to install addressing next). Caesar-weakness separate (dose?
+  key?); swap-leak is the structural one.
