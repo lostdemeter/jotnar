@@ -3364,3 +3364,21 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
 - Side: data/wlogU.npz + manifest frozen (unit columns, dev 3e-16);
   consumers repointed from /tmp (repo data untouched no longer --
   tier is frozen inventory now).
+
+## 2026-10-08: addressing ladder -- broad vs narrow, middle wins (unclocked)
+
+- stdlib/dynaddr.asm + programs/lm_dynaddr.asm + research/dynaddr.py
+  (/tmp/dynaddr.log): address by content (MATMUL+ARGMAX+GATHER, no
+  position literals). Battery: Italy at slots 0..7 + 3 controls.
+- Base (emb key): invariance 8/8, found-rows exact, exclusion 2/3 --
+  Caesar false-positives at the BANK stage (address exact; diagnosed
+  live: Italy store wins 0.236 vs 0.031 on Caesar rows).
+- Contrast key (HN_italy-HN_caesar, pos-3 mined): exclusion 3/3 BUT
+  invariance 0/8 -- difference direction overfits mining context
+  (HN is positional); emb=BROAD (spills same-class), contrast=NARROW
+  (generalizes nowhere). Sensitivity-specificity trade, priced both
+  ends. Negmine middle (5/8+3/3) best so far.
+- Scale intuition died twice: ks x8 worsened exclusion 2/3->0/3
+  (global scale can't separate overlap; argmax needs direction).
+- Next: position-averaged contrast (8 slots x both entities) --
+  broad AND discriminative, if HN overlap is positional noise.
