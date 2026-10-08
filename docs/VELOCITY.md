@@ -3194,3 +3194,20 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   (linear path corr 1.000, so statics ARE dynamics): raw-row values,
   every token as hypothetical target, exact required dose. Any
   content target <=8x graduates to a real install run.
+
+## 2026-10-08: transport map -- broadcast, L1 drenched, late blind (unclocked)
+
+- research/transport_map.py (/tmp/transport.log): end-query mass on
+  country token, 6 prompts. MEAN layer totals (28 heads): L1 5.56
+  (nearly ALL mass), early 2.6-2.8, mid sustained 2-3 (L14 3.17,
+  L18 3.14, L20 3.11), dips L5/L16 (~0.9), floor L26 (0.50) + L27
+  (1.14). Hot heads/KV-groups rotate every layer -- NO concentration.
+- Readings: (1) head-targeted surgery CONTRAINDICATED (no hotspot;
+  step 3 of the plan withdrawn, mechanism-first); (2) L2 lexical
+  keys work because early layers bathe in country info; (3) L26-27
+  ignore the country token -- the decision forms from mixed states,
+  so ungated late steers MUST broadcast: the siphon product shape
+  (early address x late content) confirmed from the attention side,
+  independently of the steering results. (4) Mid-layer ladder next:
+  L14 (heavy mass) and L22 (donor precedent) vs L27 baseline --
+  amplification vs derailment decides install-point law.
