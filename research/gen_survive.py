@@ -25,7 +25,8 @@ PROMS = {
     "hamlet": ("Shakespeare wrote the play", "Shakespeare", " Hamlet"),
     "orwell": ("George Orwell wrote the novel", "Orwell", " 1984"),
 }
-GAINS = [1, 2]
+GAINS = [0.25, 0.5, 1.0]
+MODES = ("every", "first")
 N_GEN = 8
 KEY_SCALE = 8.0
 
@@ -51,7 +52,9 @@ def main():
     from qwen_torch import fwd, fwdH
     from siphon_ball import early_key
     g, tok = load7b()
-    for name, (prompt, subj, target) in PROMS.items():
+    for mode in MODES:
+      print(f"== placement: {mode}-only", flush=True)
+      for name, (prompt, subj, target) in PROMS.items():
         tids = tok(target, return_tensors="pt")["input_ids"][0].tolist()
         lg0, _ = fwd(prompt)
         print(f"== {name}: target={target!r}{tids} base-top="
@@ -76,7 +79,7 @@ def main():
             for tag, dose in (("off", 0.0), ("on", gn)):
                 seq = tok(prompt, return_tensors="pt")["input_ids"][0].tolist()
                 outs = []
-                for _ in range(N_GEN):
+                for step in range(N_GEN):
                     cur = tok.decode(seq)
                     t7c, _ = fwdH(cur, keep="all")
                     # address follows the subject row while present; else end
@@ -90,12 +93,14 @@ def main():
                     mag = float(np.linalg.norm(t7c[27][-1]))
                     y = (P @ Vc) * (dose * mag)
                     yn = y / (np.linalg.norm(y) + 1e-12)
-                    lg, ids = fwd(cur, steer=(27, yn, float(np.linalg.norm(y) / mag)) if dose else None)
+                    use = dose if (tag == "on" and (mode == "every" or step == 0)) else 0.0
+                    lg, ids = fwd(cur, steer=(27, yn, float(np.linalg.norm(y) / mag)) if use else None)
                     top = int(lg.argmax())
-                    outs.append(top)
+                    outs.append((top, int((lg > lg[tids[0]]).sum()) + 1))
                     seq = seq + [top]
                 txt = tok.decode(seq)
-                print(f"  {name} gain={gn} {tag}: {txt[:100]!r}", flush=True)
+                print(f"  {name} gain={gn} {tag}: {txt[:100]!r} "
+                      f"tgt-ranks={[r for _, r in outs]}", flush=True)
         print("", flush=True)
 
 

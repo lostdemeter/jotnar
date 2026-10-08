@@ -3658,3 +3658,18 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   listing-first install green (Germany + Japan), same fork-correct
   form. Effect size smaller (2->1 vs 45->1) but top flips blank to
   content -- the install moves the decision, not just the rank.
+
+## 2026-10-08: installs degenerate generation (unclocked)
+
+- research/gen_survive.py (/tmp/gensurvive.log, 33min): unsteered
+  fluent AND factual ("The Tempest", "Animal Farm in 1949" -- the
+  model knows these; installs unneeded here, survival separable).
+  Steered (gains 1-2, every step): INSTANT garbage (replacement
+  chars / comma runs) both prompts. Open-loop installs (one
+  readout) tolerate what closed-loop generation cannot: per-step
+  ~0.5x-residual adds compound through feedback into collapse.
+- Next (bounded): dose DOWN (0.25/0.5) x placement (every-step vs
+  step-0-only). Single-shot-clean + every-step-dirty = feedback
+  instability (per-step dose must drop 4-10x); both dirty = value
+  wrong for generation entirely. Per-step ranks recorded this time
+  (strings alone under-determine it).
