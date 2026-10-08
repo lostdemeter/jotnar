@@ -3346,3 +3346,21 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
 - Standing for the native ball: top-1 install WITH prior, routed,
   self-addressing, learned background. Remaining hardening is
   scale (second fact, battery breadth), not feasibility.
+
+## 2026-10-08: scale-2 green -- two facts, identical prior (unclocked)
+
+- programs/lm_dualhead3.asm + research/scale2.py (/tmp/scale2.log):
+  bank 6bg + Italy(6, Rome 4x) + Alex(7, Alexandria 4x) + 16
+  neg-mined nulls (24 stores); blend weight w6+w7.
+- pass1: 0.276/62. install italy rank 1 (w 1.000) FLIP; install
+  alex rank 1 (w 0.991) FLIP -- margin-10 Alexandria flips through
+  the routed flat head (target-selection problem dissolved: with
+  addressing + flat tier, rank AND margin objections both fall).
+  pass2: 0.337, 6/87, 0/40, 77 -- BIT-IDENTICAL, all 16 negs fixed.
+- Cross-talk answered: Rome wins Italy rows, Alexandria wins Alex
+  rows through one shared flat head -- native mirror of the teacher
+  -0.004 coexistence. Scale is now routine (loop handles N facts);
+  remaining scale work is breadth (battery templates), not depth.
+- Side: data/wlogU.npz + manifest frozen (unit columns, dev 3e-16);
+  consumers repointed from /tmp (repo data untouched no longer --
+  tier is frozen inventory now).

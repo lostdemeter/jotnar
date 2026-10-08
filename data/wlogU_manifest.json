@@ -1,0 +1,11 @@
+{
+  "source": "data/lm_svd_IvoQ.npz/wlog, columns unit-normalized",
+  "shape": [
+    16,
+    513
+  ],
+  "col_norm_max_dev": 3.3306690738754696e-16,
+  "wlog_sha": "2bea12b40bf5a141",
+  "date": "2026-10-08",
+  "by": "research/norm_ablate.py"
+}

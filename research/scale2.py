@@ -1,14 +1,14 @@
-"""Blend verification: decode the v2 intermediates on flipped positions.
+"""Scale: two native facts through one self-routing bank + negmine loop.
 
-Attribution claims v2's 11 UNK flips come from blend arithmetic
-(x(1-w) attenuation + w.xFLAT injection, ~0.1-logit scale). Verify,
-don't assert: on Italy (install) + the first flipped UNK positions,
-decode WI/W/NW/FW/SW/LOGITS2 and check (a) W tiles BP2[6], (b) NW =
-1-W, (c) FW+SW = LOGITS2 path, (d) which term dominates the flip:
-|FW| vs |SW-LOGSKEW| at the flipped top-2. A mismatch anywhere is a
-CODE bug (error-source audit with a target); all-match closes the
-mechanism to arithmetic (no trawl needed).
-Usage: python3 research/blend_verify.py (CPU lattice)
+Bank: 6 background nulls + Italy(6, unit-Rome 4x) + Alex(7,
+unit-Alexandria 4x) + neg-mined nulls. Blend weight = w6+w7 (either
+install context reads flat). Loop: pass-1 split -> collect flipped
+UNK -> mine keys -> append nulls -> pass-2 split + both installs +
+receipts + holds. Gates: BOTH FLIP + prior == skewed base + receipts
+w>0.9 on own prompts + holds. Cross-talk (shared flat head, shared
+H5) is the question: Rome must win on Italy rows, Alexandria on
+Alex rows.
+Usage: python3 research/scale2.py (CPU lattice, ~500 runs)
 """
 import json
 import os
@@ -22,9 +22,11 @@ sys.path.insert(0, os.environ.get("PHI_CORE_DIR", os.path.join(os.path.dirname(R
 sys.path.insert(0, ROOT)
 
 CFG = "CONFIG m_acc 36118\nCONFIG m_cov 35048\n"
+MARGIN_BAR = 1.0
 NBG = 6
 KS = 32.0
 DOSE = 4.0
+MAXNEG = 16
 
 
 def main():
@@ -42,7 +44,10 @@ def main():
     V = wlog.shape[1]
     wlogU = np.ascontiguousarray(np.load(os.path.join(dd, "wlogU.npz"))["wlogU"])
     evn = float(np.linalg.norm(evb0, axis=1).mean())
-    text = CFG + open(os.path.join(sdir, "lm_dualhead2.asm")).read()
+    counts = np.load(os.path.join(dd, "lm_bigrams.npz"))["counts"]
+    freq = np.asarray(counts.sum(axis=0)).ravel()
+    fcut = np.sort(freq)[-64]
+    text = CFG + open(os.path.join(sdir, "lm_dualhead3.asm")).read()
     text0 = CFG + open(os.path.join(sdir, "lm_bankhn2.asm")).read()
 
     def enc(a):
@@ -52,7 +57,7 @@ def main():
         return (S.decode(np.ascontiguousarray(t[0]), np.ascontiguousarray(t[1]))
                 * (1 - np.ascontiguousarray(t[2]).astype(np.float64)))
 
-    def run2(ids, ukt2, evb2):
+    def run3(ids, ukt2, evb2):
         toks = np.array(ids, dtype=np.int64)
         n = len(ids)
         pos = np.arange(n, dtype=np.int64)
@@ -92,79 +97,84 @@ def main():
         return [vocab.get(w, 0) for w in re.findall(r"[a-z0-9']+", s.lower())]
 
     lines = open(os.path.join(dd, "lm_test.txt")).read().split("\n")[:10]
-    iprompt = ids_of("The capital of Italy is")[-8:]
-    hnb = dec(run0(iprompt)["HNB"])[-1]
-    ikey = hnb / np.linalg.norm(hnb)
+    prompts = {"italy": ids_of("The capital of Italy is")[-8:],
+               "alex": ids_of("Alexander the Great founded the city of")[-8:]}
+    tids = {"italy": 98, "alex": 59}
+    fkeys, fvals = {}, {}
+    for f, ids in prompts.items():
+        h = dec(run0(ids)["HNB"])[-1]
+        fkeys[f] = h / np.linalg.norm(h)
+    romeU = np.ascontiguousarray(wlogU[:, 98])
+    alexU = np.ascontiguousarray(wlogU[:, 59])
+    fvals = {"italy": (DOSE * evn * romeU)[None, :],
+             "alex": (DOSE * evn * alexU)[None, :]}
     bgkeys = []
-    nbg = 0
     for s in lines:
         ids = ids_of(s)
         for k in range(1, min(len(ids), 4)):
             ctx = ids[max(0, k - 7):k]
-            if 261 in ctx or len(ctx) < 3:
+            if 261 in ctx or 12 in ctx or len(ctx) < 3 or len(bgkeys) >= NBG:
                 continue
             h = dec(run0(ctx)["HNB"])[-1]
             bgkeys.append(h / np.linalg.norm(h))
-            nbg += 1
-            if nbg >= NBG:
-                break
-        if nbg >= NBG:
+        if len(bgkeys) >= NBG:
             break
-    Ua = np.concatenate([k[:, None] for k in bgkeys] + [ikey[:, None]],
-                        axis=1) * KS
-    romeU = np.ascontiguousarray(wlogU[:, 98])
-    Vc = np.concatenate([np.zeros((NBG, 16)), (DOSE * evn * romeU)[None, :]],
-                        axis=0)
 
-    # Italy receipt first
-    fi = run2(iprompt, Ua, Vc)
-    bpi = dec(fi["BP2"])[-1]
-    print(f"Italy: w= {float(bpi[NBG]):.4f} top={inv.get(int(dec(fi['LOGITS2'])[-1].argmax()), '?')}",
-          flush=True)
+    def bank(negkeys):
+        U = np.concatenate([k[:, None] for k in bgkeys]
+                           + [fkeys["italy"][:, None], fkeys["alex"][:, None]]
+                           + [k[:, None] for k in negkeys], axis=1) * KS
+        E = np.concatenate([np.zeros((NBG, 16)), fvals["italy"], fvals["alex"]]
+                           + [np.zeros((1, 16))] * len(negkeys), axis=0)
+        return U, E
 
-    # find flipped UNK positions
-    flips = []
-    for s in lines:
-        ids = ids_of(s)
-        for k in range(1, len(ids)):
-            truth = ids[k]
-            if truth != 0:
-                continue
-            ctx = ids[max(0, k - 8):k]
-            t0 = int(dec(run0(ctx)["LOGITS2"])[-1].argmax())
-            f2 = run2(ctx, Ua, Vc)
-            t1 = int(dec(f2["LOGITS2"])[-1].argmax())
-            if t0 != t1:
-                flips.append((ctx, t0, t1, f2))
-                if len(flips) >= 3:
-                    break
-        if len(flips) >= 3:
-            break
-    print(f"flipped UNK positions: {len(flips)} (showing up to 3)", flush=True)
-    for ctx, t0, t1, f2 in flips:
-        n = len(ctx)
-        WI = dec(f2["WI"])[-1][0]
-        W = dec(f2["W"])[-1]
-        NW = dec(f2["NW"])[-1]
-        FW = dec(f2["FW"])[-1]
-        SW = dec(f2["SW"])[-1]
-        LG = dec(f2["LOGITS2"])[-1]
-        LS = dec(f2["LOGSKEW"])[-1]
-        LF = dec(f2["LOGFLAT"])[-1]
-        BP = dec(f2["BP2"])[-1]
-        w = float(BP[NBG])
-        print(f"ctx={[inv.get(i, '?') for i in ctx]} {inv.get(t0, '?')}->{inv.get(t1, '?')} "
-              f"w={w:.4f}", flush=True)
-        print(f"  (a) W tiles WI: max|W-WI|={float(np.abs(W - WI).max()):.2e} "
-              f"(b) NW=1-W: max|NW-(1-W)|={float(np.abs(NW - (1 - W)).max()):.2e}",
-              flush=True)
-        print(f"  (c) FW=w.FLAT: max|FW-w.LF|={float(np.abs(FW - w * LF).max()):.2e} "
-              f"SW=(1-w).SKEW: max|SW-(1-w).LS|={float(np.abs(SW - (1 - w) * LS).max()):.2e}",
-              flush=True)
-        print(f"  (d) at flipped pair: |FW[t0]|={abs(float(FW[t0])):.3f} "
-              f"|FW[t1]|={abs(float(FW[t1])):.3f} "
-              f"|SW[t0]-LS[t0]|={abs(float(SW[t0] - LS[t0])):.3f} "
-              f"|SW[t1]-LS[t1]|={abs(float(SW[t1] - LS[t1])):.3f}", flush=True)
+    def split(Ua, Vc):
+        gh = gt = ch = ct = uh = ut = tot = 0
+        flips = []
+        for s in lines:
+            ids = ids_of(s)
+            for k in range(1, len(ids)):
+                truth = ids[k]
+                ctx = ids[max(0, k - 8):k]
+                lg = dec(run3(ctx, Ua, Vc)["LOGITS2"])[-1]
+                hit = int(lg.argmax()) == truth
+                tot += 1
+                ut += hit
+                if truth == 0:
+                    uh += hit
+                    t0 = int(dec(run0(ctx)["LOGITS2"])[-1].argmax())
+                    if int(lg.argmax()) != t0 and len(flips) < MAXNEG:
+                        flips.append(ctx)
+                    continue
+                if freq[truth] >= fcut:
+                    gh += hit
+                    gt += 1
+                else:
+                    ch += hit
+                    ct += 1
+        return (ut / max(tot, 1), gh, gt, ch, ct, uh, flips)
+
+    Ua, Vc = bank([])
+    m1 = split(Ua, Vc)
+    print(f"pass1: top1={m1[0]:.3f} glue={m1[1]}/{m1[2]} content={m1[3]}/{m1[4]} "
+          f"unk={m1[5]} negs={len(m1[6])}", flush=True)
+    negkeys = []
+    for ctx in m1[6]:
+        h = dec(run0(ctx)["HNB"])[-1]
+        negkeys.append(h / np.linalg.norm(h))
+    Ua2, Vc2 = bank(negkeys)
+    print(f"bank: {Ua2.shape[1]} stores ({len(negkeys)} neg-mined)", flush=True)
+    for f, ids in prompts.items():
+        fi = run3(ids, Ua2, Vc2)
+        li = dec(fi["LOGITS2"])[-1]
+        bp = dec(fi["BP2"])[-1]
+        t = tids[f]
+        print(f"install {f}: rank={int((li > li[t]).sum()) + 1} "
+              f"top={inv.get(int(li.argmax()), '?')} w={float(bp[NBG + (0 if f == 'italy' else 1)]):.3f} "
+              f"{'FLIP' if int(li.argmax()) == t else ''}", flush=True)
+    m2 = split(Ua2, Vc2)
+    print(f"pass2: top1={m2[0]:.3f} glue={m2[1]}/{m2[2]} content={m2[3]}/{m2[4]} "
+          f"unk={m2[5]}", flush=True)
 
 
 if __name__ == "__main__":
