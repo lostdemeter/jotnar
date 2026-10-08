@@ -3178,3 +3178,19 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   installs through the skewed head (Alexander class, rank ~6->1),
   or a dual-head decision architecture (bigger design). Probe 3:
   Alexandria ladder next.
+
+## 2026-10-08: rung-2 probe 3 -- rank deceived, margin is the currency (unclocked)
+
+- research/probe3_alex.py (/tmp/probe3.log): Alexandria base rank 6
+  BUT margin 10.08 (leader <unk> 14.05 vs 3.97). Ladder: 6->4->4->
+  4->3. STALLS. Truth gains ~1.0/dx, 'the' gains ~1.33/dx: deficit
+  WIDENS with dose (same outclimb species, third target). Holds
+  11/16 + 10/10 stable thru 4x (broadcast tolerated, again).
+- Correction to the probe's own premise: rank-6 deceived (dense pack
+  near truth, leader 10 away). Margin, not rank, prices installs --
+  known since the 1.4x illusion, re-bitten anyway. Doctrine note:
+  always print margin beside rank (scan_req.py does; probe3 now does).
+- Remaining native path: full-vocab flippability scan from statics
+  (linear path corr 1.000, so statics ARE dynamics): raw-row values,
+  every token as hypothetical target, exact required dose. Any
+  content target <=8x graduates to a real install run.
