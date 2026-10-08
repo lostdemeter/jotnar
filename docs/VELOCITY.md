@@ -3647,3 +3647,14 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   (install must hold past first token) -- new instrument, queued.
 - Listing-first is now a procedure (target/contrast/value-form
   flags, defaults regression-safe): any fact, same command.
+
+## 2026-10-08: Japan listing green vs geo-base (unclocked)
+
+- Zero-dose control (/tmp/siphongeoJ0.log, 7min): geo-base Japan
+  blank with Tokyo r2 (not r45 like Germany: closer race); Germany
+  228, Italy 334.
+- Re-grade of the install: Japan blank(r2)->' Tokyo'(r1) INSTALL;
+  Germany 228->228 + Italy 334->334 BIT-IDENTICAL holds. Second
+  listing-first install green (Germany + Japan), same fork-correct
+  form. Effect size smaller (2->1 vs 45->1) but top flips blank to
+  content -- the install moves the decision, not just the rank.
