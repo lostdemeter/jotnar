@@ -36,7 +36,7 @@ def main():
     b = np.load(os.path.join(dd, "bankhn.npz"))
     ukt0, evb0 = b["ukt"], b["evb"]
     wlog = np.ascontiguousarray(dE["wlog"])
-    wlogU = np.ascontiguousarray(np.load("/tmp/wlogU.npy"))
+    wlogU = np.ascontiguousarray(np.load(os.path.join(dd, "wlogU.npz"))["wlogU"])
     evn = float(np.linalg.norm(evb0, axis=1).mean())
     counts = np.load(os.path.join(dd, "lm_bigrams.npz"))["counts"]
     freq = np.asarray(counts.sum(axis=0)).ravel()
