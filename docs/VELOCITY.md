@@ -3599,3 +3599,20 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   implant-easy (rank-1 writes, gated long ago) vs prune-with-care.
   Distributed support, consistent -- not proven exhaustive (full
   3584-dir sweep ~30+h, priced not run).
+
+## 2026-10-08: superposition graduates -- 19/19 predicted (unclocked)
+
+- research/superpos.py (/tmp/superpos.log, seconds): linear post-L2
+  path, flat head. Cancellation (same key, +v/-v): 4:-4 silence
+  (top=<unk>=base), 8:-4 and 4:0 both plutarch -- all EXACT, P stays
+  [0.5,0.5]. Decision grid Rome x Alexandria (16 cells): 0/16
+  mismatches measured-vs-predicted, including non-obvious cells
+  (rome4x alone -> plutarch; rome8x row -> rome except vs alex8x ->
+  egypt). Even the "surprises" are linear consequences: no
+  cross-terms needed at these doses.
+- Wave theory is now an instrument: rank predicted before running,
+  19/19. Limits stated: predictions condition on MEASURED routing
+  (P read per cell, not predicted); lattice quantum owns near-ties
+  (none occurred); doses stay in-envelope (m_cov saturation binds
+  fusion, proven). Composition of ADDRESSES (two keys) untested --
+  values compose, routing interaction does not yet.
