@@ -3471,3 +3471,19 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   or mid-formation (L22) -- placement must land ON or AFTER L23.
 - Blanks veil L19-26 tops throughout: the norm-map doctrine seen
   developmentally (fillers outshout content until the decision).
+
+## 2026-10-08: transplanted directions derail; mine-at-depth queued (unclocked)
+
+- research/depth_edit.py (/tmp/depthedit.log, 14.5min): L27-mined
+  ball placed at L23 (Paris r7->r108->r96), L24 (r4->r12->r5),
+  L27 (r1/r1/r3 INSTALL, third identical reproduction). Retrieval
+  own in all 27 cells; controls hold in all 27 cells (Italy Rome
+  even at L23g4). Movement without installation + dose-dependent
+  derailment = transplanted directions are off-manifold upstream:
+  DIRECTIONS ARE LAYER-NATIVE (formation geometry vs post-formation
+  geometry differ; downstream distorts transplants increasingly).
+- Consequence: placement depth was the wrong question; PROVENANCE
+  depth is the question. research/depth_native.py queued (mine AT
+  L23/L24, place AT same): native directions installing cleanly
+  would open edit-at-depth properly; failing too would price
+  formation itself as uneditable (decision-only installs).
