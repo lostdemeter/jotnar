@@ -3266,3 +3266,16 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   blend; host mask is the v1 seam, stated in the listing header),
   second fact coexistence natively (two drugs, two masks), flat-head
   tier provenance (wlogU is derived data -- freeze manifest).
+
+## 2026-10-08: dual-head v2 -- self-routing works, tier leaks located (unclocked)
+
+- programs/lm_dualhead2.asm + research/dualhead2.py (/tmp/dualhead2.log):
+  6 background nulls + Italy last; blend by own Italy weight (no host
+  mask). install rank 1 FLIP, w_italy 0.999; holds 11/16, stable
+  10/10; receipt battery mean 0.082, max 0.674 (one partial).
+- Gap: prior 0.289 vs 0.337, all 12 in UNK-truth (glue/content
+  identical) -- partial Italy weights (<=0.674) blend flat readings
+  into UNK positions. Locator fired as designed: tier interference,
+  not blend quantum (FLIP+receipt green isolates it).
+- Fix in flight: key-scale 8->16 (sharpen addressing toward 0/1;
+  the ks ladder's proven direction). Rerun /tmp/dualhead2b.log.
