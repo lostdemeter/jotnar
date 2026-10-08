@@ -178,6 +178,10 @@ Check | Result
 `test_lm_headt.py` | head specialization (47th mnemonic TBETA, head2 T=4 fitted, head1 control): twin_dist 0.700, top1 0.350, parity 52.3/52.5 (drift gate fired 46/47, greened on documenting)
 `test_lm_bankhn2.py` | both-layer bank MLP (tied stores, last random structure gone): twin_dist 0.743, top1 0.350, parity 53.5/53.1 -- every matrix counts-derived or content-structured
 `test_yarnball.py` | MVYB gate: yarnball_apply DEF 0-diff vs inline bank (bit-exact), Italy Rome-rank 299->24 with own-store retrieval, 10/10 stable holds (5 razor flipped as predicted-fragile) -- generic ball runs
+`test_dualhead2.py` | self-routing dual-head (blend by own bank weight, no host mask): Rome FLIP w=1.0, receipt 0.001/0.015, glue/content identical, 10/10 stable (11 UNK razor accepted per doctrine)
+`test_scale2.py` | two native facts, negmined 24-store bank: both FLIP (w 1.000/0.991), prior bit-identical 0.337 -- scale is routine
+`test_dualbank.py` | dual-channel addressing (HN+E log-space AND): 8/8 invariance + Caesar exclusion, no tuning
+`test_siphon.py` | teacher install through the ball (mirror; SKIPs w/o snapshot/GPU): Paris r1 + holds + own-retrieval, ledgered tiers
 `docs/T_TRANSFORM.md` | v1.4 gate 4: full-range attention specified (fold obstruction, 9-layer ranges, one-assert phi-core fix + our composition; DDColor L0 needs m_of(~16))
 `test_layer1.py` | ALL OK (CRUD Q5: layer-1 pattern reproduces -- spectrum 12x, giant 14dB, tracking -0.54; SKIPs without HF cache)
 `test_engram.py` | ALL OK (native storage: freeze/load roundtrip 6.4e-16, deterministic bytes, store-IO bit-exact; DDColor query/refine stores frozen; SKIPs without HF cache)
