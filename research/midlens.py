@@ -48,7 +48,7 @@ def main():
         for L in range(28):
             x = torch.tensor(traj[L], dtype=dt, device="cuda")
             hn = _rms(x, lnf)
-            lg = (hn @ Wlog.T)[-1].detach().cpu().numpy()
+            lg = (hn @ Wlog.T).detach().cpu().numpy()
             o = np.argsort(-lg)
             top5 = [(tok.decode([int(i)]), round(float(lg[int(i)]), 1))
                     for i in o[:5]]
