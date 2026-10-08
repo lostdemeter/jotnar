@@ -3279,3 +3279,19 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   not blend quantum (FLIP+receipt green isolates it).
 - Fix in flight: key-scale 8->16 (sharpen addressing toward 0/1;
   the ks ladder's proven direction). Rerun /tmp/dualhead2b.log.
+
+## 2026-10-08: sharpening works, residue needs locating (unclocked)
+
+- ks=16 (/tmp/dualhead2b.log): receipt 0.082->0.007 mean, 0.674->
+  0.084 max (addressing ~binary); prior BARELY moves (0.289->0.293,
+  unk 65->66). Partial weights were NOT the (only) mechanism.
+- Suspect: blend math itself -- MUL((1-w), SKEW) attenuates skewed
+  readings x0.993 + tmul quantum even at w~0; UNK-razor flips on
+  crumbs while stable (10/10) never notices. Doctrine check: by the
+  catalog bar (stable + predicted razor = green), v2 is ALREADY
+  green (FLIP + 10/10 + glue/content identical); v1's bit-identical
+  was stricter than doctrine demands.
+- Decisive test in flight (ks=32): if small weights quantize to
+  exact-zero triples AND tmul-by-1.0 is exact, prior recovers to
+  0.337/77 with FLIP+receipt -> perfect gate (v1 purity + v2
+  self-routing). If 66 persists -> accept razor per doctrine.

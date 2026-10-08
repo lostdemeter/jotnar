@@ -25,7 +25,7 @@ sys.path.insert(0, ROOT)
 CFG = "CONFIG m_acc 36118\nCONFIG m_cov 35048\n"
 MARGIN_BAR = 1.0
 NBG = 6
-KS = 16.0
+KS = 32.0
 DOSE = 4.0
 
 
