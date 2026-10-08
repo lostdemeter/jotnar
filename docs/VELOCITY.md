@@ -3382,3 +3382,18 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   (global scale can't separate overlap; argmax needs direction).
 - Next: position-averaged contrast (8 slots x both entities) --
   broad AND discriminative, if HN overlap is positional noise.
+
+## 2026-10-08: AND-split closes addressing (unclocked)
+
+- stdlib/dualbank.asm + programs/lm_dynaddr2.asm + research/dualchan.py
+  (/tmp/dualchan.log): C = HN@Uhn + E@Ue fused pre-softmax (log-space
+  AND). Bank [Italy | Caesar-null], ks 2/2 both channels, no tuning.
+- invariance 8/8 (Italy weights 0.63-0.76 all slots), Caesar -> null
+  at 0.783 (the false-positive that beat emb keys, negmine, and the
+  0.5-4.0 scale sweep). Split, don't tune -- fourth instance of the
+  program's master pattern (steering, heads, background, addressing).
+- Unbanked third class reads honestly: Alexander->Italy (0.659),
+  as->null. Next banked facts absorb them or the loop does.
+- Language clarification (docs/LANGUAGE.md): multi-out CALL binds
+  DEF outputs to caller names; only internals namespace (bit us on
+  first run: Pkey found nothing; CPU feed keys proved it).

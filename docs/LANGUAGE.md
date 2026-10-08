@@ -107,7 +107,10 @@ OUT = CALL twice(a)
 ```
 
 `CALL` is a textual macro with per-call-site namespacing (the expanded
-listing IS the program — inspectable, no call overhead). Recursion, nested
+listing IS the program — inspectable, no call overhead). Name rule:
+DECLARED outputs bind to caller names (`YD, YP = CALL f(...)` reads
+`YP`); only INTERNAL streams namespace (`fname#k.stream`). Arity
+mismatches fail loud. Recursion, nested
 `DEF`, and `CONFIG/STATE/IN` inside `DEF` all fail loud.
 
 Step 3 — activate (minute 10-15). Swap the last line for `OUT = SILU(a)`
