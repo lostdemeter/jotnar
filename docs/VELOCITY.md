@@ -3556,3 +3556,20 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   window (move/derail, leak first); (3) decided L27: tip margins
   (wide). research/lower_edge.py queued (L14-17 natives): bounds
   regime 1 below -- ride starts deep, or something changes at L18.
+
+## 2026-10-08: lower edge through L14; L14 giants broadcast (unclocked)
+
+- research/lower_edge.py (/tmp/loweredge.log): L14/L15/L16/L17 ALL
+  install @1 with holds, derail @4. Editable single-point windows
+  run L14-20 continuously + wide L27; dead band precisely L21-26.
+  Formation-ride works from deep (L14): emergence is downstream of
+  every editable address except L27.
+- research/read14.py (/tmp/read14.log): L14 down_proj predictor
+  (SVD + MID alignment, zero-run statics) + ablation verify.
+  Calibration C=2.37; top movers (dirs 2/19/69, sval ~3-4) verify
+  21.0-21.4dB vs 20.6-24.1 pred (predictor works) BUT tops don't
+  move (Berlin->Berlin, Paris r50-65): the loudest directions are
+  BROADCASTERS (MODEL_READ Q3 again: energy != decision). Content
+  levers, if any, are quieter than top-energy. NVERIFY=12 screen
+  queued (top-12 predicted, top-3 + Paris rank each): max
+  Paris-move per dB decides whether selectivity exists here.

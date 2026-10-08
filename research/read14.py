@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.join(ROOT, "research"))
 
 LAYER = 14
 PROMPT = "The capital of Germany is"
-TOPK = 3
+TOPK = int(os.environ.get("NVERIFY", 3))
 
 
 def main():
@@ -42,7 +42,7 @@ def main():
     print(f"MID norm={float(np.linalg.norm(mid)):.1f} Wd{Wd.shape}", flush=True)
     U, s, Vt = np.linalg.svd(np.ascontiguousarray(Wd, dtype=np.float64),
                               full_matrices=False)
-    align = np.abs(mid @ U) / (np.linalg.norm(mid) + 1e-12)
+    align = np.abs(mid @ Vt.T) / (np.linalg.norm(mid) + 1e-12)
     # predicted dB up to constant C: rank by s*align (energy x match)
     score = s * align.ravel()
     order = np.argsort(-score)[:50]
@@ -64,7 +64,7 @@ def main():
                 W = torch.tensor(g(f"model.layers.{L}.mlp.down_proj.weight"),
                                  dtype=dt, device="cuda")
                 Wi = W - torch.outer(torch.tensor(U[:, di] * s[di], dtype=dt,
-                                                  device="cuda),
+                                                  device="cuda"),
                                      torch.tensor(Vt[di], dtype=dt, device="cuda"))
                 edits = {L: {"wdown": Wi}}
             x = _layer(x, g, torch, L, n, edits=edits)
