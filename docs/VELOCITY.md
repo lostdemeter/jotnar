@@ -3140,3 +3140,41 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   its keep: contrast hose + readout row, one bank, no entanglement.
 - Item 2 CLOSED: single-fact generality (6-country) + two-species
   coexistence (2 installs + 4 holds + 6 retrievals, ledgered).
+
+## 2026-10-08: rung-2 probe 1 -- depth exonerated, wall is norm structure (unclocked)
+
+- research/postl2_install.py (/tmp/postl2.log): Rome readout row via
+  the LINEAR post-L2 bank (corr 1.000 thru 8x -- path exact), dose
+  ladder 1/2/4/8/16x: rank 299->27->13->9->8->8. STALLS AT 8: the
+  same floor as the layer-1 retrieval install, same blockers
+  (<unk>/the/a/his, all outclimbing: <unk> +5.4 while Rome climbs).
+  Holds 11/16 thru 8x (broadcast tolerated!), 3/16 at 16x.
+- Falsifier branch taken (written in the script): blockers outclimb
+  again -> the wall is NORM STRUCTURE (|w_rome| 0.84 vs unk 6.98,
+  the 3.74), not depth. Qwen-late vs our-L1 was never about path
+  length: one norm + unembed loses to the same pack either way.
+- Next: column-norm ablation (probe 2) -- unit-norm wlog variant in
+  /tmp (repo data untouched): does glue survive on alignment alone,
+  and does the install dose collapse? If yes, readout redesign =
+  tier the norms; if glue dies, norms ARE the prior and redesign
+  must replace the prior another way.
+
+## 2026-10-08: rung-2 probe 2 -- FIRST NATIVE FLIP, price tagged (unclocked)
+
+- research/norm_ablate.py (/tmp/normabl.log): unit-norm wlog variant
+  (/tmp/wlogU.npy; repo data untouched). (A) base: top1 0.337->0.146,
+  glue 6/87->1/87, unk 77->34 -- norms ARE the prior; skew removed =
+  prior dead. (B) post-L2 Rome ladder: rank 470->17->3->1->1, FLIP at
+  4x (rome 3.78 vs greece 3.62, thin but top-1; 8x grows margin).
+  Holds die with the flip (13->6->0->0/16): broadcast unit push
+  lifts the whole content pack (greece/plutarch/egypt/syria rise).
+- Mechanism priced: skewed head, delta_c = dose.|w_c|.cos favors
+  long frequent rows (3.74cos > 0.84 needs only cos > 0.22);
+  flat head, target alignment 1.0 beats every cos < 1. Dose 40x ->
+  4x. Installability and prior-holding are THE SAME KNOB (column
+  norms). Two-tier readout (skewed prior + flat install) is
+  necessary, not decorative -- DISCOVERIES section 8 tiers, priced.
+- Open: flip WITH prior intact. Candidates: high-rank-target
+  installs through the skewed head (Alexander class, rank ~6->1),
+  or a dual-head decision architecture (bigger design). Probe 3:
+  Alexandria ladder next.
