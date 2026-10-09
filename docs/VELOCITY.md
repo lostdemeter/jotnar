@@ -3809,3 +3809,17 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   suspect; re-laddering queued where cheap). Operating windows can
   be single-POINTS in dose (L20@1 all over again, finer).
 - NY generation next: first-only 0.05 (micro-dose + placement).
+
+## 2026-10-09: multi-token generation green at micro-dose (unclocked)
+
+- NY first-only 0.05 (/tmp/t_ny005.log): ' New York City, which has
+  a population' -- target surfaces (both pieces), ZERO degenerate,
+  fluent sensible continuation, control holds. ALL OK. No toll char
+  (Hamlet paid one at 0.5): micro-dose installs below the toll
+  threshold entirely.
+- Generation install product, current form: micro-dose (find the
+  inverted-U peak per direction, starting 0.05) + first-only
+  placement (single push, free run) + contentful seed + strong
+  continuation. Four independent conditions, each gated separately
+  somewhere in the logs. Miss any one: transparent, toll, loop, or
+  collapse.
