@@ -3754,3 +3754,9 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   Multi-token install = seed selection (contentful + completable),
   forecast by base P(continuation|seed) -- cheap predictor queued.
   Digit-fragments (' '/1/9/8/4) carry no content alone.
+
+- Predictor confirmed (/tmp/completion.log, 35s): P(let|Ham)=r5
+  vs P(eteen|Nin)=r338 -- 70x gap forecasts exactly the observed
+  complete-vs-loop. Base continuation strength predicts install
+  completability in one forward. Multi-token installs: measure
+  this first, push second.
