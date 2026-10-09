@@ -3792,3 +3792,20 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   insufficient. Open: routing (does NY address route?) vs content
   (does the value land?). One diagnostic run with P/step logging
   decides; the rule's fate hangs on it, not on more targets.
+
+## 2026-10-09: inverted-U steering; ladders must start micro (unclocked)
+
+- NY dose ladder (/tmp/nyladder.log, 2min): New r2 -> r1 @0.05 ->
+  r2 @0.1 -> r7646 @0.25 -> r152064 @0.5+ (junk tops). FIVE regimes
+  across 40x dose: install lives at 0.05, anti-install beyond 0.25.
+  Hamlet needs 0.5-1.0 (same construction!). Steering response is
+  DIRECTION-dependent through L27 SiLU gates: small adds boost
+  linearly, larger adds saturate/flip the direction and bury its
+  target. Mechanism candidate for gate-projection alignment
+  (saturation onset = knee distance / alignment; unpriced).
+- Doctrine amendment: ladders START at 0.05 (all historical ladders
+  began at 1.0+ and may have overshot narrow windows like NY's --
+  content_flip's 8x start and every "needs huge dose" verdict now
+  suspect; re-laddering queued where cheap). Operating windows can
+  be single-POINTS in dose (L20@1 all over again, finer).
+- NY generation next: first-only 0.05 (micro-dose + placement).
