@@ -112,12 +112,19 @@ def main():
     # fixed, flip these with reason (see VELOCITY: unreproduced Ham).
     got = gen(GAIN)
     sub = got[:4]
-    print(f"survival-want: first4={[tok.decode([t]) for t in sub]} "
-          f"want{[tok.decode([t]) for t in tids]} ordered={ordered(sub)} "
-          f"(criterion documented; NOT gated until generation is fixed)",
-          flush=True)
-    check("gen-degenerate-under-install", degenerate(got, tok) >= 5,
-          f"degenerate={degenerate(got, tok)} (installs break generation)")
+    surf = tok.decode(got).lower()
+    print(f"survival-want: {tok.decode(got)[:80]!r} surface-hit={('hamlet' in surf)} "
+          f"degenerate={degenerate(got, tok)}", flush=True)
+    if FIRST_ONLY:
+        # single push: install must land on the surface with <=1 toll char
+        check("gen-surface-install", "hamlet" in surf,
+              f"{tok.decode(got)[:80]!r}")
+        check("gen-toll", degenerate(got, tok) <= 1,
+              f"degenerate={degenerate(got, tok)} (one-push toll)")
+    else:
+        # every-step pushing compounds the toll into collapse (pinned)
+        check("gen-degenerate-under-install", degenerate(got, tok) >= 5,
+              f"degenerate={degenerate(got, tok)} (installs break generation)")
     base = gen(0.0)
     check("gen-control", not ordered(base[:4]),
           "unsteered must not already complete it")
