@@ -3694,3 +3694,17 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   Paris'(1); Italy + Japan bit-identical holds (75->75, 137->137).
   Listing-first promotion complete: the install runs with no
   mirror in the loop (mirror retired to mining/calibration).
+
+## 2026-10-09: paraphrase-sharing green by design (unclocked)
+
+- research/paraphrase.py (/tmp/paraphrase.log, 5.5min): install on
+  template A only. everest: INSTALL + sibling SHARED (both ret 0);
+  niles hold with OWN background retrieval (ret 1, 2). nile:
+  INSTALL + SHARED; everests hold (ret 1, 2). Zero cross-talk:
+  every prompt in both families retrieves its own store.
+- Coldstart "misses" officially reclassified: asker-keyed stores
+  cover template families by construction (one store per (asker,
+  content)). Hills to die on reduced by one: paraphrase coverage
+  needs no second store, no template mining, no iteration.
+- Harness toll: two scaffolding crashes first (eval arity,
+  per-family base scope), both <3min, both fail-loud at the line.
