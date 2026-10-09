@@ -3888,3 +3888,16 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   own -- cell-for-cell identical to witness one. Cold-start
   generality holds across reruns (mirror determinism confirmed at
   battery scale, not just point probes).
+
+## 2026-10-09: multi-fact generation green, zero toll (unclocked)
+
+- research/multifact_gen.py (/tmp/multifactgen.log, 9.5min): shared
+  bank (Ham + New + null), per-fact folded doses (0.5/0.05),
+  first-only pushes. hamlet: '...Hamlet in the 160' hit, deg 0, no
+  crosstalk. nycity: '...New York City, which has a population'
+  hit, deg 0, no crosstalk.
+- Hamlet installs with ZERO toll this time (was 1): shared-bank +
+  folded-dose form is cleaner than single-ball + gain-steer (less
+  machinery per step: dose lives in Vc, steer gain stays 1.0).
+  Generation composition confirmed: one bank, per-fact doses, one
+  push each, free run after. No cross-talk either direction.
