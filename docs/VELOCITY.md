@@ -3837,3 +3837,15 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   verdicts never had overshoot risk. Ladder-from-micro is mandatory
   on nonlinear paths (teacher), unnecessary on linear ones (native
   post-L2). The audit rule is now conditional, not blanket.
+
+## 2026-10-09: seed rule third instance pre-registered (unclocked)
+
+- Continuation screens (/tmp/seedscreen2/3.log): Salt Lake City
+  seed r2 (0.237) + cont r1/r1 (0.99/0.96) STRONG -> predicts
+  install+complete; Santa Fe seed r145 + cont r1 -> predicts fail
+  (weak seed). Hamlet/NY pattern: seed AND continuation strong.
+- Note the asymmetry this exposes: Santa Fe's CONTINUATION is r1
+  (given Santa, Fe follows) but its SEED is r145 -- installs seed,
+  so weak seeds fail regardless of continuation. Seed strength is
+  the binding constraint; continuation decides complete-vs-loop
+  given a landed seed. Two-factor rule, both halves priced.
