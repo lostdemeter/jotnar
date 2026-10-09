@@ -3708,3 +3708,17 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   needs no second store, no template mining, no iteration.
 - Harness toll: two scaffolding crashes first (eval arity,
   per-family base scope), both <3min, both fail-loud at the line.
+
+## 2026-10-09: scale costs parsed -- model degrades, bank costs UNK-razor (unclocked)
+
+- research/base_split.py (/tmp/basesplit.log, ~4min for 8116
+  positions): skewed base at full scale: 0.279, glue 173/3000,
+  content 0/1774, unk 2093. Vs bank full (0.237, 147/3000, 1/1774,
+  1779): the MODEL loses 0.058 going wide (later lines harder --
+  not our problem); the bank costs another 0.042, of which 92% is
+  UNK-truth (-314), glue -26 (-0.9pp), content +1.
+- Reading: bank-at-scale cost IS the known razor species
+  (UNK margins thin, blend arithmetic perturbs ~0.1-logit scale),
+  now counted at scale instead of asserted from 40 samples. Prior
+  intact relatively; grade-on-stable doctrine covers exactly this.
+  Full-set splits join the battery (NLINES=100000 already wired).
