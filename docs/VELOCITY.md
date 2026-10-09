@@ -3946,3 +3946,16 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   transparent; sequential base-persist). Length/composition wall
   real, not dosing artifact. Mean-row probe queued (combination in
   row space: last cheap shot before accepting the boundary).
+
+## 2026-10-09: boundary stands -- content-per-piece, not length (unclocked)
+
+- Mean-row (/tmp/orwell_mean.log): base + ' 19' fragment, fluent,
+  no install. Seventh failed form for Orwell (every-step collapse;
+  seeds partial/loop; first-only transparent; sequential persist;
+  mean fragment; word-form loop).
+- Reframe (fits ALL data): the axis was never length (SLC is 3
+  pieces and green) but content-PER-piece: Ham/Salt/Lake/City/NY
+  pieces contentful -> installs; space/digits contentless ->
+  nothing to push. Multi-token rule, final: every installed piece
+  must carry content; machinery completes across contentful pieces
+  only. Orwell boundary accepted with mechanism (7 forms).
