@@ -3673,3 +3673,16 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   instability (per-step dose must drop 4-10x); both dirty = value
   wrong for generation entirely. Per-step ranks recorded this time
   (strings alone under-determine it).
+
+## 2026-10-09: cold-start green -- strangers install first try (unclocked)
+
+- research/coldstart.py (/tmp/coldstart.log, 18min): everest/nile x
+  statement/paraphrase, protocol v1 (fixed ks=8, gains {1,2}, no
+  tuning). ALL FOUR install top-1 at gain 1 AND gain 2, own
+  retrieval throughout. Cross-family holds perfect (everest banks:
+  niles hold 'the'; nile banks: everests hold 'Mount').
+- Same-target siblings flip to the shared right answer both ways
+  (graded MOVED per protocol, noted as paraphrase coverage free:
+  one install covers both surfaces via the shared asker-word).
+- Summit test passes as designed: unseen facts, unseen templates,
+  predicted receipts, zero per-case iteration.
