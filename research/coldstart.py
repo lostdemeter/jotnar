@@ -18,11 +18,14 @@ sys.path.insert(0, os.path.join(ROOT, "research"))
 
 from chain.engram import yarnball_bank
 
+# Address = the asker (question noun, present in BOTH templates each),
+# not the answer (unnamed in the prompt: offset mapping needs a span
+# that exists -- fail-loud caught "Everest"-in-prompt instantly).
 CELLS = [
-    ("everest", "The tallest mountain on Earth is", "Everest", " Everest"),
-    ("everest2", "Earth's tallest mountain is called", "Everest", " Everest"),
-    ("nile", "The longest river in Africa is", "Nile", " Nile"),
-    ("nile2", "Africa's longest river is called", "Nile", " Nile"),
+    ("everest", "The tallest mountain on Earth is", "mountain", " Everest"),
+    ("everest2", "Earth's tallest mountain is called", "mountain", " Everest"),
+    ("nile", "The longest river in Africa is", "river", " Nile"),
+    ("nile2", "Africa's longest river is called", "river", " Nile"),
 ]
 GAINS = [1, 2]
 KEY_SCALE = 8.0
