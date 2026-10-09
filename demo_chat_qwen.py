@@ -29,6 +29,13 @@ sys.path.insert(0, os.path.join(ROOT, "research"))
 from chain.engram import yarnball_bank
 
 KEY_SCALE = 8.0
+# Demo world: capitals battery (sibling prompts known). Holds need
+# SIBLING nulls (same-template rows match the target key at 0.627:
+# anti-key nulls never compete). Novel facts beyond capitals need
+# explicit nulls (documented limit, not a silent gap).
+SIBLINGS = {"Germany": "The capital of Germany is",
+            "Italy": "The capital of Italy is",
+            "Japan": "The capital of Japan is"}
 # Default dose 0.25 (ladder-measured: Paris-row installs @0.25,
 # saturates beyond (r151389 @1.0) -- inverted-U, per-fact doctrine.
 # Tokyo-class values keep their own rung (queued); dose is data.
@@ -128,14 +135,33 @@ def main():
                 continue
             pos = span_pos(prompt, subj, tok)
             key, _ = early_key(prompt, pos=pos)
+            cc = next((_c for _c, _p in SIBLINGS.items() if _p == prompt),
+                      None)
+            # reteach = update: drop prior stores for this country first
+            # (stale null-vs-assoc twins would split retrieval)
+            if cc is not None:
+                stores[:] = [s for s in stores if s.get("cc") != cc]
+            for _c, _p in SIBLINGS.items():
+                if _p == prompt:
+                    continue
+                _t = tok(_p, return_tensors="pt")["input_ids"][0].numpy()
+                _toks = tok.convert_ids_to_tokens(_t)
+                _frag = _c[1:].lower()
+                _pp = next((i for i, _t2 in enumerate(_toks)
+                            if _frag in _t2.lower()), len(_t) - 1)
+                _k, _ = early_key(_p, pos=_pp)
+                stores.append({"key": _k, "value": np.zeros(D),
+                               "tier": "null", "cc": _c,
+                               "support": f"sibling {_c}"})
             tid = tok(" " + target.strip(), return_tensors="pt")["input_ids"][0].tolist()[0]
             v = Wlog[tid] / np.linalg.norm(Wlog[tid])
             stores.append({"key": key, "value": v, "dose": 1.0,
-                           "tier": "assoc",
+                           "tier": "assoc", "cc": cc,
                            "support": f"{prompt} -> {target.strip()}"})
-            stores.append({"key": -key, "value": np.zeros(D),
-                           "tier": "null",
-                           "support": f"anti-address ({subj})"})
+            stores = [s for s in stores if s["tier"] != "null" or
+                      s["support"].startswith("sibling")]
+            # NOTE: anti-key null replaced by sibling nulls above (anti
+            # never competes: same-template rows match target at 0.627)
             lg, _ = ask(prompt)
             print(f"taught ({len(stores)} stores): {target.strip()} rank "
                   f"{int((lg > lg[tid]).sum()) + 1}", flush=True)
