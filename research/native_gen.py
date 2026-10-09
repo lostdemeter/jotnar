@@ -69,6 +69,9 @@ def main():
 
     text0 = CFG + open(os.path.join(sdir, "lm_bankhn2.asm")).read()
 
+    def ids_of(s):
+        return [vocab.get(w, 0) for w in re.findall(r"[a-z0-9']+", s.lower())]
+
     def run0(ids):
         toks = np.array(ids, dtype=np.int64)
         pos = np.arange(len(ids), dtype=np.int64)
@@ -87,11 +90,27 @@ def main():
                             sigs=SIGS, basedir=sdir)
     f0 = run0([1, 3, 261, 146])
     hnb = dec(f0["HNB"])[-1]
-    key = (hnb / np.linalg.norm(hnb))[:, None]
+    ikey = hnb / np.linalg.norm(hnb)
+    lines = open(os.path.join(dd, "lm_test.txt")).read().split("\n")[:10]
+    bgkeys = []
+    for s in lines:
+        ids = ids_of(s)
+        for k in range(1, min(len(ids), 4)):
+            ctx = ids[max(0, k - 7):k]
+            if 261 in ctx or len(ctx) < 3 or len(bgkeys) >= 6:
+                continue
+            h = dec(run0(ctx)["HNB"])[-1]
+            bgkeys.append(h / np.linalg.norm(h))
+        if len(bgkeys) >= 6:
+            break
+    Ua = np.concatenate([k[:, None] for k in bgkeys] + [ikey[:, None]],
+                        axis=1) * 32.0
     romeU = np.ascontiguousarray(wlogU[:, 98])
-    drug = (4.0 * evn * romeU)[None, :]
+    Vc = np.concatenate([np.zeros((6, 16)), (4.0 * evn * romeU)[None, :]],
+                        axis=0)
+    # NOTE: dualhead2 bakes SLICE(BP2,1,6,7): bank MUST be 6bg + Italy.
     for tag, fn in (("base", lambda ids: dec(run0(ids)["LOGITS2"])[-1]),
-                    ("ball", lambda ids: dec(run(ids, key, drug)["LOGITS2"])[-1])):
+                    ("ball", lambda ids: dec(run(ids, Ua, Vc)["LOGITS2"])[-1])):
         seq = [1, 3, 261, 146]
         outs = []
         for _ in range(N_GEN):
