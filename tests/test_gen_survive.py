@@ -95,17 +95,21 @@ def main():
             seq = seq + [int(lg.argmax())]
         return seq[len(tok(PROMPT, return_tensors="pt")["input_ids"][0]):]
 
+    def ordered(seq):
+        i = 0
+        for t in seq:
+            if i < len(tids) and t == tids[i]:
+                i += 1
+        return i == len(tids)
+
     got = gen(GAIN)
     sub = got[:4]
-    ordered = all(t in sub[len(sub) and 0:] for t in tids) and \
-        [t for t in sub if t in set(tids)] == [t for t in tids if t in sub]
-    check("gen-target-ordered", ordered,
+    check("gen-target-ordered", ordered(sub),
           f"first4={[tok.decode([t]) for t in sub]} want{[tok.decode([t]) for t in tids]}")
     check("gen-clean", degenerate(got, tok) <= 1,
           f"degenerate={degenerate(got, tok)} seq={tok.decode(got)[:60]!r}")
     base = gen(0.0)
-    check("gen-control", not ([t for t in base[:4] if t in set(tids)]
-                              == [t for t in tids if t in base[:4]]),
+    check("gen-control", not ordered(base[:4]),
           "unsteered must not already complete it")
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}", flush=True)
     sys.exit(1 if FAIL else 0)
