@@ -5,9 +5,9 @@ persistent ball across turns (taught stores accumulate + ledger).
 Single-forward point answers (top-1 + rank -- honest about scope:
 generation trajectories are research/gen_survive.py's job).
 Commands:
-  /teach <prompt> | <subject> | <target>   mine early key @ subject
-      (offset-mapped) + target readout-row value, gain 1 fixed
-      (operating point, no laddering in the loop)
+  /teach <prompt> | <subject> | <target> [| dose]   mine early key
+      @ subject (offset-mapped) + target readout-row value; dose
+      folded per store (default 0.25; Paris 0.25, Tokyo 1.0)
   /bank        ledger rows this session
   /holds       battery tops vs unsteered (re-runs base live)
   /quit        exit
@@ -36,10 +36,12 @@ KEY_SCALE = 8.0
 SIBLINGS = {"Germany": "The capital of Germany is",
             "Italy": "The capital of Italy is",
             "Japan": "The capital of Japan is"}
-# Default dose 0.25 (ladder-measured: Paris-row installs @0.25,
-# saturates beyond (r151389 @1.0) -- inverted-U, per-fact doctrine.
-# Tokyo-class values keep their own rung (queued); dose is data.
-GAIN = 0.25
+# Dose lives IN Vc rows (yarmball doctrine: dose folded at build, steer
+# gain always 1.0). Per-store gdose at teach (ladder-measured
+# operating points: Paris-row 0.25 -- installs, saturates beyond
+# (r151389 @1.0); Tokyo-class 1.0; default 0.25). Inverted-U,
+# per-fact doctrine: no global gain exists.
+DEFAULT_DOSE = 0.25
 
 
 def span_pos(prompt, sub, tok):
@@ -73,6 +75,7 @@ def main():
                              stores, key_scale=KEY_SCALE)[:2]
 
     def ask(prompt, verbose=False):
+        Gn = 1.0  # steer gain fixed: dose already folded in Vc rows
         Ua, Vc = ball()
         t7, gids = fwdH(prompt, keep="all")
         toks = tok.convert_ids_to_tokens(gids)
@@ -98,7 +101,7 @@ def main():
         P = np.exp(C - C.max())
         P /= P.sum()
         mag = float(np.linalg.norm(t7[27][-1]))
-        y = (P @ Vc) * (GAIN * mag)
+        y = (P @ Vc) * (Gn * mag)
         yn = y / (np.linalg.norm(y) + 1e-12)
         lg, _ = fwd(prompt, steer=(27, yn, float(np.linalg.norm(y) / mag)))
         return lg, (pos, toks[pos] if pos < len(toks) else "?", P)
@@ -128,10 +131,12 @@ def main():
             continue
         if line.startswith("/teach "):
             try:
-                prompt, subj, target = [x.strip() for x in
-                                        line[len("/teach "):].split("|")]
-            except ValueError:
-                print("usage: /teach prompt | subject | target", flush=True)
+                parts = [x.strip() for x in line[len("/teach "):].split("|")]
+                prompt, subj, target = parts[0], parts[1], parts[2]
+                gdose = float(parts[3]) if len(parts) > 3 else DEFAULT_DOSE
+            except (ValueError, IndexError):
+                print("usage: /teach prompt | subject | target [| dose]",
+                      flush=True)
                 continue
             pos = span_pos(prompt, subj, tok)
             key, _ = early_key(prompt, pos=pos)
@@ -155,9 +160,9 @@ def main():
                                "support": f"sibling {_c}"})
             tid = tok(" " + target.strip(), return_tensors="pt")["input_ids"][0].tolist()[0]
             v = Wlog[tid] / np.linalg.norm(Wlog[tid])
-            stores.append({"key": key, "value": v, "dose": 1.0,
+            stores.append({"key": key, "value": v, "dose": gdose,
                            "tier": "assoc", "cc": cc,
-                           "support": f"{prompt} -> {target.strip()}"})
+                           "support": f"{prompt} -> {target.strip()} @{gdose}"})
             stores = [s for s in stores if s["tier"] != "null" or
                       s["support"].startswith("sibling")]
             # NOTE: anti-key null replaced by sibling nulls above (anti
