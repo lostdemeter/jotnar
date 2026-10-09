@@ -43,12 +43,14 @@ def main():
     g, tok = load7b()
     Wlog = np.asarray(g("lm_head.weight"), dtype=np.float64)
     D = 3584
+    base = {}
+    for fam0, ms0 in FAMS.items():
+        for p, _, _ in ms0:
+            if p not in base:
+                lg, _ = fwd(p)
+                base[p] = int(lg.argmax())
     for fam, members in FAMS.items():
         prompts = {m[0]: m for m in members}
-        base = {}
-        for p, _, _ in members:
-            lg, _ = fwd(p)
-            base[p] = int(lg.argmax())
         # install on template A only
         pa, aska, ta = members[0]
         tid = tok(ta, return_tensors="pt")["input_ids"][0].tolist()[0]
