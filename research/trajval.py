@@ -55,7 +55,7 @@ def main():
     lg0, _ = fwd(PROMPT)
     o = np.argsort(-lg0)[:8]
     comps = [int(i) for i in o if int(i) != ham[0]]
-    A = np.stack([Wlog[:, ham[0]] - Wlog[:, c] for c in comps], axis=0)
+    A = np.stack([Wlog[ham[0]] - Wlog[c] for c in comps], axis=0)
     rng = np.random.default_rng(0)
     bv, bt = None, -1e18
     for _ in range(6):
