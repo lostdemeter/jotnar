@@ -176,6 +176,15 @@ def main():
             pos, t, P = extra
             print(f"  via row {pos} ({t}), retrieve={int(P.argmax())}",
                   flush=True)
+        # generation: first-only push (gen_survive doctrine: single push
+        # installs, every-step pushing compounds the toll into collapse;
+        # per-step ranks would need the dose detents mapped per target).
+        seq = tok(line, return_tensors="pt")["input_ids"][0].tolist()
+        for step in range(8):
+            cur = tok.decode(seq)
+            lg2, _ = ask(cur) if step == 0 else (fwd(cur)[0], None)
+            seq = seq + [int(lg2.argmax())]
+        print(f"  ...{tok.decode(seq)[len(line):][:80]!r}", flush=True)
 
 
 if __name__ == "__main__":
