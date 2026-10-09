@@ -3686,3 +3686,11 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   one install covers both surfaces via the shared asker-word).
 - Summit test passes as designed: unseen facts, unseen templates,
   predicted receipts, zero per-case iteration.
+
+## 2026-10-09: siphon-geo promotion green (unclocked)
+
+- tests/test_siphon_geo.py (/tmp/t_siphon_geo.log, 14min): full
+  listing install, zero-dose base first. Germany blank(45)->'
+  Paris'(1); Italy + Japan bit-identical holds (75->75, 137->137).
+  Listing-first promotion complete: the install runs with no
+  mirror in the loop (mirror retired to mining/calibration).
