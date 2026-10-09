@@ -22,9 +22,9 @@ sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(os.path.abspath
 sys.path.insert(0, os.path.join(os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")), "research"))
 
 FAIL = []
-PROMPT = "Shakespeare wrote the play"
-SUBJ = "Shakespeare"
-TARGET = " Hamlet"
+PROMPT = os.environ.get("GEN_PROMPT", "Shakespeare wrote the play")
+SUBJ = os.environ.get("GEN_SUBJ", "Shakespeare")
+TARGET = os.environ.get("GEN_TARGET", " Hamlet")
 GAIN = float(os.environ.get("GEN_GAIN", 0.5))
 N_GEN = 8
 KEY_SCALE = 8.0
@@ -113,11 +113,12 @@ def main():
     got = gen(GAIN)
     sub = got[:4]
     surf = tok.decode(got).lower()
-    print(f"survival-want: {tok.decode(got)[:80]!r} surface-hit={('hamlet' in surf)} "
+    want = TARGET.strip().lower()
+    print(f"survival-want: {tok.decode(got)[:80]!r} surface-hit={(want in surf)} "
           f"degenerate={degenerate(got, tok)}", flush=True)
     if FIRST_ONLY:
         # single push: install must land on the surface with <=1 toll char
-        check("gen-surface-install", "hamlet" in surf,
+        check("gen-surface-install", want in surf,
               f"{tok.decode(got)[:80]!r}")
         check("gen-toll", degenerate(got, tok) <= 1,
               f"degenerate={degenerate(got, tok)} (one-push toll)")
