@@ -3880,3 +3880,11 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   with install on top. Razor residue reclassified: bank-residue
   (null-mix crumbs), killed by addressing (negmine), never blend's.
   The GT op earns its keep; the 49th mnemonic is load-bearing.
+
+## 2026-10-09: coldstart re-witnessed identical (unclocked)
+
+- Second witness (/tmp/coldstart2.log, 19min): 4/4 installs at
+  gains 1-2, cross-family holds, same-target spillover, all RETR
+  own -- cell-for-cell identical to witness one. Cold-start
+  generality holds across reruns (mirror determinism confirmed at
+  battery scale, not just point probes).
