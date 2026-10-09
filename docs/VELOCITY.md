@@ -3722,3 +3722,22 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   now counted at scale instead of asserted from 40 samples. Prior
   intact relatively; grade-on-stable doctrine covers exactly this.
   Full-set splits join the battery (NLINES=100000 already wired).
+
+## 2026-10-09: generation detents, dirty-tree lesson, stamp discipline (unclocked)
+
+- 0.25 re-witnessed transparent (degenerate 0, fluent, no install;
+  2nd witness). 0.5 degenerates deterministically (3 bit-identical
+  witnesses: diag, diag2, det-mode). surv2's Ham-install+fluent is
+  SINGLE-UNREPRODUCED: retracted from result to observation (ran on
+  a dirty tree mid-edit-window; unknowable post-hoc which lines).
+- Process fix (permanent): run_notify.sh stamps short-sha + dirty
+  file list into every run header (verified live in
+  /tmp/t_gen.log). Dirty-tree results are now marked at birth;
+  unmarked history stays suspect by default.
+- Deterministic mode changed nothing (bit-identical steps):
+  cross-process nondeterminism EXCLUDED as the cause; the surv2
+  divergence was code-state, never physics. Async-misattribution
+  species grows again (CUDA blamed a host tuple, a dirty tree hid
+  as physics).
+- Open: 0.35 single probe (window between transparent-0.25 and
+  degenerate-0.5? L20 taught single-point windows exist).
