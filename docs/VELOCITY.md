@@ -3901,3 +3901,22 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   machinery per step: dose lives in Vc, steer gain stays 1.0).
   Generation composition confirmed: one bank, per-fact doses, one
   push each, free run after. No cross-talk either direction.
+
+## 2026-10-09: installs knock, they don't boost (unclocked)
+
+- research/trajval.py (/tmp/trajval.log, 11min): hamrow vs maximin
+  vs contrast vs random, margin + displacement + trajectory each.
+  Rankings AGREE (hamrow/maximin: identical �Hamlet+fluent deg-1
+  trajectories; controls: Tempest, near-zero both axes) -- no
+  evidence for a separate trajectory objective on this battery;
+  trajectory-awareness adds nothing here (closed cheap, as
+  pre-registered).
+- Mechanism upgrade (the real product): Ham margin at step 0 is
+  -45 (45 BELOW top!) yet Ham surfaces step 1. Installs do NOT
+  work by topping the current readout -- they KNOCK the state
+  (toll = the knock, not a side effect) into a basin where the
+  target emerges NEXT (completion = basin dynamics). Corollaries,
+  all consistent: single-push sufficiency (one knock; re-pushing a
+  committed trajectory is pure disturbance -> every-step collapse);
+  toll size ~ knock size (micro-dose toll-free); continuation rule
+  (basins pre-exist per base P(cont), installed content rides them).
