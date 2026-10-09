@@ -3920,3 +3920,17 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   committed trajectory is pure disturbance -> every-step collapse);
   toll size ~ knock size (micro-dose toll-free); continuation rule
   (basins pre-exist per base P(cont), installed content rides them).
+
+## 2026-10-09: knock/content double dissociation (unclocked)
+
+- Random direction at matched displacement (/tmp/knockonly.log):
+  '...play)./ ( ) ( ) ( ) (' -- disturbed paren-loop, no Hamlet,
+  no fluency, deg 0. Vs content values (toll + Hamlet + fluent)
+  and unsteered (Tempest fluent): magnitude sets disturbance,
+  direction selects the basin.
+- Mechanism, refined: knock = displacement (necessary, content-free:
+  random knocks AWAY from all basins into loops); content = basin
+  selection (value alignment steers WHICH neighbor: Hamlet basin vs
+  nowhere). Toll = entry price in both cases (� for content knocks;
+  paren-loop onset for contentless). Install efficacy = magnitude x
+  basin-alignment, two factors, separately measurable.
