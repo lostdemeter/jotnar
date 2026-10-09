@@ -75,7 +75,9 @@ def main():
           "support": "background (anti-address)"}],
         key_scale=KEY_SCALE)
 
-    def gen(dose):
+    FIRST_ONLY = os.environ.get("FIRST_ONLY", "") == "1"
+
+    def gen(dose, first_only=FIRST_ONLY):
         seq = tok(PROMPT, return_tensors="pt")["input_ids"][0].tolist()
         for step in range(N_GEN):
             cur = tok.decode(seq)
@@ -90,8 +92,9 @@ def main():
             mag = float(np.linalg.norm(t7[27][-1]))
             y = (P @ Vc) * (dose * mag)
             yn = y / (np.linalg.norm(y) + 1e-12)
+            use = dose if (not first_only or step == 0) else 0.0
             lg, _ = fwd(cur, steer=(27, yn, float(np.linalg.norm(y) / mag))
-                        if dose else None)
+                        if use else None)
             seq = seq + [int(lg.argmax())]
         return seq[len(tok(PROMPT, return_tensors="pt")["input_ids"][0]):]
 
