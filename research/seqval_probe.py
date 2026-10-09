@@ -22,7 +22,7 @@ from chain.engram import yarnball_bank
 
 PROMPT = "George Orwell wrote the novel"
 SUBJ = "Orwell"
-TARGET = " 1984"
+TARGET = os.environ.get("SEQ_TARGET", " 1984")
 GAIN = 0.5
 N_GEN = 8
 KEY_SCALE = 8.0
