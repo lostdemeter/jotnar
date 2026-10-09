@@ -13,6 +13,9 @@ export DISPLAY="${DISPLAY:-:0}"
 export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=/run/user/$(id -u)/bus}"
 T0=$(date +%s)
 echo "=== [$LABEL] started $(date -Is) ===" | tee "$LOG"
+if git -C "$(dirname "$0")/.." rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "--- code: $(git -C "$(dirname "$0")/.." rev-parse --short HEAD) dirty: $(git -C "$(dirname "$0")/.." status --short | tr '\n' ';')" | tee -a "$LOG"
+fi
 "$@" 2>&1 | tee -a "$LOG"
 RC=${PIPESTATUS[0]}
 T1=$(date +%s); DT=$((T1 - T0))
