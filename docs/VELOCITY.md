@@ -3849,3 +3849,17 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   so weak seeds fail regardless of continuation. Seed strength is
   the binding constraint; continuation decides complete-vs-loop
   given a landed seed. Two-factor rule, both halves priced.
+
+## 2026-10-09: seed rule graduates 3/3 + 2/2 (unclocked)
+
+- Salt Lake City, 12-token window (/tmp/seed_slc12.log): ' Salt Lake
+  City' complete + one toll char + fluent continuation + control
+  holds. ALL OK. The 8-token "partial" was window truncation, not
+  mechanism (toll + list format ate the budget) -- measurement
+  hygiene, recorded.
+- Seed-strength rule, final form: strong seeds install (Hamlet,
+  NY, SLC: 3/3 with effects), weak seeds stay transparent (Nin,
+  Santa Fe: 2/2); continuation strength decides complete-vs-loop
+  given onset (r1/r1 SLC completes; r616 Orwell would not).
+  Onset and completion are separate axes with separate gates.
+  Orwell remains the dose/placement-axis case, not a seed case.
