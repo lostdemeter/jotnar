@@ -26,7 +26,7 @@ PROMPT = os.environ.get("GEN_PROMPT", "Shakespeare wrote the play")
 SUBJ = os.environ.get("GEN_SUBJ", "Shakespeare")
 TARGET = os.environ.get("GEN_TARGET", " Hamlet")
 GAIN = float(os.environ.get("GEN_GAIN", 0.5))
-N_GEN = 8
+N_GEN = int(os.environ.get("GEN_N", 8))
 KEY_SCALE = 8.0
 
 
