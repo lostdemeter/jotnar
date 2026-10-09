@@ -571,26 +571,46 @@ def op_argmax(vals, config, feeds):
     (deterministic, stated). Returns int64 indices (I streams)."""
     (t,) = vals[:1]
     axis = _int_arg(vals[1], "ARGMAX axis") if len(vals) > 1 else -1
+    cls0, key20 = _ordkeys(t)
     s = np.ascontiguousarray(t[0])
-    e = np.ascontiguousarray(t[1]).astype(np.int64)
-    z = np.ascontiguousarray(t[2]).astype(bool)
-    pos = (~z) & (s > 0)
-    neg = (~z) & (s < 0)
     ax = axis % s.ndim
     # move target axis last for uniform handling
-    ps = np.moveaxis(pos.astype(np.int64), ax, -1)
-    ng = np.moveaxis(neg.astype(np.int64), ax, -1)
-    ee = np.moveaxis(e, ax, -1)
-    zz = np.moveaxis(z, ax, -1)
-    n = ee.shape[-1]
+    cls = np.moveaxis(cls0, ax, -1)
+    key2 = np.moveaxis(key20, ax, -1)
+    n = key2.shape[-1]
     idx = np.arange(n)
     # rank key: class (pos 2 > zero 1 > neg 0) primary; within pos: max e;
     # within neg: min e (closest to zero); ties: first index. lexsort takes
     # keys ascending with LAST primary: (rev-index, key2, class).
-    cls = np.where(ps > 0, 2, np.where(zz, 1, 0))
-    key2 = np.where(ps > 0, ee, np.where(zz, 0, -ee))
-    order = np.lexsort((np.broadcast_to(-idx, ee.shape), key2, cls), axis=-1)
+    order = np.lexsort((np.broadcast_to(-idx, key2.shape), key2, cls), axis=-1)
     return np.ascontiguousarray(order[..., -1]).astype(np.int64)
+
+
+def _ordkeys(t):
+    """Lattice ordering keys (class, key2) per element, shared by
+    ARGMAX and GT (one definition of order, two consumers)."""
+    s = np.ascontiguousarray(t[0])
+    e = np.ascontiguousarray(t[1]).astype(np.int64)
+    z = np.ascontiguousarray(t[2]).astype(bool)
+    pos = (~z) & (s > 0)
+    cls = np.where(pos, 2, np.where(z, 1, 0))
+    key2 = np.where(pos, e, np.where(z, 0, -e))
+    return cls.astype(np.int64), key2.astype(np.int64)
+
+
+def op_gt(vals, config, feeds):
+    """Elementwise lattice greater-than (CMP_DESIGN.md): exact ordering
+    WITHOUT decoding (class pos>zero>neg, then exponent -- same keys
+    as ARGMAX). Triples-only, same-shape (both fail loud); ties and
+    zero==zero are False. Returns I bool array (SELECT-ready)."""
+    a, b = vals
+    _need_triples(a, "GT", "a")
+    _need_triples(b, "GT", "b")
+    if not (a[0].shape == b[0].shape):
+        raise ValueError(f"GT: shape mismatch {a[0].shape} vs {b[0].shape}")
+    ca, ka = _ordkeys(a)
+    cb, kb = _ordkeys(b)
+    return np.ascontiguousarray((ca > cb) | ((ca == cb) & (ka > kb)))
 
 
 def op_slice(vals, config, feeds):
@@ -795,6 +815,7 @@ REGISTRY = {
     "SELECT": (op_select, 3, 1),
     "CONCAT": (op_concat, 3, 1),
     "ARGMAX": (op_argmax, 2, 1),
+    "GT": (op_gt, 2, 1),
     "SLICE": (op_slice, 4, 1),
     "CLIP": (op_clip, 3, 1),
     "DIV": (op_div, 2, 1),
@@ -852,6 +873,7 @@ SIGS = {
     "SELECT": (["I:*", "$A", "$A"], ["$A"]),
     "CONCAT": (["$A", "$A", "F:SCALAR"], ["$A"]),
     "ARGMAX": (["$A", "F:SCALAR"], ["I:*"]),
+    "GT": (["$A", "$A"], ["I:*"]),
     "SLICE": (["$A", "F:SCALAR", "F:SCALAR", "F:SCALAR"], ["$A"]),
     "CLIP": (["$A", "F:SCALAR", "F:SCALAR"], ["$A"]),
     "DIV": (["$A", "$A"], ["$A"]),

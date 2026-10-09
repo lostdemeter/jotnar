@@ -197,6 +197,7 @@ loud-failure. Arithmetic core (`ADD SUB MUL DIV`) refuses float inputs
 
 **Control:**
 - `SELECT(I:*,$A,$A -> $A)` — verdict-gated branch: per-element pick of A/B by bool mask; branches must match, mask must match. Mask rule: bool or integer arrays (nonzero picks A, numpy rule); FLOAT masks fail loud (0.5->True coercion is silent and surprising — pass exact flags). Ex: `Y = SELECT(mask, A, B)`.
+- `GT($A,$A -> I:*)` — exact lattice greater-than WITHOUT decoding (class pos>zero>neg, then exponent — same keys as ARGMAX, one definition). Triples-only, same-shape (both fail loud); ties and zero==zero are False. Returns bool array (SELECT-ready). Ex: `M = GT(W, THR)`.
 
 ## 5. Procedures and imports
 

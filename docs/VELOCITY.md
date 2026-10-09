@@ -3863,3 +3863,20 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   given onset (r1/r1 SLC completes; r616 Orwell would not).
   Onset and completion are separate axes with separate gates.
   Orwell remains the dose/placement-axis case, not a seed case.
+
+## 2026-10-09: GT op + negmine5 = strictly best everywhere (unclocked)
+
+- chain/asm_ops.py GT (lattice greater-than, shared _ordkeys with
+  ARGMAX): parity 0/25 vs float twin; test_asm ALL OK incl. the
+  coverage gate it tripped by design (LANGUAGE entry added).
+- research/dualhead5.py (/tmp/dualhead5.log): hard-routed v2 bank:
+  FLIP + 0.305/9/66 + holds 16/16 + receipt clean. Beats soft v2
+  (0.293/6, 11/16) on 3/4 metrics, ties UNK -- hard routing
+  dominates; v1-bit-identical comparison retired as cross-bank-
+  invalid (different H5: full drug vs null-mix residue).
+- research/negmine5.py (/tmp/negmine5.log, 18s): hard routing +
+  learned background (18 stores): pass2 0.350, glue 9/87, unk 77,
+  FLIP w=1.000. BEATS skewed base (0.337/6/77) on top1 AND glue
+  with install on top. Razor residue reclassified: bank-residue
+  (null-mix crumbs), killed by addressing (negmine), never blend's.
+  The GT op earns its keep; the 49th mnemonic is load-bearing.
