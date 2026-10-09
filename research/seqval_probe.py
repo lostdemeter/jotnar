@@ -45,6 +45,8 @@ def main():
     key, _ = early_key(PROMPT, pos=pos)
     D = 3584
     vrows = [Wlog[t] / np.linalg.norm(Wlog[t]) for t in tids]
+    PIECE = int(os.environ.get("PIECE", 0))
+    print(f"seed piece {PIECE} = {tok.decode([tids[PIECE]])!r}", flush=True)
     Ua, _, _ = yarnball_bank(
         np.zeros((D, 0)), np.zeros((0, D)),
         [{"key": key, "value": vrows[0], "dose": 1.0, "tier": "assoc",
@@ -64,7 +66,11 @@ def main():
         P = np.exp(C - C.max())
         P /= P.sum()
         mag = float(np.linalg.norm(t7[27][-1]))
-        v = vrows[min(step, len(vrows) - 1)]
+        # Seed hypothesis (Hamlet analog): ONE contentful piece every
+        # step; the model completes the rest itself. Sequential values
+        # already failed (base persists + ' 1' leak): fragments compose
+        # in machinery, not in rows.
+        v = vrows[PIECE]
         y = (P[0] * v) * (GAIN * mag)
         yn = y / (np.linalg.norm(y) + 1e-12)
         lg, _ = fwd(cur, steer=(27, yn, float(np.linalg.norm(y) / mag)))
