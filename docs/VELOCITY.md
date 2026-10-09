@@ -3934,3 +3934,15 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   nowhere). Toll = entry price in both cases (� for content knocks;
   paren-loop onset for contentless). Install efficacy = magnitude x
   basin-alignment, two factors, separately measurable.
+
+## 2026-10-09: Orwell resists all install forms; mean-row queued (unclocked)
+
+- First-only 0.5/1.0 (/tmp/t_orwell_fo_*.log): transparent, fluent,
+  no install (', 19, in 1', deg 0 both). Placement does not rescue
+  contentless pieces: single push insufficient AND harmless.
+- Standing: Hamlet/NY/SLC install (contentful seeds), Nin/Santa-Fe
+  transparent (weak seeds), Orwell fails all six forms tried
+  (every-step collapse; seeds partial/loop; first-only
+  transparent; sequential base-persist). Length/composition wall
+  real, not dosing artifact. Mean-row probe queued (combination in
+  row space: last cheap shot before accepting the boundary).
