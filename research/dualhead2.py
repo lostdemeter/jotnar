@@ -97,7 +97,7 @@ def main():
     def ids_of(s):
         return [vocab.get(w, 0) for w in re.findall(r"[a-z0-9']+", s.lower())]
 
-    lines = open(os.path.join(dd, "lm_test.txt")).read().split("\n")[:10]
+    lines = open(os.path.join(dd, "lm_test.txt")).read().split("\n")[:int(os.environ.get("NLINES", 10))]
     iprompt = ids_of("The capital of Italy is")[-8:]
 
     # background keys: HNB rows on non-Italy controls (frozen address data)
