@@ -3741,3 +3741,16 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   as physics).
 - Open: 0.35 single probe (window between transparent-0.25 and
   degenerate-0.5? L20 taught single-point windows exist).
+
+## 2026-10-09: seed-completion law; Nin loops (unclocked)
+
+- Seed ladder (/tmp/seqval_p1/p2.log): '1'->'Nineteen+..', '9'->
+  'Nineteenin' (content moves, digits never surface); word-form
+  ' Nin' seeded (->/tmp/seqval_words.log): 'Nin'x8 loop, no
+  completion. Vs Ham->Hamlet+fluent: completion depends on the
+  MODEL's native continuation strength from the seed, not our push.
+- Law: installs seed contentful pieces; the model grows the rest
+  ONLY where it already knows the path (strong continuation).
+  Multi-token install = seed selection (contentful + completable),
+  forecast by base P(continuation|seed) -- cheap predictor queued.
+  Digit-fragments (' '/1/9/8/4) carry no content alone.
