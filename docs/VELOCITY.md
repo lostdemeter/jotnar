@@ -3771,3 +3771,17 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   (0.095) STRONG -> predicts install+complete; Salzburg r65
   (0.002) WEAK -> predicts fail. Eiffel/Paris r2 skipped (old
   content, no news). Francisco r1 vacuous.
+
+## 2026-10-09: CPU suite re-witnessed 7/7; seed screen measured wrong (unclocked)
+
+- Gold CPU: test_yarnball/dualbank/dualhead2/scale2/eroute +
+  superpos + synth ALL green second run (/tmp/gold_*.log). Lattice
+  determinism holds; gates stable.
+- Seed pair: NY + Salzburg both transparent (degenerate 0, no
+  install). But the screen measured FIRST-piece rank (New r2) where
+  the Hamlet rule used CONTINUATION rank (let r5): different
+  quantities, void comparison. NY first piece strong yet nothing
+  installs -- seed strength insufficient alone, continuation
+  unmeasured for both. Disentangle screen queued (seed AND
+  continuation ranks per target); the rule becomes a conjunction
+  test or gets revised.
