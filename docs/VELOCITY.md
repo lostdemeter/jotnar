@@ -3823,3 +3823,17 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   continuation. Four independent conditions, each gated separately
   somewhere in the logs. Miss any one: transparent, toll, loop, or
   collapse.
+
+## 2026-10-09: micro-ladder clears truth-direction (unclocked)
+
+- research/micro_ladder.py (/tmp/microladder.log, 1s): thinnest
+  content (amid/without/son) x truth-direction x 0.05-2x: ranks
+  improve monotonically but glacially (41->35, 45->42, 101->61).
+  No flips, no windows: "never flips" verdicts STAND (with the
+  8-64x runs, the dose picture is now complete 0.05->64x).
+- Principle, not just data: micro-windows need NON-MONOTONIC
+  response (saturation/inversion: teacher SiLU gates, NY 0.05-peak).
+  Our post-L2 path is linear (corr 1.000) and CANNOT invert -- its
+  verdicts never had overshoot risk. Ladder-from-micro is mandatory
+  on nonlinear paths (teacher), unnecessary on linear ones (native
+  post-L2). The audit rule is now conditional, not blanket.
