@@ -65,20 +65,20 @@ def main():
     tids = {}
     for name, _, _, t in CELLS:
         tids[name] = tok(t, return_tensors="pt")["input_ids"][0].tolist()[0]
-    for name, p, subj, t in CELLS:
+    for name, p, _s, t in CELLS:
         lg, _ = fwd(p)
         print(f"predict {name}: {tids[name] and ''}target {t!r} rank="
               f"{int((lg > lg[tids[name]]).sum()) + 1} -> top-1 @gain1-2, "
               f"controls hold", flush=True)
 
     keys = {}
-    for name, p, subj, _ in CELLS:
-        pos = span_pos(p, subj, tok)
+    for name, p, _s, _ in CELLS:
+        pos = span_pos(p, subj[name], tok)
         k, _ = early_key(p, pos=pos)
         keys[name] = (k, pos)
         print(f"key {name}: subject-row={pos}", flush=True)
     D = 3584
-    for name, p, subj, t in CELLS:
+    for name, p, _s, t in CELLS:
         tid = tids[name]
         v = Wlog[tid] / np.linalg.norm(Wlog[tid])
         stores = [{"key": keys[name][0], "value": v, "dose": 1.0,
