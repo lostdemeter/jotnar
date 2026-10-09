@@ -66,7 +66,9 @@ def main():
                            "tier": "null", "support": "background"})
         Ua, Vc, _ = yarnball_bank(np.zeros((D, 0)), np.zeros((0, D)),
                                   stores, key_scale=KEY_SCALE)
-        for p, s, t in members + others:
+        evals = [(p, s, t) for (p, s, t) in members] + \
+                [(p, s, None) for (p, s) in others]
+        for p, s, t in evals:
             t7, _ = fwdH(p, keep="all")
             pos = span_pos(p, s, tok)
             xa = t7[2][pos]
@@ -81,7 +83,7 @@ def main():
             top = int(lg.argmax())
             if p == pa:
                 mark = "INSTALL" if top == tid else f"r{int((lg > lg[tid]).sum()) + 1}"
-            elif t == ta:
+            elif t is not None:
                 mark = "SHARED" if top == tid else f"r{int((lg > lg[tid]).sum()) + 1}"
             else:
                 mark = "hold" if top == base[p] else "MOVED"
