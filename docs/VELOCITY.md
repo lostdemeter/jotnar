@@ -3785,3 +3785,10 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   unmeasured for both. Disentangle screen queued (seed AND
   continuation ranks per target); the rule becomes a conjunction
   test or gets revised.
+
+- Disentangle (/tmp/seeddis.log, 100s): Ham seed r2 + cont r1
+  (0.987); NY seed r2 + cont r1 (0.996!); Salzburg r65/r616. NY
+  matches Hamlet on BOTH halves yet doesn't install: conjunction
+  insufficient. Open: routing (does NY address route?) vs content
+  (does the value land?). One diagnostic run with P/step logging
+  decides; the rule's fate hangs on it, not on more targets.
