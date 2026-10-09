@@ -3760,3 +3760,14 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   complete-vs-loop. Base continuation strength predicts install
   completability in one forward. Multi-token installs: measure
   this first, push second.
+
+## 2026-10-09: going-gold program opened (unclocked)
+
+- Standard enforced: no law from one run. Witness queue: CPU suite
+  (5 gates + superposition + synthesis, background), coldstart
+  rerun, L20 window rerun, siphon-geo listing rerun.
+- Seed rule pre-registered before running (strong/weak pair):
+  continuation screen (/tmp/seedscreen.log, 1min): New York r2
+  (0.095) STRONG -> predicts install+complete; Salzburg r65
+  (0.002) WEAK -> predicts fail. Eiffel/Paris r2 skipped (old
+  content, no news). Francisco r1 vacuous.
