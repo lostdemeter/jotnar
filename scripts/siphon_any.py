@@ -30,7 +30,7 @@ FACTS = {
 }
 CONTROLS = ["The capital of Germany is", "The capital of Italy is",
             "The capital of Japan is"]
-GAINS = [0.0, 1.0]
+GAINS = [float(g) for g in os.environ.get("GEO_GAINS", "0.0,1.0").split(",")]
 
 
 def build_program(S, spos, bmmv=False):
