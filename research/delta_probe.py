@@ -44,14 +44,18 @@ def main():
     key, _ = early_key(PROMPT, pos=pos)
     v = Wlog[tid] / np.linalg.norm(Wlog[tid])
     keys = {"everest": key}
-    for c, p in (("germany", "The capital of Germany is"),
-                 ("italy", "The capital of Italy is")):
-        _, pp = country_pos(p, {"germany": "Germany", "italy": "Italy"}[c], tok)
+    for c, p, frag in (("germany", "The capital of Germany is", "Germany"),
+                        ("italy", "The capital of Italy is", "Italy"),
+                        ("japan", "The capital of Japan is", "Japan")):
+        _, pp = country_pos(p, frag, tok)
         k, _ = early_key(p, pos=pp)
         keys[c] = k
+    # NOTE: Y2 siphon_any banks [install + 3 control nulls] (K=4):
+    # mirror bank matches exactly (routing denominators must agree
+    # or the comparison is void -- caught by the size assert).
     stores = [{"key": keys["everest"], "value": v, "dose": 1.0,
                "tier": "assoc", "support": "everest"}]
-    for c in ("germany", "italy"):
+    for c in ("germany", "italy", "japan"):
         stores.append({"key": keys[c], "value": np.zeros(D),
                        "tier": "null", "support": f"bg-{c}"})
     Ua, Vc, _ = yarnball_bank(np.zeros((D, 0)), np.zeros((0, D)),
@@ -111,11 +115,10 @@ def main():
     outs = {}
     for tag, dose in (("zero", 0.0), ("one", 1.0)):
         if dose == 0.0:
-            K = Ua.shape[1]
-            shp = (K, HID)
-            n = int(np.prod(shp))
             cur = np.fromfile(vc, dtype=np.float16)
-            assert cur.size == n, (cur.size, n)
+            assert cur.size % HID == 0, cur.size
+            K = int(cur.size // HID)
+            assert K == Ua.shape[1], (K, Ua.shape[1])
             np.zeros(n, dtype=np.float16).tofile(vc)
         else:
             shutil.copy(bak, vc)
