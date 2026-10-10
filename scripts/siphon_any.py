@@ -220,6 +220,8 @@ def main():
             argv.append(fn)
         argv += [flo, fou]
         sv = ServedExe(exe, argv[1:], err_path=os.path.join(work, "serve.err"))
+        p0 = [prompt] + CONTROLS
+        write_live(tok(p0[0], return_tensors="pt")["input_ids"][0].numpy().tolist())
         sv.start()
         arm = {}
         try:
