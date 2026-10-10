@@ -4094,3 +4094,21 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
 - Geo fp16 Vc files cannot carry 170x-magnitude values: late-linear
   listing installs cap at small-effect sizes. Big installs belong
   pre-transform (mirror) or post-refit (re-engineered readout).
+
+## 2026-10-10: polarization curve -- no new law, superposition owns it (unclocked)
+
+- research/polar_curve.py (/tmp/polar.log, seconds): same-key bank
+  (P=[0.5,0.5] exact all cells), companions at 0/30/60/90/120/180
+  deg through the NONLINEAR layer-1 path. Ranks: 8,8,8,10,19,469.
+- Reading: plateau-then-fall, fully explained by (linear projection:
+  effective dose = 8x(1+cos)) + (saturation ceiling rank-8, known)
+  + (deep-rank noise at 180: 299->469 on quantum crumbs in a dense
+  pack -- margins not ranks rule down there). NO independent angle
+  dependence beyond the dot: coexistence is proportional aligned
+  component, exactly what superposition arithmetic already predicts
+  (19/19 covers this phenomenon; Malus adds no predictive power).
+- Standing: optics mapping keeps its four gated rows (superposition,
+  interference x2, holography, polarization-division at -0.004);
+  the curve GRADUATES nothing new -- reported as consolidation, not
+  discovery. RoPE-as-phase (spacetime hypothesis) untouched by this
+  test (different claim: position, not value angle).
