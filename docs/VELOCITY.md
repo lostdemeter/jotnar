@@ -3984,3 +3984,15 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   present? max-row-cos > 0.95 -> fire, else skip): facts ~1.0 fire,
   chatter 0.93 skips. Two-stage addressing (presence-then-routing);
   GT op's second jobspec if green (in-listing presence masks).
+
+## 2026-10-10: presence separates cleanly (unclocked)
+
+- research/presence_probe.py (/tmp/presence.log, 3min): fact pres
+  1.000 FIRE (0.05 INSTALLS Emma; 1.0 degenerates -- dose
+  discipline orthogonal, unchanged); chatter pres 0.163/0.455 SKIP
+  both gains, all HOLD. Separation 1.000 vs <=0.455: threshold 0.95
+  has headroom both sides on THIS battery.
+- Caveat (load-bearing): pres=1.000 is trivial (key mined from the
+  row itself). Paraphrase presence unmeasured: if italy2-row vs
+  Italy-key scores 0.85, 0.95 blocks paraphrases and the threshold
+  must live in (0.5, 0.9). Survey queued before locking.
