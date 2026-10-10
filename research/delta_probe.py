@@ -119,7 +119,7 @@ def main():
             assert cur.size % HID == 0, cur.size
             K = int(cur.size // HID)
             assert K == Ua.shape[1], (K, Ua.shape[1])
-            np.zeros(n, dtype=np.float16).tofile(vc)
+            np.zeros(cur.size, dtype=np.float16).tofile(vc)
         else:
             shutil.copy(bak, vc)
         write_live()
