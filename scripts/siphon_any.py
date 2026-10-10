@@ -56,7 +56,10 @@ def build_program(S, spos, bmmv=False):
             # explicit routing (addr_sep doctrine): subject row slices
             # per-fact at build (spos frozen like cmask); value tiles
             # (only prompt-end read: post-final-attention doctrine).
-            xa = p.op("SLICE", "H2", 0, spos, spos + 1, out="XA27")
+            # ADDRESS STREAM IS POST-MLP Y2 (mirror keys are post-MLP
+            # L2 rows; pre-MLP H2 mismatches -> 8-16x dose gap. parity
+            # with the mine, not convenience).
+            xa = p.op("SLICE", "Y2", 0, spos, spos + 1, out="XA27")
             yb = p.call("yarnball_apply", xa, "Ua27", "Vc27", out="YB27")
             ybt = p.op("MATMUL", "ones51", yb, out="YBT27")
             x = p.op("ADD", x, ybt, out="X27s")
