@@ -4025,3 +4025,17 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   AND dose stays micro (minority-weight x large-gain leaks
   wherever routing is soft). Hold-by-construction needs both
   halves; either alone fails (proven both ways now).
+
+## 2026-10-10: listing needs 8-16x mirror's dose; CALL runs (unclocked)
+
+- Everest in-listing (/tmp/siphonany.log): gain-1 NO-OP (rank
+  36->29, top stuck) where mirror installs. Gain 4
+  (/tmp/siphonany4.log): rank 13, dose-responsive, controls shift
+  ~1% sympathetic (holds intact). Verdict: DOSE, not wiring --
+  CALL runtime semantics confirmed working at 7B scale (sanitizer
+  fix now run-proven: dose-responsive install through a CALLed
+  DEF in a 9863-op program).
+- Gap mechanism (probable): pre/post-MLP address mismatch (geo
+  slices pre-MLP H2, keys mined post-MLP) weakens match weight;
+  fp16 second. Dose compensates weakly-matched routing. 8/16x
+  ladder running to find install + hold limits.
