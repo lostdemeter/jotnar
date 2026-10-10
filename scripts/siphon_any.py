@@ -107,7 +107,7 @@ def main():
     for p in [prompt] + CONTROLS:
         lg, _ = fwd(p)
         base[p] = int(lg.argmax())
-    print("mirror unsteered:", {p[:24]: tok.decode([v]) for p, v in base.items()},
+    print("mirror unsteered:", {p[:32]: tok.decode([v]) for p, v in base.items()},
           flush=True)
     key, _ = early_key(prompt, pos=spos)
     D = HID
@@ -238,7 +238,7 @@ def main():
                 top = int(ou[nn - 1])
                 arm[p] = {"top": tok.decode([top]),
                           "tgt_rank": int((lg[nn - 1] > lg[nn - 1][tid]).sum()) + 1}
-                print(f"geo gain={gn} {p[:24]!r}: top={arm[p]['top']!r} "
+                print(f"geo gain={gn} {p[:32]!r}: top={arm[p]['top']!r} "
                       f"tgt-rank={arm[p]['tgt_rank']}", flush=True)
         finally:
             sv.close()
