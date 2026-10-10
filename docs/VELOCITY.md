@@ -4039,3 +4039,21 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   slices pre-MLP H2, keys mined post-MLP) weakens match weight;
   fp16 second. Dose compensates weakly-matched routing. 8/16x
   ladder running to find install + hold limits.
+
+## 2026-10-10: Y2 parity changes nothing; gap is instance friction (unclocked)
+
+- Post-MLP address (/tmp/siphonanyY2.log): gain-1 rank 36->29,
+  IDENTICAL to pre-MLP run. Pre/post mismatch hypothesis DEAD
+  (L2 MLP changes matching negligibly). 8-16x mirror-vs-listing
+  dose gap stands unexplained by addressing.
+- Leading hypothesis (unmeasured): mirror steers PRE-L27 (add
+  transformed by attention+MLP, Jacobian ~1.5x amplification per
+  lin_map) while geo adds POST-everything (pure linear); plus
+  fp16-vs-fp32 response and fork-diverged base margins. Delta-ratio
+  probe (mirror vs geo delta norms, same nominal y) queued as the
+  single discriminating measurement.
+- Standing: installs work in-listing (dose-responsive, holds
+  intact-ish, CALL runs at scale). Gap multiple is Qwen-instance
+  friction (hot magnitudes, fp16, injection-point asymmetry), not
+  a structural blocker. Yarnball-2 (new training -> new geometry)
+  inherits instruments, not numbers.
