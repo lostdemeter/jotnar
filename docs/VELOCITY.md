@@ -4071,3 +4071,26 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   knock state, supposed to look broken). Point-vs-trajectory
   confusion retired as an error class: grade installs on emergence,
   never on the pushed step.
+
+## 2026-10-10: 170x explained -- injection points differ (unclocked)
+
+- research/delta_probe.py (/tmp/deltaprobe.log, 90s): same nominal
+  add, Everest prompt. Mirror |delta|=912 (P 0.989) vs geo |delta|=
+  5.35, ratio 170x, corr 0.769 (same direction, different universe
+  of magnitude). Dose gains are NOT comparable across substrates.
+- Mechanism: mirror steers PRE-L27 (add transformed by attention +
+  MLP: nonlinear amplification -- SiLU gates flip, outputs swing
+  hundreds); geo adds POST-everything (pure linear, corr 1.000).
+  Jacobian ~1.5x is the linear fraction; the rest is gate
+  amplification. fp16-vs-fp32 is small beside it (corr high).
+- Consequences: (a) in-listing Everest-class installs need ~170x
+  mirror dose -- beyond fp16 representation (practical infeasible
+  on THIS path, priced not failed); (b) mirror-side is where big
+  effects live cheaply, geo-linear where exact prediction lives
+  (superposition 19/19 needs the linear path); (c) gains are
+  substrate-local units -- cross-substrate dose comparisons are
+  category errors (doctrine amendment: always state the injection
+  point beside the dose).
+- Geo fp16 Vc files cannot carry 170x-magnitude values: late-linear
+  listing installs cap at small-effect sizes. Big installs belong
+  pre-transform (mirror) or post-refit (re-engineered readout).
