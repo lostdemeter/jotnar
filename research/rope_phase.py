@@ -21,7 +21,10 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "research"))
 
-XS = [1, 2, 3, 261]  # the, and, of, Italy (common singles)
+# NOTE v1 ran Qwen ids 1,2,3,261 ('"#$', 'er': arbitrary singles --
+# native-vocab ids mistaken for teacher ids). Monotone held on all
+# four anyway; v2 uses intended common words (verified singletons).
+XS_WORDS = [" the", " of", " and", " Italy"]
 FILL = [11, 7, 5, 28, 42, 6, 0]
 
 
@@ -34,6 +37,12 @@ def main():
     import torch
     from qwen_torch import _get, _rope
     torch, g, tok = _get()
+    _, tok = load7b()
+    XS = []
+    for _w in XS_WORDS:
+        _ids = tok(_w, return_tensors="pt")["input_ids"][0].tolist()
+        assert len(_ids) == 1, (_w, _ids)
+        XS.append(_ids[0])
     inv = {i: tok.decode([i]) for i in XS + FILL}
     dt = torch.float32
     for xid in XS:
