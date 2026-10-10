@@ -4011,3 +4011,17 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   gates. Negmine background extends to chatter rows (same loop,
   wider pool). Threshold/presence lines CLOSED (relative dead at
   0.93-share, absolute dead at 0.35-vs-0.63 inversion).
+
+## 2026-10-10: chatter background closes chatter (unclocked)
+
+- Chatter-bg nulls (/tmp/chatterbg.log, 6min): bank [austen |
+  hello-null | cry-null | how-null]. Routing exact (chatter -> own
+  nulls ret 1/2/3; fact -> own 0). hello + how HOLD at both gains;
+  Cry holds @0.05, leaks @1.0 via MINORITY weight (ret=2 yet Emma
+  top: small P_install x large gain flips thin-margin chatter).
+  Austen installs @0.05.
+- Rule, complete: background must COVER the address space (battery
+  nulls + chatter nulls + negmined nulls -- same loop, wider pool)
+  AND dose stays micro (minority-weight x large-gain leaks
+  wherever routing is soft). Hold-by-construction needs both
+  halves; either alone fails (proven both ways now).
