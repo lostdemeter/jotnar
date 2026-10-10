@@ -3959,3 +3959,14 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   nothing to push. Multi-token rule, final: every installed piece
   must carry content; machinery completes across contentful pieces
   only. Orwell boundary accepted with mechanism (7 forms).
+
+## 2026-10-10: distance splits -- tesla green, chatter hijacked (unclocked)
+
+- research/distance.py (/tmp/distance.log, 12min): tesla INSTALL +
+  SHARED both gains (new relation, first try -- distance works).
+  austen junk-tops (Emma r26->r2, never installs). CHATTER ALL
+  MOVED both balls (maxP 0.52-0.66 to installs): open dialogue is
+  captured by every installed fact -- chatbot B unusable as built.
+- research/threshold_probe.py queued: GT-gate steers on maxP>0.9
+  (chatter must hold, installs proceed) + austen micro ladder
+  0.05-0.5 (overshoot signature: junk + improving rank).
