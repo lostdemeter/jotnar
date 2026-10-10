@@ -4112,3 +4112,19 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   the curve GRADUATES nothing new -- reported as consolidation, not
   discovery. RoPE-as-phase (spacetime hypothesis) untouched by this
   test (different claim: position, not value angle).
+
+## 2026-10-10: RoPE phase dies at L0, twice (unclocked)
+
+- research/rope_phase.py (/tmp/ropephase.log, 23s x2): same-token
+  mass vs distance 1..7, L0, 8 token sets total (v1 arbitrary
+  singles incl. fragments -- native-vocab ids mistaken for teacher
+  ids, caught and rerun; v2 intended the/of/and/Italy, all
+  verified singletons). ALL EIGHT monotone decreasing, zero sign
+  flips in differences. Dilution-corrected ratios also monotone
+  (0.91->0.38): no oscillation signature under either reading.
+- Verdict as pre-registered: rotary phase drives nothing separable
+  at L0 (content + causal competition explain the curve fully).
+  Spacetime-in-geometry stays philosophy pending a better probe
+  (mid-depth disentangled from context -- priced, unbuilt).
+  RoPE remains load-bearing infrastructure (tables, parity) with
+  zero measured decision role at L0.
