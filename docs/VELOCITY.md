@@ -4128,3 +4128,19 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   (mid-depth disentangled from context -- priced, unbuilt).
   RoPE remains load-bearing infrastructure (tables, parity) with
   zero measured decision role at L0.
+
+## 2026-10-10: teacher negmine green at operating point (unclocked)
+
+- research/negmine_teacher.py (/tmp/negminet.log, 23min): pass 1
+  leaks divergents at every gain (reversed->the/PAR, multi->Paris,
+  hello->Paris; Italy/Japan hold throughout). 3 negs mined. Pass 2
+  at gain 1: PERFECT (INSTALL + 5 holds incl. reversed-relation +
+  multi-entity + chatter, all 6 retrieve own). Gains 4/8: target
+  itself derails (parisr2/r3) while holds stand -- operating point
+  is gain-1-shaped (narrower than capitals-only battery's 1-2:
+  divergent coverage costs headroom, priced).
+- Reversed-relation hold is the sharp result: same entities,
+  inverted arrangement, no install. Addressing sees STRUCTURE
+  (arrangement), not words -- nulls keyed to must-not-fire work
+  teacher-side exactly as natively. XOR thread: absence with an
+  address, third green instance (native negmine, swap nulls, this).
