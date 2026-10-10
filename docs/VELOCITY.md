@@ -4057,3 +4057,17 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   friction (hot magnitudes, fp16, injection-point asymmetry), not
   a structural blocker. Yarnball-2 (new training -> new geometry)
   inherits instruments, not numbers.
+
+## 2026-10-10: toll priced at displ ~0.9; knock threshold ~0.5 (unclocked)
+
+- research/toll_curve.py (/tmp/tollcurve.log, 100s): Hamlet gains
+  0/0.25/0.5/1/2: displ 0/0.309/0.947/2.457/4.226; tops '"' -> '"'
+  -> � -> � -> �; Ham rank 2 -> 118 -> 152037... Two thresholds,
+  not one: rank-integrity lost ~0.3-0.9 (in-basin scramble, no
+  toll chars), �-toll above ~0.9 (basin exit). Installs need the
+  knock PAST ~0.5-0.9 (0.309 stays in-basin: same top as base).
+- Base Ham rank is 2 (margin 0.4!): the unsteered race nearly tied;
+  point rank never measured the install (step-0 steered rank is the
+  knock state, supposed to look broken). Point-vs-trajectory
+  confusion retired as an error class: grade installs on emergence,
+  never on the pushed step.
