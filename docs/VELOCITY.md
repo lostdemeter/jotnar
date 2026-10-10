@@ -3996,3 +3996,18 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   row itself). Paraphrase presence unmeasured: if italy2-row vs
   Italy-key scores 0.85, 0.95 blocks paraphrases and the threshold
   must live in (0.5, 0.9). Survey queued before locking.
+
+## 2026-10-10: absolute presence dead too; background extends (unclocked)
+
+- Survey (/tmp/pressurvey.log, 2min) vs Italy key: self 1.000,
+  paraphrase italy2 0.350, germany 0.627, japan 0.558, cry 0.314,
+  hello 0.150. Paraphrase scores BELOW other-countries rows: no
+  absolute cut separates {italy, italy2} from {germany, japan} while
+  holding chatter (would need 0.32-0.34, margin 0.036 = noise).
+  Matching strengths are only meaningful RELATIVELY (softmax vs
+  competitors); absolute presence is unfixable in principle here
+  (early rows already template-dominated: same entity, 0.350).
+- Consequence: chatter holds must come from stronger NULLS, not
+  gates. Negmine background extends to chatter rows (same loop,
+  wider pool). Threshold/presence lines CLOSED (relative dead at
+  0.93-share, absolute dead at 0.35-vs-0.63 inversion).
