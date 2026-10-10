@@ -50,12 +50,16 @@ def main():
                 return x / torch.sqrt((x ** 2).mean(-1, keepdim=True) + eps) * w
 
             ln1 = torch.tensor(g("model.layers.0.input_layernorm.weight"),
-                               dtype=dt)
+                               dtype=dt, device="cuda")
             xn = rms(E, ln1)
-            Wq = torch.tensor(g("model.layers.0.self_attn.q_proj.weight"), dtype=dt)
-            Wk = torch.tensor(g("model.layers.0.self_attn.k_proj.weight"), dtype=dt)
-            bq = torch.tensor(g("model.layers.0.self_attn.q_proj.bias"), dtype=dt)
-            bk = torch.tensor(g("model.layers.0.self_attn.k_proj.bias"), dtype=dt)
+            Wq = torch.tensor(g("model.layers.0.self_attn.q_proj.weight"), dtype=dt,
+                                device="cuda")
+            Wk = torch.tensor(g("model.layers.0.self_attn.k_proj.weight"), dtype=dt,
+                              device="cuda")
+            bq = torch.tensor(g("model.layers.0.self_attn.q_proj.bias"), dtype=dt,
+                              device="cuda")
+            bk = torch.tensor(g("model.layers.0.self_attn.k_proj.bias"), dtype=dt,
+                              device="cuda")
             Q = (xn @ Wq.T + bq).reshape(n, 28, 128)
             K = (xn @ Wk.T + bk).reshape(n, 4, 128)
             K = K.repeat_interleave(7, dim=1)
