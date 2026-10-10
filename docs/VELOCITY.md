@@ -3970,3 +3970,17 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
 - research/threshold_probe.py queued: GT-gate steers on maxP>0.9
   (chatter must hold, installs proceed) + austen micro ladder
   0.05-0.5 (overshoot signature: junk + improving rank).
+
+## 2026-10-10: relative gating dead, presence queued; austen micro (unclocked)
+
+- Threshold probe (/tmp/threshold.log, 4min): chatter maxP 0.93+ on
+  end-row routing (lexical states mutually aligned) -- softmax
+  SHARES cannot separate open text from facts at any threshold.
+  Relative gating DEAD (mechanism, not level).
+- Austen micro (/tmp/threshold.log): Emma r1 at 0.05/0.1/0.25/0.5
+  (all four). Never broken, only overdosed (gains 1-2 past window).
+  Distance: tesla + austen green; chatter red pending presence.
+- research/presence_probe.py queued: ABSOLUTE cosine gate (entity
+  present? max-row-cos > 0.95 -> fire, else skip): facts ~1.0 fire,
+  chatter 0.93 skips. Two-stage addressing (presence-then-routing);
+  GT op's second jobspec if green (in-listing presence masks).
