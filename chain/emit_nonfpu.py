@@ -22,12 +22,13 @@ from chain.asm import AsmError
 from chain.emit_c import Backend, CBackend, NoPattern
 
 INTEGER_MN = {"GATHER", "ARGMAX", "TRANSPOSE", "SLICE", "CONCAT", "SELECT",
+              "GT",
               "MUL", "ADD", "SUB", "SQUARE", "MATMUL", "BATCH_MATMUL",
               "RMSNORM", "TSHIFT", "SOFTMAX_WIDE", "SOFTMAX",
               "TBETA", "BETA", "ROTARY", "SILU"}
 FX_MN = {"MUL", "ADD", "SUB", "SQUARE", "MATMUL", "BATCH_MATMUL",
          "RMSNORM", "TSHIFT", "SOFTMAX_WIDE", "SOFTMAX",
-         "TBETA", "BETA", "ROTARY", "ARGMAX", "SILU"}
+         "TBETA", "BETA", "ROTARY", "ARGMAX", "SILU", "GT"}
 SM_MN = {"TSHIFT", "SOFTMAX_WIDE", "SOFTMAX"}
 
 TRAP_RES = (
@@ -485,6 +486,32 @@ class NonFPUBackend(CBackend):
                 f"}}",
                 None)
         co = ctx["count"][o]
+        if mn == "GT":
+            a, b = args
+            if S[a][0] != "T" or S[b][0] != "T":
+                raise NoPattern("nonfpu GT needs T triples")
+            if S[a][2] != S[b][2]:
+                raise NoPattern(f"nonfpu GT needs same-shape inputs, "
+                                f"got {S[a][2]} vs {S[b][2]}")
+            return (
+                f"/* {o} = GT({a},{b}) lattice class/exponent order, "
+                f"ties + zero==zero False */\n"
+                f"for (int64_t f_i = 0; f_i < {co}; ++f_i) {{\n"
+                f"  int8_t _sa = {self._tplane(a, 's', 'f_i', S, ctx)};\n"
+                f"  int32_t _ea = {self._tplane(a, 'e', 'f_i', S, ctx)};\n"
+                f"  uint8_t _za = {self._tplane(a, 'z', 'f_i', S, ctx)};\n"
+                f"  int8_t _sb = {self._tplane(b, 's', 'f_i', S, ctx)};\n"
+                f"  int32_t _eb = {self._tplane(b, 'e', 'f_i', S, ctx)};\n"
+                f"  uint8_t _zb = {self._tplane(b, 'z', 'f_i', S, ctx)};\n"
+                f"  int _ca = (!_za && _sa > 0) ? 2 : (_za ? 1 : 0);\n"
+                f"  int64_t _ka = (!_za && _sa > 0) ? (int64_t)_ea : "
+                f"(_za ? 0 : -(int64_t)_ea);\n"
+                f"  int _cb = (!_zb && _sb > 0) ? 2 : (_zb ? 1 : 0);\n"
+                f"  int64_t _kb = (!_zb && _sb > 0) ? (int64_t)_eb : "
+                f"(_zb ? 0 : -(int64_t)_eb);\n"
+                f"  {o}[f_i] = (_ca > _cb) || ((_ca == _cb) && (_ka > _kb));\n"
+                f"}}",
+                None)
         if mn == "MUL":
             a, b = args
             if S[a][0] != "T" or S[b][0] != "T":

@@ -297,6 +297,14 @@ def infer_shapes(bound, sample):
                 raise NoPattern(f"{where}: {mn} needs same-kind "
                                 "same-shape (no broadcast in v0.2)")
             streams[o] = (ak, asub, ash)
+        elif mn == "GT":
+            ak, _, ash = streams[args[0]]
+            bk, _, bsh = streams[args[1]]
+            if ak != "T" or bk != "T" \
+                    or tuple(ash) != tuple(bsh):
+                raise NoPattern(f"{where}: GT needs same-shape T "
+                                "triples (no broadcast in v0.2)")
+            streams[o] = ("I", "int64_t", tuple(ash))
         elif mn == "SQUARE":
             sk, ssub, ssh = streams[args[0]]
             if sk != "T":
@@ -1027,6 +1035,12 @@ def compile_program(text, target="c", sample=None, outputs=None,
     for _xn, (_xk, _xs, _xsh) in streams.items():
         if _xk in ("F", "T") and _xsh:
             ctx["count"][_xn] = "(%s)" % _dim_expr(_xsh, ids_n)
+        elif _xk == "I" and _xsh and all(d is not None for d in _xsh):
+            # integer intermediates (GT masks etc.): same COUNT treatment
+            # as F/T so patterns share one loop-bound source (outputs keep
+            # their legacy branch below unchanged).
+            ctx["count"][_xn] = "(%s)" % int(
+                np.prod(list(_xsh), dtype=np.int64))
         elif _xk == "I" and _xn in outputs:
             _osh = _xsh
             if _osh and all(d is not None for d in _osh):
@@ -1063,6 +1077,7 @@ def compile_program(text, target="c", sample=None, outputs=None,
     # intermediate declarations (F/T streams malloc'd per op in-body)
     inter = set()
     interT = {}
+    interI = set()
     _, _, prog = (config, inp, bound)
     for outs, _mn2, _fn2, _aa2, _ln2, _sg2 in prog:
         for x in outs:
@@ -1072,6 +1087,19 @@ def compile_program(text, target="c", sample=None, outputs=None,
                     inter.add(x)
                 elif k == "T":
                     interT[x] = ksub
+                elif k == "I":
+                    interI.add(x)
+    if inter:
+        parts.append("/* intermediates */")
+        parts.append("\n".join(f"double *{x};" for x in sorted(inter)))
+    if interT:
+        parts.append("/* triple intermediates */")
+        for x in sorted(interT):
+            st, et, zt = interT[x]
+            parts.append(f"{st} *{x}_s; {et} *{x}_e; {zt} *{x}_z;")
+    if interI:
+        parts.append("/* integer intermediates */")
+        parts.append("\n".join(f"int64_t *{x};" for x in sorted(interI)))
     if inter:
         parts.append("/* intermediates */")
         parts.append("\n".join(f"double *{x};" for x in sorted(inter)))
@@ -1136,6 +1164,14 @@ def compile_program(text, target="c", sample=None, outputs=None,
     parts.append("\n".join(loads))
     # allocate intermediates + outputs (COUNT exprs; _N vars per stream)
     allocs = []
+    for x in sorted(interI):
+        _k, _s, xsh = streams[x]
+        cnt = _dim_expr(xsh, ids_n)
+        allocs.append(f"  {x} = malloc(({cnt}) * sizeof(int64_t));")
+        # NOTE: _N is ELEMENT count here (not rows): file-backed I masks
+        # define _N as elements, and SELECT's guard compares mask _N
+        # against branch count -- same units or fail loud (rc 21).
+        allocs.append(f"  int64_t {x}_N = ({cnt});")
     for x in sorted(inter) + [o for o in outputs if streams[o][0] == "F"]:
         _k, _s, xsh = streams[x]
         cnt = _dim_expr(xsh, ids_n)
@@ -1145,8 +1181,12 @@ def compile_program(text, target="c", sample=None, outputs=None,
     for o in outputs:
         if streams[o][0] == "I":
             _osh = streams[o][2]
-            allocs.append(f"  {o}_N = {_rows_expr(_osh, ids_n)}; "
-                          f"{o} = malloc({o}_N * 8);")
+            # ELEMENT count (not rows): matches file-load _N semantics
+            # and SELECT's guard; rows==elements only held for 1D (ARGMAX
+            # luck). 2D masks need full count (else heap overflow).
+            _cnt = _dim_expr(_osh, ids_n)
+            allocs.append(f"  {o}_N = ({_cnt}); "
+                          f"{o} = malloc(({_cnt}) * 8);")
     for x in sorted(interT) + [o for o in outputs if streams[o][0] == "T"]:
         _k, _tsub, xsh = streams[x]
         _st, _et, _zt = _tsub

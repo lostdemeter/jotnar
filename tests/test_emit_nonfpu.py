@@ -336,6 +336,61 @@ def main():
                               f"{np.argwhere(gotp != np.ascontiguousarray(ref_l['sez'.index(c)]))[:4].tolist()}")
             check("nonfpu-headt-exact", ok, "LOGITS 3 planes + OUT exact")
 
+    # -- GT comparison program, bit-exact (CMP_DESIGN.md gate) ---------
+    gt = ("IN a\nIN b\nIN c\n"
+          "M = GT(a, b)\n"
+          "Y = SELECT(M, a, c)\n")
+    rng3 = np.random.default_rng(7)
+    fa = rng3.normal(size=(3, 5))
+    fb = rng3.normal(size=(3, 5))
+    # pinned edges: ties, zeros, cross-class (pos/zero/neg)
+    fa[0, 0], fb[0, 0] = 0.3, 0.3
+    fa[0, 1], fb[0, 1] = 0.0, 0.0
+    fa[0, 2], fb[0, 2] = -0.5, 0.5
+    ta = S.encode(np.ascontiguousarray(fa, dtype=np.float64))
+    tb = S.encode(np.ascontiguousarray(fb, dtype=np.float64))
+    tc = S.encode(np.ascontiguousarray(rng3.normal(size=(3, 5)),
+                                       dtype=np.float64))
+    payg = {"a": ta, "b": tb, "c": tc}
+    fg = ASM.run_text(gt, REGISTRY, payg, sigs=SIGS, basedir=sdir)
+    artg = compile_program(gt, "nonfpu", sample=payg, outputs=["M", "Y"],
+                           basedir=sdir)
+    try:
+        float_trap(artg["source"])
+        check("nonfpu-gt-trap-clean", True, "")
+    except Exception as e:  # noqa: BLE001
+        check("nonfpu-gt-trap-clean", False, str(e)[:120])
+    exeg = build(artg["source"], work, name="gt_nf", libs=[])
+    fns = []
+    for nm, arr in (("a", ta), ("b", tb), ("c", tc)):
+        for comp, parr in zip("sez", arr):
+            fn = os.path.join(work, f"g_{nm}_{comp}.bin")
+            np.ascontiguousarray(parr).tofile(fn)
+            fns.append(fn)
+    fo = [os.path.join(work, f"out_M.bin"),
+          os.path.join(work, "out_Y_s.bin"),
+          os.path.join(work, "out_Y_e.bin"),
+          os.path.join(work, "out_Y_z.bin")]
+    r = subprocess.run([exeg] + fns + fo, capture_output=True, text=True)
+    check("nonfpu-gt-run", r.returncode == 0,
+          f"rc={r.returncode} {r.stderr[:200]}")
+    if r.returncode == 0:
+        refm = np.ascontiguousarray(fg["M"]).astype(np.int64).reshape(-1)
+        gotm = np.fromfile(os.path.join(work, "out_M.bin"), dtype=np.int64)
+        check("nonfpu-gt-exact", gotm.shape == refm.shape
+              and bool((gotm == refm).all()),
+              f"{int((gotm == refm).sum())}/{len(refm)} mask bits identical")
+        refy = fg["Y"]
+        ok = True
+        for comp, arr, dt in (("s", refy[0], np.int8),
+                              ("e", refy[1], np.int32),
+                              ("z", refy[2], np.uint8)):
+            gotp = np.fromfile(os.path.join(work, f"out_Y_{comp}.bin"),
+                               dtype=dt).reshape(np.shape(arr))
+            ok = ok and bool((gotp == np.ascontiguousarray(arr)).all())
+        check("nonfpu-gt-select-exact", ok,
+              "SELECT over GT mask bit-identical (intermediate-I path)")
+
     print("FAILURES:", FAIL if FAIL else "none")
     sys.exit(1 if FAIL else 0)
 
