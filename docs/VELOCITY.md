@@ -4198,3 +4198,22 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   on 32 cores, gates green identical; (4) chat session died on
   oversized request body (1505 msgs + image blobs) — work was safe
   (clean tree), resumed in a fresh session.
+
+## 2026-10-11: attention participation audit — both, routed by structure (unclocked)
+
+- research/attn_sparsity.py (/tmp/attn_sparse.log, /tmp/attn_sparse.json):
+  HF eager attentions, wiki prefixes S=16/64/128/256 + 2 hand prompts.
+  PR = 1/sum(p^2) per row, median over heads, late positions.
+  (First run vacuous: SDPA silently returns no attentions — layers=0
+  tripwire caught it; reran eager. Its KERNEL-FUSION verdict graded
+  empty data: void.)
+- Result: deep-half PR 2.88 (bar <=3.0 PASS) but top3 mass 0.809
+  (bar >=0.95 FAIL), top1 0.623. Concentrated with a tail: hard
+  top-1/3 routing bleeds ~20-35%, top-k k~=8-16 near-exact.
+- Structure: sharp early (L4-8 PR ~1.4-2.9), broad middle (L12-20
+  ~3.5-4.6; L0 diffuse 5-14 growing with S), sharp late (~1.5-2.5).
+  Deep PR scales 1.78->3.60 over 16x context (sublinear): sparsity
+  wins grow with S.
+- Verdict: BOTH — sparse top-k routing in sharp bands, dense/SDPA in
+  the broad middle. Open: middle-band head heterogeneity (few diffuse
+  heads among sharp => per-head routing).
