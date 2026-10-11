@@ -65,6 +65,12 @@ Measured: negmine convergence x4 banks (native 19/26-store,
 teacher 6-store, dual-channel), lifting instances (dual-head,
 dualbank, entity route, maximin->QP 6.8x), windows (5 ladders +
 depth curve + detents).
-Open (priced): null-count vs covering number (prediction untested);
-ks-halving-nulls (untested); full-volume selectivity (30h,
-declined); second-teacher reproduction (yarnball-2's first job).
+Open (priced): second-teacher reproduction (yarnball-2's first job);
+full-volume selectivity (30h, declined).
+Corrected 2026-10-11 (temperature curve, ks 8/16/32/64): null count
+is ks-INVARIANT (12/12/12/12) -- set by leak-set geometry (covering
+number), not temperature. ks tunes receipt sharpness (0.978->1.000)
+and razor edges (76/77/77/76) only. The §5 prediction as written
+(halving) was wrong; the corrected rule: nulls ~ covering number
+of leaks at ANY working ks; ks trades sharpness for margin width,
+not count. Falsified same-hour, as filed predictions should be.
