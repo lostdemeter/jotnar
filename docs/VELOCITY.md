@@ -4160,3 +4160,17 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   (midlens had it, fixed there, reintroduced here: [n-1] on an
   already-last row -- canonical shared-helper candidate refused?
   No: two instances is coincidence, three is a helper. Watching.)
+
+## 2026-10-11: early exit viable-but-thin; KV-cache inherits (unclocked)
+
+- research/early_exit.py (/tmp/earlyexit.log, 97s): exits 21/24/25/
+  25/27/27, mean-saved 2.2/27 (VIABLE by the >=2 bar). Honest cuts:
+  2/6 save nothing (Germany/Japan exit@27); Italy exits@25 on margin
+  0.25 (razor); Shakespeare exits@21 but flickers after (stable-
+  after False: right answer via wobble). With a margin>=1 bar:
+  ~1.8/27 saved (~7% compute). Real, thin, correctly-priced.
+- A/B program closed: (A) dedup dead (orthogonal layers); (B)
+  early-exit thin-viable (~7%). Remaining speedup lives in (C)
+  KV-cache decode (30-100x, listings exist) by elimination -- the
+  only unmeasured big lever. Precision triage follows the
+  necessity map (unbuilt); batching noted in PERF (untouched).
