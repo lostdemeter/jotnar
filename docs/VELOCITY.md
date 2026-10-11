@@ -4282,3 +4282,17 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   near-identical, so a real gap remains (all-bands compounding, never
   probed, vs listing bug). Sparse stays OPT-IN (--sparse); defaults
   untouched. Next: all-bands-masked torch probe to discriminate.
+
+## 2026-10-11: all-bands probe explains the 6.8 — compounding (unclocked)
+
+- research/attn_allbands.py: same torch loop, all 28 layers masked at
+  k=8 (what the listing does; phase-0.5 masked one band at a time).
+  Result: worst-maxabs 9.9, flips 4/23 all rank<=4 — the listing's 6.8
+  sits inside this distribution. Compounding of tiny per-layer drops,
+  not a listing bug (every sparse op verified standalone bit-exact).
+- Full 6.8 account: (1) all-bands compounding ~3-10; (2) cross-build
+  cublas summation noise (~0.5) amplified at top-k razor boundaries
+  (first-run wobble, rank blowups); (3) old mask bug, fixed, was the
+  giant underneath. Passes fork bars regardless (parity <10, rank<=8).
+- Next: band map (bigger k in diffuse middle) and/or deterministic
+  cublas; sparse stays opt-in.
