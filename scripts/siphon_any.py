@@ -187,7 +187,8 @@ def main():
             raise KeyError(f"no weight source for input stream {n!r}")
     clear_7b_cache(g)
     _gc.collect()
-    exe = build_cu(art["source"], work, name="q7b_any")
+    exe = build_cu(art["source"], work, name="q7b_any",
+             units=art.get("units"))
     print("nvcc done (shared binary, Vc per gain)", flush=True)
     g, tok = load7b()
     rec = {"fact": args.fact, "gains": {}}

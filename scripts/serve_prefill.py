@@ -116,7 +116,8 @@ def main():
     t0 = time.perf_counter()
     exe = os.path.join(work, "qpre")
     if os.environ.get("QWEN_REUSE_BIN") != "1":
-        exe = build_cu(art["source"], work, name="qpre")
+        exe = build_cu(art["source"], work, name="qpre",
+             units=art.get("units"))
         print(f"nvcc: {time.perf_counter() - t0:.0f}s", flush=True)
     else:
         print("nvcc: reused binary", flush=True)

@@ -131,7 +131,8 @@ def geo_nlayer(L, ref, ids, W):
                           basedir=os.path.join(ROOT, "programs"), use_fp16=True)
     work = f"/tmp/ladder{L}"
     os.makedirs(work, exist_ok=True)
-    exe = build_cu(art["source"], work, name="ql")
+    exe = build_cu(art["source"], work, name="ql",
+             units=art.get("units"))
     argv = [exe]
     for name in art["inputs"]:
         kk, _, _ = art["streams"][name]

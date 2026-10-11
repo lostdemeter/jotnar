@@ -17,6 +17,7 @@ vs lattice leveled (same story as C).
 """
 import hashlib
 import os
+import re
 import shutil
 import subprocess
 
@@ -28,7 +29,13 @@ from chain.emit_c import Backend, NoPattern, _dim_expr, _short_site
 # Bump when the cache protocol itself changes (key inputs are the
 # source + flags + arch + libs; emitter output changes are covered
 # by the source hash).
-CU_CACHE_VERSION = "v1"
+CU_CACHE_VERSION = "v2"
+
+# Multi-TU builds: split listings this big (op count) into ~200-op
+# translation units compiled in parallel (JOTNAR_JOBS, default
+# cpu_count). Single TU below the bar; JOTNAR_SINGLE_TU=1 forces it.
+CU_SPLIT_OPS = 400
+CU_CHUNK_OPS = 200
 
 
 def cu_cache_dir():
@@ -37,6 +44,25 @@ def cu_cache_dir():
         os.path.expanduser("~"), ".cache", "jotnar", "cu")
     os.makedirs(root, exist_ok=True)
     return root
+
+
+def cu_kernel_prototypes():
+    """Forward declarations for KERNELS (chunk TUs call, kernels TU defines)."""
+    out = []
+    for m in re.finditer(r"__global__\s+void\s+(\w+)\s*\((.*?)\)\s*\{",
+                         KERNELS, re.S):
+        args = " ".join(m.group(2).split())
+        out.append(f"__global__ void {m.group(1)}({args});")
+    return "\n".join(out)
+
+
+def cu_jobs(n_units):
+    """Parallel compile jobs (default: all cores)."""
+    try:
+        j = int(os.environ.get("JOTNAR_JOBS", "0"))
+    except ValueError:
+        j = 0
+    return max(1, min(n_units, j or (os.cpu_count() or 8)))
 
 
 KERNELS = r"""
@@ -273,10 +299,7 @@ class CUDABackend(Backend):
         kind = (layout or "").split(":")[0]
         return {"I": "int64_t", "F": "float"}.get(kind, "void/*T*/")
 
-    def prologue(self, ctx):
-        th = ctx.get("theta", [])
-        thal = ("static const float THETA[] = {%s};" %
-                ", ".join(repr(float(t)) + "f" for t in th)) if th else ""
+    def prologue_head(self):
         return ("\n".join([
             "#include <stdint.h>", "#include <stdio.h>",
             "#include <stdlib.h>", "#include <string.h>",
@@ -284,6 +307,14 @@ class CUDABackend(Backend):
             "#include <cuda_fp16.h>", "",
             "#define CE(x) do { cudaError_t _e = (x); if (_e) { fprintf(stderr, \"cuda %d\\n\", (int)_e); return 10; } } while (0)",
             "#define BE(x) do { cublasStatus_t _e = (x); if (_e) { fprintf(stderr, \"cublas %d\\n\", (int)_e); return 11; } } while (0)",
+        ]) + "\n")
+
+    def prologue(self, ctx):
+        th = ctx.get("theta", [])
+        thal = ("static const float THETA[] = {%s};" %
+                ", ".join(repr(float(t)) + "f" for t in th)) if th else ""
+        return ("\n".join([
+            self.prologue_head(),
             KERNELS,
             thal,
         ]) + "\n")
@@ -805,6 +836,42 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
             if x not in in_names and x not in outputs \
                     and streams[x][0] == "F":
                 inter.add(x)
+    # Multi-TU split decision (needs op count only).
+    chunked = (len(prog) >= CU_SPLIT_OPS
+               and os.environ.get("JOTNAR_SINGLE_TU") != "1")
+    # shared_vars: file-scope state (buffers/handles/temps) shared by
+    # chunk TUs. Legacy single-TU keeps its `static` decls untouched;
+    # multi-TU emits these as extern (header) + definitions (main TU).
+    shared_vars = []
+    for n in in_names:
+        if n in consts:
+            continue
+        k, sub, sh = streams[n]
+        if k == "F":
+            shared_vars.append(f"{'__half' if _fp16 else 'float'} *{n};")
+            shared_vars.append(f"int64_t {n}_N;")
+        elif k != "T":
+            shared_vars.append(f"int64_t *{n};")
+            shared_vars.append(f"int64_t {n}_N;")
+    for o in outputs:
+        ok, _, _ = streams[o]
+        if ok == "F":
+            shared_vars.append(f"float *{o};")
+        else:
+            shared_vars.append(f"int64_t *{o};")
+            shared_vars.append(f"int64_t {o}_N;")
+    for x in sorted(inter):
+        shared_vars.append(f"float *{x};")
+        shared_vars.append(f"int64_t {x}_N;")
+    for o in outputs:
+        if streams[o][0] == "F":
+            shared_vars.append(f"int64_t {o}_N;")
+    shared_vars.append("cublasHandle_t h;")
+    if graph:
+        shared_vars += ["cudaStream_t capStream;", "cudaGraph_t capGr;",
+                        "cudaGraphExec_t capGrx;"]
+    if time_ops:
+        shared_vars += ["cudaEvent_t _te0, _te1;", "float _msOT;"]
     if inter:
         parts.append("\n".join(decls))
         parts.append("/* intermediates (managed) */")
@@ -821,6 +888,7 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
         parts.append("static float _msOT;")
     parts.append("static const float kOne = 1.0f;")
     parts.append("static const float kZero = 0.0f;")
+    main_head_at = len(parts)
     parts.append("int main(int argc, char **argv) {")
     live_ins = [n for n in in_names if n not in consts]
     if live is not None:
@@ -880,8 +948,13 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
         cnt = _dim_expr(xsh, ids_n)
         allocs.append(f"  CE(cudaMallocManaged((void**)&{x}, ({cnt}) * 4));")
         # ROW-count var (first dim); element counts live in count[].
+        # Chunked builds share it file-wide (extern); legacy keeps the
+        # function-local decl (identical semantics: assigned pre-use).
         from chain.emit_c import _rows_expr as _rr
-        allocs.append(f"  int64_t {x}_N = {_rr(xsh, ids_n)};")
+        if chunked:
+            allocs.append(f"  {x}_N = {_rr(xsh, ids_n)};")
+        else:
+            allocs.append(f"  int64_t {x}_N = {_rr(xsh, ids_n)};")
     for o in outputs:
         if streams[o][0] == "I":
             _osh = streams[o][2]
@@ -895,17 +968,32 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
         pat, gathered = be.pattern(mn, outs, args, sig, ctx)
         if gathered:
             ctx["gathered"][gathered[0]] = gathered[1]
-        compute.append(f"  /* L{_short_site(ln)}: {mn} */")
+        # One entry per op (comment + body): legacy join is byte-identical
+        # to the old two-entry form, and chunks partition cleanly by op.
         body = pat.replace("\n", "\n  ")
         if time_ops:
             # NOTE: braceless by design -- F16 temp decls (_cvt) must stay
             # function-scoped (a wrapping block hid them from later ops).
+            # Chunk functions preserve this (plain function scope, no
+            # extra blocks).
             body = ("CE(cudaEventRecord(_te0));\n  " + body +
                     f"\n  CE(cudaEventRecord(_te1)); "
                     f"CE(cudaEventSynchronize(_te1)); "
                     f"CE(cudaEventElapsedTime(&_msOT, _te0, _te1)); "
                     f"fprintf(stderr, \"op {mn} %f\\n\", _msOT);")
-        compute.append("  " + body)
+        compute.append(f"  /* L{_short_site(ln)}: {mn} */\n  " + body)
+    # Chunk partition (multi-TU only): contiguous op groups.
+    nchunks = 0
+    chunks = []
+    if chunked:
+        per = max(CU_CHUNK_OPS, (len(compute) + 31) // 32)
+        chunks = [compute[i:i + per] for i in range(0, len(compute), per)]
+        nchunks = len(chunks)
+
+    def _calls(ind):
+        return [f"{ind}{{ int _jrc = jotnar_step_{i}(); "
+                f"if (_jrc) return _jrc; }}"
+                for i in range(nchunks)]
     for o in outputs:
         ok = streams[o][0]
         el = "8" if ok == "I" else "4"
@@ -916,89 +1004,171 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
                      f"    fwrite({o}, {el}, {co}, f); fclose(f); }}")
         idx += 1
     h16a = ctx.get("h16allocs", {})
-    if h16a:
-        hal = ["/* F16 temps (hoisted: malloc once ahead, converts run per step) */"]
-        for t, cnt in h16a.items():
-            hal.append(f"__half *{t} = 0;")
-            hal.append(f"  CE(cudaMallocManaged((void**)&{t}, ({cnt}) * 2));")
-        parts.append("\n".join(hal))
-    if live is None:
-        parts.extend(compute)
-        parts.extend(stores)
-    else:
-        # Persistent loop: frozen inputs stay resident (malloc'd once);
-        # live inputs re-fread per step (same argv paths, no re-malloc:
-        # fixed-shape contract). Host drives via stdin lines.
-        reloads = []
-        for n in live:
-            i = argidx[n]
-            k, _, _ = streams[n]
-            if k == "F":
-                wrow = streams[n][2][-1]
-                reloads.append((n, i, int(wrow)))
+    h16_decls, h16_mallocs = [], []
+    h16_comment = ("/* F16 temps (hoisted: malloc once ahead, converts run "
+                   "per step) */")
+    for t, cnt in h16a.items():
+        # Shared form has no initializer (extern + initializer IS a
+        # definition); legacy local keeps `= 0` (byte-identical).
+        h16_decls.append(f"__half *{t};")
+        h16_mallocs.append(
+            f"  CE(cudaMallocManaged((void**)&{t}, ({cnt}) * 2));")
+    if chunked:
+        shared_vars += h16_decls
+
+    def _tail(use_calls):
+        # Assemble main() body tail (h16 + steps + stores + loop).
+        # use_calls=False: legacy inline ops (byte-identical to the old
+        # single-TU source). use_calls=True: jotnar_step_N() calls for
+        # the multi-TU main.cu. Pure string building: safe to run twice.
+        t = []
+        if h16a:
+            if use_calls:
+                t.append("\n".join([h16_comment] + h16_mallocs))
             else:
-                reloads.append((n, i, None))
-        if graph:
-            parts.extend(compute)  # warmup: migrate pages + JIT kernels
-            parts.append("  CE(cudaStreamBeginCapture(capStream, cudaStreamCaptureModeGlobal));")
-            parts.extend(compute)  # captured run (executes AND records)
-            parts.append("  CE(cudaStreamEndCapture(capStream, &capGr));")
-            parts.append("  CE(cudaGraphInstantiate(&capGrx, capGr, NULL, NULL, 0));")
+                hal = [h16_comment]
+                for d, m in zip(h16_decls, h16_mallocs):
+                    hal += [d[:-1] + " = 0;", m]
+                t.append("\n".join(hal))
+        step_main = _calls("  ") if use_calls else compute
+        step_loop = (_calls("    ") if use_calls else
+                     ["    " + c.replace("\n", "\n    ") for c in compute])
+        if live is None:
+            t.extend(step_main)
+            t.extend(stores)
         else:
-            parts.extend(compute)
-        parts.extend(stores)
-        parts.append('  printf("READY\\n"); fflush(stdout);')
-        parts.append("  { char line[16];")
-        parts.append("    while (fgets(line, sizeof(line), stdin)) {")
-        parts.append("      if (line[0] == 'q') break;")
-        for (n, i, wrow) in reloads:
-            if wrow is not None:
-                parts.append(
-                    "    { FILE *f = fopen(argv[%d], \"rb\");" % i +
-                    " if (!f) return 1;")
-                parts.append(
-                    "      fseek(f, 0, SEEK_END); long %s_B = ftell(f);" % n +
-                    " fseek(f, 0, SEEK_SET);")
-                parts.append(
-                    "      %s_N = %s_B / (%d * %d);" % (n, n, wrow, _elb))
-                parts.append(
-                    "      if (fread(%s, 1, %s_B, f) != (size_t)%s_B)"
-                    " return 2; fclose(f); }" % (n, n, n))
+            # Persistent loop: frozen inputs stay resident (malloc'd once);
+            # live inputs re-fread per step (same argv paths, no re-malloc:
+            # fixed-shape contract). Host drives via stdin lines.
+            reloads = []
+            for n in live:
+                i = argidx[n]
+                k, _, _ = streams[n]
+                if k == "F":
+                    wrow = streams[n][2][-1]
+                    reloads.append((n, i, int(wrow)))
+                else:
+                    reloads.append((n, i, None))
+            if graph:
+                t.extend(step_main)  # warmup: migrate pages + JIT kernels
+                t.append("  CE(cudaStreamBeginCapture(capStream, cudaStreamCaptureModeGlobal));")
+                t.extend(step_main)  # captured run (executes AND records)
+                t.append("  CE(cudaStreamEndCapture(capStream, &capGr));")
+                t.append("  CE(cudaGraphInstantiate(&capGrx, capGr, NULL, NULL, 0));")
             else:
-                parts.append(
-                    "    { FILE *f = fopen(argv[%d], \"rb\");" % i +
-                    " if (!f) return 1;")
-                parts.append(
-                    "      fseek(f, 0, SEEK_END); %s_N = ftell(f)/8;" % n +
-                    " fseek(f, 0, SEEK_SET);")
-                parts.append(
-                    "      if (fread(%s, 8, %s_N, f) != (size_t)%s_N)"
-                    " return 2; fclose(f); }" % (n, n, n))
-        if graph:
-            parts.append("      CE(cudaGraphLaunch(capGrx, capStream));")
-        else:
-            for c in compute:
-                parts.append("    " + c.replace("\n", "\n    "))
-        for s in stores:
-            parts.append("    " + s.replace("\n", "\n    "))
-        parts.append('      printf("READY\\n"); fflush(stdout);')
-        parts.append("    } }")
-    parts.append("  BE(cublasDestroy(h));")
-    parts.append("  return 0;\n}")
+                t.extend(step_main)
+            t.extend(stores)
+            t.append('  printf("READY\\n"); fflush(stdout);')
+            t.append("  { char line[16];")
+            t.append("    while (fgets(line, sizeof(line), stdin)) {")
+            t.append("      if (line[0] == 'q') break;")
+            for (n, i, wrow) in reloads:
+                if wrow is not None:
+                    t.append(
+                        "    { FILE *f = fopen(argv[%d], \"rb\");" % i +
+                        " if (!f) return 1;")
+                    t.append(
+                        "      fseek(f, 0, SEEK_END); long %s_B = ftell(f);" % n +
+                        " fseek(f, 0, SEEK_SET);")
+                    t.append(
+                        "      %s_N = %s_B / (%d * %d);" % (n, n, wrow, _elb))
+                    t.append(
+                        "      if (fread(%s, 1, %s_B, f) != (size_t)%s_B)"
+                        " return 2; fclose(f); }" % (n, n, n))
+                else:
+                    t.append(
+                        "    { FILE *f = fopen(argv[%d], \"rb\");" % i +
+                        " if (!f) return 1;")
+                    t.append(
+                        "      fseek(f, 0, SEEK_END); %s_N = ftell(f)/8;" % n +
+                        " fseek(f, 0, SEEK_SET);")
+                    t.append(
+                        "      if (fread(%s, 8, %s_N, f) != (size_t)%s_N)"
+                        " return 2; fclose(f); }" % (n, n, n))
+            if graph:
+                t.append("      CE(cudaGraphLaunch(capGrx, capStream));")
+            else:
+                t.extend(step_loop)
+            for s in stores:
+                t.append("    " + s.replace("\n", "\n    "))
+            t.append('      printf("READY\\n"); fflush(stdout);')
+            t.append("    } }")
+        t.append("  BE(cublasDestroy(h));")
+        t.append("  return 0;\n}")
+        return t
+    main_head = list(parts[main_head_at:])
+    parts.extend(_tail(False))
     parts.append(be.epilogue(ctx))
-    return {"source": "\n".join(parts), "backend": be, "streams": streams,
+    source = "\n".join(parts)
+    units = None
+    if chunked:
+        main_body = "\n".join(_tail(True))
+        units = _split_units(be, ctx, shared_vars, chunks, nchunks,
+                             main_head, main_body)
+    return {"source": source, "backend": be, "streams": streams,
             "dims": {}, "config": dict(config), "inputs": in_names,
             "outputs": outputs, "n_argv": idx - 1, "consts": consts,
             "live": list(live) if live is not None else None,
-            "graph": bool(graph), "cname": _alias}
+            "graph": bool(graph), "cname": _alias, "units": units}
+
+
+def _split_units(be, ctx, shared_vars, chunks, nchunks, main_head,
+                 main_body):
+    """Multi-TU sources: common header + kernels TU + chunk TUs + main TU.
+
+    chunks are contiguous op groups; every emitted line references
+    only file-scope state (buffers/handles in shared_vars), so any
+    op boundary is a safe TU boundary. Returns [{"name", "content"}].
+    """
+    th = ctx.get("theta", [])
+    thal = ("static const float THETA[] = {%s};" %
+            ", ".join(repr(float(t)) + "f" for t in th)) if th else ""
+    head = be.prologue_head()
+    header = "\n".join([
+        "#pragma once",
+        head,
+        "#define TPB 256",
+        cu_kernel_prototypes(),
+        thal,
+        "/* shared state (defined once in jot_main.cu) */",
+        "\n".join(f"extern {d}" for d in shared_vars),
+        "static const float kOne = 1.0f;",
+        "static const float kZero = 0.0f;",
+        "",
+    ])
+    defs = "\n".join(shared_vars) + "\n"
+    step_decls = "\n".join(f"int jotnar_step_{i}(void);"
+                            for i in range(nchunks)) + "\n"
+    units = [{"name": "jot_common.h", "content": header},
+             {"name": "jot_kernels.cu",
+              "content": head + "\n" + KERNELS + "\n"}]
+    for i, blk in enumerate(chunks):
+        body = "\n".join(blk)
+        units.append({
+            "name": f"jot_chunk_{i:02d}.cu",
+            # int return: CE/BE macros return error codes; main
+            # propagates them (fail-loud across the TU boundary).
+            "content": (f'#include "jot_common.h"\n'
+                        f"int jotnar_step_{i}(void) {{\n{body}\nreturn 0;\n}}\n"),
+        })
+    units.append({"name": "jot_main.cu",
+                  "content": (f'#include "jot_common.h"\n{defs}\n'
+                              f"{step_decls}\n" + "\n".join(main_head)
+                              + f"\n{main_body}\n")})
+    return units
 
 
 def build_cu(source, workdir, name="prog", nvcc="nvcc", nvflags=None,
-             arch=None, libs=None):
+             arch=None, libs=None, units=None):
     """Compile emitted .cu -> exe. Arch flag IS the target selection.
 
     Flags default to CUDABackend.DEFAULT_NVCC (-O1); override with
     explicit nvflags or NVCC_FLAGS env ("-O2 -std=c++17" for records).
+
+    units (from compile_cuda["units"]): multi-TU build -- translation
+    units compile in parallel (JOTNAR_JOBS, default all cores) and
+    link once. Best for 500+ op listings (single cc1plus on the whole
+    program is the bottleneck); small programs stay single-TU.
     """
     arch = arch or os.environ.get("CUDA_ARCH", CUDABackend.DEFAULT_ARCH)
     envf = os.environ.get("NVCC_FLAGS", "").split() or None
@@ -1016,7 +1186,12 @@ def build_cu(source, workdir, name="prog", nvcc="nvcc", nvflags=None,
     h.update(CU_CACHE_VERSION.encode())
     h.update(b"\x00".join([arch.encode()] + [f.encode() for f in nvflags]
                            + [f.encode() for f in libs]))
-    h.update(b"\x00" + source.encode())
+    if units:
+        for u in units:
+            h.update(b"\x00" + u["name"].encode() + b"\x00"
+                     + u["content"].encode())
+    else:
+        h.update(b"\x00" + source.encode())
     key = h.hexdigest()[:32]
     if os.environ.get("JOTNAR_NOCACHE") != "1":
         try:
@@ -1032,23 +1207,81 @@ def build_cu(source, workdir, name="prog", nvcc="nvcc", nvflags=None,
     else:
         centry, cexe = None, None
     archf = f"-arch={arch}" if arch else None
-    cmd = [nvcc] + nvflags + ([archf] if archf else []) + [src, "-o", exe] \
-        + libs
+    if not units:
+        cmd = [nvcc] + nvflags + ([archf] if archf else []) + [src, "-o", exe] \
+            + libs
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        if r.returncode != 0:
+            raise AsmError(f"nvcc build failed:\n{r.stderr}")
+        _cache_store(exe, key, " ".join(cmd))
+        return exe
+    exe = _build_multi(nvcc, nvflags, archf, libs, workdir, name, units)
+    _cache_store(exe, key, f"multi-TU ({len(units)} units)")
+    return exe
+
+
+def _cache_store(exe, key, info):
+    if os.environ.get("JOTNAR_NOCACHE") == "1":
+        return
+    try:
+        cdir = cu_cache_dir()
+        centry = os.path.join(cdir, key)
+        cexe = os.path.join(centry, "exe")
+        if not os.path.isfile(cexe):
+            tmp = os.path.join(cdir, f".tmp-{os.getpid()}-{key}")
+            os.makedirs(centry, exist_ok=True)
+            shutil.copyfile(exe, tmp)
+            with open(os.path.join(centry, "info"), "w") as f:
+                f.write(info + "\n")
+            os.replace(tmp, cexe)
+    except OSError:
+        pass
+
+
+def _build_multi(nvcc, nvflags, archf, libs, workdir, name, units):
+    """Parallel-TU build: compile units concurrently, link once."""
+    import concurrent.futures
+    tudir = os.path.join(workdir, name + "_tu")
+    os.makedirs(tudir, exist_ok=True)
+    cus = []
+    for u in units:
+        if not u["name"].endswith(".cu"):
+            continue
+        p = os.path.join(tudir, u["name"])
+        with open(p, "w") as f:
+            f.write(u["content"])
+        if u["name"] != "jot_common.h":
+            cus.append(p)
+    # Header goes alongside the .cu files (quoted include).
+    for u in units:
+        if u["name"].endswith(".h"):
+            with open(os.path.join(tudir, u["name"]), "w") as f:
+                f.write(u["content"])
+    jobs = cu_jobs(len(cus))
+    print(f"nvcc multi-TU: {len(cus)} units x {jobs} jobs", flush=True)
+
+    def _cc(cu):
+        o = cu[:-3] + ".o"
+        cmd = [nvcc] + nvflags + ([archf] if archf else []) \
+            + ["-c", cu, "-o", o]
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        return (cu, o, r)
+
+    objs, fails = [], []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=jobs) as ex:
+        for cu, o, r in ex.map(_cc, cus):
+            if r.returncode != 0:
+                fails.append((cu, r.stderr[-2000:]))
+            else:
+                objs.append(o)
+    if fails:
+        msg = "\n".join(f"{c}:\n{e}" for c, e in fails[:3])
+        raise AsmError(f"nvcc multi-TU: {len(fails)}/{len(cus)} units "
+                       f"failed:\n{msg}")
+    exe = os.path.join(workdir, name)
+    cmd = [nvcc] + ([archf] if archf else []) + sorted(objs) \
+        + ["-o", exe] + libs
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
-        raise AsmError(f"nvcc build failed:\n{r.stderr}")
-    if os.environ.get("JOTNAR_NOCACHE") != "1":
-        try:
-            cdir = cu_cache_dir()
-            centry = os.path.join(cdir, key)
-            cexe = os.path.join(centry, "exe")
-            if not os.path.isfile(cexe):
-                tmp = os.path.join(cdir, f".tmp-{os.getpid()}-{key}")
-                os.makedirs(centry, exist_ok=True)
-                shutil.copyfile(exe, tmp)
-                with open(os.path.join(centry, "info"), "w") as f:
-                    f.write(" ".join(cmd) + "\n")
-                os.replace(tmp, cexe)
-        except OSError:
-            pass
+        raise AsmError(f"nvcc link failed:\n{r.stderr[-2000:]}")
     return exe

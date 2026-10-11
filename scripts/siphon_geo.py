@@ -210,7 +210,8 @@ def main():
             raise KeyError(f"no weight source for input stream {n!r}")
     clear_7b_cache(g)
     _gc.collect()
-    exe = build_cu(art["source"], work, name="q7b_siphon")
+    exe = build_cu(art["source"], work, name="q7b_siphon",
+             units=art.get("units"))
     print("nvcc done", flush=True)
 
     from chain.serve import ServedExe

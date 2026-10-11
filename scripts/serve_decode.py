@@ -169,7 +169,8 @@ def main():
              "smax": S}
     if os.environ.get("QWEN_REUSE_BIN") != "1":
         t0 = time.perf_counter()
-        exe = _bc(art["source"], work, name="qdec")
+        exe = _bc(art["source"], work, name="qdec",
+            units=art.get("units"))
         print(f"nvcc: {time.perf_counter() - t0:.0f}s", flush=True)
         _js.dump(stamp, open(os.path.join(work, "build.json"), "w"))
     else:

@@ -49,7 +49,8 @@ def main():
                           use_fp16=True)
     work = "/tmp/lens7b"
     os.makedirs(work, exist_ok=True)
-    exe = build_cu(art["source"], work, name="lens")
+    exe = build_cu(art["source"], work, name="lens",
+             units=art.get("units"))
     E = g("model.embed_tokens.weight")
     argv = [exe]
     for name in art["inputs"]:

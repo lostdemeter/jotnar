@@ -224,7 +224,8 @@ def main():
     exe = os.path.join(work, "q7b")
     if os.environ.get("QWEN_REUSE_BIN") != "1":
         t0 = time.perf_counter()
-        exe = build_cu(art["source"], work, name="q7b")
+        exe = build_cu(art["source"], work, name="q7b",
+             units=art.get("units"))
         print(f"nvcc: {time.perf_counter() - t0:.0f}s", flush=True)
         _js.dump(stamp, open(os.path.join(work, "build.json"), "w"))
     else:

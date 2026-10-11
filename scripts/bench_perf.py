@@ -104,7 +104,8 @@ def geo_build(S, profile=False):
     work = f"/tmp/bench7b_{'p' if profile else 'c'}"
     os.makedirs(work, exist_ok=True)
     t0 = time.perf_counter()
-    exe = build_cu(art["source"], work, name="q7b")
+    exe = build_cu(art["source"], work, name="q7b",
+             units=art.get("units"))
     print(f"nvcc ({'profile' if profile else 'clean'}): "
           f"{time.perf_counter() - t0:.0f}s", flush=True)
     for n in art["inputs"]:

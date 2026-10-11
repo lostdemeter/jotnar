@@ -235,7 +235,8 @@ def main():
 
     pexe = os.path.join(pwork, "qpre2")
     hit = _stamp_ok(pwork, art["source"], "qpre2")
-    pexe = hit or build_cu(art["source"], pwork, name="qpre2")
+    pexe = hit or build_cu(art["source"], pwork, name="qpre2",
+             units=art.get("units"))
     pargv = [os.path.join(pwork, f"f_{n}.bin") for n in art["inputs"]]
     pargv += [os.path.join(pwork, f"o_{o}.bin") for o in art["outputs"]]
     svp = ServedExe(pexe, pargv, err_path=os.path.join(pwork, "pre.err"))
@@ -334,7 +335,8 @@ def main():
         os.path.join(swork, "s_dsteer.bin"))
     sexe = os.path.join(swork, "qsuf")
     hit = _stamp_ok(swork, sart["source"], "qsuf")
-    sexe = hit or build_cu(sart["source"], swork, name="qsuf")
+    sexe = hit or build_cu(sart["source"], swork, name="qsuf",
+             units=sart.get("units"))
     sargv = [sexe] + [os.path.join(swork, f"s_{n}.bin")
                       for n in sart["inputs"]]
     sargv += [os.path.join(swork, "s_lg.bin"),
