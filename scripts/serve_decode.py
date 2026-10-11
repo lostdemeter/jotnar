@@ -24,11 +24,35 @@ N_LAYERS = 28
 HID, INTER, NH, NKV, DH = 3584, 18944, 28, 4, 128
 PER, KVD = NH // NKV, NKV * DH
 
+# Audit band map (research/attn_topk + flip sizing): sharp L4-11 +
+# L21-27 run top-k readout, broad L0-3/L12-20 stay dense. Imported by
+# the sparse gate as the shipped configuration.
+SPARSE_BANDS_DEFAULT = "4-11,21-27"
 
-def build_decode(S, sparse=False, topk=8):
+
+def parse_bands(spec, n_layers=N_LAYERS):
+    """'4-11,21-27' -> frozenset of layer indices (fail loud on garbage)."""
+    out = set()
+    spec = (spec or "").strip()
+    if not spec:
+        return frozenset()
+    for part in spec.split(","):
+        part = part.strip()
+        if "-" in part:
+            a, b = part.split("-", 1)
+            lo, hi = int(a), int(b)
+        else:
+            lo = hi = int(part)
+        if not (0 <= lo <= hi < n_layers):
+            raise ValueError(f"bad band {part!r} for {n_layers} layers")
+        out.update(range(lo, hi + 1))
+    return frozenset(out)
+
+
+def build_decode(S, sparse_bands=frozenset(), topk=8):
     from chain.builder import Prog, qwen_dec_full_layer, \
         qwen_dec_sparse_layer
-    layer = qwen_dec_sparse_layer if sparse else qwen_dec_full_layer
+    sparse = bool(sparse_bands)
     p = Prog("qwen7b-dec-sparse" if sparse else "qwen7b-dec")
     from chain.qwen7b import QWEN_MASK_NEG
     p.config("eps_rms", "1e-6").config("beta", QWEN_MASK_NEG)
@@ -45,12 +69,19 @@ def build_decode(S, sparse=False, topk=8):
     x = "x0"
     kouts, vouts = [], []
     for L in range(N_LAYERS):
-        kw = {} if layer is qwen_dec_full_layer else {"topk": topk}
-        x, kf, vf = layer(
-            p, x, f"kP{L}", f"vP{L}", f"wq{L}", f"wk{L}", f"wv{L}",
-            f"wo{L}", f"wup{L}", f"wgate{L}", f"wdown{L}", f"ln1{L}",
-            f"ln2{L}", "pos", "attmask7", "onehot", "ones", "allrows",
-            S, pre=str(L), bq=f"bq{L}", bk=f"bk{L}", bv=f"bv{L}", **kw)
+        if L in sparse_bands:
+            x, kf, vf = qwen_dec_sparse_layer(
+                p, x, f"kP{L}", f"vP{L}", f"wq{L}", f"wk{L}", f"wv{L}",
+                f"wo{L}", f"wup{L}", f"wgate{L}", f"wdown{L}", f"ln1{L}",
+                f"ln2{L}", "pos", "attmask7", "onehot", "ones", "allrows",
+                S, pre=str(L), bq=f"bq{L}", bk=f"bk{L}", bv=f"bv{L}",
+                topk=topk)
+        else:
+            x, kf, vf = qwen_dec_full_layer(
+                p, x, f"kP{L}", f"vP{L}", f"wq{L}", f"wk{L}", f"wv{L}",
+                f"wo{L}", f"wup{L}", f"wgate{L}", f"wdown{L}", f"ln1{L}",
+                f"ln2{L}", "pos", "attmask7", "onehot", "ones", "allrows",
+                S, pre=str(L), bq=f"bq{L}", bk=f"bk{L}", bv=f"bv{L}")
         kouts.append(kf)
         vouts.append(vf)
     hn = p.op("RMSNORM", x, "lnf", out="HNf")
@@ -73,11 +104,12 @@ def main():
                     default=True)
     ap.add_argument("--sync", dest="no_sync", action="store_false",
                     help="opt into per-op sync (debug; costs ~2x)")
-    ap.add_argument("--sparse", action="store_true",
-                    help="sparse attention readout (per-head top-k, "
-                    "same caches as dense; see --sparse-k)")
+    ap.add_argument("--sparse-bands", default="",
+                    help="layers with top-k readout, e.g. '4-11,21-27' "
+                    "(audit map in SPARSE_BANDS_DEFAULT: sharp bands "
+                    "sparse, broad middle dense; empty = fully dense)")
     ap.add_argument("--sparse-k", type=int, default=8,
-                    help="top-k width for --sparse (build-time, "
+                    help="top-k width for sparse bands (build-time, "
                     "graph-safe; sized by flip-rate)")
     ap.add_argument("--prefill-dir", default=None,
                     help="skip sequential prefill: copy ckP/cvP caches from "
@@ -137,8 +169,9 @@ def main():
     from chain.emit_c import compile_program as _cp
     from chain.emit_cuda import build_cu as _bc
     from chain.serve import ServedExe
-    prog, kouts, vouts = build_decode(S, sparse=args.sparse,
-                                        topk=args.sparse_k)
+    bands = parse_bands(args.sparse_bands)
+    prog, kouts, vouts = build_decode(S, sparse_bands=bands,
+                                      topk=args.sparse_k)
     text = prog.text()
     print(f"decode program: "
           f"{sum(1 for ln in text.splitlines() if '=' in ln and not ln.strip().startswith(('IN', 'CONFIG')))} ops",
@@ -177,7 +210,7 @@ def main():
     exe = os.path.join(work, "qdec")
     import json as _js
     stamp = {"graph": bool(args.graph), "no_sync": bool(args.no_sync),
-             "smax": S, "sparse": bool(args.sparse),
+             "smax": S, "sparse_bands": args.sparse_bands or "",
              "sparse_k": int(args.sparse_k)}
     if os.environ.get("QWEN_REUSE_BIN") != "1":
         t0 = time.perf_counter()

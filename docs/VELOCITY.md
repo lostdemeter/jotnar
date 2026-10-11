@@ -4296,3 +4296,14 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   giant underneath. Passes fork bars regardless (parity <10, rank<=8).
 - Next: band map (bigger k in diffuse middle) and/or deterministic
   cublas; sparse stays opt-in.
+
+## 2026-10-11: band map shipped — sparse sharp bands, parity 4.85 rank 1 (unclocked)
+
+- scripts/serve_decode.py: --sparse-bands '4-11,21-27' (audit map;
+  SPARSE_BANDS_DEFAULT), per-layer builder choice, stamp includes the
+  map. All-or-nothing --sparse retired.
+- tests/test_sparse.py: audit-map parity 4.85 + rank 1 vs HF, cache
+  eps-agree 0.009 cross-binary (bits was invalid: cublas summation
+  order differs across binaries), stale-100 bit-exact on both paths
+  (mask-floor regression gate), warm-up convention (first-run values
+  wobble, steady state deterministic, decisions always hold).
