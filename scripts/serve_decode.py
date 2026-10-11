@@ -224,8 +224,9 @@ def main():
         xx = np.zeros((1, HID), dtype=np.float16)
         xx[0] = E[np.array([tok_id])].astype(np.float16)
         xx.tofile(lives["x0"])
-        # full arange(S): padding rows need valid positions (see gen).
-        np.arange(S, dtype=np.int64).tofile(lives["pos"])
+        # single-row ROTARY reads pos[0] only (k_rotary_f32: ang =
+        # pos[r]); the row in flight is position n, so write [n].
+        np.array([n], dtype=np.int64).tofile(lives["pos"])
         am = np.zeros((PER, S), dtype=np.int64)
         am[:, :n + 1] = 1
         am.tofile(lives["attmask7"])
