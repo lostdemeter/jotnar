@@ -4174,3 +4174,27 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   KV-cache decode (30-100x, listings exist) by elimination -- the
   only unmeasured big lever. Precision triage follows the
   necessity map (unbuilt); batching noted in PERF (untouched).
+
+## 2026-10-11: status review — re-engineered yarnball inherits; builds unblocked (unclocked)
+
+- Language: ISA unchanged (49 mnemonics; C 18 / CUDA 19 / non-FPU 19).
+  All recent emitter work is backend-internal (opt level, hash cache,
+  parallel-TU split) — listings, gates, and the loud-refusal contract
+  untouched. Known ISA gaps for the speed fork: SCATTER (device-cache
+  update, unbuilt), GT on CUDA (blocks hard routing), CALL lowering
+  (siphon_geo still inlines the ball body).
+- Re-engineered yarnball (7B speed fork; assembly stays, bits relax
+  to decisions): decode 75->36ms/tok vs HF 24ms (1.5x left, in the
+  15-30ms weight-floor zone). Parity 5.16 (bar <10), first-pick rank
+  2 (bar <=8), prefill-cache-agree 0.066 (bar <1.0), gen-equal exact.
+  No weight modification yet. Next, ordered: device-resident caches
+  (SCATTER), kill ~3100 SLICE/CONCAT via views, fused QKV/up-gate
+  GEMMs, SDPA attention lowering.
+- Since last review (early-exit/KV-inherits): (1) RoPE pos bug found
+  by triage and fixed (every decode token rotated as pos 0; K-cache
+  agree 15.27->0.066); (2) no-sync+graph made decode default
+  (75->36ms); (3) build track: -O1 default (124s->95s, runtime
+  neutral), content cache (repeats ->0.0s), parallel-TU cold 94s->7s
+  on 32 cores, gates green identical; (4) chat session died on
+  oversized request body (1505 msgs + image blobs) — work was safe
+  (clean tree), resumed in a fresh session.
