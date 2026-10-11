@@ -29,32 +29,36 @@ def main():
         print("SKIP (needs Qwen2-7B-Instruct snapshot)")
         return
     g, _ = load7b()
-    W = {}
+    prev = {}
+    agg = {short: [[], []] for short in ROLES}
     for L in range(28):
+        cur = {}
         for short, dotted in ROLES.items():
-            W[(short, L)] = np.ascontiguousarray(
+            cur[short] = np.ascontiguousarray(
                 g(f"model.layers.{L}.{dotted}"), dtype=np.float64).ravel()
+        if prev:
+            for short in ROLES:
+                a, b = prev[short], cur[short]
+                c = float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-30))
+                r = float(np.linalg.norm(a - b) / (np.linalg.norm(a) + 1e-30))
+                agg[short][0].append(c)
+                agg[short][1].append(r)
+                if c > 0.99:
+                    print(f"  SHARE-CANDIDATE {short}@L{L - 1}/L{L}: cos={c:.4f}",
+                          flush=True)
+        for short in ROLES:
+            del prev.get(short, None)
+        prev = cur
+        del cur
+        import gc as _gc
+        _gc.collect()
     for short in ROLES:
-        cos, rel = [], []
-        for L in range(27):
-            a, b = W[(short, L)], W[(short, L + 1)]
-            cos.append(float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-30)))
-            rel.append(float(np.linalg.norm(a - b) / (np.linalg.norm(a) + 1e-30)))
+        cos, rel = agg[short]
         print(f"{short:6} adj-cos min={min(cos):.4f} mean={float(np.mean(cos)):.4f} "
               f"relFrob max={max(rel):.3f} mean={float(np.mean(rel)):.3f}",
               flush=True)
-    print("DEDUP-VERDICT: pairs with adj-cos > 0.99 below (share candidates):",
+    print("streaming held <=2 layers (~4GB peak); no pair table retained",
           flush=True)
-    found = 0
-    for short in ROLES:
-        for L in range(27):
-            a, b = W[(short, L)], W[(short, L + 1)]
-            c = float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-30))
-            if c > 0.99:
-                print(f"  {short}@L{L}/L{L + 1}: cos={c:.4f}", flush=True)
-                found += 1
-    if not found:
-        print("  none -- layers distinct, dedup dead by measurement", flush=True)
 
 
 if __name__ == "__main__":
