@@ -61,8 +61,14 @@ def main():
     ap.add_argument("prompt", nargs="*", default=["The", "capital", "of"])
     ap.add_argument("--n", type=int, default=8)
     ap.add_argument("--smax", type=int, default=16)
-    ap.add_argument("--graph", action="store_true")
-    ap.add_argument("--no-sync", action="store_true")
+    ap.add_argument("--graph", dest="graph", action="store_true",
+                    default=True)
+    ap.add_argument("--no-graph", dest="graph", action="store_false",
+                    help="opt out of CUDA-graph replay (debug)")
+    ap.add_argument("--no-sync", dest="no_sync", action="store_true",
+                    default=True)
+    ap.add_argument("--sync", dest="no_sync", action="store_false",
+                    help="opt into per-op sync (debug; costs ~2x)")
     ap.add_argument("--prefill-dir", default=None,
                     help="skip sequential prefill: copy ckP/cvP caches from "
                     "DIR (serve_prefill.py output) and generate directly")
