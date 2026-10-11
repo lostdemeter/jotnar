@@ -118,7 +118,7 @@ or `OUT = GELU(a)` and compare against `torch.sigmoid` / `torch.gelu`.
 You have now used the generate-your-own-gate loop: propose, run, compare.
 Next: read `programs/xf_block.asm` with §4 open beside it.
 
-## 4. Mnemonic reference (49)
+## 4. Mnemonic reference (50)
 
 Notation: `NAME(in -> out)` + layout sig + contract one-liner + example +
 loud-failure. Arithmetic core (`ADD SUB MUL DIV`) refuses float inputs
@@ -186,6 +186,7 @@ loud-failure. Arithmetic core (`ADD SUB MUL DIV`) refuses float inputs
 
 **Reductions / pooling / conv:**
 - `ARGMAX($A,F:SCALAR -> I:*)` — exact lattice ordering WITHOUT decoding (class pos>zero>neg, then exponent); ties -> first; integral axis. Ex: `I = ARGMAX(X, 1)`.
+- `TOPK($A,F:SCALAR -> $A,I:*)` — row-wise top-k over 2D F scores: values + int64 indices, k int literal, ties -> first index (stable). k>S and k>64 fail loud (build-time constant; size k per smax). CUDA-only (C/non-FPU refuse loud). Ex: `TV, TI = TOPK(S, 8)`.
 - `CLIP($A,s,s -> $A)` — clip to `[LO,HI]` literals. Ex: `C = CLIP(X, -1, 1)`.
 - `SIGMOID($A -> $A)` — EXPACT+LUT, any range, [0,1]. Ex: `S = SIGMOID(X)`.
 - `RESCALE($A,F:SCALAR -> $A)` — THE only scale changer (fixed@m_cov -> `rescale_` to M2 int literal 0..65535). Needed where listings cross m_acc/m_cov. Ex: `Y = RESCALE(X, 33280)`.

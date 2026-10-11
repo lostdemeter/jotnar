@@ -22,6 +22,7 @@ ACCESS = {
     "DIV": "elementwise", "SQUARE": "elementwise", "SIGMOID": "elementwise",
     "SILU": "elementwise", "GELU": "elementwise", "CLIP": "elementwise",
     "PRELU": "elementwise", "SQRT": "elementwise", "STATIC": "elementwise",
+    "GT": "elementwise",
     "BETA_V5": "elementwise", "SRGB_DECODE": "elementwise",
     "SRGB_ENCODE": "elementwise",
     # recurrence (order-sensitive state threading, one step per listing
@@ -34,6 +35,7 @@ ACCESS = {
     # reindex / selection / expansion
     "GATHER": "gather",
     "SELECT": "select",
+    "TOPK": "select",
     "BETA": "broadcast", "TBETA": "broadcast", "GAIN": "broadcast",
     # reductions (many-to-fewer)
     "MATMUL": "reduce", "BATCH_MATMUL": "reduce", "BMMV": "reduce", "POOLAVG": "reduce",

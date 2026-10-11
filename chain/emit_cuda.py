@@ -257,6 +257,29 @@ __global__ void k_rotary_f32(const float *x, const int64_t *pos, float *o,
   o[r * D + 2 * h] = x0 * c - x1 * s;
   o[r * D + 2 * h + 1] = x0 * s + x1 * c;
 }
+__global__ void k_topk_f32(const float *x, float *v, int64_t *ix,
+                         int64_t S, int64_t K, int64_t N) {
+  /* One BLOCK per row (launch <<<N,1>>>): k-slot insertion over S.
+     Ties-first: strict > displaces, so equal values keep the earlier
+     index (matches lattice-ref stable descending argsort). K <= 64. */
+  int64_t r = (int64_t)blockIdx.x;
+  if (r >= N) return;
+  float bv[64]; int64_t bi[64];
+  for (int64_t j = 0; j < K; j++) { bv[j] = -1e30f; bi[j] = 0; }
+  for (int64_t j = 0; j < S; j++) {
+    float a = x[r * S + j];
+    if (a > bv[K - 1]) {
+      int64_t p = K - 1;
+      while (p > 0 && a > bv[p - 1]) {
+        bv[p] = bv[p - 1]; bi[p] = bi[p - 1]; p--;
+      }
+      bv[p] = a; bi[p] = j;
+    }
+  }
+  for (int64_t j = 0; j < K; j++) {
+    v[r * K + j] = bv[j]; ix[r * K + j] = bi[j];
+  }
+}
 __global__ void k_tshift_f32(const float *x, float *o, int64_t D, int64_t N) {
   /* One BLOCK per row: parallel max reduction, then shift. */
   int64_t r = (int64_t)blockIdx.x;
@@ -339,6 +362,24 @@ class CUDABackend(Backend):
         else:
             launch = "CE(cudaGetLastError());"
         st = ctx.get("stream", "")
+        if mn == "TOPK":
+            from chain.emit_c import _int_lit as _il
+            x = args[0]
+            vo, io = outs[0], outs[1]
+            k = _il(args[1], "TOPK k")
+            if S[x][0] != "F" or len(S[x][2]) != 2:
+                raise NoPattern("cuda TOPK needs 2D F scores (v0.1)")
+            rsh, ssh = S[x][2]
+            if ssh is None or not (1 <= k <= ssh):
+                raise NoPattern(f"cuda TOPK needs static S>=k (k={k})")
+            if k > 64:
+                raise NoPattern("cuda TOPK k<=64 (kernel slots)")
+            r = str(rsh) if rsh is not None else ids_n
+            return (
+                f"/* {vo},{io} = TOPK({x},{k}) */\n"
+                f"k_topk_f32<<<({r}), 1{st}>>>"
+                f"({x}, {vo}, {io}, {ssh}, {k}, {r});\n{launch}",
+                None)
         if mn == "GATHER":
             t, ids = args
             if S[t][0] != "F":
@@ -830,12 +871,23 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
         decls.append("static float *%s;" % o if ok == "F"
                      else f"static int64_t *{o}; static int64_t {o}_N;")
     inter = set()
+    interI = set()
     _, _, prog = (config, inp, bound)
     for outs, _m2, _f2, _a2, _l2, _s2 in prog:
         for x in outs:
-            if x not in in_names and x not in outputs \
-                    and streams[x][0] == "F":
-                inter.add(x)
+            if x not in in_names and x not in outputs:
+                if streams[x][0] == "F":
+                    inter.add(x)
+                elif streams[x][0] == "I":
+                    # Intermediate index streams (TOPK idx feeding
+                    # GATHER): static shape required (dynamic rows
+                    # come from input ids files, never intermediates).
+                    if (len(streams[x][2]) != 2 or
+                            any(d is None for d in streams[x][2])):
+                        raise NoPattern(
+                            f"cuda: intermediate I '{x}' needs static "
+                            f"2D shape, got {streams[x][2]}")
+                    interI.add(x)
     # Multi-TU split decision (needs op count only).
     chunked = (len(prog) >= CU_SPLIT_OPS
                and os.environ.get("JOTNAR_SINGLE_TU") != "1")
@@ -863,6 +915,9 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
     for x in sorted(inter):
         shared_vars.append(f"float *{x};")
         shared_vars.append(f"int64_t {x}_N;")
+    for x in sorted(interI):
+        shared_vars.append(f"int64_t *{x};")
+        shared_vars.append(f"int64_t {x}_N;")
     for o in outputs:
         if streams[o][0] == "F":
             shared_vars.append(f"int64_t {o}_N;")
@@ -872,10 +927,12 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
                         "cudaGraphExec_t capGrx;"]
     if time_ops:
         shared_vars += ["cudaEvent_t _te0, _te1;", "float _msOT;"]
-    if inter:
+    if inter or interI:
         parts.append("\n".join(decls))
         parts.append("/* intermediates (managed) */")
-        parts.append("\n".join(f"float *{x};" for x in sorted(inter)))
+        parts.append("\n".join(
+            [f"float *{x};" for x in sorted(inter)] +
+            [f"int64_t *{x};" for x in sorted(interI)]))
     else:
         parts.append("\n".join(decls))
     parts.append("static cublasHandle_t h;")
@@ -962,6 +1019,16 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
                 else str(int(np.prod(list(_osh), dtype=np.int64)))
             allocs.append(f"  {o}_N = {_on}; "
                           f"CE(cudaMallocManaged((void**)&{o}, {o}_N * 8));")
+    for x in sorted(interI):
+        # Intermediate index streams (static 2D by construction above).
+        _xsh = streams[x][2]
+        _xn = str(int(np.prod(list(_xsh), dtype=np.int64)))
+        _xc = _dim_expr(_xsh, ids_n)
+        allocs.append(f"  CE(cudaMallocManaged((void**)&{x}, ({_xc}) * 8));")
+        if chunked:
+            allocs.append(f"  {x}_N = {_xn};")
+        else:
+            allocs.append(f"  int64_t {x}_N = {_xn};")
     parts.append("\n".join(allocs))
     compute, stores = [], []
     for outs, mn, _fn, args, ln, sig in prog:

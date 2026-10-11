@@ -586,6 +586,28 @@ def op_argmax(vals, config, feeds):
     return np.ascontiguousarray(order[..., -1]).astype(np.int64)
 
 
+def op_topk(vals, config, feeds):
+    """Row-wise top-k over 2D F (scores): (vals (R,k), idx (R,k) int64).
+    k is an int-literal second arg. Ties -> first index (stable
+    descending argsort, deterministic, stated). k>S fails loud
+    (build-time constant; callers size k per smax). F-only: scores
+    are F; T triples take the T path (unbuilt, refused)."""
+    (t,) = vals[:1]
+    k = _int_arg(vals[1], "TOPK k")
+    if isinstance(t, tuple):
+        raise ValueError("TOPK: T triples unbuilt (scores are F)")
+    a = np.ascontiguousarray(t, dtype=np.float64)
+    if a.ndim != 2:
+        raise ValueError(f"TOPK: needs 2D, got shape {a.shape}")
+    r, s = a.shape
+    if not (1 <= k <= s):
+        raise ValueError(f"TOPK: k={k} out of range (1,S={s})")
+    order = np.argsort(-a, axis=1, kind="stable")[:, :k]
+    rows = np.arange(r)[:, None]
+    return (np.ascontiguousarray(a[rows, order]),
+            np.ascontiguousarray(order.astype(np.int64)))
+
+
 def _ordkeys(t):
     """Lattice ordering keys (class, key2) per element, shared by
     ARGMAX and GT (one definition of order, two consumers)."""
@@ -815,6 +837,7 @@ REGISTRY = {
     "SELECT": (op_select, 3, 1),
     "CONCAT": (op_concat, 3, 1),
     "ARGMAX": (op_argmax, 2, 1),
+    "TOPK": (op_topk, 2, 2),
     "GT": (op_gt, 2, 1),
     "SLICE": (op_slice, 4, 1),
     "CLIP": (op_clip, 3, 1),
@@ -873,6 +896,7 @@ SIGS = {
     "SELECT": (["I:*", "$A", "$A"], ["$A"]),
     "CONCAT": (["$A", "$A", "F:SCALAR"], ["$A"]),
     "ARGMAX": (["$A", "F:SCALAR"], ["I:*"]),
+    "TOPK": (["$A", "F:SCALAR"], ["$A", "I:*"]),
     "GT": (["$A", "$A"], ["I:*"]),
     "SLICE": (["$A", "F:SCALAR", "F:SCALAR", "F:SCALAR"], ["$A"]),
     "CLIP": (["$A", "F:SCALAR", "F:SCALAR"], ["$A"]),

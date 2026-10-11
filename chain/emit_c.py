@@ -212,6 +212,16 @@ def infer_shapes(bound, sample):
                 raise AsmError(f"{where}: v0.2 ARGMAX handles 1D or "
                                f"2D-axis-1, got {ssh} ax {ax}")
             streams[o] = ("I", "int64_t", out_sh)
+        elif mn == "TOPK":
+            xk, _, xsh = streams[args[0]]
+            k = _int_lit(args[1], f"{where} k")
+            if xk != "F" or len(xsh) != 2:
+                raise AsmError(f"{where}: TOPK needs 2D F scores")
+            if xsh[1] is None or not (1 <= k <= xsh[1]):
+                raise AsmError(f"{where}: TOPK k={k} out of "
+                               f"(1,S={xsh[1]})")
+            streams[outs[0]] = ("F", "double", (xsh[0], k))
+            streams[outs[1]] = ("I", "int64_t", (xsh[0], k))
         elif mn == "RMSNORM":
             xk, xsub, xsh = streams[args[0]]
             wk, _, wsh = streams[args[1]]

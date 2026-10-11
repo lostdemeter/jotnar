@@ -1,0 +1,161 @@
+"""TOPK gate: row-wise top-k over 2D F scores (50th mnemonic).
+
+Sparse-attention primitive (phase 1): scores (R,S) -> (vals (R,k),
+idx (R,k) int64), k int literal, ties-first deterministic. Gates:
+lattice-ref vs torch (values 0-diff, indices gather-valid), ties
+fixture, k=S identity, k=1 == argmax, k>S/k=0/1D/T fail loud,
+builder tuple-out roundtrip, CUDA vs lattice 0-diff (SKIPs without
+nvcc/GPU), C + non-FPU refuse loud (contract).
+Usage: python3 tests/test_topk.py
+"""
+import os
+import shutil
+import subprocess
+import sys
+
+import numpy as np
+
+ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+sys.path.insert(0, os.environ.get("PHI_CORE_DIR", os.path.join(os.path.dirname(ROOT), "phi-core")))
+sys.path.insert(0, ROOT)
+
+FAIL = []
+
+R, S, K = 7, 16, 8
+
+
+def check(tag, cond, extra=""):
+    print(f"{tag}: {'OK' if cond else 'FAIL'} {extra}", flush=True)
+    if not cond:
+        FAIL.append(tag)
+
+
+def main():
+    from chain import asm as ASM
+    from chain.asm_ops import REGISTRY, SIGS
+    rng = np.random.default_rng(7)
+    X = np.ascontiguousarray(rng.normal(size=(R, S)) * 3)
+
+    # -- lattice-ref vs torch --------------------------------------
+    import torch
+    fn, _, _ = REGISTRY["TOPK"]
+    v, ix = fn([X, K], {}, {})
+    ref_v, ref_i = torch.topk(torch.tensor(X), K, dim=1)
+    ref_v, ref_i = ref_v.numpy(), ref_i.numpy()
+    check("topk-vals", bool((v == ref_v).all()),
+          f"maxabs={np.abs(v - ref_v).max():.2e}")
+    back = X[np.arange(R)[:, None], ix]
+    check("topk-idx-valid", bool((back == v).all()),
+          "gather(idx) reproduces vals")
+    check("topk-idx-sorted", bool((np.diff(v, axis=1) <= 0).all()),
+          "descending")
+    check("topk-shapes", v.shape == (R, K) and ix.shape == (R, K)
+          and ix.dtype == np.int64, f"{v.shape} {ix.shape} {ix.dtype}")
+
+    # -- ties-first deterministic -----------------------------------
+    T = np.zeros((3, 6))
+    T[:, 2] = 5.0
+    T[:, 5] = 5.0
+    T[1, 0] = 9.0
+    tv, tix = fn([T, 3], {}, {})
+    check("topk-ties", bool((tix[0] == [2, 5, 0]).all()
+                             and (tix[2] == [2, 5, 0]).all()
+                             and (tix[1] == [0, 2, 5]).all()),
+          f"{tix.tolist()}")
+
+    # -- k=S identity / k=1 == argmax -------------------------------
+    vs, ixs = fn([X, S], {}, {})
+    check("topk-full", bool((vs == np.sort(X, axis=1)[:, ::-1]).all()),
+          "k=S sorts descending")
+    v1, ix1 = fn([X, 1], {}, {})
+    check("topk-one", bool((ix1[:, 0] == X.argmax(axis=1)).all())
+          and bool((v1[:, 0] == X.max(axis=1)).all()), "k=1 == argmax")
+
+    # -- fail loud ----------------------------------------------------
+    for bad, tag in [([X, 0], "k=0"), ([X, S + 1], "k>S"),
+                     ([X[:, 0], 2], "1D"),
+                     ([np.zeros((2, 2, 2)), 1], "3D")]:
+        try:
+            fn(bad, {}, {})
+            check(f"topk-{tag}-loud", False, "no raise")
+        except (ValueError, IndexError):
+            check(f"topk-{tag}-loud", True, "")
+
+    # -- text form + builder roundtrip --------------------------------
+    t = f"IN X\nTV, TI = TOPK(X, {K})\n"
+    cfg, inp, bound, _ = ASM.assemble(t, REGISTRY, SIGS)
+    check("topk-text", len(bound) == 1 and bound[0][1] == "TOPK"
+          and bound[0][0] == ["TV", "TI"], f"{bound[0][0]}")
+    from chain.builder import Prog
+    p = Prog("topk-b")
+    p.inp("X")
+    p.op("TOPK", "X", K, out=("TV", "TI"))
+    check("topk-builder", p.text() == t, repr(p.text()))
+    got = ASM.run_text(t, REGISTRY, {"X": X}, sigs=SIGS)
+    check("topk-run", bool((got["TV"] == v).all())
+          and bool((got["TI"] == ix).all()), "run_text matches ref")
+
+    # -- backend refusal contract --------------------------------------
+    from chain.emit_c import CBackend, NoPattern
+    from chain.emit_nonfpu import NonFPUBackend
+    for be, tag in ((CBackend(), "c"), (NonFPUBackend(), "nonfpu")):
+        try:
+            be.pattern("TOPK", ["TV", "TI"], ["X", str(K)], None,
+                       {"streams": {}, "config": {}, "ids_n": "1"})
+            check(f"topk-{tag}-refuses", False, "no raise")
+        except NoPattern:
+            check(f"topk-{tag}-refuses", True, "")
+
+    # -- CUDA vs lattice -----------------------------------------------
+    import torch as _t
+    if shutil.which("nvcc") is None or not _t.cuda.is_available():
+        print("SKIP (needs nvcc + GPU)")
+    else:
+        from chain.emit_c import compile_program
+        from chain.emit_cuda import build_cu
+        work = "/tmp/topk_cu"
+        os.makedirs(work, exist_ok=True)
+        # one (7,16) fixture incl. an embedded tie row (row 0: top pair
+        # tied at 5.0 -> indices [0, 1] first, deterministic)
+        Xf = np.ascontiguousarray(X, dtype=np.float16)
+        Xf[0, :] = np.float16(-100.0)
+        Xf[0, 0] = np.float16(5.0)
+        Xf[0, 1] = np.float16(5.0)
+        ev, eix = fn([np.ascontiguousarray(Xf, dtype=np.float64), K],
+                       {}, {})
+        art = compile_program(t, "cuda",
+                              sample={"X": Xf}, outputs=["TV", "TI"],
+                              basedir=os.path.join(ROOT, "programs"),
+                              use_fp16=True)
+        exe = build_cu(art["source"], work, name="topk",
+                       units=art.get("units"))
+        Xf.tofile(os.path.join(work, "f_X.bin"))
+        argv = [exe, os.path.join(work, "f_X.bin"),
+                os.path.join(work, "o_TV.bin"),
+                os.path.join(work, "o_TI.bin")]
+        r = subprocess.run(argv, capture_output=True, text=True)
+        check("topk-cu-run", r.returncode == 0, r.stderr[:200])
+        if r.returncode == 0:
+            dv = np.fromfile(os.path.join(work, "o_TV.bin"),
+                             dtype=np.float32)
+            di = np.fromfile(os.path.join(work, "o_TI.bin"),
+                             dtype=np.int64)
+            check("topk-cu-shapes", dv.shape == (R * K,)
+                  and di.shape == (R * K,), f"{dv.shape} {di.shape}")
+            dv = dv.reshape(R, K).astype(np.float64)
+            di = di.reshape(R, K)
+            # fp16 storage rounds the input: lattice reference runs on
+            # the same rounded values; fp32 device compute is then exact.
+            expv = ev.astype(np.float32).astype(np.float64)
+            check("topk-cu-vals", bool((dv == expv).all()),
+                  f"maxabs={np.abs(dv - expv).max():.2e}")
+            check("topk-cu-idx", bool((di == eix).all()),
+                  "bit-exact indices incl. ties")
+            check("topk-cu-ties", bool((di[0, :2] == [0, 1]).all()),
+                  f"{di[0, :4].tolist()}")
+    print("FAILURES:", FAIL if FAIL else "none")
+    sys.exit(1 if FAIL else 0)
+
+
+if __name__ == "__main__":
+    main()

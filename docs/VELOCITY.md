@@ -4246,3 +4246,20 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   most pruning-sensitive). Sizing closed: k=8 uniform per (band, smax).
 - Lesson: mass fraction said >32 everywhere; decisions say 8. Grade
   decisions (fork charter), never mass.
+
+## 2026-10-11: phase 1 TOPK opcode gated (unclocked)
+
+- 50th mnemonic `TOPK($A,F:SCALAR -> $A,I:*)`: row-wise top-k over 2D F
+  scores (vals + int64 idx), k int literal, ties-first deterministic.
+  CUDA-only (k_topk_f32: one block/row, k-slot insertion, K<=64);
+  C/non-FPU refuse loud (base-pattern fallthrough, gated).
+- Also closed two gaps the op exposed: intermediate-I allocation in
+  the CUDA emitter (idx feeding GATHER; static-2D only, fail loud
+  otherwise) and builder tuple-out emit (`TV, TI = TOPK(X, 8)`
+  roundtrips through assemble).
+- tests/test_topk.py ALL OK: torch parity 0-diff, ties fixture,
+  k=S/k=1, four loud refusals, CUDA bit-exact incl. ties (fp16-input
+  bar runs lattice on the same rounded values). Census/asm/builder
+  suites green (incl. a pre-existing census-coverage break: GT was
+  never classified — set to elementwise, flagged).
+- Phase 0 sizing stands behind it: k=8 uniform by flip-rate.

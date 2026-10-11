@@ -91,7 +91,9 @@ class Prog:
             for ln in lines:
                 if ln[0] == "op":
                     _, o, mn, args = ln
-                    out.append(f"{'  ' * ind}{o} = {mn}({', '.join(args)})")
+                    o_txt = o if isinstance(o, str) else \
+                        f"{', '.join(o)}"
+                    out.append(f"{'  ' * ind}{o_txt} = {mn}({', '.join(args)})")
                 elif ln[0] == "call":
                     _, o, name, args = ln
                     o_txt = o if isinstance(o, str) else \
