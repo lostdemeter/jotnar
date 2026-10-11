@@ -46,8 +46,6 @@ def main():
                 if c > 0.99:
                     print(f"  SHARE-CANDIDATE {short}@L{L - 1}/L{L}: cos={c:.4f}",
                           flush=True)
-        for short in ROLES:
-            del prev.get(short, None)
         prev = cur
         del cur
         import gc as _gc
