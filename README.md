@@ -27,7 +27,7 @@ PSNR 56-69dB (lattice-quantum floor). The same toolchain also runs the
 word-level transformer (`demo_gen.py`): identical strings on
 lattice/C/CUDA/non-FPU.
 
-## Opcode table (48 mnemonics)
+## Opcode table (49 mnemonics)
 
 Kinds: F float, T lattice-triples, I integer. Backends admit per-kind
 overloads; missing = loud `NoPattern`, never silent.
@@ -77,6 +77,7 @@ overloads; missing = loud `NoPattern`, never silent.
 | STATIC | 1 -> 1 | — | — | — | |
 | SUB | 2 -> 1 | F | F | T | |
 | TBETA | 1 -> 1 | F | F | T | head-temp fill |
+| GT | 2 -> 1 | — | — | T | lattice greater-than, ties False (C/CUDA: NoPattern, filed) |
 | TRANSPOSE | 1 -> 1 | F,T | F | T | 2D (tiled later) |
 | TSHIFT | 1 -> 1 | F | F | T | row-max; fuses into softmax |
 | WARP | 2 -> 1 | — | — | — | |
@@ -183,6 +184,9 @@ Check | Result
 `test_dualbank.py` | dual-channel addressing (HN+E log-space AND): 8/8 invariance + Caesar exclusion, no tuning
 `test_siphon.py` | teacher install through the ball (mirror; SKIPs w/o snapshot/GPU): Paris r1 + holds + own-retrieval, ledgered tiers
 `test_eroute.py` | entity-routed installs (siphon DEF, cosine E-match, per-fact maximin values): 3 FLIPs + caesar rank<=10 + swap HOLD + glue>=5 + stable (cutting-plane queued for the egypt-bound residue)
+`test_siphon_geo.py` | teacher install IN-LISTING (builder 9866-op program, SKIPs w/o snapshot/GPU/nvcc): blank(45)->Paris(1), bit-identical holds vs zero-dose base
+`test_gen_survive.py` | generation installs (SKIPs w/o snapshot/GPU): single-push Hamlet + micro NY green; every-step collapse pinned; surface criterion + toll budget
+`research/dualhead5.py` + `research/negmine5.py` | hard routing (GT) + learned background: strictly best native config (0.350/9/77 + FLIP); promote on demand
 `docs/T_TRANSFORM.md` | v1.4 gate 4: full-range attention specified (fold obstruction, 9-layer ranges, one-assert phi-core fix + our composition; DDColor L0 needs m_of(~16))
 `test_layer1.py` | ALL OK (CRUD Q5: layer-1 pattern reproduces -- spectrum 12x, giant 14dB, tracking -0.54; SKIPs without HF cache)
 `test_engram.py` | ALL OK (native storage: freeze/load roundtrip 6.4e-16, deterministic bytes, store-IO bit-exact; DDColor query/refine stores frozen; SKIPs without HF cache)

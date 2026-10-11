@@ -35,6 +35,7 @@ store = (key, value, gain)                  # WHERE x WHAT x HOW MUCH
 | `yarnball_apply(xa, Ua, Vc)` | `stdlib/yarnball.asm` | soft-gated bank (MATMUL+TSHIFT+SOFTMAX_WIDE+MATMUL) |
 | `dualbank_apply(xh, xe, Uh, Ue, V)` | `stdlib/dualbank.asm` | two-channel log-space AND + apply, returns (y, P) |
 | `dynaddr_match(x, key)` | `stdlib/dynaddr.asm` | address by content (MATMUL+ARGMAX+GATHER) |
+| `entity_route(xe, xh, Uh, Ue, V, ones, unity)` | `stdlib/siphon.asm` | find entity row (bank vocabulary) + dual scores AT row + tile |
 | `implant_apply(x, u, v)` | `stdlib/dirstore.asm` | K=1 special case (rank-1 write) |
 
 Data builders: `chain/engram.py` (`bank()` gains-folded pairs,
@@ -66,8 +67,10 @@ install are routed tiers, not competing objectives.
 |---|---|
 | `tests/test_yarnball.py` (MVYB) | parity exact; retrieve own; 299->24; stable holds |
 | `tests/test_dualhead2.py` | FLIP + receipt (>0.9/<0.1) + split == skewed base + stable |
+| research/dualhead5.py + research/negmine5.py | hard routing (GT) + learned background: strictly best native config (0.350/9/77 + FLIP); promote to tests/ on demand |
 | `tests/test_scale2.py` | 2 FLIPs + identical prior + receipts + negmine loop |
 | `tests/test_dualbank.py` | 8/8 invariance + exclusion, no tuning |
+| `tests/test_eroute.py` | 3 FLIPs + caesar<=10 + swap HOLD + glue>=5 + stable |
 | siphon (mirror+listing) | target r1 + holds + own-retrieval, one ball |
 
 ## Limits (stated, not missing)

@@ -118,7 +118,7 @@ or `OUT = GELU(a)` and compare against `torch.sigmoid` / `torch.gelu`.
 You have now used the generate-your-own-gate loop: propose, run, compare.
 Next: read `programs/xf_block.asm` with §4 open beside it.
 
-## 4. Mnemonic reference (46)
+## 4. Mnemonic reference (49)
 
 Notation: `NAME(in -> out)` + layout sig + contract one-liner + example +
 loud-failure. Arithmetic core (`ADD SUB MUL DIV`) refuses float inputs
