@@ -35,14 +35,16 @@ def main():
     if not snapshot_ok():
         sys.exit("SKIP (needs snapshot)")
     try:
-        want = {"graph": False, "no_sync": False, "smax": S}
+        want = {"graph": False, "no_sync": False, "smax": S,
+                "sparse_bands": "", "sparse_k": 8}
         import json as _js
         stamp = _js.load(open(os.path.join(work, "build.json")))
     except OSError:
         stamp = {}
     if any(stamp.get(k) != v for k, v in want.items()):
         sys.exit(f"{work} stamp {stamp} != {want}: build the decode "
-                 f"binary there first (serve_decode.py --smax {S})")
+                 f"binary there first (serve_decode.py --smax {S} "
+                 f"--sync --no-graph)")
     sys.path.insert(0, os.path.join(ROOT, "scripts"))
     from chain.serve import ServedExe
     g, tok = load7b()
@@ -55,14 +57,14 @@ def main():
     fou = os.path.join(work, "chat_ou.bin")
     ko_f = [os.path.join(work, f"chat_K{L}.bin") for L in range(N_LAYERS)]
     vo_f = [os.path.join(work, f"chat_V{L}.bin") for L in range(N_LAYERS)]
-    # argv follows build_decode's p.inp order exactly (6 + 56 live/caches
+    # argv follows build_decode's p.inp order exactly (4 + 56 live/caches
     # + 336 weights + lnf/wlog); the binary argc-checks (rc=9), so drift
     # fails loud, never silent.
     wnames = ("wq", "wk", "wv", "wo", "wup", "wgate", "wdown",
               "ln1", "ln2", "bq", "bk", "bv")
     argv = [os.path.join(work, f) for f in
-            ("step_x0.bin", "step_pos.bin", "step_am.bin", "step_oh.bin",
-             "d_ones.bin", "d_allrows.bin")]
+            ("step_x0.bin", "step_pos.bin", "step_am.bin",
+             "d_allrows.bin")]
     # kP/vP INTERLEAVED per layer (build_decode order: kP0,vP0,kP1,vP1..;
     # all-k-then-all-v shifts every layer past 0 into garbage -- gated
     # by argc only in count, never in order, so this comment is the pin)
@@ -74,7 +76,7 @@ def main():
             argv.append(os.path.join(work, f"d_{k}{L}.bin"))
     argv += [os.path.join(work, "d_lnf.bin"),
              os.path.join(work, "d_wlog.bin")]
-    assert len(argv) == 6 + 56 + 336 + 2, len(argv)
+    assert len(argv) == 4 + 56 + 336 + 2, len(argv)
     sv = ServedExe(os.path.join(work, "qdec"),
                     argv + [flo, fou] + ko_f + vo_f,
                     err_path=os.path.join(work, "chat.err"))
@@ -85,11 +87,9 @@ def main():
                 np.zeros((S, KVD), dtype=np.float16).tofile(fn)
     np.zeros((1, HID), dtype=np.float16).tofile(
         os.path.join(work, "step_x0.bin"))
-    np.arange(S, dtype=np.int64).tofile(os.path.join(work, "step_pos.bin"))
+    np.zeros(1, dtype=np.int64).tofile(os.path.join(work, "step_pos.bin"))
     np.zeros((PER, S), dtype=np.int64).tofile(
         os.path.join(work, "step_am.bin"))
-    np.zeros((S, KVD), dtype=np.int64).tofile(
-        os.path.join(work, "step_oh.bin"))
     print(f"chat: {S} slots, /quit /reset /seed N /topk K /temp T",
           flush=True)
     messages, seed, topk, temp = [], args.seed, args.topk, args.temp
@@ -158,13 +158,10 @@ def step_row(sv, work, E, tok_id, n, S, ret=False):
     xx = np.zeros((1, HID), dtype=np.float16)
     xx[0] = E[np.array([tok_id])].astype(np.float16)
     xx.tofile(os.path.join(work, "step_x0.bin"))
-    np.arange(S, dtype=np.int64).tofile(os.path.join(work, "step_pos.bin"))
+    np.array([n], dtype=np.int64).tofile(os.path.join(work, "step_pos.bin"))
     am = np.zeros((PER, S), dtype=np.int64)
     am[:, :n + 1] = 1
     am.tofile(os.path.join(work, "step_am.bin"))
-    oh = np.zeros((S, KVD), dtype=np.int64)
-    oh[n, :] = 1
-    oh.tofile(os.path.join(work, "step_oh.bin"))
     sv.step()
     lg = np.fromfile(os.path.join(work, "chat_lg.bin"),
                      dtype=np.float32).reshape(1, -1)

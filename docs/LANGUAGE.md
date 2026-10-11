@@ -118,7 +118,7 @@ or `OUT = GELU(a)` and compare against `torch.sigmoid` / `torch.gelu`.
 You have now used the generate-your-own-gate loop: propose, run, compare.
 Next: read `programs/xf_block.asm` with §4 open beside it.
 
-## 4. Mnemonic reference (50)
+## 4. Mnemonic reference (51)
 
 Notation: `NAME(in -> out)` + layout sig + contract one-liner + example +
 loud-failure. Arithmetic core (`ADD SUB MUL DIV`) refuses float inputs
@@ -183,6 +183,7 @@ loud-failure. Arithmetic core (`ADD SUB MUL DIV`) refuses float inputs
 - `CONCAT($A,$A,F:SCALAR -> $A)` — concatenate along an axis literal; non-axis dims must match. Ex: `C = CONCAT(cache, row, 0)`.
 - `SLICE($A,s,s,s -> $A)` — `SLICE(X, AXIS, START, END)` half-open, bounds-checked (no silent clamp). Ex: `W = SLICE(X, 1, 1, 4)`.
 - `GATHER(*,I:* -> *)` — row gather by int ids (bounds-checked). Ex: `R = GATHER(table, ids)`.
+- `SCATTER($A,$A,I:* -> $A)` — indexed row update: base (S,C) + row (1,C) + scalar/1-elem int idx -> copy with row idx := row (bounds-checked, fail loud). Out-of-place pure form of the KV-cache merge (same op serves device-resident Phase B later). Ex: `KF = SCATTER(KPS, KR, POS)`.
 
 **Reductions / pooling / conv:**
 - `ARGMAX($A,F:SCALAR -> I:*)` — exact lattice ordering WITHOUT decoding (class pos>zero>neg, then exponent); ties -> first; integral axis. Ex: `I = ARGMAX(X, 1)`.

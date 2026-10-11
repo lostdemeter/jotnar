@@ -215,6 +215,19 @@ def infer_shapes(bound, sample):
                     streams[o] = ("F", "double", (n, tsh[1]))
                 else:
                     raise AsmError(f"{where}: GATHER table must be T/F")
+        elif mn == "SCATTER":
+            bk, _, bsh = streams[args[0]]
+            rk, _, rsh = streams[args[1]]
+            ik, _, ish = streams[args[2]]
+            if bk != "F" or rk != "F" or ik != "I":
+                raise AsmError(f"{where}: SCATTER needs F base + F row "
+                               f"+ I idx")
+            if len(bsh) != 2 or tuple(rsh) != (1, bsh[1]):
+                raise AsmError(f"{where}: SCATTER base {bsh} + row {rsh} "
+                               f"mismatch (row must be (1,C))")
+            if len(ish) > 1 or (len(ish) == 1 and ish[0] not in (None, 1)):
+                raise AsmError(f"{where}: SCATTER idx must be scalar/1-elem")
+            streams[o] = ("F", "double", (bsh[0], bsh[1]))
         elif mn == "ARGMAX":
             sk, _, ssh = streams[args[0]]
             ax = _int_lit(args[1], f"{where} axis") if len(args) > 1 \
@@ -491,6 +504,27 @@ class CBackend(Backend):
                     f"{w} * sizeof(double));",
                     (o, w))
             raise NoPattern("GATHER table must be T/F (v0.2)")
+        if mn == "SCATTER":
+            base, row, idx = args
+            o = outs[0]
+            bk, _, bsh = S[base]
+            rk, _, rsh = S[row]
+            if bk != "F" or rk != "F":
+                raise NoPattern("C SCATTER needs F base + F row "
+                                "(T path unbuilt: caches are F)")
+            if len(bsh) != 2 or tuple(rsh) != (1, bsh[1]):
+                raise AsmError(f"C SCATTER base {bsh} + row {rsh} "
+                               f"mismatch (row must be (1,C))")
+            if bsh[0] is None or bsh[1] is None:
+                raise NoPattern("C SCATTER needs static shapes (v0.2)")
+            s, c = bsh
+            return (
+                f"/* {o} = SCATTER({base},{row},{idx}) */\n"
+                f"{{ int64_t _n = {idx}[0];\n"
+                f"  if (_n < 0 || _n >= {s}) return 4;\n"
+                f"  memcpy({o}, {base}, ({s} * {c}) * sizeof(double));\n"
+                f"  memcpy(&{o}[_n * {c}], {row}, {c} * sizeof(double)); }}",
+                None)
         if mn == "ARGMAX":
             src = args[0]
             sk = S[src][0]

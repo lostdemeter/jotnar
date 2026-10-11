@@ -4307,3 +4307,20 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   order differs across binaries), stale-100 bit-exact on both paths
   (mask-floor regression gate), warm-up convention (first-run values
   wobble, steady state deterministic, decisions always hold).
+
+## 2026-10-11: SCATTER opcode replaces one-hot merge (unclocked)
+
+- 51st mnemonic `SCATTER($A,$A,I:* -> $A)`: indexed row update
+  (base (S,C) + row (1,C) + scalar/1-elem idx), out-of-place pure,
+  bounds loud (lattice ValueError, C rc=4, CUDA NaN-poison). C + CUDA
+  patterns (bit-exact); non-FPU refuses. Replaces ones-broadcast
+  MATMUL x56 + one-hot SELECT x56 + 2 live files (onehot/ones gone
+  from listing, argv, and step loop); serve_decode + demo_chat
+  updated (demo also had the old arange-pos bug: fixed).
+- Closed gaps the op exposed: intermediate-I allocation generalizes
+  (TOPK idx path uses it too). Census/lang/README counts to 51.
+- tests/test_scatter.py ALL OK. Serve gates green on the new program:
+  decode parity 4.88 rank 1, prefill cache-agree 0.031, sparse gate
+  green incl. stale-exact bit-identical both paths. Wall flat at
+  S=16 (graphs hid the launches; traffic win needs Phase B:
+  device-resident caches, no relay).

@@ -3,8 +3,8 @@
 All 28 layers chain in one listing (x = previous layer's output, raw
 embed at L0 -- no interleave break); per-layer K/V caches arrive as
 fp16 files, upcast losslessly in-graph (GATHER over arange rows);
-knew/vnew broadcast via MATMUL(ones, k/v) and merge by SELECT on a
-one-hot row; the host relay only copies files (fp32 out -> fp16
+knew/vnew merge by SCATTER on the live position; the host relay
+only copies files (fp32 out -> fp16
 file, standard KV-cache precision, no arithmetic outside the
 listings). Prefill = decode steps over prompt tokens from zero
 caches. Nothing here needs new ops: composition, not extension.
@@ -57,7 +57,7 @@ def build_decode(S, sparse_bands=frozenset(), topk=8):
     from chain.qwen7b import QWEN_MASK_NEG
     p.config("eps_rms", "1e-6").config("beta", QWEN_MASK_NEG)
     p.config("rope_base", 1000000.0)
-    names = ["x0", "pos", "attmask7", "onehot", "ones", "allrows"]
+    names = ["x0", "pos", "attmask7", "allrows"]
     for L in range(N_LAYERS):
         names += [f"kP{L}", f"vP{L}"]
     for L in range(N_LAYERS):
@@ -73,14 +73,14 @@ def build_decode(S, sparse_bands=frozenset(), topk=8):
             x, kf, vf = qwen_dec_sparse_layer(
                 p, x, f"kP{L}", f"vP{L}", f"wq{L}", f"wk{L}", f"wv{L}",
                 f"wo{L}", f"wup{L}", f"wgate{L}", f"wdown{L}", f"ln1{L}",
-                f"ln2{L}", "pos", "attmask7", "onehot", "ones", "allrows",
+                f"ln2{L}", "pos", "attmask7", "allrows",
                 S, pre=str(L), bq=f"bq{L}", bk=f"bk{L}", bv=f"bv{L}",
                 topk=topk)
         else:
             x, kf, vf = qwen_dec_full_layer(
                 p, x, f"kP{L}", f"vP{L}", f"wq{L}", f"wk{L}", f"wv{L}",
                 f"wo{L}", f"wup{L}", f"wgate{L}", f"wdown{L}", f"ln1{L}",
-                f"ln2{L}", "pos", "attmask7", "onehot", "ones", "allrows",
+                f"ln2{L}", "pos", "attmask7", "allrows",
                 S, pre=str(L), bq=f"bq{L}", bk=f"bk{L}", bv=f"bv{L}")
         kouts.append(kf)
         vouts.append(vf)
@@ -179,8 +179,6 @@ def main():
     sample = {"x0": FRef((1, HID), "float16"),
               "pos": np.zeros(1, dtype=np.int64),
               "attmask7": IRef((PER, S), "int64"),
-              "onehot": IRef((S, KVD), "int64"),
-              "ones": FRef((S, 1), "float16"),
               "allrows": np.arange(S, dtype=np.int64)}
     for L in range(N_LAYERS):
         sample[f"kP{L}"] = FRef((S, KVD), "float16")
@@ -195,7 +193,7 @@ def main():
     sample["lnf"] = FRef((HID,), "float16")
     sample["wlog"] = FRef((HID, QWEN7B_VOCAB), "float16")
     outs = ["LOGITS", "OUT"] + kouts + vouts
-    live = (["x0", "pos", "attmask7", "onehot"]
+    live = (["x0", "pos", "attmask7"]
             + [f"kP{L}" for L in range(N_LAYERS)]
             + [f"vP{L}" for L in range(N_LAYERS)])
     t0 = time.perf_counter()
@@ -204,8 +202,7 @@ def main():
               live=live, sync_each=not args.no_sync, graph=args.graph,
               time_ops=os.environ.get("QWEN_TIME_OPS") == "1")
     print(f"compile graph: {time.perf_counter() - t0:.0f}s", flush=True)
-    stream_bins(art, {"ones": np.ones((S, 1), dtype=np.float16),
-                      "allrows": np.arange(S, dtype=np.int64)},
+    stream_bins(art, {"allrows": np.arange(S, dtype=np.int64)},
                 set(live))
     exe = os.path.join(work, "qdec")
     import json as _js
@@ -248,8 +245,7 @@ def main():
 
     lives = {"x0": os.path.join(work, "step_x0.bin"),
              "pos": os.path.join(work, "step_pos.bin"),
-             "attmask7": os.path.join(work, "step_am.bin"),
-             "onehot": os.path.join(work, "step_oh.bin")}
+             "attmask7": os.path.join(work, "step_am.bin")}
     for L in range(N_LAYERS):
         lives[f"kP{L}"] = os.path.join(work, f"ckP{L}.bin")
         lives[f"vP{L}"] = os.path.join(work, f"cvP{L}.bin")
@@ -267,7 +263,6 @@ def main():
     np.zeros((1, HID), dtype=np.float16).tofile(lives["x0"])
     np.zeros(1, dtype=np.int64).tofile(lives["pos"])
     np.zeros((PER, S), dtype=np.int64).tofile(lives["attmask7"])
-    np.zeros((S, KVD), dtype=np.int64).tofile(lives["onehot"])
     sv = ServedExe(exe, argv_for(art, lives,
                                  [flo, fou] + kouts_files + vouts_files),
                    err_path=os.path.join(work, "dec.err"))
@@ -282,9 +277,6 @@ def main():
         am = np.zeros((PER, S), dtype=np.int64)
         am[:, :n + 1] = 1
         am.tofile(lives["attmask7"])
-        oh = np.zeros((S, KVD), dtype=np.int64)
-        oh[n, :] = 1
-        oh.tofile(lives["onehot"])
         t0 = time.perf_counter()
         sv.step()
         dt = time.perf_counter() - t0

@@ -280,6 +280,23 @@ __global__ void k_topk_f32(const float *x, float *v, int64_t *ix,
     v[r * K + j] = bv[j]; ix[r * K + j] = bi[j];
   }
 }
+__global__ void k_scatter_row_f32(const float *b, const float *row,
+                                const int64_t *idx, float *o, int64_t C,
+                                int64_t S, int64_t N) {
+  /* out = base copy with row idx[0] := row. Grid-stride over S*C.
+     OOB idx poisons o[0] with NaN (loud downstream: parity gates
+     catch it; idx comes from pos, always valid by construction). */
+  int64_t dst = idx[0];
+  if (dst < 0 || dst >= S) {
+    if (blockIdx.x == 0 && threadIdx.x == 0)
+      o[0] = __int_as_float(0x7fc00000);
+    return;
+  }
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= N) return;
+  int64_t r = i / C, c = i % C;
+  o[i] = (r == dst) ? row[c] : b[i];
+}
 __global__ void k_tshift_f32(const float *x, float *o, int64_t D, int64_t N) {
   /* One BLOCK per row: parallel max reduction, then shift. */
   int64_t r = (int64_t)blockIdx.x;
@@ -362,6 +379,26 @@ class CUDABackend(Backend):
         else:
             launch = "CE(cudaGetLastError());"
         st = ctx.get("stream", "")
+        if mn == "SCATTER":
+            from chain.emit_c import _dim_expr as _de
+            base, row, idx = args
+            o = outs[0]
+            if S[base][0] != "F" or S[row][0] != "F" or S[idx][0] != "I":
+                raise NoPattern("cuda SCATTER needs F base + F row + I "
+                                "idx (v0.1)")
+            bsh, rsh = S[base][2], S[row][2]
+            if len(bsh) != 2 or tuple(rsh) != (1, bsh[1]):
+                raise NoPattern("cuda SCATTER needs base (S,C) + row "
+                                f"(1,C), got {bsh} {rsh}")
+            if bsh[0] is None or bsh[1] is None:
+                raise NoPattern("cuda SCATTER needs static shapes (v0.1)")
+            co = ctx["count"][o]
+            return (
+                f"/* {o} = SCATTER({base},{row},{idx}) */\n"
+                f"k_scatter_row_f32<<<(({co}) + TPB - 1) / TPB, TPB{st}>>>"
+                f"({base}, {row}, {idx}, {o}, {bsh[1]}, {bsh[0]}, "
+                f"{co});\n{launch}",
+                None)
         if mn == "TOPK":
             from chain.emit_c import _int_lit as _il
             x = args[0]

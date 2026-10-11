@@ -34,6 +34,7 @@ ACCESS = {
     "PERMUTE3": "moves", "CONCAT": "moves", "SLICE": "moves",
     # reindex / selection / expansion
     "GATHER": "gather",
+    "SCATTER": "gather",
     "SELECT": "select",
     "TOPK": "select",
     "BETA": "broadcast", "TBETA": "broadcast", "GAIN": "broadcast",

@@ -608,6 +608,30 @@ def op_topk(vals, config, feeds):
             np.ascontiguousarray(order.astype(np.int64)))
 
 
+def op_scatter(vals, config, feeds):
+    """Indexed row update: base (S,C) + row (1,C) + idx scalar/1-elem int
+    -> out (S,C) copy with row idx := row. Bounds-checked (fail loud);
+    row width must match. F-only (caches are F). Out-of-place pure form:
+    residency reuses the same op on live buffers (Phase B), no new
+    semantics. T triples take the T path (unbuilt, refused)."""
+    base, row, idx = vals
+    if isinstance(base, tuple) or isinstance(row, tuple):
+        raise ValueError("SCATTER: T triples unbuilt (caches are F)")
+    b = np.ascontiguousarray(base, dtype=np.float64)
+    r = np.ascontiguousarray(row, dtype=np.float64)
+    ii = np.ascontiguousarray(idx).reshape(-1)
+    if b.ndim != 2 or r.shape != (1, b.shape[1]):
+        raise ValueError(f"SCATTER: base {b.shape} + row {r.shape} mismatch")
+    if ii.size != 1:
+        raise ValueError(f"SCATTER: idx must be scalar/1-elem, got {ii.shape}")
+    n = int(ii[0])
+    if not (0 <= n < b.shape[0]):
+        raise ValueError(f"SCATTER: idx {n} out of [0,{b.shape[0]})")
+    o = b.copy()
+    o[n, :] = r[0, :]
+    return o
+
+
 def _ordkeys(t):
     """Lattice ordering keys (class, key2) per element, shared by
     ARGMAX and GT (one definition of order, two consumers)."""
@@ -845,6 +869,7 @@ REGISTRY = {
     "SIGMOID": (op_sigmoid, 1, 1),
     "RESCALE": (op_rescale, 2, 1),
     "GATHER": (op_gather, 2, 1),
+    "SCATTER": (op_scatter, 3, 1),
     "PRELU": (op_prelu, 2, 1),
     "POOLAVG": (op_poolavg, 1, 1),
     "DECONV": (op_deconv, 4, 1),
@@ -904,6 +929,7 @@ SIGS = {
     "SIGMOID": (["$A"], ["$A"]),
     "RESCALE": (["$A", "F:SCALAR"], ["$A"]),
     "GATHER": (["*", "I:*"], ["*"]),
+    "SCATTER": (["$A", "$A", "I:*"], ["$A"]),
     "PRELU": (["$A", "$A"], ["$A"]),
     "POOLAVG": (["*"], ["*"]),
     "DECONV": (["*", "*", "F:SCALAR", "F:SCALAR"], ["*"]),

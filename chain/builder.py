@@ -229,15 +229,15 @@ def qwen_layer(p, x, wq, wk, wv, wo, wup, wgate, wdown, ln1, ln2, pos,
 
 
 def qwen_dec_full_layer(p, x, Kp, Vp, wq, wk, wv, wo, wup, wgate,
-                        wdown, ln1, ln2, pos, attmask7, onehot, ones,
+                        wdown, ln1, ln2, pos, attmask7,
                         allrows, S, nh=28, nkv=4, dh=128, pre="",
                         bq=None, bk=None, bv=None):
     """One full decoder layer for per-layer decode binaries (no new ops).
 
     x is the previous layer's output (1,H) (raw embed at L0); Kp/Vp are
     this layer's fp16 cache files, upcast losslessly in-graph (GATHER
-    over arange rows); knew/vnew broadcast via MATMUL(ones, k/v) and
-    merged by SELECT(onehot, new, prev); the host relay only copies
+    over arange rows); knew/vnew merge by SCATTER on the live position
+    (no broadcast MATMUL, no one-hot mask); the host relay only copies
     files (fp32 out -> fp16 file, standard KV-cache precision).
     Attention runs the bmmv group path; mask is live attmask7.
     K rows are rotated once at insert (never re-rotated); Q rotary
@@ -260,9 +260,8 @@ def qwen_dec_full_layer(p, x, Kp, Vp, wq, wk, wv, wo, wup, wgate,
     # the ids file is frozen arange(S), so rows == S every step).
     kps = p.op("SLICE", kp32, 0, 0, S, out=f"KPS{pre}")
     vps = p.op("SLICE", vp32, 0, 0, S, out=f"VPS{pre}")
-    vn = p.op("MATMUL", ones, v, out=f"VN{pre}")
-    # NOTE: k is rotated per group below into kr; the knew broadcast
-    # must use the ROTATED row: rotate first, then broadcast.
+    # NOTE: k is rotated per group below into kr; the knew row merged
+    # must be the ROTATED row: rotate first, then scatter.
     qr = None
     for h in range(nh):
         qh = p.op("SLICE", q, 1, h * dh, (h + 1) * dh)
@@ -273,9 +272,8 @@ def qwen_dec_full_layer(p, x, Kp, Vp, wq, wk, wv, wo, wup, wgate,
         kh = p.op("SLICE", k, 1, g * dh, (g + 1) * dh)
         krh = p.op("ROTARY", kh, pos)
         kr = krh if kr is None else p.op("CONCAT", kr, krh, 1)
-    knr = p.op("MATMUL", ones, kr, out=f"KNR{pre}")
-    Kfull = p.op("SELECT", onehot, knr, kps, out=f"KF{pre}")
-    Vfull = p.op("SELECT", onehot, vn, vps, out=f"VF{pre}")
+    Kfull = p.op("SCATTER", kps, kr, pos, out=f"KF{pre}")
+    Vfull = p.op("SCATTER", vps, v, pos, out=f"VF{pre}")
     neg = p.op("BETA", attmask7, out=f"NEG{pre}")
     ctx = None
     for g in range(nkv):
@@ -303,13 +301,14 @@ def qwen_dec_full_layer(p, x, Kp, Vp, wq, wk, wv, wo, wup, wgate,
 
 
 def qwen_dec_sparse_layer(p, x, Kp, Vp, wq, wk, wv, wo, wup, wgate,
-                          wdown, ln1, ln2, pos, attmask7, onehot, ones,
+                          wdown, ln1, ln2, pos, attmask7,
                           allrows, S, nh=28, nkv=4, dh=128, pre="",
                           bq=None, bk=None, bv=None, topk=8):
     """Sparse-attention decoder layer: same cache discipline as
-    qwen_dec_full_layer (K/V files, one-hot merge, identical Kfull /
-    Vfull outputs -- caches agree bit-for-bit with the dense path),
-    but per-head attention runs over top-k positions only:
+    qwen_dec_full_layer (K/V files, SCATTER merge on the live position,
+    identical Kfull / Vfull outputs -- caches agree bit-for-bit with
+    the dense path), but per-head attention runs over top-k positions
+    only:
     full scores -> mask -> TOPK(k) -> narrow softmax -> GATHER V rows
     -> strided per-head BMMV over k. Same weights, different readout.
     k is build-time (fixed shapes stay graph-safe). Returns (y, Kf, Vf).
@@ -329,7 +328,6 @@ def qwen_dec_sparse_layer(p, x, Kp, Vp, wq, wk, wv, wo, wup, wgate,
     vp32 = p.op("GATHER", Vp, allrows, out=f"VP32{pre}")
     kps = p.op("SLICE", kp32, 0, 0, S, out=f"KPS{pre}")
     vps = p.op("SLICE", vp32, 0, 0, S, out=f"VPS{pre}")
-    vn = p.op("MATMUL", ones, v, out=f"VN{pre}")
     qr = None
     for h in range(nh):
         qh = p.op("SLICE", q, 1, h * dh, (h + 1) * dh)
@@ -340,9 +338,8 @@ def qwen_dec_sparse_layer(p, x, Kp, Vp, wq, wk, wv, wo, wup, wgate,
         kh = p.op("SLICE", k, 1, g * dh, (g + 1) * dh)
         krh = p.op("ROTARY", kh, pos)
         kr = krh if kr is None else p.op("CONCAT", kr, krh, 1)
-    knr = p.op("MATMUL", ones, kr, out=f"KNR{pre}")
-    Kfull = p.op("SELECT", onehot, knr, kps, out=f"KF{pre}")
-    Vfull = p.op("SELECT", onehot, vn, vps, out=f"VF{pre}")
+    Kfull = p.op("SCATTER", kps, kr, pos, out=f"KF{pre}")
+    Vfull = p.op("SCATTER", vps, v, pos, out=f"VF{pre}")
     neg = p.op("BETA", attmask7, out=f"NEG{pre}")
     ctx = None
     for g in range(nkv):
