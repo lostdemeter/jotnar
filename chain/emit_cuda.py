@@ -15,13 +15,28 @@ Memory v1: cudaMallocManaged throughout (host fread straight in,
 implicit download after sync). Agreement: vs C backend tight eps,
 vs lattice leveled (same story as C).
 """
+import hashlib
 import os
+import shutil
 import subprocess
 
 import numpy as np
 
 from chain.asm import AsmError
 from chain.emit_c import Backend, NoPattern, _dim_expr, _short_site
+
+# Bump when the cache protocol itself changes (key inputs are the
+# source + flags + arch + libs; emitter output changes are covered
+# by the source hash).
+CU_CACHE_VERSION = "v1"
+
+
+def cu_cache_dir():
+    """Central build cache root (shared across workdirs)."""
+    root = os.environ.get("JOTNAR_CACHEDIR") or os.path.join(
+        os.path.expanduser("~"), ".cache", "jotnar", "cu")
+    os.makedirs(root, exist_ok=True)
+    return root
 
 
 KERNELS = r"""
@@ -994,10 +1009,46 @@ def build_cu(source, workdir, name="prog", nvcc="nvcc", nvflags=None,
     exe = os.path.join(workdir, name)
     with open(src, "w") as f:
         f.write(source)
+    # Content-keyed cache: identical source+flags+arch+libs skips nvcc
+    # entirely (today's suites rebuild the same 5771-op program per
+    # workdir: ~95s a throw). Disabled with JOTNAR_NOCACHE=1.
+    h = hashlib.sha256()
+    h.update(CU_CACHE_VERSION.encode())
+    h.update(b"\x00".join([arch.encode()] + [f.encode() for f in nvflags]
+                           + [f.encode() for f in libs]))
+    h.update(b"\x00" + source.encode())
+    key = h.hexdigest()[:32]
+    if os.environ.get("JOTNAR_NOCACHE") != "1":
+        try:
+            cdir = cu_cache_dir()
+            centry = os.path.join(cdir, key)
+            cexe = os.path.join(centry, "exe")
+            if os.path.isfile(cexe):
+                shutil.copyfile(cexe, exe)
+                os.chmod(exe, 0o755)
+                return exe
+        except OSError:
+            pass  # cache best-effort; fall through to a real build
+    else:
+        centry, cexe = None, None
     archf = f"-arch={arch}" if arch else None
     cmd = [nvcc] + nvflags + ([archf] if archf else []) + [src, "-o", exe] \
         + libs
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
         raise AsmError(f"nvcc build failed:\n{r.stderr}")
+    if os.environ.get("JOTNAR_NOCACHE") != "1":
+        try:
+            cdir = cu_cache_dir()
+            centry = os.path.join(cdir, key)
+            cexe = os.path.join(centry, "exe")
+            if not os.path.isfile(cexe):
+                tmp = os.path.join(cdir, f".tmp-{os.getpid()}-{key}")
+                os.makedirs(centry, exist_ok=True)
+                shutil.copyfile(exe, tmp)
+                with open(os.path.join(centry, "info"), "w") as f:
+                    f.write(" ".join(cmd) + "\n")
+                os.replace(tmp, cexe)
+        except OSError:
+            pass
     return exe
