@@ -4144,3 +4144,19 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   (arrangement), not words -- nulls keyed to must-not-fire work
   teacher-side exactly as natively. XOR thread: absence with an
   address, third green instance (native negmine, swap nulls, this).
+
+## 2026-10-11: dedup dead (orthogonal layers); early-exit keep-last bug (unclocked)
+
+- research/layer_sim.py (/tmp/layersim.log): all SEVEN weight
+  matrices ~0.00 adjacent cosine (relFrob ~1.4-1.5 = independent).
+  ONLY norms share (ln1 mean 0.95, ln2 0.99, three 0.99+ pairs).
+  Dedup DEAD by measurement: nothing worth sharing exists beyond
+  norm vectors (kilobytes). Symlink theory closed same-day it
+  opened. (Also: first run OOM'd holding 51GB (my design); streamed
+  to ~20GB peak and committed.)
+- Process notes: layer_sim ran under BARE nohup (no wrapper, no
+  ping: user stared at htop again -- wrapper use now mandatory for
+  +5min jobs); early_exit died on the keep-last indexing bug
+  (midlens had it, fixed there, reintroduced here: [n-1] on an
+  already-last row -- canonical shared-helper candidate refused?
+  No: two instances is coincidence, three is a helper. Watching.)

@@ -43,7 +43,7 @@ def main():
         for L in range(28):
             x = torch.tensor(traj[L], dtype=dt, device="cuda")
             hn = _rms(x, lnf)
-            lg = (hn @ Wlog.T)[n - 1].detach().cpu().numpy()
+            lg = (hn @ Wlog.T).detach().cpu().numpy()
             o = np.argsort(-lg)
             tops.append(int(o[0]))
             if L == 27:
@@ -52,7 +52,7 @@ def main():
         # margin at exit (top1 - top2 abs logits)
         x = torch.tensor(traj[ex], dtype=dt, device="cuda")
         hn = _rms(x, lnf)
-        lg = (hn @ Wlog.T)[n - 1].detach().cpu().numpy()
+        lg = (hn @ Wlog.T).detach().cpu().numpy()
         o = np.argsort(-lg)
         mg = float(lg[o[0]] - lg[o[1]])
         exits.append(ex)
