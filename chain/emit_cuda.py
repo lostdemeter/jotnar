@@ -247,7 +247,11 @@ class CUDABackend(Backend):
     name = "cuda"
     emits = True
     use_fp16 = False  # F16 storage + FP32 compute (halves VRAM)
-    DEFAULT_NVCC = ("-O2", "-std=c++17")
+    # -O1 default: measured 95s vs 124s build on qwen7b-dec (5771 ops)
+    # with identical step ms (36ms/tok); host code is launch
+    # boilerplate, runtime lives in cuBLAS/hand kernels. Override
+    # with NVCC_FLAGS="-O2 -std=c++17" for record builds.
+    DEFAULT_NVCC = ("-O1", "-std=c++17")
     DEFAULT_ARCH = "sm_86"
 
     def value_repr(self, layout):
@@ -976,9 +980,14 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
 
 def build_cu(source, workdir, name="prog", nvcc="nvcc", nvflags=None,
              arch=None, libs=None):
-    """Compile emitted .cu -> exe. Arch flag IS the target selection."""
+    """Compile emitted .cu -> exe. Arch flag IS the target selection.
+
+    Flags default to CUDABackend.DEFAULT_NVCC (-O1); override with
+    explicit nvflags or NVCC_FLAGS env ("-O2 -std=c++17" for records).
+    """
     arch = arch or os.environ.get("CUDA_ARCH", CUDABackend.DEFAULT_ARCH)
-    nvflags = list(nvflags or CUDABackend.DEFAULT_NVCC)
+    envf = os.environ.get("NVCC_FLAGS", "").split() or None
+    nvflags = list(nvflags or envf or CUDABackend.DEFAULT_NVCC)
     libs = list(libs or ["-lcublas"])
     os.makedirs(workdir, exist_ok=True)
     src = os.path.join(workdir, name + ".cu")
