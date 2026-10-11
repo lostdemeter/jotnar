@@ -38,7 +38,7 @@ def load_all():
 def build_program(S, bmmv=False):
     from chain.builder import Prog, qwen_layer, qwen_bmmv_layer
     p = Prog("qwen7b-28")
-    p.config("eps_rms", "1e-6").config("beta", -10000.0)
+    p.config("eps_rms", "1e-6").config("beta", QWEN_MASK_NEG)
     p.config("rope_base", 1000000.0)
     names = ["x0", "pos", "cmask"]
     if bmmv:
@@ -153,7 +153,7 @@ def main():
     from chain.emit_c import compile_program
     from chain.emit_cuda import build_cu
     from chain.qwen7b import (shapes_7b, prep_7b_weight, clear_7b_cache,
-                             input_sources)
+                             input_sources, QWEN_MASK_NEG)
     S = args.smax
     prog = build_program(S, bmmv=args.bmmv)
     text = prog.text()

@@ -34,8 +34,9 @@ def build_prefix(S):
 
 def build_suffix(S):
     from chain.builder import Prog, qwen_bmmv_layer
+    from chain.qwen7b import QWEN_MASK_NEG
     p = Prog("qwen7b-steer27")
-    p.config("eps_rms", "1e-6").config("beta", -10000.0)
+    p.config("eps_rms", "1e-6").config("beta", QWEN_MASK_NEG)
     p.config("rope_base", 1000000.0)
     names = ["x", "dose", "dsteer", "pos", "cmask", "cmask7",
              "wq", "wk", "wv", "wo", "wup", "wgate", "wdown",
@@ -53,8 +54,9 @@ def build_suffix(S):
 
 def build_suffix(S):
     from chain.builder import Prog, qwen_bmmv_layer
+    from chain.qwen7b import QWEN_MASK_NEG
     p = Prog("qwen7b-steer27")
-    p.config("eps_rms", "1e-6").config("beta", -10000.0)
+    p.config("eps_rms", "1e-6").config("beta", QWEN_MASK_NEG)
     p.config("rope_base", 1000000.0)
     names = ["x", "dose", "dsteer", "pos", "cmask", "cmask7",
              "wq", "wk", "wv", "wo", "wup", "wgate", "wdown",

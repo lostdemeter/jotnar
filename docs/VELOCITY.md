@@ -4263,3 +4263,22 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   suites green (incl. a pre-existing census-coverage break: GT was
   never classified — set to elementwise, flagged).
 - Phase 0 sizing stands behind it: k=8 uniform by flip-rate.
+
+## 2026-10-11: mask floor fix — -10000 undersized, -1e9 verified (unclocked)
+
+- Root cause (instrumented L27 ms/pr dumps): live L27-group-1 scores hit
+  ~-12800 (abstaining heads; HF masks with -inf so it never noticed),
+  BELOW the -10000 NEG constant. Pads won softmax 1/11 uniform --
+  invisible with zero pads (0 x anything), corrupting with stale ones
+  (dense 0.47, V-only 100.0 -> 23.6; K-only 0.0 since SELECT still
+  forces pad scores). Bisection localized L27; dumps proved ms/pr
+  correct and pads exactly 1/11.
+- Fix: QWEN_MASK_NEG = -1e9 in chain/qwen7b.py (5 orders of margin,
+  exp still underflows to 0, fp32-safe), all 9 Qwen scripts switched
+  from the -10000 literal. Verified: stale-100 vs fresh bit-exact
+  0.0000, dense-vs-HF parity 5.15->4.85 rank 2->1.
+- OPEN (sparse readout, not the mask): sparse prefill diverges from
+  dense (6.8-19.7) even where k=8 covers all 5 live keys -- theoretically
+  near-identical, so a real gap remains (all-bands compounding, never
+  probed, vs listing bug). Sparse stays OPT-IN (--sparse); defaults
+  untouched. Next: all-bands-masked torch probe to discriminate.

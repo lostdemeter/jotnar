@@ -25,10 +25,13 @@ HID, INTER, NH, NKV, DH = 3584, 18944, 28, 4, 128
 PER, KVD = NH // NKV, NKV * DH
 
 
-def build_decode(S):
-    from chain.builder import Prog, qwen_dec_full_layer
-    p = Prog("qwen7b-dec")
-    p.config("eps_rms", "1e-6").config("beta", -10000.0)
+def build_decode(S, sparse=False, topk=8):
+    from chain.builder import Prog, qwen_dec_full_layer, \
+        qwen_dec_sparse_layer
+    layer = qwen_dec_sparse_layer if sparse else qwen_dec_full_layer
+    p = Prog("qwen7b-dec-sparse" if sparse else "qwen7b-dec")
+    from chain.qwen7b import QWEN_MASK_NEG
+    p.config("eps_rms", "1e-6").config("beta", QWEN_MASK_NEG)
     p.config("rope_base", 1000000.0)
     names = ["x0", "pos", "attmask7", "onehot", "ones", "allrows"]
     for L in range(N_LAYERS):
@@ -42,11 +45,12 @@ def build_decode(S):
     x = "x0"
     kouts, vouts = [], []
     for L in range(N_LAYERS):
-        x, kf, vf = qwen_dec_full_layer(
+        kw = {} if layer is qwen_dec_full_layer else {"topk": topk}
+        x, kf, vf = layer(
             p, x, f"kP{L}", f"vP{L}", f"wq{L}", f"wk{L}", f"wv{L}",
             f"wo{L}", f"wup{L}", f"wgate{L}", f"wdown{L}", f"ln1{L}",
             f"ln2{L}", "pos", "attmask7", "onehot", "ones", "allrows",
-            S, pre=str(L), bq=f"bq{L}", bk=f"bk{L}", bv=f"bv{L}")
+            S, pre=str(L), bq=f"bq{L}", bk=f"bk{L}", bv=f"bv{L}", **kw)
         kouts.append(kf)
         vouts.append(vf)
     hn = p.op("RMSNORM", x, "lnf", out="HNf")
@@ -69,6 +73,12 @@ def main():
                     default=True)
     ap.add_argument("--sync", dest="no_sync", action="store_false",
                     help="opt into per-op sync (debug; costs ~2x)")
+    ap.add_argument("--sparse", action="store_true",
+                    help="sparse attention readout (per-head top-k, "
+                    "same caches as dense; see --sparse-k)")
+    ap.add_argument("--sparse-k", type=int, default=8,
+                    help="top-k width for --sparse (build-time, "
+                    "graph-safe; sized by flip-rate)")
     ap.add_argument("--prefill-dir", default=None,
                     help="skip sequential prefill: copy ckP/cvP caches from "
                     "DIR (serve_prefill.py output) and generate directly")
@@ -127,7 +137,8 @@ def main():
     from chain.emit_c import compile_program as _cp
     from chain.emit_cuda import build_cu as _bc
     from chain.serve import ServedExe
-    prog, kouts, vouts = build_decode(S)
+    prog, kouts, vouts = build_decode(S, sparse=args.sparse,
+                                        topk=args.sparse_k)
     text = prog.text()
     print(f"decode program: "
           f"{sum(1 for ln in text.splitlines() if '=' in ln and not ln.strip().startswith(('IN', 'CONFIG')))} ops",
@@ -166,7 +177,8 @@ def main():
     exe = os.path.join(work, "qdec")
     import json as _js
     stamp = {"graph": bool(args.graph), "no_sync": bool(args.no_sync),
-             "smax": S}
+             "smax": S, "sparse": bool(args.sparse),
+             "sparse_k": int(args.sparse_k)}
     if os.environ.get("QWEN_REUSE_BIN") != "1":
         t0 = time.perf_counter()
         exe = _bc(art["source"], work, name="qdec",

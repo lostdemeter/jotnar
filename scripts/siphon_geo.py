@@ -35,8 +35,9 @@ TARGET = "Germany"
 
 def build_program(S, bmmv=False):
     from chain.builder import Prog, qwen_layer
+    from chain.qwen7b import QWEN_MASK_NEG
     p = Prog("qwen7b-28-siphon")
-    p.config("eps_rms", "1e-6").config("beta", -10000.0)
+    p.config("eps_rms", "1e-6").config("beta", QWEN_MASK_NEG)
     p.config("rope_base", 1000000.0)
     # NOTE: yarnball_apply body inlined (not CALLed): emit_cuda cannot
     # lower CALL-namespaced streams (yarnball_apply#1.P is not a valid C

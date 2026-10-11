@@ -66,13 +66,13 @@ def geo_build(S, profile=False):
     from chain.emit_c import compile_program
     from chain.emit_cuda import build_cu
     from chain.qwen7b import (load7b, shapes_7b, prep_7b_weight,
-                             clear_7b_cache, input_sources)
+                             clear_7b_cache, input_sources, QWEN_MASK_NEG)
     from chain import mem as _mem
     print(_mem.report(S), flush=True)
     _mem.guard(_mem.estimate_7b(S)["stream_peak_cpu"], "geo bench build")
     g, tok = load7b()
     p = Prog("qwen-bench")
-    p.config("eps_rms", "1e-6").config("beta", -10000.0)
+    p.config("eps_rms", "1e-6").config("beta", QWEN_MASK_NEG)
     p.config("rope_base", 1000000.0)
     names = ["x0", "pos", "cmask"]
     for L in range(28):

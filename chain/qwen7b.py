@@ -130,6 +130,13 @@ def mlp7_forward(H, g):
 QWEN7B_INTER = 18944
 QWEN7B_VOCAB = 152064
 QScale = 128.0 ** -0.5  # temperature fold 1/sqrt(dh), exact by linearity
+# Causal-mask floor: must sit below ANY genuine QK score. Was -10000
+# until measurement (2026-10-11) showed live L27-group-1 scores at
+# ~-12800 (abstaining heads; HF masks with -inf so it never noticed).
+# -10000 pads then outscored live keys 1/11 uniform -- invisible with
+# zero pads (0 x anything), corrupting with stale ones (23.6 maxabs).
+# -1e9: 5 orders of margin, exp still underflows to 0, fp32-safe.
+QWEN_MASK_NEG = -1e9
 
 
 def snapshot_ok():

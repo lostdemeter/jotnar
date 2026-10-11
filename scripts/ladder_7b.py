@@ -89,10 +89,11 @@ def geo_nlayer(L, ref, ids, W):
     from chain.emit_c import compile_program
     from chain.emit_cuda import build_cu
     from chain.qwen7b import load7b as _lb
+    from chain.qwen7b import QWEN_MASK_NEG
     g, _tok = _lb()
     E = g("model.embed_tokens.weight")[np.array(ids)]
     p = Prog(f"qwen{L}L7b")
-    p.config("eps_rms", "1e-6").config("beta", -10000.0)
+    p.config("eps_rms", "1e-6").config("beta", QWEN_MASK_NEG)
     p.config("rope_base", 1000000.0)
     in_names = ["x0", "pos", "cmask"]
     for L_ in range(L):

@@ -35,8 +35,9 @@ GAINS = [float(g) for g in os.environ.get("GEO_GAINS", "0.0,1.0").split(",")]
 
 def build_program(S, spos, bmmv=False):
     from chain.builder import Prog, qwen_layer
+    from chain.qwen7b import QWEN_MASK_NEG
     p = Prog("qwen7b-28-any")
-    p.config("eps_rms", "1e-6").config("beta", -10000.0)
+    p.config("eps_rms", "1e-6").config("beta", QWEN_MASK_NEG)
     p.config("rope_base", 1000000.0)
     p.imp("yarnball.asm")
     names = ["x0", "pos", "cmask"]

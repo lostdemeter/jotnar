@@ -189,15 +189,32 @@ def infer_shapes(bound, sample):
             tk, tsub, tsh = streams[args[0]]
             ik, _, ish = streams[args[1]]
             n = dyn1(ish)
-            if n == "BAD" or ik != "I" or len(tsh) != 2:
-                raise AsmError(f"{where}: v0.2 needs table (V,C) + "
-                               f"(N,)/scalar ids")
-            if tk == "T":
-                streams[o] = ("T", tsub, (n, tsh[1]))
-            elif tk == "F":
-                streams[o] = ("F", "double", (n, tsh[1]))
+            if ik != "I" or len(tsh) != 2:
+                raise AsmError(f"{where}: v0.2 needs table (V,C) + int ids")
+            if len(ish) == 2:
+                # Batched row-gather: static-2D ids (R,k) -> (R,k,C).
+                # Same bytes as R*k flat fibers; the 2D shape keeps
+                # downstream per-head BMMV strides expressible (TOPK
+                # idx is always static; dynamic batch dims refused).
+                if any(d is None for d in ish):
+                    raise AsmError(f"{where}: GATHER 2D ids must be "
+                                   f"static, got {ish}")
+                if tk == "T":
+                    streams[o] = ("T", tsub, (ish[0], ish[1], tsh[1]))
+                elif tk == "F":
+                    streams[o] = ("F", "double",
+                                  (ish[0], ish[1], tsh[1]))
+                else:
+                    raise AsmError(f"{where}: GATHER table must be T/F")
             else:
-                raise AsmError(f"{where}: GATHER table must be T/F")
+                if n == "BAD":
+                    raise AsmError(f"{where}: v0.2 needs (N,)/scalar ids")
+                if tk == "T":
+                    streams[o] = ("T", tsub, (n, tsh[1]))
+                elif tk == "F":
+                    streams[o] = ("F", "double", (n, tsh[1]))
+                else:
+                    raise AsmError(f"{where}: GATHER table must be T/F")
         elif mn == "ARGMAX":
             sk, _, ssh = streams[args[0]]
             ax = _int_lit(args[1], f"{where} axis") if len(args) > 1 \
@@ -247,19 +264,35 @@ def infer_shapes(bound, sample):
         elif mn == "BMMV":
             ak, _, ash = streams[args[0]]
             bk, _, bsh = streams[args[1]]
-            if ak != "F" or bk != "F" or len(ash) != 2 or len(bsh) != 2:
-                raise NoPattern(f"{where}: BMMV needs 2D F bases (v0.1)")
+            if ak != "F" or bk != "F" or len(ash) < 2 or len(bsh) < 2:
+                raise NoPattern(f"{where}: BMMV needs F bases rank>=2 "
+                                f"(v0.1)")
             (BB, M, N_, K, LAA, SA, LAB, SB, _LAC, _SC, TB) = tuple(
                 _int_lit(args[i], f"{where} BMMV") for i in range(2, 13))
             if TB not in (0, 1):
                 raise AsmError(f"{where}: BMMV TRANSB must be 0/1")
-            if ash[0] is not None and ash[1] is not None and \
-                    (BB - 1) * SA + (M - 1) * LAA + K > ash[0] * ash[1]:
+            # View-overrun check on flat element counts (rank-free:
+            # strided views index flat storage; a 3D gathered base
+            # works like its 2D flattening).
+            na = 1
+            for d in ash:
+                if d is None:
+                    na = None
+                    break
+                na *= d
+            if na is not None and \
+                    (BB - 1) * SA + (M - 1) * LAA + K > na:
                 raise AsmError(f"{where}: BMMV A view overruns base")
             rb = N_ if TB else K
             cb = K if TB else N_
-            if bsh[0] is not None and bsh[1] is not None and \
-                    (BB - 1) * SB + (rb - 1) * LAB + cb > bsh[0] * bsh[1]:
+            nb = 1
+            for d in bsh:
+                if d is None:
+                    nb = None
+                    break
+                nb *= d
+            if nb is not None and \
+                    (BB - 1) * SB + (rb - 1) * LAB + cb > nb:
                 raise AsmError(f"{where}: BMMV B view overruns base")
             streams[o] = ("F", "double", (BB * M, N_))
         elif mn == "SLICE":

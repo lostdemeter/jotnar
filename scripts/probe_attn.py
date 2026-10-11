@@ -99,8 +99,9 @@ def main():
     from chain.builder import Prog, qwen_attn_layer
     from chain.emit_c import compile_program
     from chain.emit_cuda import build_cu
+    from chain.qwen7b import QWEN_MASK_NEG
     p = Prog("attn1")
-    p.config("eps_rms", "1e-6").config("beta", -10000.0)
+    p.config("eps_rms", "1e-6").config("beta", QWEN_MASK_NEG)
     p.config("rope_base", 1000000.0)
     p.inp("x0", "qr", "K", "V", "wo", "wup", "wgate", "wdown", "ln2",
           "attmask7", "allrows")

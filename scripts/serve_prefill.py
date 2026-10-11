@@ -56,7 +56,8 @@ def main():
         sys.exit(f"workdir {args.workdir} built for smax {stamp.get('smax')} "
                  f"!= {S} (rebuild it first)")
     p = Prog("qwen7b-prefill")
-    p.config("eps_rms", "1e-6").config("beta", -10000.0)
+    from chain.qwen7b import QWEN_MASK_NEG
+    p.config("eps_rms", "1e-6").config("beta", QWEN_MASK_NEG)
     p.config("rope_base", 1000000.0)
     names = ["x0", "pos", "cmask", "cmask7"]
     for L in range(N_LAYERS):

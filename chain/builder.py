@@ -302,6 +302,76 @@ def qwen_dec_full_layer(p, x, Kp, Vp, wq, wk, wv, wo, wup, wgate,
     return p.op("ADD", h1, down, out=f"Y{pre}"), Kfull, Vfull
 
 
+def qwen_dec_sparse_layer(p, x, Kp, Vp, wq, wk, wv, wo, wup, wgate,
+                          wdown, ln1, ln2, pos, attmask7, onehot, ones,
+                          allrows, S, nh=28, nkv=4, dh=128, pre="",
+                          bq=None, bk=None, bv=None, topk=8):
+    """Sparse-attention decoder layer: same cache discipline as
+    qwen_dec_full_layer (K/V files, one-hot merge, identical Kfull /
+    Vfull outputs -- caches agree bit-for-bit with the dense path),
+    but per-head attention runs over top-k positions only:
+    full scores -> mask -> TOPK(k) -> narrow softmax -> GATHER V rows
+    -> strided per-head BMMV over k. Same weights, different readout.
+    k is build-time (fixed shapes stay graph-safe). Returns (y, Kf, Vf).
+    """
+    xn = p.op("RMSNORM", x, ln1, out=f"XN{pre}")
+    q = p.op("MATMUL", xn, wq, out=f"Q{pre}")
+    k = p.op("MATMUL", xn, wk, out=f"K{pre}")
+    v = p.op("MATMUL", xn, wv, out=f"V{pre}")
+    if bq is not None:
+        q = p.op("ADD", q, bq, out=f"Q{pre}b")
+    if bk is not None:
+        k = p.op("ADD", k, bk, out=f"K{pre}b")
+    if bv is not None:
+        v = p.op("ADD", v, bv, out=f"V{pre}b")
+    per = nh // nkv
+    kp32 = p.op("GATHER", Kp, allrows, out=f"KP32{pre}")
+    vp32 = p.op("GATHER", Vp, allrows, out=f"VP32{pre}")
+    kps = p.op("SLICE", kp32, 0, 0, S, out=f"KPS{pre}")
+    vps = p.op("SLICE", vp32, 0, 0, S, out=f"VPS{pre}")
+    vn = p.op("MATMUL", ones, v, out=f"VN{pre}")
+    qr = None
+    for h in range(nh):
+        qh = p.op("SLICE", q, 1, h * dh, (h + 1) * dh)
+        qrh = p.op("ROTARY", qh, pos)
+        qr = qrh if qr is None else p.op("CONCAT", qr, qrh, 1)
+    kr = None
+    for g in range(nkv):
+        kh = p.op("SLICE", k, 1, g * dh, (g + 1) * dh)
+        krh = p.op("ROTARY", kh, pos)
+        kr = krh if kr is None else p.op("CONCAT", kr, krh, 1)
+    knr = p.op("MATMUL", ones, kr, out=f"KNR{pre}")
+    Kfull = p.op("SELECT", onehot, knr, kps, out=f"KF{pre}")
+    Vfull = p.op("SELECT", onehot, vn, vps, out=f"VF{pre}")
+    neg = p.op("BETA", attmask7, out=f"NEG{pre}")
+    ctx = None
+    for g in range(nkv):
+        qg = p.op("SLICE", qr, 1, g * per * dh, (g + 1) * per * dh)
+        kg = p.op("SLICE", Kfull, 1, g * dh, (g + 1) * dh)
+        vg = p.op("SLICE", Vfull, 1, g * dh, (g + 1) * dh)
+        sc = p.op("BMMV", qg, kg, per, 1, S, dh,
+                  per * dh, dh, dh, 0, S, S, 1)
+        ms = p.op("SELECT", attmask7, sc, neg)
+        tv, ti = f"TV{pre}g{g}", f"TI{pre}g{g}"
+        p.op("TOPK", ms, topk, out=(tv, ti))
+        pr = p.op("SOFTMAX_WIDE", p.op("TSHIFT", tv))
+        vgs = p.op("GATHER", vg, ti, out=f"VG{pre}g{g}")
+        ch = p.op("BMMV", pr, vgs, per, 1, dh, topk,
+                  topk, topk, dh, topk * dh, dh, dh, 0)
+        for j in range(per):
+            chh = p.op("SLICE", ch, 0, j, j + 1)
+            ctx = chh if ctx is None else p.op("CONCAT", ctx, chh, 1)
+    o = p.op("MATMUL", ctx, wo, out=f"O{pre}")
+    h1 = p.op("ADD", x, o, out=f"H{pre}")
+    hn = p.op("RMSNORM", h1, ln2, out=f"HN{pre}")
+    up = p.op("MATMUL", hn, wup, out=f"UP{pre}")
+    gate = p.op("MATMUL", hn, wgate, out=f"GATE{pre}")
+    gs = p.op("SILU", gate, out=f"GS{pre}")
+    mid = p.op("MUL", gs, up, out=f"MID{pre}")
+    down = p.op("MATMUL", mid, wdown, out=f"DOWN{pre}")
+    return p.op("ADD", h1, down, out=f"Y{pre}"), Kfull, Vfull
+
+
 def qwen_attn_layer(p, x, qr, K, V, wo, wup, wgate, wdown, ln2, attmask7,
                     S, nh=28, nkv=4, dh=128, pre=""):
     """Single-token attention+MLP (decode phase 2): K/V caches arrive as
