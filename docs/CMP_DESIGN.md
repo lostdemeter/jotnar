@@ -45,20 +45,29 @@ here, shared values never cross).
 ## 6. Required gates (before merge)
 
 - Parity: bit-exact vs float twin (1000 randomized triples + edges).
-- Behavioral: dual-head blend with GT-routed mask recovers v1
-  bit-identical prior (0.337/77) WITH v2 self-routing (the residue
-  this exists to kill: 11 UNK).
+- Behavioral: dualhead5 (GT-routed v2 bank) DOMINATES soft v2 on
+  every metric (/tmp/dualhead5.log: 0.305 vs 0.293, glue 9 vs 6,
+  holds 16/16 vs 11/16, unk tied 66). NOT v1-bit-identical: v1's
+  purity came from full-drug H5, impossible under any routing with
+  a null-mix bank (different H5, different LOGSKEW -- the original
+  prediction here was wrong, corrected with mechanism).
 - Negative/boundary: shape mismatch, float inputs, ties-False,
   zero==zero, all-names-op+line.
-- C/shared-vector coverage: CPU ASM path first; C/CUDA patterns
-  follow per-backend (NoPattern until then, never silent).
+- C/shared-vector coverage: CPU ASM path + nonfpu backend
+  (bit-exact, `test_emit_nonfpu.py`: mask bits + SELECT-over-mask);
+  C/CUDA patterns filed as follow-up (NoPattern, loud).
 
-## 7. Instances (first use, queued)
+## 7. Instances (first use: built, gated)
 
 `lm_dualhead5.asm`: v2 blend with `M = GT(W, THR)` mask +
-`SELECT(M, FLAT, SKEW)` replacing MUL/SUB/ADD blend. THR from
-BETA-filled stream at broadcast shape. Predicted: prior identical +
-FLIP + receipt, razor residue zero (hard routing has no crumbs).
+`SELECT(M, FLAT, SKEW)` replacing MUL/SUB/ADD blend. THR as IN data
+(frozen per prompt, cmask class -- simpler than the BETA-fill first
+proposed; no new CONFIG readers). Measured (/tmp/dualhead5.log):
+FLIP + receipt clean + dominates soft on 3/4 metrics, ties UNK.
+Razor-zero prediction falsified with mechanism (null-bank H5, not
+blend: GT removes blend crumbs exactly as designed, residue was
+never blend's). research/negmine5.py: hard routing + learned
+background = strictly best native config (0.350/9/77 + FLIP).
 
 ## Non-goals
 
