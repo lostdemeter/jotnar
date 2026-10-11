@@ -4217,3 +4217,18 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
 - Verdict: BOTH — sparse top-k routing in sharp bands, dense/SDPA in
   the broad middle. Open: middle-band head heterogeneity (few diffuse
   heads among sharp => per-head routing).
+
+## 2026-10-11: phase 0 sizing — mass bar fails, granularity per-group (unclocked)
+
+- research/attn_topk.py (/tmp/attn_topk.log, /tmp/attn_topk.json): top-k
+  mass curves k=1..32 per layer + middle-band head spreads, same 6 runs.
+  (First launch died on a double-[0] indexing bug; fixed, reran.)
+- k for >=0.99 mass: >32 in ALL 28 layers (S=256 tail is real; L27
+  k32=0.933). Mass fraction is the wrong criterion — fork grades
+  decisions, and argmax has survived far worse. Sizing moves to
+  argmax-flip-rate vs k (phase 0.5).
+- Granularity PER-GROUP (decisive): middle-band head spread 6.77
+  (rule >3); per-group aggregation shows sharp (max PR 1.9) and
+  diffuse (max 18.9) groups in the same layer. Matches the BMMV
+  group path exactly. k becomes a build-time constant per
+  (band, smax).
