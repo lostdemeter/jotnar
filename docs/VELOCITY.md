@@ -4232,3 +4232,17 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   diffuse (max 18.9) groups in the same layer. Matches the BMMV
   group path exactly. k becomes a build-time constant per
   (band, smax).
+
+## 2026-10-11: phase 0.5 decision sizing — k=8 uniform, 0 real flips (unclocked)
+
+- research/attn_topk_decide.py (/tmp/attn_topk_decide.log): manual torch
+  loop, per-group top-k masking (union over 7 heads = BMMV path), one
+  band at a time. Harness self-check (masked-k>=S exact) green first.
+- Screen (final pos x6 runs): k=8 zero flips all bands; k=4 flips once
+  each in B1/B3 (rank 2).
+- Dense confirm (every 32nd pos, k=4/8): k=8 flips 2/80, both
+  worst_rank=1 (top-logit ties, unstable-sort artifacts — no decision
+  change); k=4 flips 6/80 with rank-2 misses, worst in B3 (late-sharp
+  most pruning-sensitive). Sizing closed: k=8 uniform per (band, smax).
+- Lesson: mass fraction said >32 everywhere; decisions say 8. Grade
+  decisions (fork charter), never mass.
