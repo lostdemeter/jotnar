@@ -25,8 +25,9 @@ sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
 
 NL, HID, KVD, PER = 28, 3584, 512, 7
-WANT = {"graph": True, "no_sync": True, "smax": 512, "sparse_bands": "",
-        "sparse_k": 8, "resident": False, "fused_qkv": True}
+_WANT_BASE = {"graph": True, "no_sync": True, "sparse_bands": "",
+              "sparse_k": 8, "resident": False, "fused_qkv": True}
+WANT = dict(_WANT_BASE, smax=512)
 
 
 def main():
@@ -38,8 +39,19 @@ def main():
                     help="serve over real TCP sockets (in-process server "
                     "thread, loopback interface); default is in-process "
                     "loopback transport")
+    ap.add_argument("--pipeline", default="",
+                    help="layer splits like 0-13,14-27: build one binary "
+                    "per stage, ferry the f32 boundary, caches sticky "
+                    "per stage (needs --smax, distinct workdirs)")
+    ap.add_argument("--smax", type=int, default=512)
     args = ap.parse_args()
-    S, work = 512, args.workdir
+    S, work = args.smax, args.workdir
+    if args.pipeline and not args.tcp:
+        sys.exit("--pipeline needs --tcp (stages are socket nodes)")
+    if args.pipeline:
+        return pipeline_demo(args)
+    S, work = args.smax, args.workdir
+    WANT = dict(_WANT_BASE, smax=S)
     from chain.qwen7b import load7b, snapshot_ok
     if not snapshot_ok():
         print("SKIP (needs snapshot)")
@@ -157,3 +169,157 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+def pipeline_demo(args):
+    """Layer-sharded Paris: one binary per split, f32 H ferried over
+    sockets, caches sticky per stage. Plus a hetero kicker (integer
+    chain on the lattice node through the same controller)."""
+    import threading
+    S = args.smax
+    splits = []
+    for part in args.pipeline.split(","):
+        lo, hi = part.split("-")
+        splits.append((int(lo), int(hi)))
+    workbase = args.workdir
+    if args.workdir == "/tmp/dec7b512":
+        workbase = f"/tmp/pipe{S}"  # never build stages into dec7b512
+    from chain.qwen7b import load7b, snapshot_ok, input_sources
+    from chain.qwen7b import clear_7b_cache
+    if not snapshot_ok():
+        print("SKIP (needs snapshot)")
+        return
+    g, tok = load7b()
+    E = np.ascontiguousarray(g("model.embed_tokens.weight"), dtype=np.float16)
+    clear_7b_cache(g)
+    import gc
+    gc.collect()
+    from protocol.pipe_build import build_pipeline
+    from protocol.tcp import TcpServer, TcpClient
+    from protocol.loopback import Server
+    from protocol.pipeline import PipeController
+    cfgs = build_pipeline(g, dict(input_sources()), S, splits, workbase)
+    srvs = []
+    for _ in cfgs:
+        s = TcpServer(Server(), port=0)
+        t = threading.Thread(target=s.serve_forever, daemon=True)
+        t.start()
+        srvs.append(s)
+    try:
+        ctl = PipeController()
+        for i in range(len(cfgs)):
+            ctl.add_node(f"s{i}", TcpClient("127.0.0.1", srvs[i].port))
+        lat = TcpServer(Server(allowed=["lattice"]), port=0)
+        lt = threading.Thread(target=lat.serve_forever, daemon=True)
+        lt.start()
+        ctl.add_node("lattice", TcpClient("127.0.0.1", lat.port))
+        try:
+            for i, cfg in enumerate(cfgs):
+                argv, nlay = cfg["argv"], cfg["hi"] - cfg["lo"] + 1
+                n_in = len(argv) - (2 + 2 * nlay if cfg["last"]
+                                    else 1 + 2 * nlay)
+                if cfg["last"]:
+                    outs = {"logits": {"idx": n_in, "dtype": "f32",
+                                       "shape": [1, 152064]},
+                            "choice": {"idx": n_in + 1, "dtype": "i64",
+                                       "shape": [1]}}
+                else:
+                    outs = {"H": {"idx": n_in, "dtype": "f32",
+                                  "shape": [1, HID]}}
+                for L in range(cfg["lo"], cfg["hi"] + 1):
+                    nlay = cfg["hi"] - cfg["lo"] + 1
+                    b = n_in + (2 if cfg["last"] else 1)
+                    # BLOCKED outputs (all-K then all-V), not interleaved
+                    outs[f"knew{L}"] = {"idx": b + (L - cfg["lo"]),
+                                        "dtype": "f32",
+                                        "shape": [S * KVD]}
+                    outs[f"vnew{L}"] = {"idx": b + nlay + (L - cfg["lo"]),
+                                        "dtype": "f32",
+                                        "shape": [S * KVD]}
+                ctl.program(f"s{i}", f"st{i}", cfg["text"],
+                            backend="served",
+                            config={"exe": cfg["exe"], "argv_files": argv,
+                                    "live": {"step_x0": 0, "step_pos": 1,
+                                             "step_am": 2},
+                                    "outputs": outs,
+                                    "err_path": os.path.join(cfg["work"], "pipe.err")},
+                            stamp=dict(cfg["stamp"]))
+            first, mid, last = cfgs[0], cfgs[1:-1], cfgs[-1]
+
+            def stage_exec(tag, cfg, x_arr, n, am, want):
+                h, o = ctl.exec(tag, {"step_x0": x_arr,
+                                      "step_pos": np.array([n], dtype=np.int64),
+                                      "step_am": am}, want)
+                assert h.get("ok"), h.get("error")
+                for L in range(cfg["lo"], cfg["hi"] + 1):
+                    w = os.path.join(cfg["work"], f"ckP{L}.bin")
+                    a = np.asarray(o[f"knew{L}"], dtype=np.float32)
+                    assert a.size == S * KVD, (L, a.shape)
+                    a.tofile(w)
+                    w = os.path.join(cfg["work"], f"cvP{L}.bin")
+                    a = np.asarray(o[f"vnew{L}"], dtype=np.float32)
+                    assert a.size == S * KVD, (L, a.shape)
+                    a.tofile(w)
+                return o
+
+            def step(tok_id, n):
+                xx = np.zeros((1, HID), dtype=np.float32)
+                xx[0] = E[np.array([tok_id])].astype(np.float32)
+                am = np.zeros((PER, S), dtype=np.int64)
+                am[:, :n + 1] = 1
+                names = (["H"] + [f"knew{L}" for L in range(first["lo"], first["hi"] + 1)] +
+                         [f"vnew{L}" for L in range(first["lo"], first["hi"] + 1)])
+                o = stage_exec("st0", first, xx, n, am, names)
+                H = np.asarray(o["H"], dtype=np.float32)
+                for cfg, tag in [(c, f"st{j + 1}") for j, c in enumerate(mid)]:
+                    names = (["H"] +
+                             [f"knew{L}" for L in range(cfg["lo"], cfg["hi"] + 1)] +
+                             [f"vnew{L}" for L in range(cfg["lo"], cfg["hi"] + 1)])
+                    o = stage_exec(tag, cfg, H, n, am, names)
+                    H = np.asarray(o["H"], dtype=np.float32)
+                names = (["logits", "choice"] +
+                         [f"knew{L}" for L in range(last["lo"], last["hi"] + 1)] +
+                         [f"vnew{L}" for L in range(last["lo"], last["hi"] + 1)])
+                o = stage_exec(f"st{len(cfgs) - 1}", last, H, n, am, names)
+                return (np.asarray(o["logits"]).reshape(-1),
+                        int(np.asarray(o["choice"]).reshape(-1)[0]))
+
+            ids = tok("The capital of France is",
+                      return_tensors="pt")["input_ids"][0].tolist()
+            for i, t in enumerate(ids):
+                step(t, i)
+            seq, gen = list(ids), []
+            for _ in range(args.n):
+                _, nxt = step(seq[-1], len(seq))
+                seq.append(nxt)
+                gen.append(nxt)
+            print(f"paris-demo> {tok.decode(gen, skip_special_tokens=True)}",
+                  flush=True)
+            import phi_core.lattice as _S
+            rng = np.random.default_rng(3)
+            A = _S.encode(np.ascontiguousarray(rng.normal(size=(2, 4)) * .5))
+            B = _S.encode(np.ascontiguousarray(rng.normal(size=(4, 3)) * .5))
+            C = _S.encode(np.ascontiguousarray(rng.normal(size=(2, 3)) * .5))
+            ctl.program_auto("ichain", _ICHAIN, backend="lattice")
+            h, o = ctl.exec("ichain", {"a": A, "b": B, "c": C}, ["OUT"])
+            print(f"hetero: lattice chain ok={h.get('ok')} "
+                  f"placed={ctl.placement('ichain')}", flush=True)
+            print(f"placement log: {ctl.log}", flush=True)
+        finally:
+            lat.stop()
+            lat.close()
+    finally:
+        for s in srvs:
+            s.stop()
+            s.close()
+
+
+_ICHAIN = """CONFIG m_acc 31344
+CONFIG m_cov 31344
+IN a AS T:SEQ
+IN b AS T:SEQ
+IN c AS T:SEQ
+MID = MATMUL(a, b)
+SUM = ADD(MID, c)
+OUT = SILU(SUM)
+"""

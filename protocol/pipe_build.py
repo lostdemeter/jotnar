@@ -9,11 +9,17 @@ listing over its layer range:
 - middle stage: IN x0 (f32 boundary, same values, no rounding) ...
 - last stage:   ... -> RMSNORM/MATMUL/ARGMAX tail (LOGITS/OUT)
 
-Boundary activations cross stages as f32 bytes (never f16: the
-standard cache rounding would break bit-exactness vs single-node).
-KV caches stay per-stage sticky files; the controller holds no KV,
-only the H boundary. Workdirs are independent (frozen weights
-prepped fresh per stage; nothing shared with /tmp/dec7b512).
+Boundary activations cross stages as f32 bytes (never f16: cache
+rounding would break bit-exactness vs single-node). Stronger: stage
+binaries build with use_fp16=False (float mode), because the emitter
+declares every F input `__half` in fp16 mode regardless of sample
+dtype -- an f32 boundary file would be misread as f16. In float mode
+all F storage is f32; f16 weights cast up exactly, so values are
+unchanged and pipeline-vs-single stays bit-exact (cross-mode vs
+production is eps-graded, never exact). Cost: 2x weight traffic,
+documented. KV caches stay per-stage sticky files; the controller
+holds no KV, only the H boundary. Workdirs are independent (frozen
+weights prepped fresh per stage; nothing shared with /tmp/dec7b512).
 """
 import json
 import os
@@ -72,7 +78,7 @@ def build_stage(g, keymap, S, lo, hi, last, work, first=True,
     os.makedirs(work, exist_ok=True)
     stamp = {"graph": bool(graph), "no_sync": bool(no_sync), "smax": S,
              "sparse_bands": "", "sparse_k": 8, "resident": False,
-             "fused_qkv": True, "stage": [lo, hi]}
+             "fused_qkv": True, "stage": [lo, hi], "fp16": False}
     exe_name = f"qdecS{lo}-{hi}"
     exe = os.path.join(work, exe_name)
     text, kouts, vouts, boundary = stage_program(S, lo, hi, last)
@@ -101,22 +107,22 @@ def build_stage(g, keymap, S, lo, hi, last, work, first=True,
             return np.ascontiguousarray(np.concatenate(parts, axis=1))
         return None
 
-    sample = {"x0": FRef((1, HID), "float16" if first else "float32"),
+    sample = {"x0": FRef((1, HID), "float32"),
               "pos": np.zeros(1, dtype=np.int64),
               "attmask7": np.zeros((PER, S), dtype=np.int64),
               "allrows": np.arange(S, dtype=np.int64)}
     for L in range(lo, hi + 1):
-        sample[f"kP{L}"] = FRef((S, KVD), "float16")
-        sample[f"vP{L}"] = FRef((S, KVD), "float16")
+        sample[f"kP{L}"] = FRef((S, KVD), "float32")
+        sample[f"vP{L}"] = FRef((S, KVD), "float32")
     wshapes = {"wqkv": (HID, HID + 2 * KVD), "wo": (HID, HID),
                "wug": (HID, 2 * INTER), "wdown": (INTER, HID),
                "ln1": (HID,), "ln2": (HID,), "bqkv": (1, HID + 2 * KVD)}
     for L in range(lo, hi + 1):
         for k, sh in wshapes.items():
-            sample[f"{k}{L}"] = FRef(sh, "float16")
+            sample[f"{k}{L}"] = FRef(sh, "float32")
     if last:
-        sample["lnf"] = FRef((HID,), "float16")
-        sample["wlog"] = FRef((HID, QWEN7B_VOCAB), "float16")
+        sample["lnf"] = FRef((HID,), "float32")
+        sample["wlog"] = FRef((HID, QWEN7B_VOCAB), "float32")
     caches = [f"kP{L}" for L in range(lo, hi + 1)] + \
              [f"vP{L}" for L in range(lo, hi + 1)]
     if last:
@@ -124,6 +130,7 @@ def build_stage(g, keymap, S, lo, hi, last, work, first=True,
     else:
         outs = [boundary] + kouts + vouts
     live = ["x0", "pos", "attmask7"] + caches
+    stamp["outs"] = list(outs)  # output layout is binary contract: rebuild on change
     try:
         old = json.load(open(os.path.join(work, "build.json")))
     except OSError:
@@ -136,7 +143,7 @@ def build_stage(g, keymap, S, lo, hi, last, work, first=True,
     else:
         art = compile_program(text, "cuda", sample=sample, outputs=outs,
                               basedir=os.path.join(ROOT, "programs"),
-                              use_fp16=True, live=live,
+                              use_fp16=False, live=live,
                               sync_each=not no_sync, graph=graph)
         in_order = list(art["inputs"])
     # frozen inputs prepped fresh per stage (nothing shared)
@@ -151,11 +158,12 @@ def build_stage(g, keymap, S, lo, hi, last, work, first=True,
             continue
         fused = prep_fused(n)
         if fused is not None:
-            fused.tofile(fn)
+            fused.astype(np.float32).tofile(fn)
             continue
         if n in keymap:
             short, src = keymap[n]
-            prep_one(src, short).tofile(fn)
+            # exact upcast: f16 weights are exactly representable in f32
+            prep_one(src, short).astype(np.float32).tofile(fn)
         else:
             raise KeyError(f"no frozen source for {n!r}")
     if not (old.get("stamp") == stamp and os.path.isfile(exe)):
@@ -163,7 +171,7 @@ def build_stage(g, keymap, S, lo, hi, last, work, first=True,
                   units=art.get("units"))
         json.dump({"stamp": stamp, "inputs": in_order},
                   open(os.path.join(work, "build.json"), "w"))
-    stamp = {k: v for k, v in stamp.items() if k != "stage"}
+    stamp = {k: v for k, v in stamp.items() if k not in ("stage", "outs")}
 
     def argv_for(lives, out_files):
         argv = []
@@ -180,18 +188,21 @@ def build_stage(g, keymap, S, lo, hi, last, work, first=True,
         for tag in ("ckP", "cvP"):
             fn = os.path.join(work, f"{tag}{L}.bin")
             if not os.path.isfile(fn):
-                np.zeros((S, KVD), dtype=np.float16).tofile(fn)
-    np.zeros((1, HID), dtype=np.float16 if first else np.float32).tofile(lives["x0"])
+                np.zeros((S, KVD), dtype=np.float32).tofile(fn)
+    np.zeros((1, HID), dtype=np.float32).tofile(lives["x0"])
     np.zeros(1, dtype=np.int64).tofile(lives["pos"])
     np.zeros((PER, S), dtype=np.int64).tofile(lives["attmask7"])
+    # Output files follow compile outs order: BLOCKED (all-K then all-V),
+    # like serve_decode ([flo, fou] + kouts + vouts) -- NOT interleaved.
     if last:
         out_files = [os.path.join(work, "step_lg.bin"),
                      os.path.join(work, "step_ou.bin")]
     else:
         out_files = [os.path.join(work, "step_H.bin")]
     for L in range(lo, hi + 1):
-        out_files += [os.path.join(work, f"step_K{L}.bin"),
-                      os.path.join(work, f"step_V{L}.bin")]
+        out_files.append(os.path.join(work, f"step_K{L}.bin"))
+    for L in range(lo, hi + 1):
+        out_files.append(os.path.join(work, f"step_V{L}.bin"))
     return {"text": text, "argv": argv_for(lives, out_files),
             "lives": lives, "kouts": kouts, "vouts": vouts,
             "boundary": boundary, "last": last, "lo": lo, "hi": hi,

@@ -151,7 +151,13 @@ loud on mismatch (never coerces).
 Each node gets its own workdir + port (no sharing: caches are sticky
 per-node state). The controller holds no KV — only the H boundary
 activation crosses between stages, as f32 bytes (never f16: cache
-rounding would break bit-exactness vs single-node).
+rounding would break bit-exactness vs single-node). Stronger: stage
+binaries build in float mode (`use_fp16=False`), because the emitter
+declares every F input `__half` in fp16 mode regardless of sample
+dtype — an f32 boundary file would be misread. f16 weights cast up
+exactly, so values are unchanged and pipeline-vs-single stays
+bit-exact (cross-mode vs production is eps-graded). Cost: 2x weight
+traffic. Honored emitter constraint: build flag, not emitter change.
 
 ### Backend advertisement + dispatch
 
