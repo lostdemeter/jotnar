@@ -120,6 +120,15 @@ KV-cache (files), sparse band-map readout, and on-device resident caches
 are the three serving grades; gates `test_decode/test_prefill/test_sparse/
 test_resident` pin each against HF and against each other.
 
+Protocol loopback (see `docs/PROTOCOL.md`): the same server behind
+messages — client builds listings, node executes blind:
+
+```
+python3 protocol/demo_paris.py --n 6   # needs snapshot + the Demo 2
+                                       # smax-512 build above; Paris
+                                       # through client→server→client
+```
+
 ## Opcode table (54 mnemonics)
 
 Kinds: F float, T lattice-triples, I integer. Backends admit per-kind
