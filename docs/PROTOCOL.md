@@ -1,4 +1,4 @@
-# Jotnar wire protocol, v1 (Milestone 1: spec + loopback)
+# Jotnar wire protocol, v1 (Milestones 1-2: loopback + TCP transport)
 
 Controller/node split for geometric assembly programs. The controller
 is smart (builds listings, holds weights, frames requests); the node
@@ -6,24 +6,32 @@ is dumb and **model-blind** (holds programs + named blobs, executes,
 returns bytes). The emitter never knows what model it lowers, and the
 node never knows either: a listing is text, weights are bytes.
 
-Out of scope for v1: TCP transport (loopback passes identical bytes
-through memory), multi-node/pipeline serving, node types. v1 exists so
-Milestone 2 can put sockets under it without changing a message.
+Out of scope: multi-node/pipeline serving, node types (later
+milestones). No TLS/auth on the wire (plain TCP, stated plainly).
 
-## Framing (applies to loopback and future TCP identically)
+## Framing (loopback and TCP speak identical bytes)
 
 Every message on the wire is one frame:
 
 ```
-u32 BE length N || N bytes: {header: JSON, payload: bytes}
+u32 BE length N || N bytes: {header JSON, "\n", payload bytes}
 ```
 
-i.e. the JSON header carries `{"v":1,"id":n,"type":T,...}` plus a
-`payload_len`; exactly `payload_len` raw bytes follow the JSON.
-Loopback serializes to these same bytes and deserializes them back —
-it may not pass Python objects around the codec. Malformed frames
-(short length, bad JSON, length mismatch) are rejected before
-dispatch, loudly.
+The header carries `{"v":1,"id":n,"type":T,...}`; the length prefix
+covers header + payload together. Loopback and TCP reuse
+`protocol/loopback.py:dumps/loads` byte-for-byte — no second framing.
+Malformed frames (short length, bad JSON, length mismatch) are
+rejected before dispatch, loudly.
+
+## Transport (Milestone 2)
+
+One TCP connection = a stream of frames, responses in request order.
+Policy: **one client at a time**, single-threaded server; a second
+connection while one is active gets `{ok:false, code:"busy"}` and a
+close — loud, never queued. Every socket carries timeouts on both
+ends (connect + recv, default 600s, matching serve-step budgets); a
+dropped peer raises instead of hanging. Clean EOF ends the session;
+the next connection starts fresh (program registry persists).
 
 ## Messages
 
@@ -42,12 +50,27 @@ overloads per backend, so the count alone is not actionable.)
 
 ### PROGRAM -> PROGRAM-OK
 
-`{type:"program", name, listing, backend, config:{}}` registers a
-program under a client-chosen `name`. **`listing` is the .asm text
-itself, utf-8 — there is no separate bytecode.** `backend` is
-`"lattice"` (in-process interpreter) or `"served"` (persistent
+`{type:"program", name, listing, backend, config:{}, stamp?{}}`
+registers a program under a client-chosen `name`. **`listing` is the
+.asm text itself, utf-8 — there is no separate bytecode.** `backend`
+is `"lattice"` (in-process interpreter) or `"served"` (persistent
 binary the controller built out-of-band; `config` carries
-`{exe, argv_files, err_path}`). Response: `{ok:true, handle:name}`.
+`{exe, argv_files, live, outputs, err_path}`). Response:
+`{ok:true, handle:name}`.
+
+Build provenance (Milestone 2): stamp discipline used to be
+convention (the server trusted the client's binary). For
+`backend:"served"`, PROGRAM now carries `stamp:{graph, no_sync,
+smax, sparse_bands, sparse_k, resident, fused_qkv}` and the server
+compares it against the binary's `build.json` sitting next to the
+exe. Missing stamp, missing build.json, or any differing key is
+refused loud as `stamp-mismatch`. Lattice programs carry no stamp.
+
+No BUILD message exists, by decision: serving a build over the
+wire would mean streaming ~14GB of weights plus a 10-minute
+compile — a build service, not a message. The controller builds
+out-of-band (emitter next to builder); the node verifies
+provenance at PROGRAM time. Deferred, with that reason.
 
 Deviation note: phi_compute_protocol's PROGRAM is acknowledged
 here as name-registration rather than upload-and-compile, because
@@ -113,6 +136,9 @@ loud on mismatch (never coerces).
 - `unknown-handle` / `unknown-store`: EXEC references nothing
   registered. `arity`: input/output names or shapes disagree
   with the listing.
+- `stamp-mismatch` (served PROGRAM only): missing stamp, missing
+  `build.json` next to the exe, or any differing stamp key.
+- `busy`: second TCP connection while one is active (refused + closed).
 - Server bugs (exceptions) return `ok:false, error:{code:"node",
   msg}` with the message — never silent wrong bytes, never a
   bare hang. Timeouts belong to the transport (Milestone 2).
