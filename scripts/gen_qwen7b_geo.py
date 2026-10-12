@@ -12,6 +12,9 @@ see chain/mem.py). Env keys QWEN_SKIP_HF/QWEN_SKIP_GEO still honored.
 Memory: prints chain/mem.py budget first, refuses over-cap plans;
 weights stream to disk one fp16 weight at a time (peak ~2.5GiB CPU).
 Slow: compile ~10min (10k ops), ~2-5s/token geo, HF load ~1min.
+
+Kept on main because test_mem_budget imports build_program for its
+28-layer shape-check gate; the comparison CLI is retired with the analysis era.
 """
 import json
 import os
@@ -37,6 +40,7 @@ def load_all():
 
 def build_program(S, bmmv=False):
     from chain.builder import Prog, qwen_layer, qwen_bmmv_layer
+    from chain.qwen7b import QWEN_MASK_NEG
     p = Prog("qwen7b-28")
     p.config("eps_rms", "1e-6").config("beta", QWEN_MASK_NEG)
     p.config("rope_base", 1000000.0)

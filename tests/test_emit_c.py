@@ -33,7 +33,7 @@ def main():
     dd = os.path.join(root, "data")
     for f in ("lm_bigrams.npz",):
         if not os.path.isfile(os.path.join(dd, f)):
-            print(f"SKIP (run scripts/freeze_lm.py first: missing {f})")
+            print(f"SKIP (missing fixture {f} -- tracked in data/, see data/README.md)")
             sys.exit(0)
     counts = np.load(os.path.join(dd, "lm_bigrams.npz"))["counts"]
     text = open(os.path.join(root, "programs", "bigram_lm.asm")).read()

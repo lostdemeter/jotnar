@@ -10,6 +10,8 @@ listings). Prefill = decode steps over prompt tokens from zero
 caches. Nothing here needs new ops: composition, not extension.
 Usage: python3 scripts/serve_decode.py "prompt here" [--n 8] [--smax 16]
 Gates (stated): prefill-vs-recompute parity + decode-vs-recompute text.
+Fresh smax-16 workdir measured ~80s (nvcc build + weight prep); re-runs are
+seconds on stamp reuse. Needs the snapshot + nvcc + GPU.
 """
 import os
 import sys

@@ -1,6 +1,6 @@
 # LANGUAGE.md — the assembly language, single reference (v1.0 Gate 2)
 
-47 mnemonics. Every line of every program is `OUTS = MNEMONIC(args)` plus
+54 mnemonics. Every line of every program is `OUTS = MNEMONIC(args)` plus
 four declarations (`CONFIG IN STATE RANGE`) and three composition forms
 (`DEF CALL IMPORT`). This file is the whole language: the tutorial (write
 your first listing in 15 minutes), the per-mnemonic contracts with examples,

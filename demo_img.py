@@ -9,6 +9,8 @@ Backends: SAME text runs on c/CUDA (float planes) and nonfpu
 (triple-encoded U8 planes + triple consts). Kinds come from the sample,
 never the text -- the shader promise, demonstrated.
 Gallery: python3 demo_img.py (needs PIL + samples/input_example.png).
+Measured 2.3s end-to-end (C + CUDA + non-FPU incl. compiles, cache-warm
+nvcc); needs nvcc + GPU for the CUDA leg, CPU-only otherwise.
 """
 import os
 import subprocess

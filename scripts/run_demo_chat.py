@@ -8,6 +8,7 @@ this for shells). This wrapper sets it in-process before spawning, so:
 
 passes everything else through to demo_chat.py. Needs a built binary
 in the workdir (it will tell you the exact build command if missing).
+Overhead over demo_chat is nil (env setup, then demo_chat.main()).
 """
 import os
 import sys

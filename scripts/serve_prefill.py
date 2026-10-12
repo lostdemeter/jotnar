@@ -8,6 +8,7 @@ math as sequential decode-prefill in a different order (full-S vs
 Usage: python3 scripts/serve_prefill.py "prompt here" [--smax 16]
        [--workdir /tmp/gen7b] [--outdir /tmp/prefill]
 Prints prefill wall time; writes OUTDIR/ckP{L}.bin + cvP{L}.bin.
+Needs the snapshot + GPU; the decode server consumes OUTDIR via --prefill-dir.
 """
 import os
 import subprocess
