@@ -1,4 +1,7 @@
-"""D64 piece refit battery harness (mission tooling, NOT a gate). Part 1: lib."""
+"""D64 piece refit battery harness (mission tooling, NOT a gate). Part 1: lib.
+
+Kept on main as the BPE encode/load helper for the emission gates
+(test_emit_widths, test_emit_cuda); the battery driver half is retired."""
 
 import glob
 import html

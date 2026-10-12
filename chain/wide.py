@@ -1,4 +1,4 @@
-"""Vendored wide bridge (BACKPORT, delete on merge).
+"""Vendored wide bridge (kept: chain/asm_ops imports it; do not delete).
 
 Mirrors phi-core ai/t-transform-bridge's to_fixed_wide + frac_hi LUT
 bit-exactly (gated 0-diff in test_tshift.py) so DDColor-scale work proceeds
