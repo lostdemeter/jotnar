@@ -57,8 +57,9 @@ def recv_frame(sock):
 class TcpServer:
     """One-client-at-a-time socket front for a loopback.Server."""
 
-    def __init__(self, server=None, host="127.0.0.1", port=0, timeout=600):
-        self.inner = server if server is not None else Server()
+    def __init__(self, server=None, host="127.0.0.1", port=0, timeout=600,
+                 backends=None):
+        self.inner = server if server is not None else Server(allowed=backends)
         self.timeout = timeout
         self._stop = False
         self.lsn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

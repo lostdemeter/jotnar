@@ -109,7 +109,10 @@ def _t_encode(value, shape=None):
 class Server:
     """Dumb model-blind node: program registry + blob shelf + dispatch."""
 
-    def __init__(self):
+    def __init__(self, allowed=None):
+        # allowed: backends this node offers (advertised in PING).
+        # None = both (loopback default); TcpServer passes it through.
+        self.allowed = list(allowed) if allowed else ["lattice", "served"]
         self.programs = {}  # name -> {listing, backend, config, exe?}
         self.stores = {}    # name -> {stream, payload}
 
@@ -145,7 +148,7 @@ class Server:
         from chain.asm_ops import REGISTRY
         return self._ok(hid, "pong", {"pong": {
             "impl": "jotnar-node", "v": PROTO_V,
-            "backends": ["lattice", "served"],
+            "backends": list(self.allowed),
             "mnemonics": len(REGISTRY)}})
 
     def _program(self, hid, header, payload):
@@ -155,6 +158,9 @@ class Server:
         backend = header.get("backend", "lattice")
         if backend not in ("lattice", "served"):
             return self._err(hid, "unknown-type", f"backend {backend!r}")
+        if backend not in self.allowed:
+            return self._err(hid, "backend-unavailable",
+                             f"node offers {self.allowed}, not {backend!r}")
         try:  # fail fast: unknown opcodes refused at PROGRAM time
             ASM.assemble(listing, REGISTRY, SIGS)
         except Exception as e:
