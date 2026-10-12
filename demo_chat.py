@@ -6,6 +6,9 @@ sampling. Session state is messages + seeded RNG (replay a session by
 re-entering lines with the same seed). Commands: /quit /reset /seed N
 /topk K /temp T.
 Usage: python3 demo_chat.py [--smax 512] [--n 40] [--workdir /tmp/dec7b512]
+Needs the HF snapshot + a built qdec in the workdir (README Demo 2 builds
+it: ~1-2 min nvcc at smax 16, longer at 512, instant on stamp reuse); a
+turn is seconds on GPU (measured: 'capital of france' -> Paris, --n 6).
 """
 import os
 import sys

@@ -36,8 +36,9 @@ listings are future roadmap, not gold — no ball code on main.
 
 ## Requirements
 
-- Python 3.12, `python3 -m pip install -r requirements.txt` (numpy, Pillow).
-  Plain `pip` may not exist; the `python3 -m` form always works.
+- Python 3.12 + numpy, Pillow. If `python3 -c "import numpy, PIL"` fails:
+  `python3 -m pip install -r requirements.txt` (add `--break-system-packages`
+  on PEP-668 managed systems).
 - `phi-core` checkout as a **sibling** (`../phi-core`) — required, not
   optional: the C tests shell to `make -C c_chain`, whose Makefile reads
   `../../phi-core/c_core`. `PHI_CORE_DIR` covers the Python imports only.
@@ -51,8 +52,9 @@ listings are future roadmap, not gold — no ball code on main.
 
 ```
 source scripts/cuda_env.sh
-export QWEN_REUSE_BIN=1        # reuse stamp-verified binaries, never rebuild;
-                               # UNSET it when building a fresh workdir (Demo 2)
+# QWEN_REUSE_BIN=1 reuses stamp-verified binaries on repeat runs; leave it
+# UNSET here so first builds happen (a set key with a stale/missing stamp
+# refuses instead of building).
 python3 tests/test_asm.py tests/test_census.py tests/test_topk.py \
   tests/test_scatter.py tests/test_attn.py tests/test_rope.py \
   tests/test_swiglu_op.py tests/test_gather2d.py tests/test_c.py \
@@ -101,13 +103,17 @@ The build compiles the 28-layer decode binary once into the workdir
 commands `/quit /reset /seed /topk /temp`. Sampling is host-boundary;
 listings stay deterministic (replay a session by re-entering lines).
 
-Speed paths (same server, default flags otherwise):
+Speed paths (same server; one workdir per config — the stamp refuses to mix
+configs, so build each without `QWEN_REUSE_BIN`, then re-runs may set it):
 
 ```
-python3 scripts/serve_decode.py --smax 16 "the capital of france is" --n 8
+env -u QWEN_REUSE_BIN QWEN_WORKDIR=/tmp/dec7b16 \
+  python3 scripts/serve_decode.py --smax 16 "the capital of france is" --n 8
 python3 scripts/serve_prefill.py "the capital of france is" --outdir /tmp/prefill
-python3 scripts/serve_decode.py --smax 16 --sparse-bands 4-11,21-27 --sparse-k 8
-python3 scripts/serve_decode.py --smax 16 --resident-cache
+env -u QWEN_REUSE_BIN QWEN_WORKDIR=/tmp/dec7b_sp16 \
+  python3 scripts/serve_decode.py --smax 16 --sparse-bands 4-11,21-27 --sparse-k 8
+env -u QWEN_REUSE_BIN QWEN_WORKDIR=/tmp/dec7b_res16 \
+  python3 scripts/serve_decode.py --smax 16 --resident-cache
 ```
 
 KV-cache (files), sparse band-map readout, and on-device resident caches
