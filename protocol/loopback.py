@@ -166,9 +166,28 @@ class Server:
                 old["exe"].close()
             except Exception:
                 pass
+        cfg = header.get("config", {})
+        if backend == "served":
+            # Build provenance, not convention: the client states the
+            # stamp it wants; the binary's build.json next to the exe
+            # states what was built. Anything else refuses loud.
+            want = header.get("stamp")
+            if not isinstance(want, dict):
+                return self._err(hid, "stamp-mismatch",
+                                 "served PROGRAM needs a stamp")
+            import json as _js
+            try:
+                have = _js.load(open(os.path.join(
+                    os.path.dirname(cfg.get("exe", "")), "build.json")))
+            except OSError as e:
+                return self._err(hid, "stamp-mismatch",
+                                 f"no build.json next to exe: {e}")
+            bad = [k for k in want if have.get(k) != want[k]]
+            if bad:
+                return self._err(hid, "stamp-mismatch",
+                                 f"binary stamp differs on {bad}")
         self.programs[name] = {"listing": listing, "backend": backend,
-                               "config": header.get("config", {}),
-                               "exe": None}
+                               "config": cfg, "exe": None}
         return self._ok(hid, "program-ok",
                         {"handle": name, "replaced": replaced})
 
@@ -289,25 +308,33 @@ class Server:
 
 
 class Client:
-    """Smart side: framing helpers over an in-process server handle."""
+    """Smart side: framing helpers over a transport.
 
-    def __init__(self, server):
-        self.server = server
+    transport: frame bytes -> response frame bytes. Defaults to the
+    in-process server handle (loopback); TCP passes a socket sender.
+    """
+
+    def __init__(self, server=None, transport=None):
+        if transport is None:
+            transport = server.handle
+        self.transport = transport
         self._id = 0
 
     def _roundtrip(self, typ, fields, payload=b""):
         self._id += 1
         fields = dict(fields, id=self._id)
-        rh, rp = loads(self.server.handle(dumps(typ, fields, payload)))
+        rh, rp = loads(self.transport(dumps(typ, fields, payload)))
         return rh, rp
 
     def ping(self):
         return self._roundtrip("ping", {})
 
-    def program(self, name, listing, backend="lattice", config=None):
-        return self._roundtrip("program", {"name": name, "backend": backend,
-                                           "config": config or {}},
-                               listing.encode("utf-8"))
+    def program(self, name, listing, backend="lattice", config=None,
+                stamp=None):
+        fields = {"name": name, "backend": backend, "config": config or {}}
+        if stamp is not None:
+            fields["stamp"] = stamp
+        return self._roundtrip("program", fields, listing.encode("utf-8"))
 
     def store(self, name, array):
         st, chunk = _t_encode(array)

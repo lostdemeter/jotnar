@@ -123,6 +123,87 @@ def main():
     hits = [w for w in ("qwen", "tokenizer", "transformers", "huggingface")
             if re.search(w, body, re.IGNORECASE)]
     check("server-blind", not hits, f"forbidden refs: {hits}")
+    for fn in ("protocol/tcp.py", "protocol/serve_tcp.py"):
+        tsrc = open(os.path.join(ROOT, fn)).read()
+        thits = [w for w in ("qwen", "tokenizer", "transformers", "huggingface")
+                 if re.search(w, tsrc, re.IGNORECASE)]
+        check(f"blind-{fn}", not thits, f"forbidden refs: {thits}")
+
+    # -- TCP: three-way agreement (direct == loopback == sockets) ---------
+    import threading
+    from protocol.tcp import TcpServer, TcpClient, TransportError
+    from protocol.loopback import dumps as _dumps
+    tsv = TcpServer(Server(), port=0, timeout=30)
+    th = threading.Thread(target=tsv.serve_forever, daemon=True)
+    th.start()
+    try:
+        tcl = TcpClient("127.0.0.1", tsv.port, timeout=30)
+        h, _ = tcl.program("m1", CHAIN)
+        check("tcp-program", h.get("ok"), h.get("error"))
+        h, tout = tcl.exec("m1", {"a": A, "b": B, "c": C}, ["OUT"])
+        triple = (np.array_equal(norm(tout["OUT"]), norm(ref["OUT"])) and
+                  np.array_equal(norm(tout["OUT"]), norm(out["OUT"])))
+        check("tcp-three-way", h.get("ok") and triple,
+              "tcp == direct == loopback, bit-exact")
+        _, tout2 = tcl.exec("m1", {"a": A, "b": B, "c": C}, ["OUT"])
+        check("tcp-deterministic",
+              np.array_equal(norm(tout["OUT"]), norm(tout2["OUT"])),
+              "bit-exact re-run over sockets")
+        tcl.close()
+
+        # -- second connection refused loud --------------------------------
+        import socket as _s
+        a = _s.create_connection(("127.0.0.1", tsv.port), timeout=5)
+        a.settimeout(5)
+        from protocol.loopback import loads as _loads
+        a.sendall(_dumps("ping", {"id": 501}))
+        buf = a.recv(4)
+        import struct as _st
+        (n,) = _st.unpack(">I", buf)
+        body = b""
+        while len(body) < n:
+            body += a.recv(n - len(body))
+        ah, _ = _loads(buf + body)
+        check("tcp-ping-a", ah.get("ok"), ah)
+        b = _s.create_connection(("127.0.0.1", tsv.port), timeout=5)
+        b.settimeout(5)
+        b.sendall(_dumps("ping", {"id": 502}))
+        buf = b.recv(4)
+        (n,) = _st.unpack(">I", buf)
+        rbody = b""
+        while len(rbody) < n:
+            rbody += b.recv(n - len(rbody))
+        bh, _ = _loads(buf + rbody)
+        check("tcp-busy-loud", (not bh.get("ok")) and
+              bh.get("error", {}).get("code") == "busy", bh)
+        a.close()
+        b.close()
+
+        # -- stamp provenance refused --------------------------------------
+        tcl2 = TcpClient("127.0.0.1", tsv.port, timeout=30)
+        h, _ = tcl2.program("srv", CHAIN, backend="served",
+                            config={"exe": "/nonexistent/qdec"})
+        check("stamp-missing-refused",
+              (not h.get("ok")) and h["error"]["code"] == "stamp-mismatch",
+              h.get("error"))
+        h, _ = tcl2.program("srv", CHAIN, backend="served",
+                            config={"exe": "/nonexistent/qdec"},
+                            stamp={"smax": 16})
+        check("stamp-exe-missing-refused", not h.get("ok") and
+              h["error"]["code"] == "stamp-mismatch", h.get("error"))
+        tcl2.close()
+
+        # -- blackholed peer fails loud, no hang ----------------------------
+        import time as _t
+        t0 = _t.time()
+        try:
+            TcpClient("127.0.0.1", 1, timeout=2)
+            check("tcp-blackhole", False, "connected to nothing")
+        except TransportError as e:
+            check("tcp-blackhole", _t.time() - t0 < 10, f"{e}"[:80])
+    finally:
+        tsv.stop()
+        tsv.close()
 
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)

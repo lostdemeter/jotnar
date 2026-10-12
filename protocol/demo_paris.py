@@ -9,7 +9,9 @@ Needs: HF snapshot + the REPL workdir binary (/tmp/dec7b512, built by
 README Demo 2; reuse is instant). GPU minutes only on first build.
 KV relay (chat_K/V -> ckP/cvP copies) is client-side file work in the
 shared workdir; every compute step crosses the wire as EXEC/EXEC-OK.
+--tcp serves the same demo over real TCP sockets (default loopback).
 Usage: python3 protocol/demo_paris.py [--n 6]
+       python3 protocol/demo_paris.py --tcp --workdir /tmp/protodec512 --n 6
 """
 import json
 import os
@@ -32,6 +34,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--n", type=int, default=6)
     ap.add_argument("--workdir", default="/tmp/dec7b512")
+    ap.add_argument("--tcp", action="store_true",
+                    help="serve over real TCP sockets (in-process server "
+                    "thread, loopback interface); default is in-process "
+                    "loopback transport")
     args = ap.parse_args()
     S, work = 512, args.workdir
     from chain.qwen7b import load7b, snapshot_ok
@@ -93,15 +99,24 @@ def main():
     live = {"step_x0": 0, "step_pos": 1, "step_am": 2}
 
     from protocol.loopback import Server, Client
-    sv, cl = Server(), None
-    cl = Client(Server())
+    tsv = None
+    if args.tcp:
+        import threading
+        from protocol.tcp import TcpServer, TcpClient
+        tsv = TcpServer(Server(), port=0)
+        th = threading.Thread(target=tsv.serve_forever, daemon=True)
+        th.start()
+        cl = TcpClient("127.0.0.1", tsv.port)
+    else:
+        cl = Client(Server())
     h, _ = cl.ping()
     assert h.get("ok"), h
     h, _ = cl.program("paris", text, backend="served",
                       config={"exe": os.path.join(work, "qdec"),
                               "argv_files": argv, "live": live,
                               "outputs": outputs,
-                              "err_path": os.path.join(work, "paris.err")})
+                              "err_path": os.path.join(work, "paris.err")},
+                      stamp=dict(WANT))
     assert h.get("ok"), h
 
     ids = tok("The capital of France is", return_tensors="pt")["input_ids"][0].tolist()
@@ -135,6 +150,9 @@ def main():
             break
     text = tok.decode(gen, skip_special_tokens=True)
     print(f"paris-demo> {text}", flush=True)
+    if tsv is not None:
+        tsv.stop()
+        tsv.close()
 
 
 if __name__ == "__main__":

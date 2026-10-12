@@ -127,6 +127,10 @@ messages — client builds listings, node executes blind:
 python3 protocol/demo_paris.py --n 6   # needs snapshot + the Demo 2
                                        # smax-512 build above; Paris
                                        # through client→server→client
+python3 protocol/demo_paris.py --tcp --n 6
+                                       # same answer over real TCP
+                                       # sockets (reuses the Demo 2
+                                       # build; --workdir isolates)
 ```
 
 ## Opcode table (54 mnemonics)
