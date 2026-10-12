@@ -421,6 +421,13 @@ def main():
                     n0.close()
                     n1.stop()
                     n1.close()
+                    # DROP kills the stage binaries server-side (stopping
+                    # the TCP front does NOT reap spawned qdec procs).
+                    # Without this they keep ~28GB managed weights and
+                    # the single OOMs at startup (measured, twice).
+                    for _node, _prog in (("s0", "st0"), ("s1", "st1")):
+                        _h, _ = ctl.nodes[_node].drop(_prog)
+                        assert _h.get("ok"), _h.get("error")
                     # single-node reference: pipe-built float single (same
                     # mode as the stages, so bit-exactness is meaningful).
                     # demo_paris argv pattern: 4 live + 56 caches + 196
