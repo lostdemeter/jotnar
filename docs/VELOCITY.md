@@ -4324,3 +4324,23 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   green incl. stale-exact bit-identical both paths. Wall flat at
   S=16 (graphs hid the launches; traffic win needs Phase B:
   device-resident caches, no relay).
+
+## 2026-10-11: Phase B resident caches green (unclocked)
+
+- --resident-cache: KV caches stay on-device (in-place SCATTER by
+  naming, no relay, no per-step files). tests/test_resident.py ALL OK:
+  parity 4.85 rank 1 (== dense), stale-exact bit-identical, generation
+  "Paris. What is" fluent with texts matching relay exactly.
+  S=16 timing wash (37 vs 39ms, graphs hid launches as predicted).
+- Two real bugs found en route (both invisible to dense):
+  1. CONVERT pre-pass shadow bug: F16 mirror snapshot went stale
+  after in-place writes; every post-write read saw pre-scatter
+  state (oneshot zeros 18.31, prefilled 0.05 -- the state dependence
+  explained). Fix: CONVERT refresh after each shadow-write (shadow
+  rule documented in compile_cuda; non-shadowed programs emit zero
+  extra ops). Verified 18.31 -> 0.0000.
+  2. State reload, not memset: warmup/capture mutate shadowed state;
+  emitter reloads startup files before READY (preserves --prefill-dir).
+- Supporting: SCATTER resident-f16 kernel (row rounds once, base
+  round-trips exactly), intermediate-I + BMMV rank-free views already
+  in place from TOPK work.

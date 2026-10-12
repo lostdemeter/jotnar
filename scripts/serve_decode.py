@@ -49,7 +49,7 @@ def parse_bands(spec, n_layers=N_LAYERS):
     return frozenset(out)
 
 
-def build_decode(S, sparse_bands=frozenset(), topk=8):
+def build_decode(S, sparse_bands=frozenset(), topk=8, resident=False):
     from chain.builder import Prog, qwen_dec_full_layer, \
         qwen_dec_sparse_layer
     sparse = bool(sparse_bands)
@@ -75,13 +75,14 @@ def build_decode(S, sparse_bands=frozenset(), topk=8):
                 f"wo{L}", f"wup{L}", f"wgate{L}", f"wdown{L}", f"ln1{L}",
                 f"ln2{L}", "pos", "attmask7", "allrows",
                 S, pre=str(L), bq=f"bq{L}", bk=f"bk{L}", bv=f"bv{L}",
-                topk=topk)
+                topk=topk, resident=resident)
         else:
             x, kf, vf = qwen_dec_full_layer(
                 p, x, f"kP{L}", f"vP{L}", f"wq{L}", f"wk{L}", f"wv{L}",
                 f"wo{L}", f"wup{L}", f"wgate{L}", f"wdown{L}", f"ln1{L}",
                 f"ln2{L}", "pos", "attmask7", "allrows",
-                S, pre=str(L), bq=f"bq{L}", bk=f"bk{L}", bv=f"bv{L}")
+                S, pre=str(L), bq=f"bq{L}", bk=f"bk{L}", bv=f"bv{L}",
+                resident=resident)
         kouts.append(kf)
         vouts.append(vf)
     hn = p.op("RMSNORM", x, "lnf", out="HNf")
@@ -111,6 +112,9 @@ def main():
     ap.add_argument("--sparse-k", type=int, default=8,
                     help="top-k width for sparse bands (build-time, "
                     "graph-safe; sized by flip-rate)")
+    ap.add_argument("--resident-cache", action="store_true",
+                    help="keep KV caches on-device (SCATTER in place, no "
+                    "host relay, no per-step cache files)")
     ap.add_argument("--prefill-dir", default=None,
                     help="skip sequential prefill: copy ckP/cvP caches from "
                     "DIR (serve_prefill.py output) and generate directly")
@@ -170,8 +174,9 @@ def main():
     from chain.emit_cuda import build_cu as _bc
     from chain.serve import ServedExe
     bands = parse_bands(args.sparse_bands)
+    resident = bool(args.resident_cache)
     prog, kouts, vouts = build_decode(S, sparse_bands=bands,
-                                      topk=args.sparse_k)
+                                      topk=args.sparse_k, resident=resident)
     text = prog.text()
     print(f"decode program: "
           f"{sum(1 for ln in text.splitlines() if '=' in ln and not ln.strip().startswith(('IN', 'CONFIG')))} ops",
@@ -192,10 +197,11 @@ def main():
             sample[f"{k}{L}"] = FRef(sh, "float16")
     sample["lnf"] = FRef((HID,), "float16")
     sample["wlog"] = FRef((HID, QWEN7B_VOCAB), "float16")
-    outs = ["LOGITS", "OUT"] + kouts + vouts
-    live = (["x0", "pos", "attmask7"]
-            + [f"kP{L}" for L in range(N_LAYERS)]
-            + [f"vP{L}" for L in range(N_LAYERS)])
+    caches = [f"kP{L}" for L in range(N_LAYERS)] + \
+             [f"vP{L}" for L in range(N_LAYERS)]
+    outs = ["LOGITS", "OUT"] if resident else ["LOGITS", "OUT"] + kouts + vouts
+    live = ["x0", "pos", "attmask7"] if resident else (
+        ["x0", "pos", "attmask7"] + caches)
     t0 = time.perf_counter()
     art = _cp(text, "cuda", sample=sample, outputs=outs,
               basedir=os.path.join(ROOT, "programs"), use_fp16=True,
@@ -203,12 +209,12 @@ def main():
               time_ops=os.environ.get("QWEN_TIME_OPS") == "1")
     print(f"compile graph: {time.perf_counter() - t0:.0f}s", flush=True)
     stream_bins(art, {"allrows": np.arange(S, dtype=np.int64)},
-                set(live))
+                set(live) | set(caches))
     exe = os.path.join(work, "qdec")
     import json as _js
     stamp = {"graph": bool(args.graph), "no_sync": bool(args.no_sync),
              "smax": S, "sparse_bands": args.sparse_bands or "",
-             "sparse_k": int(args.sparse_k)}
+             "sparse_k": int(args.sparse_k), "resident": resident}
     if os.environ.get("QWEN_REUSE_BIN") != "1":
         t0 = time.perf_counter()
         exe = _bc(art["source"], work, name="qdec",
@@ -252,9 +258,10 @@ def main():
     flo = os.path.join(work, "step_lg.bin")
     fou = os.path.join(work, "step_ou.bin")
     kouts_files, vouts_files = [], []
-    for L in range(N_LAYERS):
-        kouts_files.append(os.path.join(work, f"step_K{L}.bin"))
-        vouts_files.append(os.path.join(work, f"step_V{L}.bin"))
+    if not resident:
+        for L in range(N_LAYERS):
+            kouts_files.append(os.path.join(work, f"step_K{L}.bin"))
+            vouts_files.append(os.path.join(work, f"step_V{L}.bin"))
     for L in range(N_LAYERS):
         for tag in ("kP", "vP"):
             fn = lives[f"{tag}{L}"]
@@ -282,14 +289,16 @@ def main():
         dt = time.perf_counter() - t0
         lg = np.fromfile(flo, dtype=np.float32).reshape(1, -1)
         ou = np.fromfile(fou, dtype=np.int64)
-        for L in range(N_LAYERS):
-            # Relay: fp32 compute domain -> fp16 files (standard
-            # KV-cache precision, one rounding per step, no accumulation
-            # beyond the cache itself).
-            for a, b in ((kouts_files[L], lives[f"kP{L}"]),
-                         (vouts_files[L], lives[f"vP{L}"])):
-                np.fromfile(a, dtype=np.float32).astype(
-                    np.float16).tofile(b)
+        if not resident:
+            for L in range(N_LAYERS):
+                # Relay: fp32 compute domain -> fp16 files (standard
+                # KV-cache precision, one rounding per step, no accumulation
+                # beyond the cache itself). Resident mode keeps caches
+                # on-device (SCATTER in place: no relay, no step files).
+                for a, b in ((kouts_files[L], lives[f"kP{L}"]),
+                             (vouts_files[L], lives[f"vP{L}"])):
+                    np.fromfile(a, dtype=np.float32).astype(
+                        np.float16).tofile(b)
         return lg[0], int(ou[0]), dt * 1000
 
     try:

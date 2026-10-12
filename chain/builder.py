@@ -231,7 +231,7 @@ def qwen_layer(p, x, wq, wk, wv, wo, wup, wgate, wdown, ln1, ln2, pos,
 def qwen_dec_full_layer(p, x, Kp, Vp, wq, wk, wv, wo, wup, wgate,
                         wdown, ln1, ln2, pos, attmask7,
                         allrows, S, nh=28, nkv=4, dh=128, pre="",
-                        bq=None, bk=None, bv=None):
+                        bq=None, bk=None, bv=None, resident=False):
     """One full decoder layer for per-layer decode binaries (no new ops).
 
     x is the previous layer's output (1,H) (raw embed at L0); Kp/Vp are
@@ -242,6 +242,12 @@ def qwen_dec_full_layer(p, x, Kp, Vp, wq, wk, wv, wo, wup, wgate,
     Attention runs the bmmv group path; mask is live attmask7.
     K rows are rotated once at insert (never re-rotated); Q rotary
     stays per-head (theta period Dh). Returns (y, Kf, Vf).
+
+    resident=True: Kf/Vf reuse the Kp/Vp stream names (in-place update
+    by naming; GATHER reads v0 before SCATTER writes v1, program order
+    preserved). The serve loop then keeps caches on-device (no relay,
+    no re-read); the emitter reloads state from startup files after
+    capture (serve starts from zeroed-or-prefilled files, loaded once).
     """
     xn = p.op("RMSNORM", x, ln1, out=f"XN{pre}")
     q = p.op("MATMUL", xn, wq, out=f"Q{pre}")
@@ -272,8 +278,10 @@ def qwen_dec_full_layer(p, x, Kp, Vp, wq, wk, wv, wo, wup, wgate,
         kh = p.op("SLICE", k, 1, g * dh, (g + 1) * dh)
         krh = p.op("ROTARY", kh, pos)
         kr = krh if kr is None else p.op("CONCAT", kr, krh, 1)
-    Kfull = p.op("SCATTER", kps, kr, pos, out=f"KF{pre}")
-    Vfull = p.op("SCATTER", vps, v, pos, out=f"VF{pre}")
+    kf = Kp if resident else f"KF{pre}"
+    vf = Vp if resident else f"VF{pre}"
+    Kfull = p.op("SCATTER", kps, kr, pos, out=kf)
+    Vfull = p.op("SCATTER", vps, v, pos, out=vf)
     neg = p.op("BETA", attmask7, out=f"NEG{pre}")
     ctx = None
     for g in range(nkv):
@@ -303,7 +311,8 @@ def qwen_dec_full_layer(p, x, Kp, Vp, wq, wk, wv, wo, wup, wgate,
 def qwen_dec_sparse_layer(p, x, Kp, Vp, wq, wk, wv, wo, wup, wgate,
                           wdown, ln1, ln2, pos, attmask7,
                           allrows, S, nh=28, nkv=4, dh=128, pre="",
-                          bq=None, bk=None, bv=None, topk=8):
+                          bq=None, bk=None, bv=None, topk=8,
+                          resident=False):
     """Sparse-attention decoder layer: same cache discipline as
     qwen_dec_full_layer (K/V files, SCATTER merge on the live position,
     identical Kfull / Vfull outputs -- caches agree bit-for-bit with
@@ -338,8 +347,10 @@ def qwen_dec_sparse_layer(p, x, Kp, Vp, wq, wk, wv, wo, wup, wgate,
         kh = p.op("SLICE", k, 1, g * dh, (g + 1) * dh)
         krh = p.op("ROTARY", kh, pos)
         kr = krh if kr is None else p.op("CONCAT", kr, krh, 1)
-    Kfull = p.op("SCATTER", kps, kr, pos, out=f"KF{pre}")
-    Vfull = p.op("SCATTER", vps, v, pos, out=f"VF{pre}")
+    Kfull = p.op("SCATTER", kps, kr, pos,
+                   out=(Kp if resident else f"KF{pre}"))
+    Vfull = p.op("SCATTER", vps, v, pos,
+                 out=(Vp if resident else f"VF{pre}"))
     neg = p.op("BETA", attmask7, out=f"NEG{pre}")
     ctx = None
     for g in range(nkv):

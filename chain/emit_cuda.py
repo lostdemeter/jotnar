@@ -297,6 +297,26 @@ __global__ void k_scatter_row_f32(const float *b, const float *row,
   int64_t r = i / C, c = i % C;
   o[i] = (r == dst) ? row[c] : b[i];
 }
+__global__ void k_scatter_row_f16(const float *b, const float *row,
+                                const int64_t *idx, __half *o, int64_t C,
+                                int64_t S, int64_t N) {
+  /* Resident-cache form: base/output are fp16 files-upcast domain,
+     update row is fp32 compute domain (rounded once on insert --
+     standard KV-cache precision, same rounding as the host relay).
+     OOB idx poisons o[0] with NaN (loud downstream). */
+  int64_t dst = idx[0];
+  if (dst < 0 || dst >= S) {
+    if (blockIdx.x == 0 && threadIdx.x == 0)
+      o[0] = __float2half(nanf(""));
+    return;
+  }
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= N) return;
+  int64_t r = i / C, c = i % C;
+  /* base holds fp16-origin values (upcast is exact), so the downcast
+     below round-trips exactly; only the inserted row rounds (once). */
+  o[i] = (r == dst) ? __float2half(row[c]) : __float2half(b[i]);
+}
 __global__ void k_tshift_f32(const float *x, float *o, int64_t D, int64_t N) {
   /* One BLOCK per row: parallel max reduction, then shift. */
   int64_t r = (int64_t)blockIdx.x;
@@ -393,6 +413,13 @@ class CUDABackend(Backend):
             if bsh[0] is None or bsh[1] is None:
                 raise NoPattern("cuda SCATTER needs static shapes (v0.1)")
             co = ctx["count"][o]
+            if getattr(self, "use_fp16", False) and o in ctx.get("inputs", []):
+                return (
+                    f"/* {o} = SCATTER({base},{row},{idx}) resident-f16 */\n"
+                    f"k_scatter_row_f16<<<(({co}) + TPB - 1) / TPB, TPB{st}>>>"
+                    f"({base}, {row}, {idx}, {o}, {bsh[1]}, {bsh[0]}, "
+                    f"{co});\n{launch}",
+                    None)
             return (
                 f"/* {o} = SCATTER({base},{row},{idx}) */\n"
                 f"k_scatter_row_f32<<<(({co}) + TPB - 1) / TPB, TPB{st}>>>"
@@ -825,6 +852,12 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
         # positions (matmul either side, GATHER table, RMSNORM weight)
         # get one F32 upcast; consumers rewritten. Weights feeding only
         # matmuls stay F16 (zero extra memory -- the whole point).
+        # SHADOW RULE (resident caches): the front snapshot goes stale
+        # after an in-program write to the input (SCATTER in place);
+        # every op that assigns a mirrored input is followed by a
+        # CONVERT refresh, so later readers see post-write state.
+        # Reads before the first write use the front snapshot (same
+        # values). Non-shadowed programs emit zero refresh ops.
         CAP = {"MATMUL", "BATCH_MATMUL", "GATHER", "RMSNORM"}
         conv = {}
         for _outs, _mn, _fn, _args, _ln, _sg in bound:
@@ -847,6 +880,15 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
                     (_outs, _mn, _fn,
                      [conv.get(_a, _a) for _a in _args], _ln, _sg))
             bound = new_bound
+            refreshed = []
+            for _entry in bound:
+                refreshed.append(_entry)
+                _outs, _mn, _fn, _args, _ln, _sg = _entry
+                for _o in _outs:
+                    if _o in conv:
+                        refreshed.append(([conv[_o]], "CONVERT", None,
+                                          [_o], "convert", None))
+            bound = refreshed
     from chain.emit_c import find_consts as _fc
     consts = _fc((config, inp, bound), inp, streams, sample)
     ids_n = None
@@ -1120,6 +1162,25 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
     if chunked:
         shared_vars += h16_decls
 
+    # Shadowed state: IN streams reassigned as OUTs (in-place update by
+    # naming, e.g. resident KV caches). Warmup/capture runs mutate them,
+    # so they are reloaded from the startup files before READY (serve
+    # starts from loaded files: zeros normally, or --prefill-dir copies;
+    # unconditional zeroing would wipe preloaded caches). One-shot
+    # programs skip this (no reuse).
+    from chain.emit_c import _dim_expr as _de2
+    _shadowed = []
+    _seen_out = set()
+    for _outs, _mn2, _f2, _a2, _l2, _s2 in prog:
+        for _x in _outs:
+            _seen_out.add(_x)
+    for _n in in_names:
+        if _n in _seen_out and _n not in consts:
+            _k, _, _sh = streams[_n]
+            if _k not in ("F", "I"):
+                raise NoPattern(f"cuda: shadowed {_n} kind {_k} (v0.1)")
+            _shadowed.append(_n)
+
     def _tail(use_calls):
         # Assemble main() body tail (h16 + steps + stores + loop).
         # use_calls=False: legacy inline ops (byte-identical to the old
@@ -1162,6 +1223,41 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
             else:
                 t.extend(step_main)
             t.extend(stores)
+            if _shadowed:
+                t.append("  /* state reload: warmup/capture mutated shadowed "
+                         "streams; restore startup files before READY */")
+                for _nm in _shadowed:
+                    _k, _, _sh = streams[_nm]
+                    _i = argidx[_nm]
+                    if _k == "F":
+                        _wrow = _sh[-1]
+                        if _wrow is None:
+                            raise NoPattern(
+                                f"cuda: shadowed {_nm} needs baked width")
+                        _elb_s = 2 if getattr(
+                            be, "use_fp16", False) else 4
+                        t.append(
+                            "  { FILE *f = fopen(argv[%d], \"rb\");" % _i +
+                            " if (!f) return 1;")
+                        t.append(
+                            "    fseek(f, 0, SEEK_END); long %s_B = ftell(f);"
+                            % _nm + " fseek(f, 0, SEEK_SET);")
+                        t.append(
+                            "    %s_N = %s_B / (%d * %d);" %
+                            (_nm, _nm, _wrow, _elb_s))
+                        t.append(
+                            "    if (fread(%s, 1, %s_B, f) != (size_t)%s_B)"
+                            " return 2; fclose(f); }" % (_nm, _nm, _nm))
+                    else:
+                        t.append(
+                            "  { FILE *f = fopen(argv[%d], \"rb\");" % _i +
+                            " if (!f) return 1;")
+                        t.append(
+                            "    fseek(f, 0, SEEK_END); %s_N = ftell(f)/8;"
+                            % _nm + " fseek(f, 0, SEEK_SET);")
+                        t.append(
+                            "    if (fread(%s, 8, %s_N, f) != (size_t)%s_N)"
+                            " return 2; fclose(f); }" % (_nm, _nm, _nm))
             t.append('  printf("READY\\n"); fflush(stdout);')
             t.append("  { char line[16];")
             t.append("    while (fgets(line, sizeof(line), stdin)) {")
