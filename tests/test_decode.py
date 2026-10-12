@@ -71,6 +71,23 @@ def main():
     first = int(dec.argmax())
     frank = int((hf_top > hf_top[first]).sum()) + 1
     check("decode-first-pick-rank", frank <= 8, f"rank {frank}")
+    # determinism regression gate (geometry, not statistics): the same
+    # binary re-run must reproduce logits bit-exactly (cublas workspace;
+    # JOTNAR_NONDET=1 opts out). Catches summation-order regressions.
+    r2 = subprocess.run(
+        [sys.executable, os.path.join(ROOT, "scripts", "serve_decode.py"),
+         PROMPT, "--n", str(N_GEN), "--smax", str(SMAX)],
+        capture_output=True, text=True, cwd=ROOT,
+        env=dict(os.environ, QWEN_WORKDIR="/tmp/dec_det"))
+    check("decode-rerun", r2.returncode == 0, r2.stderr[:200])
+    if r2.returncode == 0:
+        import shutil as _sh
+        _sh.copyfile("/tmp/dec_prefill.npy", "/tmp/dec_prefill_rerun.npy")
+        # NOTE: rerun wrote its own prefill file; first-run copy first
+        dec2 = np.load("/tmp/dec_prefill_rerun.npy")
+        dd = float(np.abs(dec2 - dec).max())
+        check("decode-deterministic", dd == 0.0,
+              f"maxabs={dd:.4f} (bit-exact re-run)")
     print("FAILURES:", FAIL if FAIL else "none")
     sys.exit(1 if FAIL else 0)
 

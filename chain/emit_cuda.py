@@ -1001,6 +1001,7 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
         if streams[o][0] == "F":
             shared_vars.append(f"int64_t {o}_N;")
     shared_vars.append("cublasHandle_t h;")
+    shared_vars.append("void *_jotws;")
     if graph:
         shared_vars += ["cudaStream_t capStream;", "cudaGraph_t capGr;",
                         "cudaGraphExec_t capGrx;"]
@@ -1015,6 +1016,7 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
     else:
         parts.append("\n".join(decls))
     parts.append("static cublasHandle_t h;")
+    parts.append("static void *_jotws = 0;")
     if graph:
         parts.append("static cudaStream_t capStream;")
         parts.append("static cudaGraph_t capGr;")
@@ -1043,6 +1045,24 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
     if time_ops:
         parts.append("  CE(cudaEventCreate(&_te0)); CE(cudaEventCreate(&_te1));")
     parts.append("  BE(cublasSetMathMode(h, CUBLAS_DEFAULT_MATH));")
+    # Deterministic cuBLAS: a managed workspace + cublasSetWorkspace
+    # selects deterministic algorithms (split-K/reduction order fixed).
+    # Without it, summation order varies with allocation state: same
+    # binary differs run-to-run (~0.5 values; top-k amplifies at razor
+    # boundaries into decision flips). Geometry, not statistics: ON by
+    # default; JOTNAR_NONDET=1 restores legacy behavior (debug/perf).
+    # Size via JOTNAR_WS_MB (default 32). Must precede any GEMM call;
+    # host setup only (never inside graph capture).
+    parts.append("  { const char *_nd = getenv(\"JOTNAR_NONDET\");")
+    parts.append("    if (!_nd || !_nd[0] || _nd[0] != '1') {")
+    parts.append("      long _mb = 32;")
+    parts.append("      { const char *_e = getenv(\"JOTNAR_WS_MB\");")
+    parts.append("        if (_e && _e[0]) { long _v = atol(_e);")
+    parts.append("          if (_v >= 1 && _v <= 512) _mb = _v; } }")
+    parts.append("      CE(cudaMallocManaged((void**)&_jotws, "
+                   "(size_t)_mb * 1048576));")
+    parts.append("      BE(cublasSetWorkspace(h, _jotws, "
+                   "(size_t)_mb * 1048576)); } }")
     if graph:
         parts.append("  CE(cudaStreamCreate(&capStream));")
         parts.append("  BE(cublasSetStream(h, capStream));")

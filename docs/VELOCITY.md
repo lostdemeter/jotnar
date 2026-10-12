@@ -4377,3 +4377,16 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
 - Next, ordered: deterministic cublas (workspace in code; kills the
   0.5-noise family) -> fused QKV/up-gate GEMMs -> SDPA middle band.
   Mamba swap under discussion only (see chat): fork-level, not queued.
+
+## 2026-10-12: deterministic cuBLAS — bit-exact runs (unclocked)
+
+- Emitted setup now mallocs a managed workspace (32MB default,
+  JOTNAR_WS_MB override) + cublasSetWorkspace (JOTNAR_NONDET=1 opts
+  out). Kills the 0.5-noise family at the root: same binary 3x +
+  cross-workdir all maxabs=0.0000 (was 0.5-2.5 first-run wobble +
+  razor-amplified flips). Cost ~nothing (40 vs 39ms/tok).
+- tests/test_decode.py gains decode-deterministic (bit-exact re-run
+  leg, cross-workdir). Green: parity 4.88 rank 1 + deterministic 0.0.
+- Standing vs HF 24ms: 39ms at S=16, 40ms at S=128 (resident). The
+  remaining gap is weight traffic + small-kernel time (fused QKV,
+  SDPA middle band still open).
