@@ -382,6 +382,16 @@ def infer_shapes(bound, sample):
                 raise AsmError(f"{where}: ROPE pos len {psh} vs rows "
                                f"{xsh[0]}")
             streams[o] = (xk, xsub, (xsh[0], nh * dh))
+        elif mn == "SWIGLU":
+            # SwiGLU gate: ug (R,2I) + inter literal -> mid (R,I).
+            xk, _, xsh = streams[args[0]]
+            inter = _int_lit(args[1], f"{where} inter")
+            if xk != "F" or len(xsh) != 2:
+                raise AsmError(f"{where}: SWIGLU needs 2D F")
+            if xsh[1] is not None and xsh[1] != 2 * inter:
+                raise AsmError(f"{where}: SWIGLU width {xsh[1]} != 2*I "
+                               f"({inter})")
+            streams[o] = ("F", "double", (xsh[0], inter))
         elif mn == "TRANSPOSE":
             sk, _, ssh = streams[args[0]]
             if sk not in ("F", "T") or len(ssh) != 2:

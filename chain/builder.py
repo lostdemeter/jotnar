@@ -288,10 +288,7 @@ def qwen_dec_full_layer(p, x, Kp, Vp, wqkv, wo, wug, wdown, ln1,
     h1 = p.op("ADD", x, o, out=f"H{pre}")
     hn = p.op("RMSNORM", h1, ln2, out=f"HN{pre}")
     ug = p.op("MATMUL", hn, wug, out=f"UG{pre}")
-    up = p.op("SLICE", ug, 1, 0, inter, out=f"UP{pre}")
-    gate = p.op("SLICE", ug, 1, inter, 2 * inter, out=f"GATE{pre}")
-    gs = p.op("SILU", gate, out=f"GS{pre}")
-    mid = p.op("MUL", gs, up, out=f"MID{pre}")
+    mid = p.op("SWIGLU", ug, inter, out=f"MID{pre}")
     down = p.op("MATMUL", mid, wdown, out=f"DOWN{pre}")
     return p.op("ADD", h1, down, out=f"Y{pre}"), Kfull, Vfull
 
@@ -354,10 +351,7 @@ def qwen_dec_sparse_layer(p, x, Kp, Vp, wqkv, wo, wug, wdown, ln1,
     h1 = p.op("ADD", x, o, out=f"H{pre}")
     hn = p.op("RMSNORM", h1, ln2, out=f"HN{pre}")
     ug = p.op("MATMUL", hn, wug, out=f"UG{pre}")
-    up = p.op("SLICE", ug, 1, 0, inter, out=f"UP{pre}")
-    gate = p.op("SLICE", ug, 1, inter, 2 * inter, out=f"GATE{pre}")
-    gs = p.op("SILU", gate, out=f"GS{pre}")
-    mid = p.op("MUL", gs, up, out=f"MID{pre}")
+    mid = p.op("SWIGLU", ug, inter, out=f"MID{pre}")
     down = p.op("MATMUL", mid, wdown, out=f"DOWN{pre}")
     return p.op("ADD", h1, down, out=f"Y{pre}"), Kfull, Vfull
 

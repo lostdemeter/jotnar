@@ -303,7 +303,7 @@ def main():
                                  [flo, fou] + kouts_files + vouts_files),
                    err_path=os.path.join(work, "dec.err"))
 
-    def step_row(tok_id, n):
+    def step_row(tok_id, n, need_lg=True):
         xx = np.zeros((1, HID), dtype=np.float16)
         xx[0] = E[np.array([tok_id])].astype(np.float16)
         xx.tofile(lives["x0"])
@@ -316,8 +316,12 @@ def main():
         t0 = time.perf_counter()
         sv.step()
         dt = time.perf_counter() - t0
-        lg = np.fromfile(flo, dtype=np.float32).reshape(1, -1)
-        ou = np.fromfile(fou, dtype=np.int64)
+        ou = int(np.fromfile(fou, dtype=np.int64)[0])
+        # Greedy decode takes the on-device ARGMAX (ou); the 152k
+        # logits file is only read when sampling needs it (or for the
+        # prefill parity gate). Ties-first on both sides (stated).
+        lg = np.fromfile(flo, dtype=np.float32).reshape(1, -1)[0] \
+            if need_lg else None
         if not resident:
             for L in range(N_LAYERS):
                 # Relay: fp32 compute domain -> fp16 files (standard
@@ -328,7 +332,7 @@ def main():
                              (vouts_files[L], lives[f"vP{L}"])):
                     np.fromfile(a, dtype=np.float32).astype(
                         np.float16).tofile(b)
-        return lg[0], int(ou[0]), dt * 1000
+        return lg, ou, dt * 1000
 
     try:
         sv.start()
@@ -370,11 +374,12 @@ def main():
         np.save("/tmp/dec_prefill.npy", np.ascontiguousarray(last))
         t0 = time.perf_counter()
         ms = []
+        greedy = args.topk <= 1 and args.temp == 1.0
         for _ in range(args.n):
             if len(seq) >= S:
                 break
-            lg, _, m = step_row(seq[-1], len(seq))
-            seq.append(pick(lg))
+            lg, ou_, m = step_row(seq[-1], len(seq), need_lg=not greedy)
+            seq.append(ou_ if greedy else pick(lg))
             ms.append(m)
         print(f"decode: {sum(ms) / max(1, len(ms)):.0f}ms/tok "
               f"(min {min(ms) if ms else 0:.0f})", flush=True)

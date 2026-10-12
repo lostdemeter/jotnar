@@ -118,7 +118,7 @@ or `OUT = GELU(a)` and compare against `torch.sigmoid` / `torch.gelu`.
 You have now used the generate-your-own-gate loop: propose, run, compare.
 Next: read `programs/xf_block.asm` with §4 open beside it.
 
-## 4. Mnemonic reference (53)
+## 4. Mnemonic reference (54)
 
 Notation: `NAME(in -> out)` + layout sig + contract one-liner + example +
 loud-failure. Arithmetic core (`ADD SUB MUL DIV`) refuses float inputs
@@ -185,6 +185,7 @@ loud-failure. Arithmetic core (`ADD SUB MUL DIV`) refuses float inputs
 - `GATHER(*,I:* -> *)` — row gather by int ids (bounds-checked). Ex: `R = GATHER(table, ids)`.
 - `SCATTER($A,$A,I:* -> $A)` — indexed row update: base (S,C) + row (1,C) + scalar/1-elem int idx -> copy with row idx := row (bounds-checked, fail loud). Out-of-place pure form of the KV-cache merge (same op serves device-resident Phase B later). Ex: `KF = SCATTER(KPS, KR, POS)`. Resident form writes fp16 caches directly (row rounds once, base round-trips exactly).
 - `ATTN($A,$A,$A,I:*,s,s,s,s -> $A)` — fused decode GQA attention: scores + mask + shift + wide-softmax + context in one deterministic kernel (fixed accumulation order; bit-exact across runs/binaries). Single query row; S<=512 (kernel slots). CUDA-only (C/non-FPU refuse loud). Ex: `CTX = ATTN(QR, KF, VF, AM, 28, 4, 128, 16)`.
+- `SWIGLU($A,F:SCALAR -> $A)` — SwiGLU MLP gate over (R,2I): `silu(gate)*up` with gate as second half, one pass (replaces UG-split x2 + SILU + MUL). F-only; deterministic (elementwise). CUDA-only (C/non-FPU refuse loud). Ex: `MID = SWIGLU(UG, 18944)`.
 - `ROPE($A,*,s,s -> $A)` — strided per-head rotary over flat (R,nh*dh): same math as nh per-head ROTARY + CONCAT rejoin, one pass, no copies. F-only; even dh; THETA period must match (mixed head dims refused). CUDA-only (C/non-FPU refuse loud). Ex: `QR = ROPE(Q, POS, 28, 128)`.
 
 **Reductions / pooling / conv:**

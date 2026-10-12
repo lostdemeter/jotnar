@@ -4448,3 +4448,21 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   workspace determinism stands alone, gate-proven). test_emit_c gsl
   failure verified pre-existing (missing system header, stashed HEAD
   fails identically).
+
+## 2026-10-12: SWIGLU opcode + greedy-logits-skip — 27ms (unclocked)
+
+- 54th mnemonic `SWIGLU(ug,inter -> mid)`: UG-split x2 + SILU + MUL
+  in one deterministic kernel. Both decode layers. tests/
+  test_swiglu_op.py ALL OK (torch 1-ulp, CUDA parity 4.77e-07,
+  deterministic). CUDA-only.
+- Greedy path takes the on-device ARGMAX scalar; the 152k logits
+  file is read only when sampling needs it (or prefill parity).
+  Same ties-first semantics both sides.
+- All four serve gates green (parities 4.85-4.88, ranks 1,
+  deterministic 0.0, stale-exact, texts match). Resident 30->27ms,
+  relay 30ms. vs HF 24ms: 1.125x -- essentially tied (this branch).
+- Floor analysis (written, not chased): ~15ms weight traffic (floor
+  without weight changes) + ~12ms across 113 GEMM calls + small
+  kernels. Elementwise fusion beyond SWIGLU prices ~1ms total;
+  tensor-op math measured neutral (bandwidth-bound). Further gains
+  need quantization (weight change) or cublasLt-epilogue scale work.

@@ -29,7 +29,7 @@ ACCESS = {
     # line; the grown-up STATE form -- its own class, not a reduction:
     # time order is load-bearing here, unlike commuting sums)
     "SCAN": "recur", "RESCALE": "elementwise",
-    "ROPE": "elementwise",
+    "ROPE": "elementwise", "SWIGLU": "elementwise",
     # exact moves (no arithmetic)
     "TRANSPOSE": "moves", "RESHAPE2": "moves", "RESHAPE3": "moves",
     "PERMUTE3": "moves", "CONCAT": "moves", "SLICE": "moves",

@@ -700,6 +700,23 @@ def op_rope(vals, config, feeds):
     return np.ascontiguousarray(o.reshape(a.shape))
 
 
+def op_swiglu(vals, config, feeds):
+    """SwiGLU MLP gate: ug (R,2I) -> silu(gate)*up (R,I), gate as the
+    second half. Same math as SLICE/SLICE/SILU/MUL composition (one
+    pass, one read of ug). F-only. Deterministic (elementwise)."""
+    (t,) = vals[:1]
+    inter = _int_arg(vals[1], "SWIGLU inter")
+    if isinstance(t, tuple):
+        raise ValueError("SWIGLU: T triples unbuilt (decode path is F)")
+    a = np.ascontiguousarray(t, dtype=np.float64)
+    if a.ndim != 2 or a.shape[1] != 2 * inter:
+        raise ValueError(f"SWIGLU: needs 2D (R,{2 * inter}), got "
+                         f"{a.shape}")
+    up, gate = a[:, :inter], a[:, inter:]
+    gs = gate / (1.0 + np.exp(-gate))
+    return np.ascontiguousarray(gs * up)
+
+
 def _ordkeys(t):
     """Lattice ordering keys (class, key2) per element, shared by
     ARGMAX and GT (one definition of order, two consumers)."""
@@ -920,6 +937,7 @@ REGISTRY = {
     "GELU": (op_gelu, 1, 1),
     "ROTARY": (op_rotary, 2, 1),
     "ROPE": (op_rope, 4, 1),
+    "SWIGLU": (op_swiglu, 2, 1),
     "BATCH_MATMUL": (op_batch_matmul, 2, 1),
     "BMMV": (op_bmmv, 13, 1),
     "ATTN": (op_attn, 8, 1),
@@ -982,6 +1000,7 @@ SIGS = {
     "GELU": (["$A"], ["$A"]),
     "ROTARY": (["$X", "*"], ["$X"]),
     "ROPE": (["$A", "*", "F:SCALAR", "F:SCALAR"], ["$A"]),
+    "SWIGLU": (["$A", "F:SCALAR"], ["$A"]),
     "BATCH_MATMUL": (["*", "*"], ["*"]),
     "BMMV": (["*", "*"] + ["F:SCALAR"] * 11, ["*"]),
     "ATTN": (["$A", "$A", "$A", "I:*"] + ["F:SCALAR"] * 4, ["$A"]),

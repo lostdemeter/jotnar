@@ -393,6 +393,18 @@ __global__ void k_rope_heads_f32(const float *x, const int64_t *pos, float *o,
   o[r * NH * DH + h * DH + 2 * p] = x0 * c - x1 * s;
   o[r * NH * DH + h * DH + 2 * p + 1] = x0 * s + x1 * c;
 }
+__global__ void k_swiglu_f32(const float *ug, float *o, int64_t I,
+                           int64_t N) {
+  /* SwiGLU gate: mid[i] = silu(ug[I+i]) * ug[i]. One pass over ug
+     (vs split/split/silu/mul: 4 kernels + 3 extra passes).
+     Elementwise => deterministic. */
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= N * I) return;
+  int64_t r = i / I, c = i % I;
+  float g = ug[r * 2 * I + I + c];
+  float s = g / (1.0f + expf(-g));
+  o[i] = s * ug[r * 2 * I + c];
+}
 __global__ void k_tshift_f32(const float *x, float *o, int64_t D, int64_t N) {
   /* One BLOCK per row: parallel max reduction, then shift. */
   int64_t r = (int64_t)blockIdx.x;
@@ -475,6 +487,22 @@ class CUDABackend(Backend):
         else:
             launch = "CE(cudaGetLastError());"
         st = ctx.get("stream", "")
+        if mn == "SWIGLU":
+            from chain.emit_c import _int_lit as _il
+            x = args[0]
+            o = outs[0]
+            inter = _il(args[1], "SWIGLU inter")
+            if S[x][0] != "F" or len(S[x][2]) != 2:
+                raise NoPattern("cuda SWIGLU needs 2D F (v0.1)")
+            if S[x][2][1] is not None and S[x][2][1] != 2 * inter:
+                raise NoPattern("cuda SWIGLU needs static width 2*I "
+                                f"(got {S[x][2]})")
+            co = ctx["count"][o]
+            return (
+                f"/* {o} = SWIGLU({x},{inter}) */\n"
+                f"k_swiglu_f32<<<(({co}) + TPB - 1) / TPB, TPB{st}>>>"
+                f"({x}, {o}, {inter}, {co});\n{launch}",
+                None)
         if mn == "ROPE":
             from chain.emit_c import _int_lit as _il
             x, pos = args[0], args[1]
