@@ -4355,3 +4355,25 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   relay climbs 39->76 (56 file round-trips + numpy fp32->fp16 scale
   with S, plus wider attention). Bigger than the predicted 3-5ms:
   the relay was S-scaling, not fixed cost.
+
+## 2026-10-12: status review — ISA 51, re-engineered yarnball 1.9x at S=128 (unclocked)
+
+- Language: 51 mnemonics (TOPK + SCATTER this round); C 19 / CUDA 21 /
+  non-FPU 19. Backend-internal: parallel-TU builds (94s->7s), hash
+  cache (repeats ->0s), -O1 default, shadow rule (refresh-after-write
+  for in-place inputs), state reload before READY, intermediate-I
+  alloc, rank-free BMMV views, builder tuple-outs. Open ISA gaps:
+  GT-on-CUDA, CALL lowering.
+- Re-engineered yarnball (7B speed fork; assembly stays, decisions
+  grade): dense parity 4.85 rank 1; band map (sharp sparse k=8,
+  broad dense); resident caches 40ms vs relay 76ms at S=128 (1.9x),
+  texts match at S=16. vs HF 24ms: 1.7x left, in weight-floor zone.
+  Sparse stays opt-in (compounding 6.8 explained, not a bug).
+- Since last review: mask floor root-caused + fixed (-1e9; dense
+  5.15->4.85, rank 2->1); TOPK/GATHER-2D/SCATTER gated; band map
+  shipped with stale-exact regression gate; Phase B green + priced.
+  Two firsts: same-decision texts match across paths; stale-immune
+  bit-exact caches.
+- Next, ordered: deterministic cublas (workspace in code; kills the
+  0.5-noise family) -> fused QKV/up-gate GEMMs -> SDPA middle band.
+  Mamba swap under discussion only (see chat): fork-level, not queued.
