@@ -59,9 +59,9 @@ def loads(frame):
     return header, payload
 
 
-# ===== SERVER (model-blind: no tokenizer/model/Qwen imports below) =====
+# ===== SERVER (model-blind half: controller-only imports forbidden below) =====
 # Gate tests/test_protocol.py extracts this section and rejects any
-# qwen/tokenizer/transformers reference. Keep it that way.
+# model-stack reference. Keep it that way.
 
 def _t_decode(stream, payload):
     kind, dtype, shape = stream["kind"], stream.get("dtype", ""), tuple(stream["shape"])
