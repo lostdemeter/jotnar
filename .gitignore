@@ -1,9 +1,7 @@
 # baked/cached artifacts (built locally, never uploaded)
 # NOTE: chain/M.json and chain/CTRL.json are FROZEN doctrine artifacts
 # (calibration + controller fit) and MUST be tracked -- never ignore them.
-# Same for samples/depth/*.npy: gate-depended priors are frozen evidence.
 *.npy
-!samples/depth/*.npy
 # ENGRAM blobs (41MB full float64 dwarfs the repo; regenerable, gated)
 stores/*.npz
 *.pth
@@ -18,12 +16,9 @@ seq*/
 __pycache__/
 *.pyc
 .tmp/
-# ingest scale artifacts (32MB-200MB+ frozen counts; regenerable via scripts/ingest.py + freeze_piece.py)
-data/piece_bigrams.npz
-data/w20k_piece_bigrams.npz
-data/w103full_piece_bigrams.npz
-data_ingest/*_bigrams.npz
-# teacher block ports (119MB/layer float64, regenerable via scripts/freeze_qwen0.py + HF cache; manifests tracked, parity gates compensate)
-data/qwen*_block.npz
-# 7B L0 MLP freeze (972MB int triples, regenerable via scripts/freeze_qwen7b_l0.py + HF snapshot; manifest tracked, teach test falls back to snapshot)
-data/qwen7b_l0_mlp.npz
+# runtime/data artifacts (built locally, never uploaded).
+# data/ holds ONLY the 9 small emission-gate fixtures (see data/README.md);
+# everything else a run needs is rebuilt or downloaded, never committed.
+data/*
+!data/README.md
+data_ingest/
