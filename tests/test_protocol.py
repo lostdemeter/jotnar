@@ -205,6 +205,66 @@ def main():
         tsv.stop()
         tsv.close()
 
+    # -- M3: heterogeneous dispatch (CPU: two lattice nodes) --------------
+    import threading as _th
+    from protocol.loopback import Server as _Server
+    from protocol.pipeline import PipeController, RouteError
+    cpu = TcpServer(_Server(allowed=["lattice"]), port=0, timeout=30)
+    gpu = TcpServer(_Server(allowed=["lattice", "served"]), port=0,
+                    timeout=30)
+    thc, thg = (_th.Thread(target=s.serve_forever, daemon=True)
+                for s in (cpu, gpu))
+    thc.start()
+    thg.start()
+    try:
+        from protocol.tcp import TcpClient as _TcpClient
+        ctl = PipeController()
+        c_caps = ctl.add_node("cpu", _TcpClient("127.0.0.1", cpu.port,
+                                                timeout=30))
+        g_caps = ctl.add_node("gpu", _TcpClient("127.0.0.1", gpu.port,
+                                                timeout=30))
+        check("hetero-advertise", c_caps == ["lattice"] and
+              g_caps == ["lattice", "served"], f"{c_caps} {g_caps}")
+        h = ctl.program_auto("ichain", CHAIN, backend="lattice")
+        check("hetero-route-lattice", ctl.placement("ichain") == ("cpu", "lattice"),
+              ctl.log)
+        h, hout = ctl.exec("ichain", {"a": A, "b": B, "c": C}, ["OUT"])
+        check("hetero-exec-lattice",
+              h.get("ok") and np.array_equal(norm(hout["OUT"]), norm(ref["OUT"])),
+              h.get("error"))
+        try:
+            ctl.program("cpu", "nope", CHAIN, backend="served")
+            check("hetero-node-refuses-served", False, "accepted")
+        except RouteError as e:
+            check("hetero-node-refuses-served", True, str(e)[:70])
+        try:
+            ctl.program_auto("nope2", CHAIN, backend="served")
+            check("hetero-served-to-gpu", False, "accepted without stamp")
+        except RouteError as e:
+            # routed to the gpu node (not cpu), refused there for stamp:
+            # placement proven by where it failed.
+            check("hetero-served-to-gpu", "stamp" in str(e), str(e)[:90])
+        # integer node never saw anything but lattice: its LIST proves it.
+        h, _ = ctl.nodes["cpu"].list()
+        check("hetero-cpu-clean", h.get("programs") == ["ichain"], h)
+        try:
+            ctl2 = PipeController()
+            ctl2.program_auto("x", CHAIN, backend="served")
+            check("hetero-no-served-loud", False, "routed nowhere")
+        except RouteError as e:
+            check("hetero-no-served-loud", True, str(e)[:70])
+        # dead stage fails fast (no GPU needed for the refusal itself).
+        try:
+            _TcpClient("127.0.0.1", 1, timeout=2)
+            check("hetero-dead-stage", False, "connected to nothing")
+        except TransportError:
+            check("hetero-dead-stage", True, "loud, no hang")
+    finally:
+        cpu.stop()
+        cpu.close()
+        gpu.stop()
+        gpu.close()
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

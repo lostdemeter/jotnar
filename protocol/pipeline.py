@@ -39,7 +39,7 @@ class PipeController:
         return self.caps[name]
 
     def route_for(self, backend):
-        for name, caps in self.nodes.items():
+        for name, caps in self.caps.items():
             if backend in caps:
                 return name
         raise RouteError(
