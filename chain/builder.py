@@ -228,10 +228,10 @@ def qwen_layer(p, x, wq, wk, wv, wo, wup, wgate, wdown, ln1, ln2, pos,
     return hn2
 
 
-def qwen_dec_full_layer(p, x, Kp, Vp, wq, wk, wv, wo, wup, wgate,
-                        wdown, ln1, ln2, pos, attmask7,
-                        allrows, S, nh=28, nkv=4, dh=128, pre="",
-                        bq=None, bk=None, bv=None, resident=False):
+def qwen_dec_full_layer(p, x, Kp, Vp, wqkv, wo, wug, wdown, ln1,
+                        ln2, pos, attmask7,
+                        allrows, S, nh=28, nkv=4, dh=128, inter=18944,
+                        pre="", bqkv=None, resident=False):
     """One full decoder layer for per-layer decode binaries (no new ops).
 
     x is the previous layer's output (1,H) (raw embed at L0); Kp/Vp are
@@ -243,6 +243,10 @@ def qwen_dec_full_layer(p, x, Kp, Vp, wq, wk, wv, wo, wup, wgate,
     K rows are rotated once at insert (never re-rotated); Q rotary
     stays per-head (theta period Dh). Returns (y, Kf, Vf).
 
+    Fused GEMMs (same values, concatenated layout): QKV arrive as one
+    (H,H+2*KV) weight + one bias (activation read once, one cublas
+    call); up-gate as one (H,2*I) weight. Split by SLICE after.
+
     resident=True: Kf/Vf reuse the Kp/Vp stream names (in-place update
     by naming; GATHER reads v0 before SCATTER writes v1, program order
     preserved). The serve loop then keeps caches on-device (no relay,
@@ -250,15 +254,14 @@ def qwen_dec_full_layer(p, x, Kp, Vp, wq, wk, wv, wo, wup, wgate,
     capture (serve starts from zeroed-or-prefilled files, loaded once).
     """
     xn = p.op("RMSNORM", x, ln1, out=f"XN{pre}")
-    q = p.op("MATMUL", xn, wq, out=f"Q{pre}")
-    k = p.op("MATMUL", xn, wk, out=f"K{pre}")
-    v = p.op("MATMUL", xn, wv, out=f"V{pre}")
-    if bq is not None:
-        q = p.op("ADD", q, bq, out=f"Q{pre}b")
-    if bk is not None:
-        k = p.op("ADD", k, bk, out=f"K{pre}b")
-    if bv is not None:
-        v = p.op("ADD", v, bv, out=f"V{pre}b")
+    qkv = p.op("MATMUL", xn, wqkv, out=f"QKV{pre}")
+    if bqkv is not None:
+        qkv = p.op("ADD", qkv, bqkv, out=f"QKV{pre}b")
+    hid, kvd = nh * dh, nkv * dh
+    q = p.op("SLICE", qkv, 1, 0, hid, out=f"Q{pre}")
+    k = p.op("SLICE", qkv, 1, hid, hid + kvd, out=f"K{pre}")
+    v = p.op("SLICE", qkv, 1, hid + kvd, hid + 2 * kvd,
+             out=f"V{pre}")
     per = nh // nkv
     kp32 = p.op("GATHER", Kp, allrows, out=f"KP32{pre}")
     vp32 = p.op("GATHER", Vp, allrows, out=f"VP32{pre}")
@@ -300,18 +303,19 @@ def qwen_dec_full_layer(p, x, Kp, Vp, wq, wk, wv, wo, wup, wgate,
     o = p.op("MATMUL", ctx, wo, out=f"O{pre}")
     h1 = p.op("ADD", x, o, out=f"H{pre}")
     hn = p.op("RMSNORM", h1, ln2, out=f"HN{pre}")
-    up = p.op("MATMUL", hn, wup, out=f"UP{pre}")
-    gate = p.op("MATMUL", hn, wgate, out=f"GATE{pre}")
+    ug = p.op("MATMUL", hn, wug, out=f"UG{pre}")
+    up = p.op("SLICE", ug, 1, 0, inter, out=f"UP{pre}")
+    gate = p.op("SLICE", ug, 1, inter, 2 * inter, out=f"GATE{pre}")
     gs = p.op("SILU", gate, out=f"GS{pre}")
     mid = p.op("MUL", gs, up, out=f"MID{pre}")
     down = p.op("MATMUL", mid, wdown, out=f"DOWN{pre}")
     return p.op("ADD", h1, down, out=f"Y{pre}"), Kfull, Vfull
 
 
-def qwen_dec_sparse_layer(p, x, Kp, Vp, wq, wk, wv, wo, wup, wgate,
-                          wdown, ln1, ln2, pos, attmask7,
-                          allrows, S, nh=28, nkv=4, dh=128, pre="",
-                          bq=None, bk=None, bv=None, topk=8,
+def qwen_dec_sparse_layer(p, x, Kp, Vp, wqkv, wo, wug, wdown, ln1,
+                          ln2, pos, attmask7,
+                          allrows, S, nh=28, nkv=4, dh=128, inter=18944,
+                          pre="", bqkv=None, topk=8,
                           resident=False):
     """Sparse-attention decoder layer: same cache discipline as
     qwen_dec_full_layer (K/V files, SCATTER merge on the live position,
@@ -321,17 +325,17 @@ def qwen_dec_sparse_layer(p, x, Kp, Vp, wq, wk, wv, wo, wup, wgate,
     full scores -> mask -> TOPK(k) -> narrow softmax -> GATHER V rows
     -> strided per-head BMMV over k. Same weights, different readout.
     k is build-time (fixed shapes stay graph-safe). Returns (y, Kf, Vf).
+    Fused QKV + up-gate GEMMs (same convention as qwen_dec_full_layer).
     """
     xn = p.op("RMSNORM", x, ln1, out=f"XN{pre}")
-    q = p.op("MATMUL", xn, wq, out=f"Q{pre}")
-    k = p.op("MATMUL", xn, wk, out=f"K{pre}")
-    v = p.op("MATMUL", xn, wv, out=f"V{pre}")
-    if bq is not None:
-        q = p.op("ADD", q, bq, out=f"Q{pre}b")
-    if bk is not None:
-        k = p.op("ADD", k, bk, out=f"K{pre}b")
-    if bv is not None:
-        v = p.op("ADD", v, bv, out=f"V{pre}b")
+    qkv = p.op("MATMUL", xn, wqkv, out=f"QKV{pre}")
+    if bqkv is not None:
+        qkv = p.op("ADD", qkv, bqkv, out=f"QKV{pre}b")
+    hid, kvd = nh * dh, nkv * dh
+    q = p.op("SLICE", qkv, 1, 0, hid, out=f"Q{pre}")
+    k = p.op("SLICE", qkv, 1, hid, hid + kvd, out=f"K{pre}")
+    v = p.op("SLICE", qkv, 1, hid + kvd, hid + 2 * kvd,
+             out=f"V{pre}")
     per = nh // nkv
     kp32 = p.op("GATHER", Kp, allrows, out=f"KP32{pre}")
     vp32 = p.op("GATHER", Vp, allrows, out=f"VP32{pre}")
@@ -372,8 +376,9 @@ def qwen_dec_sparse_layer(p, x, Kp, Vp, wq, wk, wv, wo, wup, wgate,
     o = p.op("MATMUL", ctx, wo, out=f"O{pre}")
     h1 = p.op("ADD", x, o, out=f"H{pre}")
     hn = p.op("RMSNORM", h1, ln2, out=f"HN{pre}")
-    up = p.op("MATMUL", hn, wup, out=f"UP{pre}")
-    gate = p.op("MATMUL", hn, wgate, out=f"GATE{pre}")
+    ug = p.op("MATMUL", hn, wug, out=f"UG{pre}")
+    up = p.op("SLICE", ug, 1, 0, inter, out=f"UP{pre}")
+    gate = p.op("SLICE", ug, 1, inter, 2 * inter, out=f"GATE{pre}")
     gs = p.op("SILU", gate, out=f"GS{pre}")
     mid = p.op("MUL", gs, up, out=f"MID{pre}")
     down = p.op("MATMUL", mid, wdown, out=f"DOWN{pre}")

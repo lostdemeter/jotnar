@@ -36,7 +36,8 @@ def main():
         sys.exit("SKIP (needs snapshot)")
     try:
         want = {"graph": False, "no_sync": False, "smax": S,
-                "sparse_bands": "", "sparse_k": 8}
+                "sparse_bands": "", "sparse_k": 8, "resident": False,
+                "fused_qkv": True}
         import json as _js
         stamp = _js.load(open(os.path.join(work, "build.json")))
     except OSError:
@@ -58,10 +59,10 @@ def main():
     ko_f = [os.path.join(work, f"chat_K{L}.bin") for L in range(N_LAYERS)]
     vo_f = [os.path.join(work, f"chat_V{L}.bin") for L in range(N_LAYERS)]
     # argv follows build_decode's p.inp order exactly (4 + 56 live/caches
-    # + 336 weights + lnf/wlog); the binary argc-checks (rc=9), so drift
-    # fails loud, never silent.
-    wnames = ("wq", "wk", "wv", "wo", "wup", "wgate", "wdown",
-              "ln1", "ln2", "bq", "bk", "bv")
+    # + 196 fused weights + lnf/wlog); the binary argc-checks (rc=9),
+    # so drift fails loud, never silent.
+    wnames = ("wqkv", "wo", "wug", "wdown",
+              "ln1", "ln2", "bqkv")
     argv = [os.path.join(work, f) for f in
             ("step_x0.bin", "step_pos.bin", "step_am.bin",
              "d_allrows.bin")]
@@ -76,7 +77,7 @@ def main():
             argv.append(os.path.join(work, f"d_{k}{L}.bin"))
     argv += [os.path.join(work, "d_lnf.bin"),
              os.path.join(work, "d_wlog.bin")]
-    assert len(argv) == 4 + 56 + 336 + 2, len(argv)
+    assert len(argv) == 4 + 56 + 196 + 2, len(argv)
     sv = ServedExe(os.path.join(work, "qdec"),
                     argv + [flo, fou] + ko_f + vo_f,
                     err_path=os.path.join(work, "chat.err"))

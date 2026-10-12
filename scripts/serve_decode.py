@@ -61,8 +61,8 @@ def build_decode(S, sparse_bands=frozenset(), topk=8, resident=False):
     for L in range(N_LAYERS):
         names += [f"kP{L}", f"vP{L}"]
     for L in range(N_LAYERS):
-        for k in ("wq", "wk", "wv", "wo", "wup", "wgate", "wdown",
-                  "ln1", "ln2", "bq", "bk", "bv"):
+        for k in ("wqkv", "wo", "wug", "wdown",
+                  "ln1", "ln2", "bqkv"):
             names.append(f"{k}{L}")
     names += ["lnf", "wlog"]
     p.inp(*names)
@@ -71,17 +71,17 @@ def build_decode(S, sparse_bands=frozenset(), topk=8, resident=False):
     for L in range(N_LAYERS):
         if L in sparse_bands:
             x, kf, vf = qwen_dec_sparse_layer(
-                p, x, f"kP{L}", f"vP{L}", f"wq{L}", f"wk{L}", f"wv{L}",
-                f"wo{L}", f"wup{L}", f"wgate{L}", f"wdown{L}", f"ln1{L}",
+                p, x, f"kP{L}", f"vP{L}", f"wqkv{L}",
+                f"wo{L}", f"wug{L}", f"wdown{L}", f"ln1{L}",
                 f"ln2{L}", "pos", "attmask7", "allrows",
-                S, pre=str(L), bq=f"bq{L}", bk=f"bk{L}", bv=f"bv{L}",
+                S, pre=str(L), bqkv=f"bqkv{L}",
                 topk=topk, resident=resident)
         else:
             x, kf, vf = qwen_dec_full_layer(
-                p, x, f"kP{L}", f"vP{L}", f"wq{L}", f"wk{L}", f"wv{L}",
-                f"wo{L}", f"wup{L}", f"wgate{L}", f"wdown{L}", f"ln1{L}",
+                p, x, f"kP{L}", f"vP{L}", f"wqkv{L}",
+                f"wo{L}", f"wug{L}", f"wdown{L}", f"ln1{L}",
                 f"ln2{L}", "pos", "attmask7", "allrows",
-                S, pre=str(L), bq=f"bq{L}", bk=f"bk{L}", bv=f"bv{L}",
+                S, pre=str(L), bqkv=f"bqkv{L}",
                 resident=resident)
         kouts.append(kf)
         vouts.append(vf)
@@ -156,6 +156,29 @@ def main():
         return a
 
     def stream_bins(art, extra_frozen, live):
+        # Fused layouts (same values, concatenated data-prep): wqkv =
+        # [wq|wk|wv] (H,H+2KV, wq keeps its 1/sqrt(dh) fold), bqkv the
+        # tiled biases, wug = [wup|wgate] (H,2I).
+        def prep_fused(name):
+            if name.startswith("wqkv"):
+                L = name[4:]
+                parts = [prep_one(*keymap[f"{s}{L}"][::-1])
+                         for s in ("wq", "wk", "wv")]
+                return np.ascontiguousarray(
+                    np.concatenate(parts, axis=1))
+            if name.startswith("bqkv"):
+                L = name[4:]
+                parts = [prep_one(*keymap[f"{s}{L}"][::-1])
+                         for s in ("bq", "bk", "bv")]
+                return np.ascontiguousarray(
+                    np.concatenate(parts, axis=1))
+            if name.startswith("wug"):
+                L = name[3:]
+                parts = [prep_one(*keymap[f"{s}{L}"][::-1])
+                         for s in ("wup", "wgate")]
+                return np.ascontiguousarray(
+                    np.concatenate(parts, axis=1))
+            return None
         for n in art["inputs"]:
             if n in live:
                 continue  # written per step
@@ -164,7 +187,12 @@ def main():
                 continue
             if n in extra_frozen:
                 extra_frozen[n].tofile(fn)
-            elif n in keymap:
+                continue
+            fused = prep_fused(n)
+            if fused is not None:
+                fused.tofile(fn)
+                continue
+            if n in keymap:
                 short, src = keymap[n]
                 prep_one(src, short).tofile(fn)
             else:
@@ -188,10 +216,10 @@ def main():
     for L in range(N_LAYERS):
         sample[f"kP{L}"] = FRef((S, KVD), "float16")
         sample[f"vP{L}"] = FRef((S, KVD), "float16")
-    wshapes = {"wq": (HID, HID), "wk": (HID, KVD), "wv": (HID, KVD),
-               "wo": (HID, HID), "wup": (HID, INTER), "wgate": (HID, INTER),
+    wshapes = {"wqkv": (HID, HID + 2 * KVD), "wo": (HID, HID),
+               "wug": (HID, 2 * INTER),
                "wdown": (INTER, HID), "ln1": (HID,), "ln2": (HID,),
-               "bq": (1, HID), "bk": (1, KVD), "bv": (1, KVD)}
+               "bqkv": (1, HID + 2 * KVD)}
     for L in range(N_LAYERS):
         for k, sh in wshapes.items():
             sample[f"{k}{L}"] = FRef(sh, "float16")
@@ -214,7 +242,8 @@ def main():
     import json as _js
     stamp = {"graph": bool(args.graph), "no_sync": bool(args.no_sync),
              "smax": S, "sparse_bands": args.sparse_bands or "",
-             "sparse_k": int(args.sparse_k), "resident": resident}
+             "sparse_k": int(args.sparse_k), "resident": resident,
+             "fused_qkv": True}
     if os.environ.get("QWEN_REUSE_BIN") != "1":
         t0 = time.perf_counter()
         exe = _bc(art["source"], work, name="qdec",

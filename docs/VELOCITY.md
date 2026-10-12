@@ -4390,3 +4390,19 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
 - Standing vs HF 24ms: 39ms at S=16, 40ms at S=128 (resident). The
   remaining gap is weight traffic + small-kernel time (fused QKV,
   SDPA middle band still open).
+
+## 2026-10-12: fused QKV + up-gate GEMMs green, wall-neutral (unclocked)
+
+- Decode layers now run one QKV GEMM ([wq|wk|wv], wq keeps its
+  1/sqrt(dh) fold) + one up-gate GEMM ([wup|wgate]), split by SLICE
+  after. Same values, concatenated data-prep (d_wqkv/d_bqkv/d_wug);
+  336 -> 196 weight files; no new ops. Prefill (bmmv recompute) and
+  all non-serve programs stay unfused (separate paths, untouched).
+- Gates: decode parity 4.88 rank 1 deterministic 0.0; prefill green;
+  sparse green (parity 9.38 -- moved from 4.85 on GEMM summation
+  order, inside bar, rank 1); resident green (4.85, texts match).
+  S=128 fused-resident 40ms fluent. demo_chat argv updated.
+- Wall-neutral (40 vs 39 S=16, 40 vs 40 S=128): weight traffic bound,
+  as profiled -- fusion cuts calls, not bytes. Banked as structure
+  for the SDPA push, not as speed. Stamp fused_qkv (stale binaries
+  fail loud via argc + stamp).
