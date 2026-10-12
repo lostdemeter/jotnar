@@ -68,9 +68,11 @@ def main():
     argv = [os.path.join(work, f) for f in
             ("step_x0.bin", "step_pos.bin", "step_am.bin",
              "d_allrows.bin")]
-    # kP/vP INTERLEAVED per layer (build_decode order: kP0,vP0,kP1,vP1..;
-    # all-k-then-all-v shifts every layer past 0 into garbage -- gated
-    # by argc only in count, never in order, so this comment is the pin)
+    # kP/vP INPUT caches are interleaved per layer (build_decode order:
+    # kP0,vP0,kP1,vP1..); but PROGRAM outputs come blocked (all-K then
+    # all-V: LOGITS,OUT,KF0..KF27,VF0..VF27) — relay files positionally,
+    # never by the input comment. Order is pinned by argc in count only,
+    # never in kind, so this comment is the pin)
     for L in range(N_LAYERS):
         argv.append(os.path.join(work, f"ckP{L}.bin"))
         argv.append(os.path.join(work, f"cvP{L}.bin"))
