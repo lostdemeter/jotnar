@@ -167,10 +167,6 @@ def main():
         tsv.close()
 
 
-if __name__ == "__main__":
-    main()
-
-
 def pipeline_demo(args):
     """Layer-sharded Paris: one binary per split, f32 H ferried over
     sockets, caches sticky per stage. Plus a hetero kicker (integer
@@ -207,12 +203,15 @@ def pipeline_demo(args):
         srvs.append(s)
     try:
         ctl = PipeController()
-        for i in range(len(cfgs)):
-            ctl.add_node(f"s{i}", TcpClient("127.0.0.1", srvs[i].port))
+        # lattice node first: route_for picks the first advertiser,
+        # so the hetero chain lands on the dedicated integer node
+        # (stages are explicitly addressed, order-independent).
         lat = TcpServer(Server(allowed=["lattice"]), port=0)
         lt = threading.Thread(target=lat.serve_forever, daemon=True)
         lt.start()
         ctl.add_node("lattice", TcpClient("127.0.0.1", lat.port))
+        for i in range(len(cfgs)):
+            ctl.add_node(f"s{i}", TcpClient("127.0.0.1", srvs[i].port))
         try:
             for i, cfg in enumerate(cfgs):
                 argv, nlay = cfg["argv"], cfg["hi"] - cfg["lo"] + 1
@@ -323,3 +322,7 @@ MID = MATMUL(a, b)
 SUM = ADD(MID, c)
 OUT = SILU(SUM)
 """
+
+
+if __name__ == "__main__":
+    main()
