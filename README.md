@@ -36,8 +36,11 @@ listings are future roadmap, not gold — no ball code on main.
 
 ## Requirements
 
-- Python 3.12, `pip install -r requirements.txt` (numpy, Pillow)
-- `phi-core` checkout as a sibling (`../phi-core`) or `PHI_CORE_DIR` set.
+- Python 3.12, `python3 -m pip install -r requirements.txt` (numpy, Pillow).
+  Plain `pip` may not exist; the `python3 -m` form always works.
+- `phi-core` checkout as a **sibling** (`../phi-core`) — required, not
+  optional: the C tests shell to `make -C c_chain`, whose Makefile reads
+  `../../phi-core/c_core`. `PHI_CORE_DIR` covers the Python imports only.
   Pinned working commit: `af4e3c0` (wide fixed-point bridge + softmax gates).
 - `gcc` + `make` (C backend; `test_emit` shells to `make -C c_chain`), `nvcc` +
   a CUDA GPU for the CUDA legs (they SKIP cleanly without).
@@ -48,7 +51,8 @@ listings are future roadmap, not gold — no ball code on main.
 
 ```
 source scripts/cuda_env.sh
-export QWEN_REUSE_BIN=1        # reuse verified binaries across workdirs
+export QWEN_REUSE_BIN=1        # reuse stamp-verified binaries, never rebuild;
+                               # UNSET it when building a fresh workdir (Demo 2)
 python3 tests/test_asm.py tests/test_census.py tests/test_topk.py \
   tests/test_scatter.py tests/test_attn.py tests/test_rope.py \
   tests/test_swiglu_op.py tests/test_gather2d.py tests/test_c.py \
@@ -67,7 +71,7 @@ python3 tests/test_qwen7b_depth.py tests/test_cross_width.py  # scale pins, slow
 (`gsl/gsl_cblas.h`) — pre-existing, environmental, not a code failure.
 Serve tests SKIP without the snapshot/GPU; CUDA legs SKIP without nvcc.
 
-## Demo 1: image pipeline (CPU seconds + one CUDA minute)
+## Demo 1: image pipeline (seconds, all three backends)
 
 ```
 python3 demo_img.py
@@ -84,7 +88,10 @@ nvcc + GPU. Gate: `tests/test_img_demo.py` (synthetic 16x12, no files).
 ```
 python3 scripts/download_qwen7b.py   # pinned snapshot, cache-hit if present (~15 GB)
 python3 scripts/smoke_qwen7b.py      # tokenizer + one weight, no GPU
-QWEN_WORKDIR=/tmp/dec7b512 python3 scripts/serve_decode.py --smax 512 "hello"
+# Build WITHOUT QWEN_REUSE_BIN (the key means reuse-only and refuses a fresh
+# workdir); re-runs and gates may set it once build.json exists:
+env -u QWEN_REUSE_BIN QWEN_WORKDIR=/tmp/dec7b512 \
+  python3 scripts/serve_decode.py --smax 512 "hello"
 python3 scripts/run_demo_chat.py                     # REPL, defaults below
 ```
 
