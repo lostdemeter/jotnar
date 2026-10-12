@@ -179,6 +179,7 @@ class Server:
             try:
                 have = _js.load(open(os.path.join(
                     os.path.dirname(cfg.get("exe", "")), "build.json")))
+                have = have.get("stamp", have)  # pipe builds nest it
             except OSError as e:
                 return self._err(hid, "stamp-mismatch",
                                  f"no build.json next to exe: {e}")
