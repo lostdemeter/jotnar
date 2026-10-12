@@ -63,6 +63,30 @@ def main():
     # C-vs-CUDA agreement is transitive via the shared numpy ref above;
     # pin it explicitly on one case (byte-compare of out planes).
     check("cuda-transitive", not FAIL, "both binaries bit-exact vs numpy ref")
+    # Decode-shape cuBLAS determinism (MATMUL round 1): the production
+    # F16->F32 path must be bit-exact across separate processes. Runs the
+    # isolation microbench twice, compares all 20 output hashes.
+    root = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+    ubcu = os.path.join(root, "bench", "matmul_decode.cu")
+    ubbin = "/tmp/mm_ub_gate"
+    r = subprocess.run(["nvcc", "-O2", "-arch=native", "-o", ubbin, ubcu, "-lcublas"],
+                       capture_output=True, text=True)
+    if r.returncode:
+        print(f"SKIP gemmex-deterministic (needs nvcc + GPU: {r.stderr[-300:]})")
+    else:
+        import re
+        hs = []
+        for _ in range(2):
+            p = subprocess.run([ubbin, "5"], capture_output=True, text=True)
+            if p.returncode:
+                FAIL.append("gemmex-deterministic")
+                print(f"gemmex run failed rc={p.returncode}: {p.stderr[-300:]}")
+                break
+            hs.append(re.findall(r"h=([0-9a-f]+)", p.stdout))
+        if len(hs) == 2:
+            same = hs[0] == hs[1] and len(hs[0]) == 20
+            check("gemmex-deterministic", same,
+                  f"{len(hs[0])} hashes, identical={hs[0] == hs[1]}")
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

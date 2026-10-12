@@ -151,7 +151,7 @@ overloads; missing = loud `NoPattern`, never silent.
 | ISO_BLUR | 1 -> 1 | — | — | — | |
 | LAYERNORM | 3 -> 1 | — | — | — | shares RMSNORM scaffolding |
 | LUMA | 1 -> 1 | — | — | — | |
-| MATMUL | 2 -> 1 | F/BLAS | F/cuBLAS | T | ikj+restrict; GSL hook |
+| MATMUL | 2 -> 1 | F/BLAS | F/cuBLAS | T | ikj+restrict; GSL hook; decode M=1 GEMV ~700-800GB/s eff. (bench/matmul_decode.cu); 113 calls/step = 96.4% of step in-situ; bit-deterministic x-process (workspace-pinned, test_matmul_cuda leg) |
 | MIXDYAD | 3 -> 1 | — | — | — | |
 | MUL | 2 -> 1 | F | F | T | tmul-exact on T |
 | PERMUTE3 | 4 -> 1 | — | — | — | meta (strides, zero code) |
