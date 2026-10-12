@@ -35,7 +35,7 @@ def main():
     if not snapshot_ok():
         sys.exit("SKIP (needs snapshot)")
     try:
-        want = {"graph": False, "no_sync": False, "smax": S,
+        want = {"graph": True, "no_sync": True, "smax": S,
                 "sparse_bands": "", "sparse_k": 8, "resident": False,
                 "fused_qkv": True}
         import json as _js
@@ -44,8 +44,7 @@ def main():
         stamp = {}
     if any(stamp.get(k) != v for k, v in want.items()):
         sys.exit(f"{work} stamp {stamp} != {want}: build the decode "
-                 f"binary there first (serve_decode.py --smax {S} "
-                 f"--sync --no-graph)")
+                 f"binary there first (serve_decode.py --smax {S})")
     sys.path.insert(0, os.path.join(ROOT, "scripts"))
     from chain.serve import ServedExe
     g, tok = load7b()

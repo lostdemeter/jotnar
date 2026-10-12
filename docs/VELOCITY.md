@@ -4466,3 +4466,11 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   kernels. Elementwise fusion beyond SWIGLU prices ~1ms total;
   tensor-op math measured neutral (bandwidth-bound). Further gains
   need quantization (weight change) or cublasLt-epilogue scale work.
+
+## 2026-10-12: REPL runs the re-engineered program (unclocked)
+
+- demo_chat.py tracks the speed fork (fused weight names/counts,
+  graph+nosync stamp, no onehot): verified live, S=512 graph binary
+  (619 ops), greedy chat Q&A ("What is the capital of France?" ->
+  "The capital of France is Paris.", fluent, RC=0). Resident stays
+  out (REPL does host relay by design).
