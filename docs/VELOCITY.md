@@ -4474,3 +4474,35 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   (619 ops), greedy chat Q&A ("What is the capital of France?" ->
   "The capital of France is Paris.", fluent, RC=0). Resident stays
   out (REPL does host relay by design).
+
+## 2026-10-13: MATMUL round 1 — characterization, ~0ms (opt/MATMUL, unclocked)
+
+- Before/after wall: 27ms/tok resident decode, unchanged. This round
+  priced the 96% and found the per-call kernel already at ceiling.
+- Isolation (bench/matmul_decode.cu, new, reusable: fixed LCG inputs,
+  FNV hashes, N-process compare): steady-state production cuBLAS
+  F16->F32 at ~700-800 GB/s effective on all 5 decode shapes
+  (qkv 4608 / oproj 3584 / upgate 37888 / down 18944-K / unembed
+  152064, all M=1 K=3584 + M=16 prefill-context rows). First call
+  pays ~40ms autotune (amortized, not timed). All 20 output hashes
+  bit-identical across 3 processes (workspace-pinned, as production).
+- Priced out, measured: FAST_TF32 variant wall-neutral (same bytes,
+  0.36 vs 0.38ms upgate) with differing values — dead for the 4.85
+  parity bar, not pursued. Hand GEMV (fixed-order, deterministic by
+  construction) 3-9x slower than cuBLAS (unembed 12 vs 1.36ms).
+  F32->F16 activation converts are exact-gated by _need_cvt
+  (weights never convert) — removing any changes values, out of
+  charter. Cross-layer GEMM batching impossible (sequential
+  dependence); epilogue fusion saves only the tiny M=1 C pass.
+- In situ (QWEN_TIME_OPS=1, --sync --no-graph, ratios not absolutes):
+  MATMUL 2967.8/3079.2ms = 96.4% over 1130 calls (113/step);
+  everything else 3.6% combined. Mean 2.6ms/call is event-sync
+  inflation (~8x); ubench steady-state is the true per-call read.
+- Gate: test_matmul_cuda gains gemmex-deterministic (compiles the
+  microbench, 2 processes, 20/20 hashes identical). test_decode
+  re-run for branch-green (deterministic 0.0 holds).
+- Standing: GEMM time ~= weight traffic (14.3GB/token) at ~750GB/s
+  effective + call overhead graphs already capture. Within
+  layout-only/same-values, nothing prices above noise — floor
+  analysis stands (quantization or cublasLt-epilogue scale work next,
+  both value/layout changes, not this round).
