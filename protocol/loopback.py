@@ -329,10 +329,12 @@ class Client:
     def ping(self):
         return self._roundtrip("ping", {})
 
-    def program(self, name, listing, backend="lattice", config=None):
-        return self._roundtrip("program", {"name": name, "backend": backend,
-                                           "config": config or {}},
-                               listing.encode("utf-8"))
+    def program(self, name, listing, backend="lattice", config=None,
+                stamp=None):
+        fields = {"name": name, "backend": backend, "config": config or {}}
+        if stamp is not None:
+            fields["stamp"] = stamp
+        return self._roundtrip("program", fields, listing.encode("utf-8"))
 
     def store(self, name, array):
         st, chunk = _t_encode(array)
