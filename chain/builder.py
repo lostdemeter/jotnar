@@ -239,7 +239,8 @@ def qwen_dec_full_layer(p, x, Kp, Vp, wqkv, wo, wug, wdown, ln1,
     over arange rows); knew/vnew merge by SCATTER on the live position
     (no broadcast MATMUL, no one-hot mask); the host relay only copies
     files (fp32 out -> fp16 file, standard KV-cache precision).
-    Attention runs the bmmv group path; mask is live attmask7.
+    Attention is one fused ATTN kernel (same math as the BMMV-group
+    chain, deterministic). Mask is live attmask7.
     K rows are rotated once at insert (never re-rotated); Q rotary
     stays per-head (theta period Dh). Returns (y, Kf, Vf).
 
@@ -285,21 +286,11 @@ def qwen_dec_full_layer(p, x, Kp, Vp, wqkv, wo, wug, wdown, ln1,
     vf = Vp if resident else f"VF{pre}"
     Kfull = p.op("SCATTER", kps, kr, pos, out=kf)
     Vfull = p.op("SCATTER", vps, v, pos, out=vf)
-    neg = p.op("BETA", attmask7, out=f"NEG{pre}")
-    ctx = None
-    for g in range(nkv):
-        qg = p.op("SLICE", qr, 1, g * per * dh, (g + 1) * per * dh)
-        kg = p.op("SLICE", Kfull, 1, g * dh, (g + 1) * dh)
-        vg = p.op("SLICE", Vfull, 1, g * dh, (g + 1) * dh)
-        sc = p.op("BMMV", qg, kg, per, 1, S, dh,
-                  per * dh, dh, dh, 0, S, S, 1)
-        ms = p.op("SELECT", attmask7, sc, neg)
-        pr = p.op("SOFTMAX_WIDE", p.op("TSHIFT", ms))
-        ch = p.op("BMMV", pr, vg, per, 1, dh, S,
-                  S, S, dh, 0, dh, dh, 0)
-        for j in range(per):
-            chh = p.op("SLICE", ch, 0, j, j + 1)
-            ctx = chh if ctx is None else p.op("CONCAT", ctx, chh, 1)
+    # Fused decode attention: the whole per-group chain (slices, BMMV
+    # scores, mask select, shift, softmax, context BMMV, rejoin) in one
+    # deterministic kernel. Same math; ~80 fewer kernels per layer.
+    ctx = p.op("ATTN", qr, Kfull, Vfull, attmask7, nh, nkv, dh, S,
+               out=f"CTX{pre}")
     o = p.op("MATMUL", ctx, wo, out=f"O{pre}")
     h1 = p.op("ADD", x, o, out=f"H{pre}")
     hn = p.op("RMSNORM", h1, ln2, out=f"HN{pre}")

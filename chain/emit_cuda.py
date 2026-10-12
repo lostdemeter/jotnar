@@ -317,6 +317,63 @@ __global__ void k_scatter_row_f16(const float *b, const float *row,
      below round-trips exactly; only the inserted row rounds (once). */
   o[i] = (r == dst) ? __float2half(row[c]) : __float2half(b[i]);
 }
+__global__ void k_attn_gqa_f32(const float *q, const float *K, const float *V,
+                             const int64_t *m, float *o, int64_t S,
+                             int64_t DH, int64_t NKV, int64_t PER,
+                             int64_t NH, float neg) {
+  /* Fused decode GQA attention: one block per head, TPB threads
+     cooperating. Scores + mask + shift + softmax + context in one pass
+     over K/V (one read each, vs three passes + mask/select/shift
+     kernels). All reductions use fixed tree order => bit-deterministic
+     across runs and binaries (unlike strided cublas). S <= 512
+     (emitter refuses more). Single query row (decode); mask row =
+     head % PER. */
+  int64_t h = (int64_t)blockIdx.x;
+  if (h >= NH) return;
+  int64_t g = h / PER, hr = h % PER;
+  int tx = (int)threadIdx.x;
+  __shared__ float sc[512];
+  __shared__ float red[TPB];
+  /* Phase 1: scores (independent per position, no sync needed). */
+  for (int64_t j = tx; j < S; j += TPB) {
+    double acc = 0.0;
+    for (int64_t d = 0; d < DH; d++)
+      acc += (double)q[h * DH + d] * (double)K[j * NKV * DH + g * DH + d];
+    sc[j] = m[hr * S + j] ? (float)acc : neg;
+  }
+  __syncthreads();
+  /* Phase 2: rowmax (parallel max + tree). */
+  float mx = -1e30f;
+  for (int64_t j = tx; j < S; j += TPB) mx = fmaxf(mx, sc[j]);
+  red[tx] = mx;
+  __syncthreads();
+  for (int s = TPB / 2; s > 0; s >>= 1) {
+    if (tx < s) red[tx] = fmaxf(red[tx], red[tx + s]);
+    __syncthreads();
+  }
+  mx = red[0];
+  /* Phase 3: exp + sum (partial sums + tree; fixed order). */
+  double se = 0.0;
+  for (int64_t j = tx; j < S; j += TPB) {
+    float e = expf(sc[j] - mx);
+    sc[j] = e;
+    se += (double)e;
+  }
+  red[tx] = (float)se;
+  __syncthreads();
+  for (int s = TPB / 2; s > 0; s >>= 1) {
+    if (tx < s) red[tx] += red[tx + s];
+    __syncthreads();
+  }
+  double inv = 1.0 / (double)red[0];
+  /* Phase 4: context (one DH lane per thread, serial over S). */
+  for (int64_t d = tx; d < DH; d += TPB) {
+    double acc = 0.0;
+    for (int64_t j = 0; j < S; j++)
+      acc += (double)sc[j] * (double)V[j * NKV * DH + g * DH + d];
+    o[h * DH + d] = (float)(acc * inv);
+  }
+}
 __global__ void k_tshift_f32(const float *x, float *o, int64_t D, int64_t N) {
   /* One BLOCK per row: parallel max reduction, then shift. */
   int64_t r = (int64_t)blockIdx.x;
@@ -399,6 +456,25 @@ class CUDABackend(Backend):
         else:
             launch = "CE(cudaGetLastError());"
         st = ctx.get("stream", "")
+        if mn == "ATTN":
+            from chain.emit_c import _int_lit as _il
+            qr, kf, vf, m = args[0], args[1], args[2], args[3]
+            o = outs[0]
+            if S[qr][0] != "F" or S[kf][0] != "F" or S[vf][0] != "F" \
+                    or S[m][0] != "I":
+                raise NoPattern("cuda ATTN needs F qr/Kf/Vf + I mask "
+                                "(v0.1)")
+            (nh, nkv, dh, s) = tuple(_il(args[i], "ATTN") for i in range(4, 8))
+            if s > 512:
+                raise NoPattern(f"cuda ATTN S={s} > 512 (kernel slots)")
+            per = nh // nkv
+            neg = float(ctx["config"].get("beta", -1e9))
+            return (
+                f"/* {o} = ATTN({qr},{kf},{vf}) fused decode-GQA */\n"
+                f"k_attn_gqa_f32<<<({nh}), TPB{st}>>>"
+                f"({qr}, {kf}, {vf}, {m}, {o}, {s}, {dh}, {nkv}, "
+                f"{per}, {nh}, {neg!r}f);\n{launch}",
+                None)
         if mn == "SCATTER":
             from chain.emit_c import _dim_expr as _de
             base, row, idx = args

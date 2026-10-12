@@ -632,6 +632,43 @@ def op_scatter(vals, config, feeds):
     return o
 
 
+def op_attn(vals, config, feeds):
+    """Fused decode GQA attention: scores + mask + shift + wide-softmax
+    + context in one pass. Same math as the BMMV-group composition (no
+    temperature: folded into wq at data-prep). F-only (caches/scores
+    are F); mask is I (nonzero = keep). Fixed accumulation order =>
+    deterministic (unlike strided cublas). Returns (R,H) context."""
+    qr, kf, vf = vals[0], vals[1], vals[2]
+    m = np.ascontiguousarray(vals[3])
+    nh = _int_arg(vals[4], "ATTN nh")
+    nkv = _int_arg(vals[5], "ATTN nkv")
+    dh = _int_arg(vals[6], "ATTN dh")
+    s = _int_arg(vals[7], "ATTN S")
+    if nh % nkv != 0:
+        raise ValueError(f"ATTN: nh={nh} not a multiple of nkv={nkv}")
+    per = nh // nkv
+    q = np.ascontiguousarray(qr, dtype=np.float64)
+    K = np.ascontiguousarray(kf, dtype=np.float64).reshape(s, nkv * dh)
+    V = np.ascontiguousarray(vf, dtype=np.float64).reshape(s, nkv * dh)
+    mm = m.reshape(-1, s)
+    if mm.shape[0] != per or q.shape[1] != nh * dh:
+        raise ValueError(f"ATTN: shapes q{q.shape} mask{mm.shape} vs "
+                         f"(R,{nh * dh})/({per},{s})")
+    neg = float(config.get("beta", -1e9))
+    outs = []
+    for g in range(nkv):
+        qg = q[:, g * per * dh:(g + 1) * per * dh].reshape(-1, per, dh)
+        kg = K[:, g * dh:(g + 1) * dh]
+        vg = V[:, g * dh:(g + 1) * dh]
+        sc = qg @ kg.T
+        msv = np.where(mm.reshape(1, per, s) != 0, sc, neg)
+        sh = msv - msv.max(axis=-1, keepdims=True)
+        e = np.exp(sh)
+        pr = e / e.sum(axis=-1, keepdims=True)
+        outs.append((pr @ vg).reshape(q.shape[0], per * dh))
+    return np.ascontiguousarray(np.concatenate(outs, axis=1))
+
+
 def _ordkeys(t):
     """Lattice ordering keys (class, key2) per element, shared by
     ARGMAX and GT (one definition of order, two consumers)."""
@@ -853,6 +890,7 @@ REGISTRY = {
     "ROTARY": (op_rotary, 2, 1),
     "BATCH_MATMUL": (op_batch_matmul, 2, 1),
     "BMMV": (op_bmmv, 13, 1),
+    "ATTN": (op_attn, 8, 1),
     "TRANSPOSE": (op_transpose, 1, 1),
     "GAUSS": (op_gauss, 3, 1),
     "RESHAPE2": (op_reshape2, 3, 1),
@@ -913,6 +951,7 @@ SIGS = {
     "ROTARY": (["$X", "*"], ["$X"]),
     "BATCH_MATMUL": (["*", "*"], ["*"]),
     "BMMV": (["*", "*"] + ["F:SCALAR"] * 11, ["*"]),
+    "ATTN": (["$A", "$A", "$A", "I:*"] + ["F:SCALAR"] * 4, ["$A"]),
     "TRANSPOSE": (["$A"], ["$A^T"]),
     "GAUSS": (["$A", "F:SCALAR", "F:SCALAR"], ["$A"]),
     "RESHAPE2": (["*", "F:SCALAR", "F:SCALAR"], ["*"]),

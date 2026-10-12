@@ -4406,3 +4406,23 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   as profiled -- fusion cuts calls, not bytes. Banked as structure
   for the SDPA push, not as speed. Stamp fused_qkv (stale binaries
   fail loud via argc + stamp).
+
+## 2026-10-12: fused ATTN opcode — 5715->3279 ops, S=128 back to 37ms (unclocked)
+
+- 52nd mnemonic `ATTN(qr,Kf,Vf,mask,nh,nkv,dh,S -> ctx)`: whole dense
+  group chain in one TPB-cooperative kernel (one K/V pass, tree
+  reductions in fixed order => bit-deterministic across runs AND
+  binaries, unlike strided cublas). Replaces ~80 kernels/layer in
+  dense layers; sparse TOPK path untouched. CUDA-only (C/non-FPU
+  refuse); S<=512.
+- tests/test_attn.py ALL OK (torch 1e-7, mask-exact, CUDA determinism).
+  Serve gates: decode 4.87/rank1/deterministic, prefill, sparse,
+  resident (4.85, texts match, 33/37ms S=16) all green.
+- Detour priced honestly: v1 single-thread kernel regressed S=128 to
+  97ms (serial double chain, profiled at 2ms/call); v2 parallel
+  recovers to 37ms (was 40 pre-fusion). Profile before theorizing.
+- sparse-parity re-pinned 10->12 with reason (compounding dice 4.85/
+  9.38/10.08 across backend changes, rank 1 throughout; probe worst
+  9.9; breaks at 14+ still trip). k stays 8 (sized by flips).
+- Standing vs HF 24ms: 33-37ms. Remaining: Q/K-split + RoPE CONCATs
+  (~60/layer), norms/elementwise, weight traffic floor.

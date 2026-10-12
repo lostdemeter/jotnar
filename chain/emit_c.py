@@ -308,6 +308,30 @@ def infer_shapes(bound, sample):
                     (BB - 1) * SB + (rb - 1) * LAB + cb > nb:
                 raise AsmError(f"{where}: BMMV B view overruns base")
             streams[o] = ("F", "double", (BB * M, N_))
+        elif mn == "ATTN":
+            # Fused decode GQA attention: qr (R,H) + Kf/Vf (S,KVD) +
+            # mask (PER,S) + nh/nkv/dh/S literals -> ctx (R,H).
+            # Single-row decode (R==1); R>1 stays with the BMMV path.
+            qk, _, qsh = streams[args[0]]
+            fk, _, fsh = streams[args[1]]
+            vk, _, vsh = streams[args[2]]
+            mk, _, msh = streams[args[3]]
+            if qk != "F" or fk != "F" or vk != "F" or mk != "I":
+                raise AsmError(f"{where}: ATTN needs F qr/Kf/Vf + I mask")
+            (nh, nkv, dh, s) = tuple(
+                _int_lit(args[i], f"{where} ATTN") for i in range(4, 8))
+            if nh % nkv != 0 or len(qsh) != 2 or len(fsh) != 2 \
+                    or len(vsh) != 2 or len(msh) != 2:
+                raise AsmError(f"{where}: ATTN needs 2D streams + "
+                               f"nh%nkv==0, got {qsh} {fsh} {msh}")
+            per = nh // nkv
+            if tuple(qsh) != (1, nh * dh) or tuple(fsh) != (s, nkv * dh) \
+                    or tuple(vsh) != (s, nkv * dh) \
+                    or tuple(msh) != (per, s):
+                raise AsmError(f"{where}: ATTN geometry mismatch: qr{qsh} "
+                               f"Kf{fsh} Vf{vsh} mask{msh} vs "
+                               f"nh={nh} nkv={nkv} dh={dh} S={s}")
+            streams[o] = ("F", "double", (1, nh * dh))
         elif mn == "SLICE":
             sk, ssub, ssh = streams[args[0]]
             ax = _int_lit(args[1], f"{where} axis")
