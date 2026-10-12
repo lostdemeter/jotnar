@@ -92,6 +92,11 @@ def torch_ref_2layer(prompt="The capital of France is Paris, and the capital of 
 
 
 def main():
+    # Single-TU compile: this test builds one .cu from art["source"], but a
+    # >=400-op program takes the chunked path whose bare _N assignments need
+    # the multi-TU extern layout (serve path). Force the legacy single-TU
+    # decls (pre-existing emitter/test mismatch, failed on main too).
+    os.environ["JOTNAR_SINGLE_TU"] = "1"
     from chain.qwen7b import SNAP
     if not os.path.isfile(os.path.join(SNAP, "model.safetensors.index.json")):
         print("SKIP (needs Qwen2-7B-Instruct in local HF cache)")
