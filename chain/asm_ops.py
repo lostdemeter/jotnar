@@ -669,6 +669,37 @@ def op_attn(vals, config, feeds):
     return np.ascontiguousarray(np.concatenate(outs, axis=1))
 
 
+def op_rope(vals, config, feeds):
+    """Per-head rotary over flat (R,nh*dh): reshape to heads, rotate
+    each pair (x[2p],x[2p+1]) by pos[r]*theta[p] with theta from
+    rope_base. Same math as nh per-head ROTARY ops + CONCAT rejoin
+    (one pass, no split/copy). F-only (decode path is F). Returns the
+    same shape. Ties to nothing; deterministic (elementwise)."""
+    (t,) = vals[:1]
+    pos = np.ascontiguousarray(vals[1], dtype=np.int64).reshape(-1)
+    nh = _int_arg(vals[2], "ROPE nh")
+    dh = _int_arg(vals[3], "ROPE dh")
+    if isinstance(t, tuple):
+        raise ValueError("ROPE: T triples unbuilt (decode path is F)")
+    a = np.ascontiguousarray(t, dtype=np.float64)
+    if a.ndim != 2 or a.shape[1] != nh * dh or dh % 2:
+        raise ValueError(f"ROPE: needs 2D (R,{nh * dh}) dh-even, got "
+                         f"{a.shape} dh={dh}")
+    if pos.size != a.shape[0]:
+        raise ValueError(f"ROPE: pos len {pos.size} vs rows {a.shape[0]}")
+    base = float(config.get("rope_base", 10000.0))
+    th = np.power(float(base),
+                  -2.0 * np.arange(dh // 2, dtype=np.float64) / dh)
+    x = a.reshape(a.shape[0], nh, dh)
+    ang = pos.reshape(-1, 1, 1) * th.reshape(1, 1, -1)
+    c, s = np.cos(ang), np.sin(ang)
+    xe, xo = x[..., 0::2], x[..., 1::2]
+    o = np.empty_like(x)
+    o[..., 0::2] = xe * c - xo * s
+    o[..., 1::2] = xe * s + xo * c
+    return np.ascontiguousarray(o.reshape(a.shape))
+
+
 def _ordkeys(t):
     """Lattice ordering keys (class, key2) per element, shared by
     ARGMAX and GT (one definition of order, two consumers)."""
@@ -888,6 +919,7 @@ REGISTRY = {
     "LAYERNORM": (op_layernorm, 3, 1),
     "GELU": (op_gelu, 1, 1),
     "ROTARY": (op_rotary, 2, 1),
+    "ROPE": (op_rope, 4, 1),
     "BATCH_MATMUL": (op_batch_matmul, 2, 1),
     "BMMV": (op_bmmv, 13, 1),
     "ATTN": (op_attn, 8, 1),
@@ -949,6 +981,7 @@ SIGS = {
     "LAYERNORM": (["$X", "$W", "$W"], ["$X"]),
     "GELU": (["$A"], ["$A"]),
     "ROTARY": (["$X", "*"], ["$X"]),
+    "ROPE": (["$A", "*", "F:SCALAR", "F:SCALAR"], ["$A"]),
     "BATCH_MATMUL": (["*", "*"], ["*"]),
     "BMMV": (["*", "*"] + ["F:SCALAR"] * 11, ["*"]),
     "ATTN": (["$A", "$A", "$A", "I:*"] + ["F:SCALAR"] * 4, ["$A"]),

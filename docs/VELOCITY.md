@@ -4426,3 +4426,25 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   9.9; breaks at 14+ still trip). k stays 8 (sized by flips).
 - Standing vs HF 24ms: 33-37ms. Remaining: Q/K-split + RoPE CONCATs
   (~60/layer), norms/elementwise, weight traffic floor.
+
+## 2026-10-12: ROPE opcode + GATHER heap-overflow fix (unclocked)
+
+- 53rd mnemonic `ROPE(x,pos,nh,dh)`: strided per-head rotary, one
+  pass, no split/copy. Replaces ~90 copy ops/layer in both decode
+  layers (3279->703 ops dense). tests/test_rope.py ALL OK (exact vs
+  ref, torch, CUDA parity 2.38e-07, deterministic). CUDA-only.
+- GATHER static-rows fix (the round's real find): 1D ids with baked
+  length now infer static rows. Dynamic-None rows were sized by the
+  global ids_n var (first 1D-I input = pos N=1) while kernels wrote
+  allrows_N=16 rows -- 16x heap overwrite (30KB x 56 gathers) with
+  input-dependent payload. Zero pads = harmless zeros (alloverline
+  green); realistic stale = 7.73/8.46 corruption (dense-relay pads
+  "leak" that was never a mask bug). Verified 8.46 -> 0.0000.
+  Truly-dynamic ids keep the None path (unchanged).
+- Collateral: sparse parity 10.08->4.88 (overflow was compounding
+  there too); S=16 resident/relay 30/30ms (was 33/37). All four serve
+  gates green incl. stale-exact bit-identical + deterministic 0.0.
+- Scaffolding reverted (NaN-poison debug, unproven atomics call --
+  workspace determinism stands alone, gate-proven). test_emit_c gsl
+  failure verified pre-existing (missing system header, stashed HEAD
+  fails identically).

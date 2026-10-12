@@ -188,7 +188,16 @@ def infer_shapes(bound, sample):
         if mn == "GATHER":
             tk, tsub, tsh = streams[args[0]]
             ik, _, ish = streams[args[1]]
-            n = dyn1(ish)
+            # Static 1D ids (arange files, baked length) give static rows:
+            # dynamic-None rows sized downstream by the global ids_n var
+            # (first 1D-I input) OVERFLOW when a second 1D ids stream is
+            # wider (allrows S=16 vs pos N=1: 16x heap overwrite into
+            # neighbors with input-dependent payload). Truly dynamic ids
+            # keep the None path (unchanged behavior).
+            if len(ish) == 1 and ish[0] is not None:
+                n = ish[0]
+            else:
+                n = dyn1(ish)
             if ik != "I" or len(tsh) != 2:
                 raise AsmError(f"{where}: v0.2 needs table (V,C) + int ids")
             if len(ish) == 2:
@@ -355,6 +364,24 @@ def infer_shapes(bound, sample):
                 raise AsmError(f"{where}: ROTARY pos len {psh} vs rows "
                                f"{xsh[0]}")
             streams[o] = (xk, xsub, xsh)
+        elif mn == "ROPE":
+            # Strided per-head rotary over flat (R,nh*dh): same shape out.
+            # Rows R + pos len must agree (static where baked).
+            xk, xsub, xsh = streams[args[0]]
+            pk, _, psh = streams[args[1]]
+            nh = _int_lit(args[2], f"{where} nh")
+            dh = _int_lit(args[3], f"{where} dh")
+            if xk != "F" or len(xsh) != 2 or pk != "I" or len(psh) != 1:
+                raise AsmError(f"{where}: ROPE needs 2D F + 1D I pos")
+            if xsh[1] is not None and xsh[1] != nh * dh:
+                raise AsmError(f"{where}: ROPE width {xsh[1]} != nh*dh "
+                               f"({nh}*{dh})")
+            if dh % 2:
+                raise AsmError(f"{where}: ROPE needs even dh, got {dh}")
+            if xsh[0] is not None and tuple(psh) != (xsh[0],):
+                raise AsmError(f"{where}: ROPE pos len {psh} vs rows "
+                               f"{xsh[0]}")
+            streams[o] = (xk, xsub, (xsh[0], nh * dh))
         elif mn == "TRANSPOSE":
             sk, _, ssh = streams[args[0]]
             if sk not in ("F", "T") or len(ssh) != 2:

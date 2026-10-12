@@ -374,6 +374,25 @@ __global__ void k_attn_gqa_f32(const float *q, const float *K, const float *V,
     o[h * DH + d] = (float)(acc * inv);
   }
 }
+__global__ void k_rope_heads_f32(const float *x, const int64_t *pos, float *o,
+                               int64_t DH, int64_t NH, int64_t N,
+                               const float *theta) {
+  /* Strided per-head rotary over flat (R,NH*DH): head h, pair p reads
+     (x[h*DH+2p], x[h*DH+2p+1]), rotates by pos[r]*theta[p]. Same math
+     as NH per-head ROTARY ops + CONCAT rejoin, one pass, no copies.
+     Elementwise => deterministic. THETA baked (period DH). */
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  int64_t H = DH / 2;
+  if (i >= N * NH * H) return;
+  int64_t r = i / (NH * H), rem = i % (NH * H);
+  int64_t h = rem / H, p = rem % H;
+  float ang = (float)pos[r] * theta[p];
+  float c = cosf(ang), s = sinf(ang);
+  float x0 = x[r * NH * DH + h * DH + 2 * p];
+  float x1 = x[r * NH * DH + h * DH + 2 * p + 1];
+  o[r * NH * DH + h * DH + 2 * p] = x0 * c - x1 * s;
+  o[r * NH * DH + h * DH + 2 * p + 1] = x0 * s + x1 * c;
+}
 __global__ void k_tshift_f32(const float *x, float *o, int64_t D, int64_t N) {
   /* One BLOCK per row: parallel max reduction, then shift. */
   int64_t r = (int64_t)blockIdx.x;
@@ -456,6 +475,24 @@ class CUDABackend(Backend):
         else:
             launch = "CE(cudaGetLastError());"
         st = ctx.get("stream", "")
+        if mn == "ROPE":
+            from chain.emit_c import _int_lit as _il
+            x, pos = args[0], args[1]
+            o = outs[0]
+            nh, dh = _il(args[2], "ROPE nh"), _il(args[3], "ROPE dh")
+            if S[x][0] != "F" or S[pos][0] != "I":
+                raise NoPattern("cuda ROPE needs F + I pos (v0.1)")
+            if S[x][2][1] != nh * dh or dh % 2:
+                raise NoPattern("cuda ROPE needs static width nh*dh, "
+                                f"even dh (got {S[x][2]})")
+            if len(ctx.get("theta", [])) != dh // 2:
+                raise NoPattern("cuda ROPE needs baked THETA period dh "
+                                "(mixed head dims in one program refused)")
+            return (
+                f"/* {o} = ROPE({x},{nh}x{dh}) */\n"
+                f"k_rope_heads_f32<<<(({o}_N * ({nh}) * ({dh} / 2)) + TPB - 1) / TPB, "
+                f"TPB{st}>>>({x}, {pos}, {o}, {dh}, {nh}, {o}_N, THETA);\n{launch}",
+                None)
         if mn == "ATTN":
             from chain.emit_c import _int_lit as _il
             qr, kf, vf, m = args[0], args[1], args[2], args[3]
@@ -987,6 +1024,15 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
     for _on, _mn, _fn, _aa, _ln, _sg in bound:
         if _mn == "ROTARY":
             _d = streams[_aa[0]][2][1]
+            _base = float(config.get("rope_base", 10000.0))
+            _th = np.power(float(_base),
+                           -2.0 * np.arange(_d // 2, dtype=np.float64) / _d)
+            theta = [float(t) for t in _th]
+            break
+        if _mn == "ROPE":
+            # Strided rotary carries dh as a literal (same table form).
+            from chain.emit_c import _int_lit as _il2
+            _d = _il2(_aa[3], "ROPE dh")
             _base = float(config.get("rope_base", 10000.0))
             _th = np.power(float(_base),
                            -2.0 * np.arange(_d // 2, dtype=np.float64) / _d)

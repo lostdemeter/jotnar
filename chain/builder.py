@@ -270,18 +270,11 @@ def qwen_dec_full_layer(p, x, Kp, Vp, wqkv, wo, wug, wdown, ln1,
     # the ids file is frozen arange(S), so rows == S every step).
     kps = p.op("SLICE", kp32, 0, 0, S, out=f"KPS{pre}")
     vps = p.op("SLICE", vp32, 0, 0, S, out=f"VPS{pre}")
-    # NOTE: k is rotated per group below into kr; the knew row merged
-    # must be the ROTATED row: rotate first, then scatter.
-    qr = None
-    for h in range(nh):
-        qh = p.op("SLICE", q, 1, h * dh, (h + 1) * dh)
-        qrh = p.op("ROTARY", qh, pos)
-        qr = qrh if qr is None else p.op("CONCAT", qr, qrh, 1)
-    kr = None
-    for g in range(nkv):
-        kh = p.op("SLICE", k, 1, g * dh, (g + 1) * dh)
-        krh = p.op("ROTARY", kh, pos)
-        kr = krh if kr is None else p.op("CONCAT", kr, krh, 1)
+    # NOTE: k is rotated into kr; the knew row merged must be the
+    # ROTATED row: rotate first, then scatter. One strided ROPE replaces
+    # the per-head split/ROTARY/CONCAT chains (same math, no copies).
+    qr = p.op("ROPE", q, pos, nh, dh, out=f"QR{pre}")
+    kr = p.op("ROPE", k, pos, nkv, dh, out=f"KR{pre}")
     kf = Kp if resident else f"KF{pre}"
     vf = Vp if resident else f"VF{pre}"
     Kfull = p.op("SCATTER", kps, kr, pos, out=kf)
@@ -332,16 +325,9 @@ def qwen_dec_sparse_layer(p, x, Kp, Vp, wqkv, wo, wug, wdown, ln1,
     vp32 = p.op("GATHER", Vp, allrows, out=f"VP32{pre}")
     kps = p.op("SLICE", kp32, 0, 0, S, out=f"KPS{pre}")
     vps = p.op("SLICE", vp32, 0, 0, S, out=f"VPS{pre}")
-    qr = None
-    for h in range(nh):
-        qh = p.op("SLICE", q, 1, h * dh, (h + 1) * dh)
-        qrh = p.op("ROTARY", qh, pos)
-        qr = qrh if qr is None else p.op("CONCAT", qr, qrh, 1)
-    kr = None
-    for g in range(nkv):
-        kh = p.op("SLICE", k, 1, g * dh, (g + 1) * dh)
-        krh = p.op("ROTARY", kh, pos)
-        kr = krh if kr is None else p.op("CONCAT", kr, krh, 1)
+    # Strided ROPE (same math as the per-head chains, no copies).
+    qr = p.op("ROPE", q, pos, nh, dh, out=f"QR{pre}")
+    kr = p.op("ROPE", k, pos, nkv, dh, out=f"KR{pre}")
     Kfull = p.op("SCATTER", kps, kr, pos,
                    out=(Kp if resident else f"KF{pre}"))
     Vfull = p.op("SCATTER", vps, v, pos,
