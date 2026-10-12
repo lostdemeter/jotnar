@@ -66,7 +66,10 @@ def loads(frame):
 def _t_decode(stream, payload):
     kind, dtype, shape = stream["kind"], stream.get("dtype", ""), tuple(stream["shape"])
     if kind == "F":
-        dt = np.float32 if dtype == "f32" else np.float64
+        dt = {"f32": np.float32, "f64": np.float64,
+              "f16": np.float16}.get(dtype)
+        if dt is None:
+            raise ValueError(f"unknown float dtype {dtype}")
         return np.frombuffer(payload, dtype=dt).reshape(shape).copy()
     if kind == "I":
         return np.frombuffer(payload, dtype=np.int64).reshape(shape).copy()
@@ -89,6 +92,9 @@ def _t_encode(value, shape=None):
         s, e, z = (a.astype(np.int64).ravel() for a in arrs)
         return {"kind": "T", "dtype": "i64x3", "shape": shape}, \
             np.concatenate([s, e, z]).tobytes()
+    a = np.ascontiguousarray(value)
+    if a.dtype == np.float16:
+        return {"kind": "F", "dtype": "f16", "shape": list(a.shape)}, a.tobytes()
     a = np.ascontiguousarray(value)
     if a.dtype == np.float32:
         return {"kind": "F", "dtype": "f32", "shape": list(a.shape)}, a.tobytes()
@@ -270,12 +276,13 @@ class Server:
         exe.step()
         outs = {}
         for stream in wanted:
-            meta = cfg["outputs"][stream]
+            meta = cfg["outputs"][stream]  # {idx, dtype, shape}
             raw = open(cfg["argv_files"][meta["idx"]], "rb").read()
-            arr = np.frombuffer(raw, dtype=np.float16).copy()
-            st = {"kind": "F", "dtype": "f16",
-                  "shape": list(meta["shape"])}
-            outs[stream] = (st, arr.astype(np.float32).tobytes())
+            dt = {"f16": np.float16, "f32": np.float32,
+                  "i64": np.int64}[meta["dtype"]]
+            arr = np.frombuffer(raw, dtype=dt).reshape(meta["shape"]).copy()
+            st, chunk = _t_encode(arr)
+            outs[stream] = (st, chunk)
         return outs
 
 # ===== END SERVER =====
@@ -340,7 +347,12 @@ class Client:
                 n *= d
             seg = rp[meta["offset"]:]
             if meta["kind"] == "F":
-                dt = np.float32 if meta["dtype"] in ("f32", "f16") else np.float64
+                if meta["dtype"] == "f16":
+                    outs[stream] = np.frombuffer(
+                        seg, dtype=np.float16,
+                        count=n).reshape(meta["shape"]).astype(np.float32).copy()
+                    continue
+                dt = np.float32 if meta["dtype"] == "f32" else np.float64
                 outs[stream] = np.frombuffer(seg, dtype=dt,
                                              count=n).reshape(meta["shape"]).copy()
             elif meta["kind"] == "I":

@@ -81,7 +81,11 @@ cannot desynchronize). Response: `{ok:true,
 outputs:{stream:{stream, payload}}}` with payloads in § Encodings.
 
 The node executes through existing chain execution only
-(lattice `run_text` or a `ServedExe` step). EXEC is deterministic:
+(lattice `run_text` or a `ServedExe` step). For `backend:"served"`,
+`config` carries `{exe, argv_files, live:{stream:argv-idx},
+outputs:{stream:{idx,dtype,shape}}, err_path}`; inputs are written
+as raw file bytes, outputs read back the same way (dtypes cross the
+wire exactly: f16/f32/i64). EXEC is deterministic:
 same handle + same input bytes = byte-identical output payloads.
 
 ## Stream encodings (§ Encodings)
