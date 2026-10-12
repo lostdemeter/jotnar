@@ -4344,3 +4344,14 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
 - Supporting: SCATTER resident-f16 kernel (row rounds once, base
   round-trips exactly), intermediate-I + BMMV rank-free views already
   in place from TOPK work.
+
+## 2026-10-11: Phase B priced at S=128 — resident 1.9x (unclocked)
+
+- Tourist prompt, 12 toks, smax=128: resident 40ms/tok ("The Louvre
+  is a museum of art and sculpture."), relay 76ms/tok ("The Louvre,
+  the world's most visited museum, and"). Both fluent, texts differ
+  past the razor as usual; decisions hold.
+- Resident wall flat 37->40ms S=16->128 (constant 1-row compute);
+  relay climbs 39->76 (56 file round-trips + numpy fp32->fp16 scale
+  with S, plus wider attention). Bigger than the predicted 3-5ms:
+  the relay was S-scaling, not fixed cost.
