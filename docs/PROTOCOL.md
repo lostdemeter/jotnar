@@ -139,9 +139,51 @@ loud on mismatch (never coerces).
 - `stamp-mismatch` (served PROGRAM only): missing stamp, missing
   `build.json` next to the exe, or any differing stamp key.
 - `busy`: second TCP connection while one is active (refused + closed).
+- `backend-unavailable`: PROGRAM names a backend the node does not
+  offer (advertised in PING; controller routes first, node refuses
+  second).
 - Server bugs (exceptions) return `ok:false, error:{code:"node",
   msg}` with the message — never silent wrong bytes, never a
   bare hang. Timeouts belong to the transport (Milestone 2).
+
+## Multi-node pipeline + backends (Milestone 3)
+
+Each node gets its own workdir + port (no sharing: caches are sticky
+per-node state). The controller holds no KV — only the H boundary
+activation crosses between stages, as f32 bytes (never f16: cache
+rounding would break bit-exactness vs single-node). Stronger: stage
+binaries build in float mode (`use_fp16=False`), because the emitter
+declares every F input `__half` in fp16 mode regardless of sample
+dtype — an f32 boundary file would be misread. f16 weights cast up
+exactly, so values are unchanged and pipeline-vs-single stays
+bit-exact (cross-mode vs production is eps-graded). Cost: 2x weight
+traffic. Honored emitter constraint: build flag, not emitter change.
+
+### Backend advertisement + dispatch
+
+PING reports the backends a node actually offers (configured at
+serve time; default both). Dispatch rule, controller-side: served
+programs route to a node advertising `"served"`, lattice programs
+to one advertising `"lattice"`; no advertisement, no route (loud
+`RouteError`, never misrouted). Nodes also refuse unadvertised
+backends themselves (`backend-unavailable`). Every routing decision
+is logged controller-side so placement is provable after the fact.
+
+### Per-node state
+
+KV caches are sticky files inside each stage's workdir (same relay
+semantics as single-node, per layer subset). Boundaries are
+stateless: H bytes in, H bytes out. Restarting a node loses nothing
+but its caches (re-prefill recovers, exactly like single-node).
+
+### Pipeline errors
+
+A dead stage fails loud mid-EXEC: socket timeout / refused /
+reset surfaces as a transport error at the controller, no partial
+text is ever returned (EXEC is all-or-nothing per stage; the
+controller assembles turns only from ok responses). New code:
+`backend-unavailable` (above). Unchanged: `busy` (one client per
+server still stands — fan-out lives in the controller).
 
 ## Worked minimum
 
