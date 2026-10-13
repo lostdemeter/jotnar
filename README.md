@@ -133,6 +133,22 @@ python3 protocol/demo_paris.py --tcp --n 6
                                        # build; --workdir isolates)
 ```
 
+## Demo 3: pipelined Paris (needs snapshot + two stage builds)
+
+```
+python3 protocol/demo_paris.py --tcp --pipeline 0-13,14-27 --smax 16 --n 2
+```
+
+Shards the 28 decode layers across two socket nodes (0-13 / 14-27);
+the controller ferries the f32 boundary, caches stay sticky per
+stage. First run builds 2 stage binaries (minutes); warm runs are
+seconds per turn. Workdirs live under `/tmp/pipe16` (never the Demo
+2 build). Answer is text-identical to single-node (` Paris.`), and
+the run ends with the hetero kicker: an integer chain placed on the
+lattice node through the same controller. Gate:
+`tests/test_protocol.py` pipe legs (per-layer KV, LOGITS, choice
+bit-exact vs single-node).
+
 ## Opcode table (54 mnemonics)
 
 Kinds: F float, T lattice-triples, I integer. Backends admit per-kind

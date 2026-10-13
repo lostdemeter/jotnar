@@ -4506,3 +4506,40 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   layout-only/same-values, nothing prices above noise — floor
   analysis stands (quantization or cublasLt-epilogue scale work next,
   both value/layout changes, not this round).
+
+## 2026-10-12: protocol M3 — 2-way pipeline + hetero dispatch green
+
+- Built: protocol/pipe_build.py (layer-shard stage binaries via the
+  existing builder/emitter, f32 boundary, stamp reuse incl. output
+  layout), protocol/pipeline.py (controller: PING-advertisement
+  dispatch, logged placement, loud RouteError), backend
+  advertisement + `backend-unavailable` refusal, spec M3 section
+  (routing, sticky per-node caches, f32 boundary + float-mode
+  rationale, pipeline errors). Workdirs /tmp/protogate/* (gate) and
+  /tmp/pipe16 (demo); /tmp/dec7b512 never touched.
+- Gate (tests/test_protocol.py, exit=0):
+  hetero-advertise OK, hetero-route-lattice OK, hetero-exec-lattice
+  OK, hetero-node-refuses-served OK, hetero-served-to-gpu (stamp
+  refusal) OK, hetero-cpu-clean OK, hetero-no-served-loud OK,
+  hetero-dead-stage OK,
+  pipe-full-built OK, pipe-registered OK,
+  pipe-kv-exact OK (per-layer knew bytes pipeline == single),
+  pipe-logits-exact OK, pipe-choice-exact OK (13 vs 13),
+  pipe-paris OK (' Paris.'), pipe-text-match OK, RESULT: ALL OK.
+- Demo: `protocol/demo_paris.py --tcp --pipeline 0-13,14-27
+  --smax 16 --n 2` -> `paris-demo>  Paris.`, hetero kicker
+  `lattice chain ok=True placed=('lattice', 'lattice')`, placement
+  log st0/st1 on s0/s1 served + ichain on lattice.
+- Measurement-caught bugs (3): (1) K/V outputs are BLOCKED
+  (all-K then all-V), not interleaved like inputs — misindex
+  shifted every layer's relay one slot; fixed + layout pinned in
+  stamp. (2) fp16-mode emitter declares every F input `__half`
+  regardless of sample dtype, so an f32 boundary file misreads
+  (NaNs); stages build float mode (f16 weights upcast exactly),
+  cross-mode vs production eps-graded. (3) stages (~28GB) + float
+  single (~28GB) together OOM the box (OOM-killed at 26GB
+  file-rss); gate sequences (DROP reaps stage binaries — server
+  stop alone does not reap qdec) and compares bytes after.
+- Gaps (named, not branched): in-flight long EXEC still
+  serializes the next connection (busy-refusal is between-frame);
+  gate pins 2-way splits only (demo ferry loop generalizes).
