@@ -43,6 +43,97 @@ def norm(v):
     return np.stack(v) if isinstance(v, tuple) else np.asarray(v)
 
 
+def _read_frame(sock):
+    """Read one framed reply from a raw socket. Raises ConnectionError
+    on short reads (peer already gone)."""
+    import struct as _st
+    from protocol.loopback import loads as _loads
+    buf = b""
+    while len(buf) < 4:
+        chunk = sock.recv(4 - len(buf))
+        if not chunk:
+            raise ConnectionError("peer closed before length")
+        buf += chunk
+    (n,) = _st.unpack(">I", buf)
+    body = b""
+    while len(body) < n:
+        chunk = sock.recv(n - len(body))
+        if not chunk:
+            raise ConnectionError("peer closed mid-reply")
+        body += chunk
+    return _loads(buf + body)
+
+
+def _await_served_raw(port, timeout=10, first_id=900):
+    """Acquire a connection the server actually served (busy-race guard).
+
+    Each attempt opens a probe, PINGs, and closes it unless the reply
+    is served -- so no accept can race a preceding close: the returned
+    socket was accepted with a free slot by construction, and every
+    failed probe is closed before the next opens. Returns (sock,
+    header) or (None, None) on bounded-timeout expiry (caller fails
+    loud). Polling, never a bare sleep; strictly stronger than
+    connect-once.
+    """
+    import socket as _s
+    import time as _t
+    from protocol.loopback import dumps as _dumps
+    deadline = _t.time() + timeout
+    attempt = 0
+    while _t.time() < deadline:
+        try:
+            s = _s.create_connection(("127.0.0.1", port), timeout=5)
+            s.settimeout(5)
+        except OSError:
+            attempt += 1
+            continue
+        try:
+            s.sendall(_dumps("ping", {"id": first_id + attempt}))
+            header, _ = _read_frame(s)
+        except (ConnectionError, OSError):
+            try:
+                s.close()
+            except OSError:
+                pass
+            attempt += 1
+            continue
+        if header.get("ok"):
+            return s, header
+        try:
+            s.close()
+        except OSError:
+            pass
+        attempt += 1
+    return None, None
+
+
+def _await_served_client(port, timeout=10):
+    """Same guard for TcpClient users: connect, PING, keep iff served."""
+    import time as _t
+    from protocol.tcp import TcpClient, TransportError
+    deadline = _t.time() + timeout
+    while _t.time() < deadline:
+        try:
+            c = TcpClient("127.0.0.1", port, timeout=30)
+        except (OSError, TransportError):
+            continue
+        try:
+            h, _ = c.ping()
+        except (OSError, TransportError):
+            try:
+                c.close()
+            except OSError:
+                pass
+            continue
+        if h.get("ok"):
+            return c
+        try:
+            c.close()
+        except OSError:
+            pass
+    return None
+
+
 def main():
     from protocol.loopback import Server, Client, dumps, loads, FrameError
     from chain import asm as ASM
@@ -153,23 +244,21 @@ def main():
         tcl.close()
 
         # -- second connection refused loud --------------------------------
+        # Busy-race guard: the server frees tcl's slot asynchronously, so
+        # acquire a provably-served socket (failed probes are closed
+        # first); it becomes `a` with no accept/close gap by construction.
         import socket as _s
-        a = _s.create_connection(("127.0.0.1", tsv.port), timeout=5)
-        a.settimeout(5)
-        from protocol.loopback import loads as _loads
-        a.sendall(_dumps("ping", {"id": 501}))
-        buf = a.recv(4)
-        import struct as _st
-        (n,) = _st.unpack(">I", buf)
-        body = b""
-        while len(body) < n:
-            body += a.recv(n - len(body))
-        ah, _ = _loads(buf + body)
-        check("tcp-ping-a", ah.get("ok"), ah)
+        a, ah = _await_served_raw(tsv.port, timeout=10, first_id=501)
+        check("tcp-ping-a", a is not None and ah.get("ok"), ah)
+        if a is None:
+            print("RESULT:", f"FAILURES: {FAIL}")
+            sys.exit(1)
         b = _s.create_connection(("127.0.0.1", tsv.port), timeout=5)
         b.settimeout(5)
+        from protocol.loopback import loads as _loads
         b.sendall(_dumps("ping", {"id": 502}))
         buf = b.recv(4)
+        import struct as _st
         (n,) = _st.unpack(">I", buf)
         rbody = b""
         while len(rbody) < n:
@@ -181,7 +270,12 @@ def main():
         b.close()
 
         # -- stamp provenance refused --------------------------------------
-        tcl2 = TcpClient("127.0.0.1", tsv.port, timeout=30)
+        # Same race after a.close()/b.close(): acquire a served client.
+        tcl2 = _await_served_client(tsv.port, timeout=10)
+        check("stamp-quiescent", tcl2 is not None, "slot never freed")
+        if tcl2 is None:
+            print("RESULT:", f"FAILURES: {FAIL}")
+            sys.exit(1)
         h, _ = tcl2.program("srv", CHAIN, backend="served",
                             config={"exe": "/nonexistent/qdec"})
         check("stamp-missing-refused",
