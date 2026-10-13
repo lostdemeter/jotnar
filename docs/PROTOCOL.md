@@ -275,6 +275,69 @@ decode stages, prefill binaries, and anything touching weights
 beyond opaque blobs are not remote-work candidates — if a workload
 tempts toward either, that is a scope violation, not an extension.
 
+## Concurrent lanes (Milestone 6: saturate the node)
+
+M5 proved one lane. M6 proves N concurrent EXEC lanes saturating N
+node cores with per-lane bit-exactness intact throughout. Shape: N
+node processes on distinct ports (the busy policy is per-server, so
+multi-process is the legal fan-out; no protocol change), one
+threaded controller driver, one TcpClient per lane-thread (no socket
+sharing). Throughput is the target; per-turn latency does not
+improve and nothing is claimed about it.
+
+### Addressing choice
+
+N program names (`flag0`..`flag7`), each registered on exactly one
+node; lane threads address nodes by program name through the
+unchanged `PipeController.exec`. Justification: programs are cheap
+registrations, the busy policy already scopes concurrency
+per-server, and name→node mapping IS the addressing the controller
+already logs in placement — a pool/round-robin extension would add
+routing state for zero additional provability. Minimal, and the
+placement log proves every byte went where claimed.
+
+### Exactness-under-concurrency contract
+
+Every lane bit-identical vs local `run_text`, every iteration —
+graded so in the gate (75/75 EXECs across the 1/2/4/8 curve). No
+eps anywhere: integer paths, same interpreter, byte-compare.
+
+### Measured scaling (gimli i7-6700 4C/8T, flagship lattice, 5 iters)
+
+```
+lanes  wall   execs  serverCPU  ms/iter  eff-cores  exec/s
+1      2.9s   5      2.9s       570      0.99       1.7
+2      3.9s   10     7.8s       782      1.98       2.5
+4      9.1s   20     36.1s      1805     3.97       2.2
+8      25.3s  40     195.0s     4874     7.71       1.6
+```
+
+All 8 threads pegged (7.71 effective cores) — saturation proven.
+But per-turn cost inflates 8.5x while total throughput peaks at 2
+lanes and 8-lane throughput (1.6/s) ≈ 1-lane (1.7/s). Bend causes,
+each measured: NOT BLAS threading (OMP=1 rerun byte-identical
+numbers), NOT HT pairing (taskset 1-thread-per-physical-core rerun
+identical), NOT tunnel/GIL (per-PID CPU is transport-independent;
+separate processes). What remains: shared-subsystem contention —
+the local many-core control shows 2.8x per-iter inflation at 8
+threads with no core shortage, and 4 pinned distinct physical cores
+still cost 3.2x (L3/DRAM bandwidth on this box). Contention is
+workload × box, not protocol.
+
+### Network split (2.5GbE)
+
+608KB ferry per EXEC (304KB U8 each way) ≈ 2ms on the wire vs
+~570ms+ compute — per-lane network share is noise (<1%); 8-lane
+aggregate still <2% of wall. Offload is placement, not latency.
+
+### Lane setup (out-of-band, as M4)
+
+One lattice node per port (41211-41218), `OMP_NUM_THREADS=1`
+harmless-but-irrelevant (see above), 1:1 CPU pinning optional
+(measured neutral); tunnel one `-L` per port or direct LAN where
+the firewall allows. Gimli stays GPU-less/snapshot-free — a lane
+design needing either is a scope violation.
+
 ## Worked minimum
 
 MATMUL+ADD+SILU chain on lattice: PROGRAM the 3-op listing, STORE
