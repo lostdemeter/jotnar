@@ -255,6 +255,7 @@ def main():
             sys.exit(1)
         b = _s.create_connection(("127.0.0.1", tsv.port), timeout=5)
         b.settimeout(5)
+        from protocol.loopback import loads as _loads
         b.sendall(_dumps("ping", {"id": 502}))
         buf = b.recv(4)
         import struct as _st
