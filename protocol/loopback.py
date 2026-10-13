@@ -72,7 +72,13 @@ def _t_decode(stream, payload):
             raise ValueError(f"unknown float dtype {dtype}")
         return np.frombuffer(payload, dtype=dt).reshape(shape).copy()
     if kind == "I":
-        return np.frombuffer(payload, dtype=np.int64).reshape(shape).copy()
+        dt = {"i64": np.int64, "u8": np.uint8}.get(dtype, None)
+        if dt is None:
+            raise ValueError(f"unknown integer dtype {dtype}")
+        arr = np.frombuffer(payload, dtype=dt).reshape(shape)
+        if arr.nbytes != len(payload):
+            raise ValueError(f"I payload {len(payload)} != shape {shape}")
+        return arr.copy()
     if kind == "T":
         n = 1
         for d in shape:
@@ -100,6 +106,9 @@ def _t_encode(value, shape=None):
         return {"kind": "F", "dtype": "f32", "shape": list(a.shape)}, a.tobytes()
     if a.dtype == np.float64:
         return {"kind": "F", "dtype": "f64", "shape": list(a.shape)}, a.tobytes()
+    if a.dtype == np.uint8:
+        b = np.ascontiguousarray(a, dtype=np.uint8)
+        return {"kind": "I", "dtype": "u8", "shape": list(b.shape)}, b.tobytes()
     if a.dtype == np.int64 or np.issubdtype(a.dtype, np.integer):
         b = np.ascontiguousarray(a, dtype=np.int64)
         return {"kind": "I", "dtype": "i64", "shape": list(b.shape)}, b.tobytes()
@@ -390,7 +399,9 @@ class Client:
                 outs[stream] = np.frombuffer(seg, dtype=dt,
                                              count=n).reshape(meta["shape"]).copy()
             elif meta["kind"] == "I":
-                outs[stream] = np.frombuffer(seg, dtype=np.int64,
+                _dt = {"i64": np.int64, "u8": np.uint8}.get(
+                    meta.get("dtype", "i64"), np.int64)
+                outs[stream] = np.frombuffer(seg, dtype=_dt,
                                              count=n).reshape(meta["shape"]).copy()
             else:
                 w = np.frombuffer(seg, dtype=np.int64, count=3 * n)
