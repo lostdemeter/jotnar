@@ -257,6 +257,7 @@ def main():
         b.settimeout(5)
         b.sendall(_dumps("ping", {"id": 502}))
         buf = b.recv(4)
+        import struct as _st
         (n,) = _st.unpack(">I", buf)
         rbody = b""
         while len(rbody) < n:
