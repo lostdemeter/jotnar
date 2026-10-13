@@ -23,9 +23,13 @@ def main():
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=0)
     ap.add_argument("--timeout", type=float, default=600)
+    ap.add_argument("--backends", default="lattice,served",
+                    help="comma-separated backends to advertise "
+                    "(e.g. lattice for a CPU-only node)")
     args = ap.parse_args()
-    srv = TcpServer(Server(), host=args.host, port=args.port,
-                    timeout=args.timeout)
+    allowed = [b.strip() for b in args.backends.split(",") if b.strip()]
+    srv = TcpServer(Server(allowed=allowed), host=args.host,
+                    port=args.port, timeout=args.timeout)
     print(f"READY {srv.port}", flush=True)
     try:
         srv.serve_forever()
