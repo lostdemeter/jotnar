@@ -240,6 +240,41 @@ Frames are byte-identical either way (loopback codec, M2); the
 tunnel changes latency only. No TLS/auth on the wire (deferred,
 stated plainly since M2).
 
+## Remote work (Milestone 5: genuine programs on CPU nodes)
+
+M4 proved remote *execution* (microsecond chain, 20ms round-trips).
+M5 proves remote *work*: the flagship image pipeline served on a
+CPU-only lattice node, full-program output bytes bit-identical vs
+local `run_text` every iteration, gimli-side CPU jiffies for its
+server PID across the run. Measured: 10/10 identical, +555 jiffies
+(5.5 CPU-s on gimli) over 5.6s wall (563ms/iter, of which 555ms is
+server CPU) — the needle moves because the program is real.
+
+### Remote-work shape
+
+Same messages, bigger payloads: PROGRAM once, then one EXEC per
+frame (304KB U8 in, 304KB U8 out at 288x352). Integer paths are
+bit-exact across machines by contract (same interpreter, same
+fixed-point math, no floats anywhere in the path) — grade them so:
+byte-compare, never eps. The gate (`tests/test_m5work.py`) loops 10
+EXECs and asserts every output identical, plus a jiffies-moved
+bar (>1 CPU-s) so a silently-local run cannot pass.
+
+### Wire note: U8 streams
+
+Kind I carries `dtype:i64` (ids, masks, counts) and `dtype:u8`
+(raw pixel/byte planes, shape-preserving). U8 decodes to uint8, not
+int64 — decoding pixels as int64 is an 8x misread (caught live:
+38016 elements vs 288x352x3). Same-codec rule still holds (M2).
+
+### What stays CPU-only by hardware
+
+Lattice nodes serve integer listings only (`served`/CUDA stays
+local-only: no GPU, no snapshot, no torch on the node, ever). GPU
+decode stages, prefill binaries, and anything touching weights
+beyond opaque blobs are not remote-work candidates — if a workload
+tempts toward either, that is a scope violation, not an extension.
+
 ## Worked minimum
 
 MATMUL+ADD+SILU chain on lattice: PROGRAM the 3-op listing, STORE
