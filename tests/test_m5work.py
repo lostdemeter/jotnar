@@ -58,12 +58,16 @@ def ssh(target, cmd, timeout=30):
 
 
 def server_pid(target):
-    """gimli-side python node PID (pgrep the venv binary, never the
-    wrapper bash -- that match cost M5 an hour)."""
-    r = ssh(target, ["pgrep", "-f", "jotnar-node/bin/python"])
+    """gimli-side python node PID. pgrep -f matches the wrapper bash too
+    (its cmdline embeds the python command), so list full command lines
+    and skip `bash -c` -- sampling the wrapper reads 0 jiffies forever."""
+    r = ssh(target, ["pgrep", "-af", "jotnar-node/bin/python"])
     for ln in r.stdout.splitlines():
-        if "pgrep" not in ln and ln.strip().isdigit():
-            return ln.strip()
+        if "bash -c" in ln:
+            continue
+        pid = ln.strip().split(None, 1)[0]
+        if pid.isdigit():
+            return pid
     return ""
 
 
