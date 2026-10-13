@@ -185,6 +185,61 @@ controller assembles turns only from ok responses). New code:
 `backend-unavailable` (above). Unchanged: `busy` (one client per
 server still stands — fan-out lives in the controller).
 
+## Remote nodes (Milestone 4: two-machine serving)
+
+The node is the calculator, the controller is the brain. A remote
+node holds zero model knowledge — no snapshot, no tokenizer, no
+architecture, no GPU. It receives opaque bytes, executes opcodes on
+typed streams, returns bytes. Structure lives controller-side as
+programs; geometry lives node-side as blobs. Proven: a CPU-only
+lattice node on a second machine serves EXECs bit-exact vs local
+`run_text`, placed by the unmodified PipeController (TcpClient
+already takes a host — the node runs unchanged).
+
+### Out-of-band node setup
+
+No BUILD message exists (M2 decision), so setup is out-of-band,
+once per machine — `protocol/serve_tcp.py --backends lattice` plus
+the smallest footprint that runs: `protocol/` + whatever `chain`
+imports the node server needs + numpy (160KB tarball + venv; no
+snapshot, no toolchain, no torch, ever):
+
+```
+python3 -m venv ~/jotnar-node && ~/jotnar-node/bin/pip install numpy
+# copy protocol/ chain/ phi_core/ into ~/jotnar-m4 (no data/, no weights)
+cd ~/jotnar-m4 && ~/jotnar-node/bin/python protocol/serve_tcp.py \
+  --host 0.0.0.0 --port 41201 --backends lattice
+```
+
+Controller side: `JOTNAR_REMOTE_HOST=<host> python3
+tests/test_remote.py` (host from env, never hardcoded; default
+`gimli`). Port 41201 is convention, not protocol.
+
+### Timeout guidance
+
+The 600s socket defaults stand on LAN unchanged — measured, not
+tuned: lattice EXEC round-trips complete in seconds; the only
+failures seen were refusal/timeout-class (firewall, dead port),
+which the defaults surface loudly. Change them only with a
+measured reason (slower links, bigger programs).
+
+### Transports that cross a firewall
+
+Direct LAN TCP is preferred. If the node's firewall blocks inbound
+(the proof ran into exactly this: gimli answers ping+ssh, refuses
+other inbound ports, no root to change it), an SSH tunnel carries
+identical frames with no code change:
+
+```
+ssh -fN -L 41201:127.0.0.1:41201 <node>
+JOTNAR_REMOTE_HOST=127.0.0.1 JOTNAR_REMOTE_SSH=<alias> \
+  python3 tests/test_remote.py
+```
+
+Frames are byte-identical either way (loopback codec, M2); the
+tunnel changes latency only. No TLS/auth on the wire (deferred,
+stated plainly since M2).
+
 ## Worked minimum
 
 MATMUL+ADD+SILU chain on lattice: PROGRAM the 3-op listing, STORE
