@@ -4518,9 +4518,10 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
   rationale, pipeline errors). Workdirs /tmp/protogate/* (gate) and
   /tmp/pipe16 (demo); /tmp/dec7b512 never touched.
 - Gate (tests/test_protocol.py, exit=0):
-  hetero-advertise/advertise OK, route-lattice OK, exec-lattice OK,
-  node-refuses-served OK, served-to-gpu (stamp refusal) OK,
-  cpu-clean OK, no-served-loud OK, dead-stage OK,
+  hetero-advertise OK, hetero-route-lattice OK, hetero-exec-lattice
+  OK, hetero-node-refuses-served OK, hetero-served-to-gpu (stamp
+  refusal) OK, hetero-cpu-clean OK, hetero-no-served-loud OK,
+  hetero-dead-stage OK,
   pipe-full-built OK, pipe-registered OK,
   pipe-kv-exact OK (per-layer knew bytes pipeline == single),
   pipe-logits-exact OK, pipe-choice-exact OK (13 vs 13),
