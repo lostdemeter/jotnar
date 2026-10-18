@@ -24,7 +24,7 @@ FIXDIR = os.path.join(ROOT, "samples", "marigold")
 OUTBASE = os.path.expanduser("~/student_runs")
 
 
-def load_frame(name, patch=1):
+def load_frame(name, patch=1, multi=False):
     import numpy as np
     from PIL import Image
     man = json.load(open(os.path.join(FIXDIR, "teacher_manifest.json")))
@@ -34,8 +34,26 @@ def load_frame(name, patch=1):
         os.path.join(FIXDIR, "inputs", name + ".*")))
     im = np.asarray(Image.open(cand[0]).convert("RGB")
                     .resize((t.shape[1], t.shape[0]))) / 255.0
-    if patch == 1:
+    if patch == 1 and not multi:
         return im.reshape(-1, 3), im, t.reshape(-1)
+    if multi:
+        Hh, Ww, _ = im.shape
+        p = np.pad(im, ((16, 16), (16, 16), (0, 0)), mode="edge")
+        parts = []
+        yy, xx = np.mgrid[0:Hh, 0:Ww]
+        # dense 3x3 (field 3)
+        d3 = np.pad(im, ((1, 1), (1, 1), (0, 0)), mode="edge")
+        parts.append(np.concatenate(
+            [d3[i:i + Hh, j:j + Ww, :] for i in range(3) for j in range(3)],
+            axis=-1))
+        # stride-4 over 17x17 (field 17), stride-8 over 33x33 (field 33)
+        for stride, half in ((4, 8), (8, 16)):
+            off = 16 + np.arange(-half, half + 1, stride)
+            grid = np.concatenate(
+                [p[yy + dy, xx + dx, :] for dy in off for dx in off], axis=-1)
+            parts.append(grid)
+        return np.concatenate(parts, axis=-1).reshape(-1, 177), im, \
+            t.reshape(-1)
     # 3x3 neighborhood im2col (edge-replicated): deployed form is
     # GATHER-neighborhood + MATMUL, both in-table (GATHER F, MATMUL F).
     # Stays feedforward-dense; no new opcodes, no norms, no conv.
@@ -58,6 +76,15 @@ def main():
                     default=["geo_webcam_0_combined", "geo_webcam_1_combined"])
     ap.add_argument("--patch", type=int, default=1,
                     help="1 = per-pixel RGB(3); 3 = 3x3 neighborhood (27)")
+    ap.add_argument("--multi", action="store_true",
+                    help="multi-scale context: dense 3x3 (27) + stride-4 "
+                    "17x17 (75) + stride-8 33x33 (75) = 177 dims, 33px "
+                    "field covering the 10-60px detail scale from the "
+                    "Phase-2 diagnosis (texture/nonplanar worst). "
+                    "Deployed form: GATHER neighborhoods + CONCAT + "
+                    "MATMUL/ADD/SILU MLP -- all emitted CUDA/F patterns "
+                    "(GATHER F, CONCAT F, MATMUL F, ADD F, SILU F). "
+                    "No norms, no conv, no new opcodes.")
     args = ap.parse_args()
 
     import numpy as np
@@ -69,7 +96,7 @@ def main():
 
     Xtr, Ttr = [], []
     for n in args.train:
-        x, _, t = load_frame(n, args.patch)
+        x, _, t = load_frame(n, args.patch, args.multi)
         Xtr.append(x)
         Ttr.append(t)
     Xtr = torch.tensor(np.concatenate(Xtr), dtype=torch.float32, device=device)
@@ -80,7 +107,7 @@ def main():
     print(f"train px: {Xs.shape[0]} (stride-7 of {Xtr.shape[0]})", flush=True)
 
     W = args.width
-    Din = 27 if args.patch == 3 else 3
+    Din = 177 if args.multi else (27 if args.patch == 3 else 3)
     net = torch.nn.Sequential(
         torch.nn.Linear(Din, W), torch.nn.SiLU(),
         torch.nn.Linear(W, W), torch.nn.SiLU(),
@@ -112,7 +139,7 @@ def main():
     import test_strata_marigold as H
     man = json.load(open(os.path.join(FIXDIR, "teacher_manifest.json")))
     rep = {"tag": args.tag, "width": W, "steps": args.steps, "lr": args.lr,
-           "seed": args.seed, "patch": args.patch,
+           "seed": args.seed, "patch": args.patch, "multi": args.multi,
            "train": args.train, "heldout": args.heldout,
            "torch": torch.__version__, "device": device,
            "weights": os.path.join(outdir, "weights.pt"),
@@ -121,7 +148,7 @@ def main():
     with torch.no_grad():
         for split, names in (("train", args.train), ("heldout", args.heldout)):
             for n in names:
-                x, im3, t = load_frame(n, args.patch)
+                x, im3, t = load_frame(n, args.patch, args.multi)
                 p = net(torch.tensor(x, dtype=torch.float32,
                                      device=device)).reshape(-1).double()
                 p = p.cpu().numpy()
