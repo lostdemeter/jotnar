@@ -1,0 +1,52 @@
+{
+ "teacher": "marigold-v2",
+ "checkpoint": "huawei-bayerlab/marigold-v2-0 depth/Log-stage2",
+ "backbone": "Qwen/Qwen-Image-Edit-2509",
+ "repo": "9926d93",
+ "modality": "depth",
+ "resolution": "1024x672",
+ "seed": 2025,
+ "inputs": "sibling marigold-v2/assets/examples (+ copies under samples/marigold/inputs/)",
+ "fixtures": [
+  {
+   "name": "church",
+   "npy": "church.npy",
+   "shape": [
+    672,
+    1024
+   ],
+   "dtype": "float32",
+   "example": true
+  },
+  {
+   "name": "dogs",
+   "npy": "dogs.npy",
+   "shape": [
+    672,
+    1024
+   ],
+   "dtype": "float32",
+   "example": true
+  },
+  {
+   "name": "squirrel",
+   "npy": "squirrel.npy",
+   "shape": [
+    672,
+    1024
+   ],
+   "dtype": "float32",
+   "example": true
+  },
+  {
+   "name": "train",
+   "npy": "train.npy",
+   "shape": [
+    672,
+    1024
+   ],
+   "dtype": "float32",
+   "example": true
+  }
+ ]
+}
