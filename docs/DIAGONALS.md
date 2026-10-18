@@ -145,3 +145,43 @@ guard band as an op (not host slicing) so served binaries can fuse,
 (c) halo exchange as messages between batch slots (the seam
 protocol exchange-refusal names). All three are emitter/protocol
 work — parked until a fusion workload pays for them.
+
+## Workload — fused vs serial unsharp on real frames
+(`tests/test_diagonal_workload.py`)
+
+N=3 webcam frames (1280x480 native; the explicit resize is identity
+here and guards future inputs) through `demo_img:build_img_prog`
+unsharp on lattice. Arm A: three serial `run_text`s. Arm B: one
+`fuse()` batch over `build_img_prog(3H,W)` (same builder, taller
+geometry), halo="drop", `out_rows` for the shrunk outs, `plain` for
+the full-geometry outs, consts pre-tiled to fused geometry as shared
+fixtures (values identical — geometry fixtures, not per-frame data).
+Both arms feed `get_depth` (DAV2, distinct tags per arm so both
+really compute) off the `us` output via a deterministic mono→RGB
+adapter. Depth stays torch: cross-program fusion is NOT this task.
+
+Contract-first refusal (on the unextended table, before measuring):
+`no batching class for SLICE (measure it, then table it)`.
+
+Measured seam geometry: the 3x3 blur bleeds exactly like
+SPLAT_BLUR (radius 1); CONCAT (axis-1 glue) is clean. Table now:
+SLICE:1 (covers offset≤1 neighborhoods; wider offsets need
+re-measurement, halo assertions are the detector), CONCAT:0
+(structural). Split rule that fell out: lane blocks tile the fused
+stream with per-seam surplus rows (0 same-geometry, 2 valid-trimmed);
+anything else refuses loud. Offset-window intermediates
+(blur cells) don't tile — shared whole, exactness graded per output.
+
+```
+serial: 2.5s (129 execs) vs fused: 2.5s (43 execs) -- TIED
+unsharp bytes: 7/7 outputs x 3/3 frames byte-identical
+depth maps: identical (arm A 1.3s, arm B 0.9s -- GPU warmth, reported)
+depth warm: 2.5s manual (weights cached), in-gate hit cache, outside region
+```
+
+What the numbers say: at toy scale fusion won 3x on dispatch; at
+real pixels compute dominates and the wall ties with 3x fewer
+dispatches. Fusion pays where dispatch dominates, not where pixels
+do — placement honesty, same disclaimer as Phase 1. Gate cleans its
+wl_* depth tags in finally (tree stays clean); SKIP if frames/DAV2/
+torch missing; /dev/video0 never touched (file-driven only).
