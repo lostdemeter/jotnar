@@ -24,6 +24,8 @@ asserts inside fail loud), no dynamic shapes, checks run at execute time
 """
 import os
 
+from collections import ChainMap
+
 import numpy as np
 
 
@@ -550,8 +552,14 @@ def _kind_of(v):
     return _UNKNOWN
 
 
-def run(bound, config, inp, payload, trace=None, overrides=None):
+def run(bound, config, inp, payload, trace=None, overrides=None,
+          store_hook=None):
     """Execute bound program over a feeds dict. Returns feeds (all streams).
+    store_hook: optional write-routing hook (fused execution): an object
+    with `.env` (dict) and `.dest(outs, ln) -> bool` (True = write env,
+    counting the op fused; False = write feeds). None = legacy: every op
+    writes feeds. Reads resolve env-first through a ChainMap, so hooked
+    and legacy paths execute identical values.
     Convention: an op with arity_out==1 produces ONE stream (even when the
     value is itself a tuple, e.g. triples); arity_out>1 must return a tuple
     of that length. Layouts check per instruction (parallel dict; values
@@ -585,8 +593,10 @@ def run(bound, config, inp, payload, trace=None, overrides=None):
         feeds = {n: payload[n] for n in in_names}
         feeds["CONFIG"] = config
         layouts = dict(in_lay)
+    view = ChainMap(store_hook.env, feeds) \
+        if store_hook is not None else feeds
     for outs, mn, fn, args, ln, sig in prog:
-        vals = [feeds[a] if a in feeds else float(a) for a in args]
+        vals = [view[a] if a in view else float(a) for a in args]
         out_lays = _check_layouts(outs, mn, args, ln, sig, layouts)
         # kind cross-check: a DECLARED layout's kind prefix must match the
         # value (triple-ops receiving float arrays silently compute garbage
@@ -598,32 +608,38 @@ def run(bound, config, inp, payload, trace=None, overrides=None):
             if lay == _UNKNOWN or ":" not in lay:
                 continue
             want = lay.split(":")[0]
-            got = _kind_of(feeds[a]) if a in feeds else _UNKNOWN
+            got = _kind_of(view[a]) if a in view else _UNKNOWN
             if got != _UNKNOWN and got != want:
                 raise AsmError(f"line {ln} ({mn}): stream '{a}' declared {lay} but holds {got}")
         if trace is not None:
             import time
             in_sum = {}
             for a in args:
-                ssum = _summarize(feeds[a]) if a in feeds else {"kind": "literal", "value": a}
+                ssum = _summarize(view[a]) if a in view else {"kind": "literal", "value": a}
                 ssum["layout"] = layouts.get(a, "F:SCALAR" if _is_literal(a) else _UNKNOWN)
                 in_sum[a] = ssum
             trace.append({"line": ln, "op": mn,
                           "in": in_sum,
                           "out": {}, "sec": 0.0, "_t0": time.perf_counter()})
         _check_shapes(mn, vals, ln)
-        out = fn(vals, config, feeds)
+        out = fn(vals, config, view)
         # arity was checked at assemble time: one declared output takes the
         # whole return value (even a triples-tuple); N outputs take an N-tuple.
         out = (out,) if len(outs) == 1 else tuple(out)
         if len(out) != len(outs):
             raise AsmError(f"line {ln} ({mn}): runtime arity break: {outs}")
+        if store_hook is not None and store_hook.dest(outs, ln):
+            dest = store_hook.env
+        else:
+            dest = feeds
         for name, val in zip(outs, out):
-            feeds[name] = val
+            dest[name] = val
             layouts[name] = out_lays[name]
         for name in outs:
             if name in overrides:
-                feeds[name] = overrides[name]
+                (store_hook.env if store_hook is not None
+                 and name in store_hook.env else feeds)[name] = \
+                    overrides[name]
                 pending.discard(name)
         if trace is not None:
             rec = trace[-1]
