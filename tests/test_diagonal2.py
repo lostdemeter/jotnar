@@ -106,6 +106,29 @@ def main():
           f"fused execs={len(trf)} vs separate={len(tr1) + len(tr2)} "
           f"(dispatch halved, flops identical -- Phase-1 honesty applies)")
 
+    # -- flagship through the contract: zero manual row-handling -----------
+    from chain import batch as BT
+    r = BT.required_halo(text)
+    check("seam-contract-radius", r == 1, f"table says {r} (SPLAT_BLUR)")
+    t, b = BT.guard_band(np.asarray(rf["OUT"]), H, r)
+    O1 = np.asarray(r1["OUT"])
+    O2 = np.asarray(r2["OUT"])
+    check("seam-contract-exact",
+          bool(np.array_equal(t, O1[:H - r]) and np.array_equal(b, O2[r:])),
+          "mechanical guard band == separates outside the halo")
+    # triple-valued stream through the same mechanical path
+    ta, ba = BT.guard_band(rf["AS"], H, r)
+    A1 = np.stack(r1["AS"])
+    check("seam-contract-triple",
+          bool(np.array_equal(ta, A1[:, :H - r])),
+          "guard band handles stacked triples, no caller indices")
+    for tag, claimed in [("seam-contract-lie0", 0), ("seam-contract-lie2", 2)]:
+        try:
+            BT.assert_halo(text, claimed)
+            check(tag, False, "accepted")
+        except BT.BatchError as e:
+            check(tag, True, str(e)[:70])
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

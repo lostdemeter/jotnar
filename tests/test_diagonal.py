@@ -104,6 +104,30 @@ def main():
           f"flops identical -- no latency claim beyond this row)",
           flush=True)
 
+    # -- batching contract: chain ops are halo-0 ---------------------------
+    from chain import batch as BT
+    check("diag-contract-zero", BT.required_halo(CHAIN) == 0,
+          "MATMUL/ADD/SILU batch freely")
+    check("diag-contract-assert", BT.assert_halo(CHAIN, 0) == 0,
+          "honest claim passes")
+    for tag, fn in [
+            ("diag-contract-unlisted",
+             lambda: BT.required_halo("IN x\nOUT = CONV(x, x)\n")),
+            ("diag-contract-lie",
+             lambda: BT.assert_halo(CHAIN, 1))]:
+        try:
+            fn()
+            check(tag, False, "accepted")
+        except BT.BatchError as e:
+            check(tag, True, str(e)[:70])
+    # mechanical guard band, zero manual rows: radius 0 == plain halves
+    rng0 = np.random.default_rng(99)
+    v = rng0.normal(size=(6, 3))
+    t, b = BT.guard_band(v, 3, 0)
+    check("diag-guard-zero",
+          bool(np.array_equal(t, v[0:3]) and np.array_equal(b, v[3:6])),
+          "contract splits, caller names no indices")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 
