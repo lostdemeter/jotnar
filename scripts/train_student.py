@@ -161,16 +161,6 @@ def main():
               f"({list(temb)[0]}: {tuple(temb[args.train[0]].shape)})",
               flush=True)
 
-    def frame_maps():
-        """Full-frame student maps (differentiable -- NO no_grad here;
-        caller backward()s through them)."""
-        out = []
-        for n in args.train:
-            x, _, _ = load_frame(n, args.patch, args.multi)
-            out.append(net(torch.tensor(x, dtype=torch.float32,
-                                        device=device)).reshape(-1))
-        return out
-
     def dinov2_embed(att_maps):
         """Frozen DINOv2 token embeddings WITH live gradients into the
         student maps (teacher embeddings precomputed detached; the DINO
@@ -181,7 +171,7 @@ def main():
         embs = []
         for f, Hh, Ww in att_maps:
             img = f.reshape(1, 1, Hh, Ww).repeat(1, 3, 1, 1).float()
-            img = (img - img.min()) / max(float((img.max() - img.min())), 1e-6)
+            img = (img - img.min()) / max(float((img.max() - img.min()).detach()), 1e-6)
             img = (img - imean[None, :, None, None]) / istd[None, :, None, None]
             e = dino(img).last_hidden_state[0, 1:]
             embs.append(e / e.norm(dim=-1, keepdim=True))
@@ -257,37 +247,45 @@ def main():
             a, b = ab[0], ab[1]
         loss = (a * p + b - Ts).abs().mean()
         aux = ""
-        objs = [loss]
         if (use_perc or use_sink) and (it % args.aux_every == 0
                                        or it == args.steps - 1):
-            # full-frame aux eval (deterministic cadence, no RNG)
-            full = frame_maps()
+            # full-frame aux eval (deterministic cadence, no RNG).
+            # backward PER FRAME on combined perc+sink (disjoint graphs
+            # per frame + disjoint base graph: many .backward() calls,
+            # each graph traversed exactly once -- the double-backward
+            # trap is shared nodes, not shared leaves).
             tmaps = [tmap(n) for n in args.train]
             shapes = [tm.shape for tm in tmaps]
-            if use_perc:
-                se = dinov2_embed([(f, Hh, Ww) for f, (Hh, Ww) in
-                                   zip(full, shapes)])
-                lp = sum((((e - temb[n][:e.shape[0]]) ** 2).mean()
-                          for n, e in zip(args.train, se))) / len(full)
-                objs.append(args.perc * lp)
-                aux += f" perc {lp.item():.4f}"
-            if use_sink:
-                with torch.no_grad():
-                    A2 = torch.stack(
-                        [torch.cat([f.detach() for f in full]),
-                         torch.ones(sum(f.numel() for f in full),
-                                    device=device, dtype=torch.float64)], 1)
-                    Tall = torch.cat(
-                        [torch.tensor(tmap(n).ravel(), device=device)
-                         for n in args.train])
-                    ab2, _, _, _ = torch.linalg.lstsq(A2, Tall)
-                ls = sinkhorn_loss(
-                    [(f, Hh, Ww) for f, (Hh, Ww) in zip(full, shapes)],
-                    tmaps, (ab2[0], ab2[1]))
-                objs.append(args.sink * ls)
-                aux += f" sink {ls.item():.4f}"
-        # single backward over base + aux (shared parameters -- one graph)
-        sum(objs).backward()
+            for _n, _tm, (_Hh, _Ww) in zip(args.train, tmaps, shapes):
+                x0, _, _ = load_frame(_n, args.patch, args.multi)
+                f0 = net(torch.tensor(x0, dtype=torch.float32,
+                                      device=device)).reshape(-1)
+                fobjs = []
+                if use_perc:
+                    e0 = dinov2_embed([(f0, _Hh, _Ww)])[0]
+                    lp0 = (((e0 - temb[_n][:e0.shape[0]]) ** 2).mean())
+                    fobjs.append(args.perc * lp0)
+                    if _n == args.train[0]:
+                        aux += f" perc {lp0.item():.6f}"
+                if use_sink:
+                    with torch.no_grad():
+                        A2 = torch.stack(
+                            [f0.detach().double(),
+                             torch.ones(f0.numel(), device=device,
+                                        dtype=torch.float64)], 1)
+                        Tall = torch.tensor(_tm.ravel(), device=device,
+                                            dtype=torch.float64)
+                        ab2, _, _, _ = torch.linalg.lstsq(A2, Tall)
+                    ls0 = sinkhorn_loss(
+                        [(f0, _Hh, _Ww)], [_tm], (ab2[0], ab2[1]))
+                    fobjs.append(args.sink * ls0)
+                    if _n == args.train[0]:
+                        aux += f" sink {ls0.item():.6f}"
+                if fobjs:
+                    sum(fobjs).backward()
+        # base graph is disjoint from aux graphs (stride sample vs full
+        # frames): its backward is always safe here
+        loss.backward()
         opt.step()
         if it % 500 == 0 or it == args.steps - 1:
             print(f"iter {it}: loss {loss.item():.4f}{aux}", flush=True)
