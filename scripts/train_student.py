@@ -85,6 +85,26 @@ def main():
                     "MATMUL/ADD/SILU MLP -- all emitted CUDA/F patterns "
                     "(GATHER F, CONCAT F, MATMUL F, ADD F, SILU F). "
                     "No norms, no conv, no new opcodes.")
+    ap.add_argument("--perc", type=float, default=0.0,
+                    help="perceptual weight (iREPA pattern): MSE between "
+                    "L2-normalized frozen-DINOv2 token embeddings of "
+                    "student vs teacher depth maps (3ch-replicated, "
+                    "ImageNet-normalized). Training-time only, zero "
+                    "inference cost. Adapted: our MLP has no spatial "
+                    "intermediates, so we align encoder embeddings of "
+                    "final outputs, not mid-layers. 0 = off.")
+    ap.add_argument("--sink", type=float, default=0.0,
+                    help="Sinkhorn block weight: per 8x8-grid block, "
+                    "entropic OT (tau=0.1, K=5 log-domain iterations, "
+                    "paper values first) between 32-bin student/teacher "
+                    "depth histograms; mean over blocks. Permutation-"
+                    "invariant within blocks, aimed at texture/detail. "
+                    "0 = off.")
+    ap.add_argument("--dinov2", default="~/student_runs/dinov2-base",
+                    help="frozen DINOv2 path (out-of-tree, ungated "
+                    "facebook/dinov2-base stand-in for gated DINOv3)")
+    ap.add_argument("--aux-every", type=int, default=50,
+                    help="aux-signal cadence in steps (full frames)")
     args = ap.parse_args()
 
     import numpy as np
@@ -113,6 +133,118 @@ def main():
         torch.nn.Linear(W, W), torch.nn.SiLU(),
         torch.nn.Linear(W, 1)).to(device).float()
     opt = torch.optim.Adam(net.parameters(), lr=args.lr)
+
+    # -- aux signals: frozen DINOv2 embeddings of teacher maps (once) ------
+    use_perc = args.perc > 0
+    use_sink = args.sink > 0
+    temb, dino = {}, None
+    if use_perc:
+        from transformers import Dinov2Model
+        dino = Dinov2Model.from_pretrained(
+            os.path.expanduser(args.dinov2)).to(device).float().eval()
+        for p in dino.parameters():
+            p.requires_grad_(False)
+        man0 = json.load(open(os.path.join(FIXDIR, "teacher_manifest.json")))
+        imean = torch.tensor([0.485, 0.456, 0.406], device=device)
+        istd = torch.tensor([0.229, 0.224, 0.225], device=device)
+        for n in args.train:
+            row = next(r for r in man0["fixtures"] if r["name"] == n)
+            tm = np.load(os.path.join(FIXDIR, row["npy"])).astype(np.float32)
+            img = torch.tensor(np.stack([tm, tm, tm], 0)[None],
+                               dtype=torch.float32, device=device)
+            img = (img - img.min()) / max(float((img.max() - img.min())), 1e-6)
+            img = (img - imean[None, :, None, None]) / istd[None, :, None, None]
+            with torch.no_grad():
+                e = dino(img).last_hidden_state[0, 1:]
+                temb[n] = (e / e.norm(dim=-1, keepdim=True)).detach()
+        print(f"perceptual: teacher embeddings cached "
+              f"({list(temb)[0]}: {tuple(temb[args.train[0]].shape)})",
+              flush=True)
+
+    def frame_maps():
+        """Full-frame student maps (differentiable -- NO no_grad here;
+        caller backward()s through them)."""
+        out = []
+        for n in args.train:
+            x, _, _ = load_frame(n, args.patch, args.multi)
+            out.append(net(torch.tensor(x, dtype=torch.float32,
+                                        device=device)).reshape(-1))
+        return out
+
+    def dinov2_embed(att_maps):
+        """Frozen DINOv2 token embeddings WITH live gradients into the
+        student maps (teacher embeddings precomputed detached; the DINO
+        weights are frozen but the path student->embeddings stays
+        attached -- that is the training signal). Input: list of
+        (flat_attached_float64, H, W); output: list of
+        (tokens,768) L2-normalized attached tensors."""
+        embs = []
+        for f, Hh, Ww in att_maps:
+            img = f.reshape(1, 1, Hh, Ww).repeat(1, 3, 1, 1).float()
+            img = (img - img.min()) / max(float((img.max() - img.min())), 1e-6)
+            img = (img - imean[None, :, None, None]) / istd[None, :, None, None]
+            e = dino(img).last_hidden_state[0, 1:]
+            embs.append(e / e.norm(dim=-1, keepdim=True))
+        return embs
+
+    def sinkhorn_loss(s_maps_att, t_maps, ab):
+        """Mean entropic-OT distance over an 8x8 block grid, as a torch
+        scalar WITH live gradients (plan detached, cost attached --
+        standard Sinkhorn-divergence practice). Per block: deterministic
+        stride subsample (256 px), squared cost on affinely-aligned
+        student (attached) vs teacher (detached) values, K=5 log-domain
+        iterations (paper values: K=5, tau=0.1). loss = mean over blocks
+        of <P_detached, C_attached>. Permutation-invariant within blocks
+        by construction (coupling, not pointwise match)."""
+        from scipy.special import logsumexp
+        import math
+        tau, K, S = 0.1, 5, 256
+        a, b = float(ab[0]), float(ab[1])
+        tot = torch.zeros((), device=device, dtype=torch.float64)
+        nb = 0
+        for (pm_t, Hh, Ww), tm in zip(s_maps_att, t_maps):
+            th, tw = tm.shape
+            assert (Hh, Ww) == (th, tw), ((Hh, Ww), tm.shape)
+            for by in range(8):
+                for bx in range(8):
+                    y0, y1 = by * Hh // 8, (by + 1) * Hh // 8
+                    x0, x1 = bx * Ww // 8, (bx + 1) * Ww // 8
+                    yy, xx = torch.meshgrid(
+                        torch.arange(y0, y1, device=device),
+                        torch.arange(x0, x1, device=device), indexing="ij")
+                    sel = (yy * Ww + xx).reshape(-1)
+                    sel = sel[::max(1, len(sel) // S)][:S]
+                    s_att = a * pm_t.reshape(-1)[sel] + b
+                    t_v = torch.tensor(tm.reshape(-1)[sel.cpu().numpy()],
+                                       device=device, dtype=torch.float64)
+                    n = min(len(sel), len(t_v))
+                    s_att = s_att[:n]
+                    t_v = t_v[:n]
+                    C_att = (s_att.unsqueeze(1) - t_v.unsqueeze(0)) ** 2
+                    mx = float(C_att.detach().max())
+                    C_att = C_att / (mx if mx > 0 else 1)
+                    Cn = C_att.detach().double().cpu().numpy()
+                    la = np.full(n, math.log(1.0 / n))
+                    f = np.zeros(n)
+                    g = np.zeros(n)
+                    for _ in range(K):
+                        f = tau * (la - logsumexp((g[None, :] - Cn) / tau,
+                                                  axis=1))
+                        g = tau * (la - logsumexp((f[:, None] - Cn) / tau,
+                                                  axis=0))
+                    P = np.exp((f[:, None] + g[None, :] - Cn) / tau)
+                    P = P / max(P.sum(), 1e-300)
+                    Pt = torch.tensor(P, device=device, dtype=torch.float64)
+                    tot = tot + (Pt * C_att).sum() / (n * n)
+                    nb += 1
+        return tot / max(nb, 1)
+
+    manT = json.load(open(os.path.join(FIXDIR, "teacher_manifest.json")))
+
+    def tmap(name):
+        row = next(r for r in manT["fixtures"] if r["name"] == name)
+        return np.load(os.path.join(FIXDIR, row["npy"])).astype(np.float64)
+
     t0 = time.time()
     for it in range(args.steps):
         opt.zero_grad()
@@ -124,10 +256,41 @@ def main():
             ab, _, _, _ = torch.linalg.lstsq(A, Ts)
             a, b = ab[0], ab[1]
         loss = (a * p + b - Ts).abs().mean()
-        loss.backward()
+        aux = ""
+        objs = [loss]
+        if (use_perc or use_sink) and (it % args.aux_every == 0
+                                       or it == args.steps - 1):
+            # full-frame aux eval (deterministic cadence, no RNG)
+            full = frame_maps()
+            tmaps = [tmap(n) for n in args.train]
+            shapes = [tm.shape for tm in tmaps]
+            if use_perc:
+                se = dinov2_embed([(f, Hh, Ww) for f, (Hh, Ww) in
+                                   zip(full, shapes)])
+                lp = sum((((e - temb[n][:e.shape[0]]) ** 2).mean()
+                          for n, e in zip(args.train, se))) / len(full)
+                objs.append(args.perc * lp)
+                aux += f" perc {lp.item():.4f}"
+            if use_sink:
+                with torch.no_grad():
+                    A2 = torch.stack(
+                        [torch.cat([f.detach() for f in full]),
+                         torch.ones(sum(f.numel() for f in full),
+                                    device=device, dtype=torch.float64)], 1)
+                    Tall = torch.cat(
+                        [torch.tensor(tmap(n).ravel(), device=device)
+                         for n in args.train])
+                    ab2, _, _, _ = torch.linalg.lstsq(A2, Tall)
+                ls = sinkhorn_loss(
+                    [(f, Hh, Ww) for f, (Hh, Ww) in zip(full, shapes)],
+                    tmaps, (ab2[0], ab2[1]))
+                objs.append(args.sink * ls)
+                aux += f" sink {ls.item():.4f}"
+        # single backward over base + aux (shared parameters -- one graph)
+        sum(objs).backward()
         opt.step()
         if it % 500 == 0 or it == args.steps - 1:
-            print(f"iter {it}: loss {loss.item():.4f}", flush=True)
+            print(f"iter {it}: loss {loss.item():.4f}{aux}", flush=True)
     print(f"train wall: {time.time() - t0:.0f}s", flush=True)
 
     outdir = os.path.join(OUTBASE, args.tag)
@@ -140,6 +303,8 @@ def main():
     man = json.load(open(os.path.join(FIXDIR, "teacher_manifest.json")))
     rep = {"tag": args.tag, "width": W, "steps": args.steps, "lr": args.lr,
            "seed": args.seed, "patch": args.patch, "multi": args.multi,
+           "perc": args.perc, "sink": args.sink, "aux_every": args.aux_every,
+           "dinov2": os.path.expanduser(args.dinov2) if args.perc > 0 else None,
            "train": args.train, "heldout": args.heldout,
            "torch": torch.__version__, "device": device,
            "weights": os.path.join(outdir, "weights.pt"),
