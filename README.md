@@ -165,51 +165,51 @@ overloads; missing = loud `NoPattern`, never silent.
 | SWIGLU | 2 -> 1 | F | F | — | fused silu-gate x up; deterministic |
 | BATCH_MATMUL | 2 -> 1 | F | F/cuBLAS | T | |
 | BETA | 1 -> 1 | F | F | T | const fill from CONFIG |
-| BETA_V5 | 2 -> 1 | — | — | — | vision legacy |
+| BETA_V5 | 2 -> 1 | — | — | — | vision legacy; lattice-only (flagship runs lattice, no emitted demand) |
 | BMMV | 13 -> 1 | F | F | — | strided-view batched matmul (head-batched attention) |
-| CLIP | 3 -> 1 | — | — | — | |
+| CLIP | 3 -> 1 | — | — | — | parked: drilled in test_asm, no listing/demo/builder workload |
 | CONCAT | 3 -> 1 | F,T | F | T | ax1 |
-| CONV | 2 -> 1 | — | — | — | phi_conv audit-first |
-| DECONV | 4 -> 1 | — | — | — | |
+| CONV | 2 -> 1 | — | — | — | phi_conv audit-first; parked (no emitted vision lowering uses it) |
+| DECONV | 4 -> 1 | — | — | — | parked: drilled in test_asm, no listing/demo/builder workload |
 | DIV | 2 -> 1 | — | F | — | template op=3 |
-| GAIN | 3 -> 1 | — | — | — | |
+| GAIN | 3 -> 1 | — | — | — | lattice-only (flagship + stabilize run lattice, no emitted demand) |
 | GATHER | 2 -> 1 | T,F | F | T | rows materialized + views |
-| GAUSS | 3 -> 1 | — | — | — | |
-| GELU | 1 -> 1 | — | — | — | |
-| INTERP | 3 -> 1 | — | — | — | nearest-x2 audited |
-| ISO_BLUR | 1 -> 1 | — | — | — | |
-| LAYERNORM | 3 -> 1 | — | — | — | shares RMSNORM scaffolding |
-| LUMA | 1 -> 1 | — | — | — | |
+| GAUSS | 3 -> 1 | — | — | — | parked: drilled in test_asm, no listing/demo/builder workload |
+| GELU | 1 -> 1 | — | — | — | parked: drilled in test_asm, no workload (Qwen uses SILU/SwiGLU) |
+| INTERP | 3 -> 1 | — | — | — | nearest-x2 audited; parked (no workload) |
+| ISO_BLUR | 1 -> 1 | — | — | — | lattice-only (stabilize listing runs lattice, no emitted demand) |
+| LAYERNORM | 3 -> 1 | — | — | — | shares RMSNORM scaffolding; parked (drilled only, gpt2 listing deleted) |
+| LUMA | 1 -> 1 | — | — | — | lattice-only (flagship + stabilize + demo prefix run lattice) |
 | MATMUL | 2 -> 1 | F/BLAS | F/cuBLAS | T | ikj+restrict; GSL hook; decode M=1 GEMV ~700-800GB/s eff. (bench/matmul_decode.cu); 113 calls/step = 96.4% of step in-situ; bit-deterministic x-process (workspace-pinned, test_matmul_cuda leg) |
-| MIXDYAD | 3 -> 1 | — | — | — | |
+| MIXDYAD | 3 -> 1 | — | — | — | lattice-only (stabilize listing runs lattice, no emitted demand) |
 | MUL | 2 -> 1 | F | F | T | tmul-exact on T |
-| PERMUTE3 | 4 -> 1 | — | — | — | meta (strides, zero code) |
-| POOLAVG | 1 -> 1 | — | — | — | |
-| PRELU | 2 -> 1 | — | — | — | k_leaky audit donor |
-| RESCALE | 2 -> 1 | — | — | — | |
-| RESHAPE2/3 | 3/4 -> 1 | — | — | — | meta |
+| PERMUTE3 | 4 -> 1 | — | — | — | meta (strides, zero code); parked (no workload) |
+| POOLAVG | 1 -> 1 | — | — | — | parked: drilled in test_asm, no listing/demo/builder workload |
+| PRELU | 2 -> 1 | — | — | — | k_leaky audit donor; parked (no workload) |
+| RESCALE | 2 -> 1 | — | — | — | parked: drilled in test_asm, no listing/demo/builder workload |
+| RESHAPE2/3 | 3/4 -> 1 | — | — | — | meta; parked (no workload) |
 | RMSNORM | 2 -> 1 | F | F | T | eps via CONFIG/baked counts |
 | ROTARY | 2 -> 1 | F | F | T | tables baked at compile time |
-| SCAN | 3 -> 1 | — | — | — | mamba path |
+| SCAN | 3 -> 1 | — | — | — | mamba path; lattice-only (scan_demo runs lattice, no served demand) |
 | SELECT | 3 -> 1 | F,T | F | T | runtime count guard |
-| SIGMOID | 1 -> 1 | — | — | — | LUT spans ahead |
-| SILU | 1 -> 1 | — | — | — | = x*sigmoid |
+| SIGMOID | 1 -> 1 | — | — | — | LUT spans ahead; parked (SILU/SwiGLU cover live use, drilled only) |
+| SILU | 1 -> 1 | F | F | T | = x*sigmoid |
 | SLICE | 4 -> 1 | F,T | F | T | ax0/ax1 |
 | SOFTMAX | 1 -> 1 | — | — | T | legacy narrow path |
 | SOFTMAX_WIDE | 1 -> 1 | F | F | T | online/stable; T via EXP LUT |
-| SPLAT_BLUR | 1 -> 2 | — | — | — | vision legacy |
+| SPLAT_BLUR | 1 -> 2 | — | — | — | vision legacy; lattice-only (flagship runs lattice, no emitted demand) |
 | SQRT | 1 -> 1 | — | — | — | |
 | SQUARE | 1 -> 1 | — | — | T | tmul-self + clip |
-| SRGB_DECODE/ENCODE | 1 -> 1 | — | — | — | |
-| STATIC | 1 -> 1 | — | — | — | |
+| SRGB_DECODE/ENCODE | 1 -> 1 | — | — | — | lattice-only (flagship + stabilize + demo prefix run lattice) |
+| STATIC | 1 -> 1 | — | — | — | lattice-only (stabilize listing runs lattice, no emitted demand) |
 | SUB | 2 -> 1 | F | F | T | |
 | TBETA | 1 -> 1 | F | F | T | head-temp fill |
 | GT | 2 -> 1 | — | — | T | lattice greater-than, ties False (C/CUDA: NoPattern, filed) |
 | TRANSPOSE | 1 -> 1 | F,T | F | T | 2D (tiled later) |
 | TSHIFT | 1 -> 1 | F | F | T | row-max; fuses into softmax |
-| WARP | 2 -> 1 | — | — | — | |
+| WARP | 2 -> 1 | — | — | — | lattice-only (stabilize listing runs lattice, no emitted demand) |
 
-Coverage: C 19, CUDA 24, non-FPU 19. Refusal cells are gated
+Coverage: C 20, CUDA 25, non-FPU 20. Refusal cells are gated
 (`test_emit.py` loud-refusal row). Full per-mnemonic contracts with
 examples: `docs/LANGUAGE.md`. Extension recipe: registry row + shape
 rule + one pattern per backend (`chain/backends.py`).
