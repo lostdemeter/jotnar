@@ -154,3 +154,34 @@ What Phase 2 leaves: banked metrics, deterministic trainer,
 harness verdicts. A future round needs either a context-capable
 in-table architecture or a ruling-constraint change (both scoped
 proposals, not this report).
+
+## Phase 3 — multi-scale context student (LOSE, reported)
+
+Ruling constraint held: every deployed op cites a CUDA/F pattern
+(GATHER F, CONCAT F, MATMUL F, ADD F, SILU F). No norms, no conv,
+no new opcodes — LAYERNORM/CONV gaps never triggered.
+
+Architecture (`--multi`): per-pixel dense-3x3 (27) + stride-4
+17x17 (75) + stride-8 33x33 (75) = 177 dims → 64 → 64 → 1 SiLU
+MLP. Receptive field 33px, targeting the Phase-2 diagnosis
+(texture/nonplanar detail worst — detail scale 10-60px at 1024x672;
+3px covered nothing, 33px covers the band). Deployed form is
+GATHER neighborhoods + CONCAT + MLP (all tabled).
+Size: 15,617 params (61KB fp32), ~465MB transient features/frame,
+train 21s, peak training VRAM 330MiB — deployable with headroom to
+spare, nowhere near 17GB. Strided (not averaged) context: honest
+sampling, documented (averaging would need POOLAVG — parked row).
+
+Search (open, all reported): w16 0.3693 / w32 0.3708 (capacity out)
+/ p3w16 0.3665 (3px context out) / mscale64 0.3092 (context helps
+train-fit: 0.31 vs 0.37, held-out barely moves — generalization,
+not capacity, is the wall). Retrain determinism verified in fact
+(identical 6-row trajectory 0.5099/0.3089/0.3095/0.3096/0.3092).
+
+Verdict: 0/36 cells pass (best squirrel-tex 0.156 vs 0.07;
+geo_w1-far 0.488 vs 0.09 — held-out far-side worst). Blocking
+diagnosis: global layout reasoning (which side is far across rooms,
+occlusion ordering) needs beyond-33px structure no local mixer
+represents; texture/detail strata improved most yet still 2-5x over.
+Next needs either long-range in-table structure or a constraint
+change — both scoped proposals, not this report.
