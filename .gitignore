@@ -2,6 +2,8 @@
 # NOTE: chain/M.json and chain/CTRL.json are FROZEN doctrine artifacts
 # (calibration + controller fit) and MUST be tracked -- never ignore them.
 *.npy
+# Phase-0 teacher fixtures (small banked .npy + manifest, see samples/marigold/)
+!samples/marigold/*.npy
 # ENGRAM blobs (41MB full float64 dwarfs the repo; regenerable, gated)
 stores/*.npz
 *.pth

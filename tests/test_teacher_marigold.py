@@ -84,42 +84,62 @@ def main():
     if not have_gpu():
         print("SKIP teacher-seed-deterministic (no GPU here)")
     else:
-        import glob as _g
-        import shutil as _sh
-        ex = man["fixtures"][0]
-        outs = []
-        try:
-            for i in range(2):
-                od = f"/tmp/opencode/mg_det{i}"
-                _sh.rmtree(od, ignore_errors=True)
-                r = subprocess.run(
-                    [sys.executable, os.path.join(SIBLING, "scripts", "infer.py"),
-                     "--image_dir", os.path.join(FIXDIR, "inputs"),
-                     "--output_dir", od, "--seed", str(ex["seed"])],
-                    capture_output=True, text=True, cwd=SIBLING, timeout=1800,
-                    env={**os.environ, "PATH": os.path.dirname(sys.executable)
-                         + ":" + os.environ.get("PATH", "")})
-                if r.returncode != 0:
-                    check("teacher-seed-deterministic", False,
-                          (r.stderr or r.stdout)[-300:])
-                    break
-                outs.append(od)
-            if len(outs) == 2:
-                a = sorted(_g.glob(outs[0] + "/predictions_npy/**/*.npy",
-                                   recursive=True))
-                b = sorted(_g.glob(outs[1] + "/predictions_npy/**/*.npy",
-                                   recursive=True))
-                same = (len(a) == len(b) == len(man["fixtures"]) and all(
-                    open(x, "rb").read() == open(y, "rb").read()
-                    for x, y in zip(a, b)))
-                check("teacher-seed-deterministic", same,
-                      f"{len(a)} vs {len(b)} npy files, byte-identical")
-        finally:
-            for od in outs:
-                _sh.rmtree(od, ignore_errors=True)
+        venv_py = os.path.expanduser("~/marigold-env/bin/python")
+        if not os.path.isfile(venv_py):
+            print("SKIP teacher-seed-deterministic (no ~/marigold-env)")
+        else:
+            _determinism(venv_py, man)
 
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
+
+
+
+
+def _determinism(venv_py, man):
+    import glob as _g
+    import shutil as _sh
+    seed = str(man.get("seed", 2025))
+    # Sanitized env: our cuda_env.sh exports (PYTHONPATH/LD_LIBRARY_PATH
+    # into the user-local stack) poison the teacher venv with mixed trees
+    # (measured: subprocess fails under the sourced env, passes clean).
+    # Pass through only what's needed; drop the rest.
+    keep = {}
+    for k in ("HOME", "USER", "LOGNAME", "TMPDIR", "CUDA_VISIBLE_DEVICES",
+              "HF_HOME", "HUGGINGFACE_HUB_CACHE", "TRANSFORMERS_CACHE",
+              "HF_HUB_OFFLINE", "http_proxy", "https_proxy", "HTTP_PROXY",
+              "HTTPS_PROXY", "no_proxy"):
+        if k in os.environ:
+            keep[k] = os.environ[k]
+    keep["PATH"] = (os.path.dirname(venv_py) + ":/usr/bin:/bin")
+    outs = []
+    try:
+        for i in range(2):
+            od = f"/tmp/opencode/mg_det{i}"
+            _sh.rmtree(od, ignore_errors=True)
+            r = subprocess.run(
+                [venv_py, os.path.join(SIBLING, "scripts", "infer.py"),
+                 "--image_dir", os.path.join(FIXDIR, "inputs"),
+                 "--output_dir", od, "--seed", seed,
+                 "--width", "1024", "--height", "672"],
+                capture_output=True, text=True, cwd=SIBLING, timeout=1800,
+                env=keep)
+            if r.returncode != 0:
+                check("teacher-seed-deterministic", False,
+                      (r.stderr or r.stdout)[-300:])
+                break
+            outs.append(od)
+        if len(outs) == 2:
+            a = sorted(_g.glob(outs[0] + "/images/predictions_npy/*.npy"))
+            b = sorted(_g.glob(outs[1] + "/images/predictions_npy/*.npy"))
+            same = (len(a) == len(b) == len(man["fixtures"]) and all(
+                open(x, "rb").read() == open(y, "rb").read()
+                for x, y in zip(a, b)))
+            check("teacher-seed-deterministic", same,
+                  f"{len(a)} vs {len(b)} npy files, byte-identical")
+    finally:
+        for od in outs:
+            _sh.rmtree(od, ignore_errors=True)
 
 
 if __name__ == "__main__":
