@@ -32,6 +32,16 @@ FAIL = []
 
 WANT_OPS = ["BETA_V5", "MUL", "ADD", "SQUARE", "GAIN", "SRGB_ENCODE"]
 
+DCHAIN = """CONFIG m_acc 31344
+CONFIG m_cov 31344
+IN a AS T:SEQ
+IN b AS T:SEQ
+IN c AS T:SEQ
+MID = MATMUL(a, b)
+SUM = ADD(MID, c)
+OUT = SILU(SUM)
+"""
+
 
 def check(tag, cond, extra=""):
     print(f"{tag}: {'OK' if cond else 'FAIL'} {extra}", flush=True)
@@ -102,6 +112,67 @@ def main():
                    or "no pattern for GAIN" in str(e))
         check("fx-cuda-block", type(e).__name__ == "NoPattern" and covered,
               msg[:140])
+
+    # -- profile legs: the dispatch-hunt table, deterministic form ------------
+    # Walls live in docs/FUSION.md (environmental, never asserted); the
+    # gate asserts the structural counts the table rests on, plus the
+    # graph tripwire (pure-Python compile, no GPU) proving per-op launch
+    # cost is zero on the served path.
+    sys.path.insert(0, os.path.join(ROOT, "scripts"))
+    from demo_img import build_img_prog
+    from serve_decode import build_decode
+    drep = F.advise(build_img_prog(12, 16).text(), REGISTRY, sigs=SIGS)
+    check("fx-profile-flagship",
+          rep["summary"]["n_ops"] == 11 and len(rep["chains"]) == 1
+          and rep["summary"]["passes_saved"] == 10,
+          "11 ops / 1 chain / 10 passes")
+    check("fx-profile-demo",
+          drep["summary"]["n_ops"] == 43 and len(drep["chains"]) == 4
+          and drep["summary"]["passes_saved"] == 28,
+          "43 ops / 4 chains / 28 passes")
+    p, _, _ = build_decode(16)
+    qrep = F.advise(p.text(), REGISTRY, sigs=SIGS)
+    check("fx-profile-decode",
+          qrep["summary"]["n_ops"] == 619 and qrep["chains"] == [],
+          "619 ops / 0 chains (nothing dispatch-fusible there)")
+    import phi_core.lattice as S
+    rng = np.random.default_rng(5)
+    mk = lambda *sh: S.encode(np.ascontiguousarray(rng.normal(size=sh) * .5))
+    WB = mk(4, 3)
+    lanes = [{"a": mk(2, 4), "b": WB, "c": mk(2, 3)} for _ in range(4)]
+    from chain import batch as B
+    t0 = time.perf_counter()
+    B.fuse(DCHAIN, lanes)
+    wf = time.perf_counter() - t0
+    t0 = time.perf_counter()
+    nsep = 0
+    for l in lanes:
+        tr = []
+        ASM.run_text(DCHAIN, REGISTRY, l, sigs=SIGS, trace=tr)
+        nsep += len(tr)
+    ws = time.perf_counter() - t0
+    check("fx-toy-dispatch", nsep == 12,
+          f"4 lanes x 3 execs separate vs 3 fused (dispatch-dominated toy)")
+    print(f"fx-toy-wall: separate {ws * 1000:.1f}ms vs fused {wf * 1000:.1f}ms "
+          f"(reported, never asserted)", flush=True)
+    from chain.emit_c import compile_program
+    tiny = ("CONFIG m_acc 41200\nIN x\nIN k\nY = MUL(x, k)\n"
+            "OUT = ADD(Y, k)\n")
+    samp = {"x": np.arange(32, dtype=np.float64).reshape(4, 8) + 1.0,
+            "k": np.full((4, 8), 2.0)}
+    import re as _re
+    counts = {}
+    for g in (False, True):
+        art = compile_program(tiny, "cuda", sample=dict(samp),
+                              outputs=["OUT"], live=["x"], graph=g,
+                              sync_each=not g)
+        loop = art["source"].split("while (fgets")[1]
+        counts[g] = (len(_re.findall(r"<<<", loop)),
+                     len(_re.findall(r"cudaGraphLaunch", loop)))
+    check("fx-graph-amortizes", counts[False] == (2, 0)
+          and counts[True] == (0, 1),
+          f"per-op launches without graphs {counts[False]} vs one replay "
+          f"launch with graphs {counts[True]} (emit_cuda graph capture)")
 
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)

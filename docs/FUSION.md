@@ -112,6 +112,68 @@ gate legs per chain. MATMUL-epilogue stays second (backend change,
 priced separately) -- second chain overall is fine, epilogue is not
 this task.
 
+### Dispatch hunt — profile first (no winner: table IS the finding)
+
+Method: wall = dispatch + k·elements fit over image sizes (intercept =
+dispatch), per-op trace attribution, N-lane tiny-chain sweep, advisor
+counts. No real listing is dispatch-dominated — Step 2 fusion did not
+run (fusing for sport refused); the CUDA question below is answered
+from code, not speculation.
+
+```
+listing            ops   wall        dispatch   share   where it goes
+flagship 288x352   11   256.6ms     13.2ms      5.1%   SPLAT_BLUR 74%,
+                                                       BETA_V5 14%
+demo_img 352x288   43   105.1ms      3.0ms      2.8%   ADDs 45%,
+                                                       SUB/SLICE ~10% ea
+decode layer (1)   ~22   n/a lattice  n/a       n/a    lattice execution
+                                                       abandoned: RMSNORM
+                                                       needs triples;
+                                                       matmul_int at 3584
+                                                       wide is CPU-prohib-
+                                                       itive (see below)
+decode program    619    27ms served  ~0 launch  ~0%   113 GEMMs + small
+                                                       kernels; 0 advisor
+                                                       chains (nothing to
+                                                       fuse regardless)
+tiny chains N-lane  3   0.44ms/lane  ~all       ~100%  dispatch by
+                                                       construction
+```
+
+Lattice decode-layer execution was abandoned honestly: the listing
+needs triple-kind norm inputs and integer matmuls at 3584-wide are
+CPU-prohibitive; the served path (CUDA) is where decode lives, and
+its numbers stand (27ms, graphs on). Decode row above uses advisor
+counts (619 ops, 0 chains) + the standing served wall.
+
+### CUDA dispatch accounting (read, not guessed)
+
+`chain/emit_cuda.py` graph capture (warmup + capture + instantiate,
+:1387-1392) reduces the per-step served loop to a single
+`cudaGraphLaunch` (:1459); kernels are stream-parameterized for
+capture (:1073, `, 0, capStream`); the multi-launch `step_loop`
+exists only in non-graph mode. Tripwire-gated
+(`fx-graph-amortizes`, pure-Python compile, no GPU): 2-op listing
+emits 2 launch sites without graphs vs 0 launches + 1 replay launch
+with graphs. So per-op LAUNCH cost on the served path is already
+zero; what remains per op is kernel EXECUTION (global-memory passes
+-- reducible only by merged kernels = emitter work, out of scope)
+plus cublas API cost (also captured once at build, not per step).
+fuse()-style materialization-skipping has no CUDA analog in the
+current emitter (every op is a separate kernel writing global
+memory). The win was already eaten, structurally, before fusion
+arrived.
+
+### What earns the next round
+
+A listing that is BOTH dispatch-dominated AND advisor-positive AND
+CUDA-runnable. None of the three measured is all three (flagship:
+compute-bound + T-only; demo_img: compute-bound; decode: zero
+chains + already-graphed). Candidate class: small-kernel F-listings
+with long elementwise chains on the served path -- none in-tree
+today. If one appears: fuse at the kernel level (merged passes),
+not the dispatch level (already zero).
+
 ### Eyes open remainder: emitted-kernel codegen (still parked)
 
 - Fused-elementwise emitter pattern: one kernel per reported chain
