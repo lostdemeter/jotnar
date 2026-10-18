@@ -82,10 +82,11 @@ def SKELETON_SCAFFOLD(teacher):
 def main():
     from PIL import Image
     man = json.load(open(os.path.join(FIXDIR, "teacher_manifest.json")))
-    check("strata-manifest", len(man["fixtures"]) == 4
+    check("strata-manifest", len(man["fixtures"]) == 6
           and all(os.path.isfile(os.path.join(FIXDIR, r["npy"]))
-                  for r in man["fixtures"]),
-          f"{len(man['fixtures'])} banked rows on disk")
+                  for r in man["fixtures"])
+          and sum(1 for r in man["fixtures"] if r.get("heldout")) == 2,
+          f"{len(man['fixtures'])} banked rows (4 train + 2 heldout) on disk")
     if FAIL:
         print("RESULT:", f"FAILURES: {FAIL}")
         sys.exit(1)
@@ -145,6 +146,49 @@ def main():
     check("strata-alignment-direction", resid > 0.5 * float(t0.std()),
           f"constant residual {resid:.3f} ~= teacher std "
           f"{float(t0.std()):.3f} (never 0)")
+
+    # -- student evaluation (lose-honest reporter, not a pass gate) --------------
+    # The harness evaluates; the numbers win or lose on their own. These
+    # legs assert structural integrity (complete table, finite numbers,
+    # reproducible config) and PRINT the per-cell verdicts. A bad student
+    # failing bars is a passing gate with failing cells -- that is the
+    # Phase-2 contract (numbers + diagnosis, never silent tuning).
+    import json as _js
+    srep_path = os.path.join(FIXDIR, "student_run.json")
+    if not os.path.isfile(srep_path):
+        print("SKIP student legs (no student_run.json -- train first)")
+    else:
+        srep = _js.load(open(srep_path))
+        cfg_ok = all(k in srep for k in
+                     ("tag", "width", "steps", "lr", "seed", "patch",
+                      "train", "heldout", "torch", "device", "weights",
+                      "frames"))
+        check("student-config", bool(cfg_ok),
+              f"tag={srep.get('tag')} w={srep.get('width')} "
+              f"steps={srep.get('steps')} seed={srep.get('seed')} "
+              f"patch={srep.get('patch')} torch={srep.get('torch')}")
+        fr = srep.get("frames", {})
+        complete = (sorted(fr) == sorted(srep.get("train", []) +
+                                         srep.get("heldout", []))
+                    and all(sorted(fr[n].get("strata", {})) == STRATA
+                            and all(np.isfinite(v) and v >= 0
+                                    for v in fr[n]["strata"].values())
+                            for n in fr))
+        check("student-table-complete", bool(complete),
+              f"{len(fr)} frames x {len(STRATA)} strata, all finite")
+        npass, ncell = 0, 0
+        for n in sorted(fr):
+            verdicts = []
+            for k in STRATA:
+                ncell += 1
+                ok = fr[n]["strata"][k] <= BARS[k]
+                npass += ok
+                verdicts.append(f"{k} {fr[n]['strata'][k]:.3f}"
+                                f"{'PASS' if ok else 'FAIL'}")
+            print(f"student {n} [{fr[n].get('split')}]: "
+                  + ", ".join(verdicts), flush=True)
+        print(f"student cells passing bars: {npass}/{ncell} "
+              f"(harness verdict, not a gate failure)", flush=True)
 
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)

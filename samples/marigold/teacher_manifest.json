@@ -47,6 +47,26 @@
    ],
    "dtype": "float32",
    "example": true
+  },
+  {
+   "name": "geo_webcam_0_combined",
+   "npy": "geo_webcam_0_combined.npy",
+   "shape": [
+    672,
+    1024
+   ],
+   "dtype": "float32",
+   "heldout": true
+  },
+  {
+   "name": "geo_webcam_1_combined",
+   "npy": "geo_webcam_1_combined.npy",
+   "shape": [
+    672,
+    1024
+   ],
+   "dtype": "float32",
+   "heldout": true
   }
  ]
 }

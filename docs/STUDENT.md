@@ -116,3 +116,41 @@ both directions gated green.
 Banked fixtures + manifest, seeded teacher CLI, strata rules +
 margins, scaffold floor. A real student must beat scaffold/5 on all
 six strata; anything weaker fails visibly by construction.
+
+## Phase 2 — architecture search inside the emitted table (LOSE, reported)
+
+Ruling constraint: every deployed op needs a CUDA/F emitted pattern
+(MATMUL/ADD/SILU qualify; LAYERNORM/CONV gaps bite by design, so the
+student uses neither). Architecture: per-pixel MLP RGB(3)→W→W→1,
+SiLU, no norms (`scripts/train_student.py`, torch outside listings,
+seed 7, Adam lr 0.02, 2000 steps, stride-7 pixel sample, deterministic
+stack). Split stated openly: train = 4 banked examples, held-out = 2
+new webcam frames via seeded teacher CLI (same provenance pattern;
+manifest extended, 6 rows). Weights out-of-tree
+(`~/student_runs/<tag>/weights.pt`, never committed); metrics +
+config in `samples/marigold/student_run.json` (committed).
+Production weights untouched (student artifacts are new files only).
+
+Search, all openly reported (loss = affine-invariant MAE, train):
+- w16 per-pixel: 0.4827 → 0.3693 (9s)
+- w32 per-pixel: 0.3708 — capacity ruled out (identical)
+- p3w16 3x3-patch (GATHER+MATMUL form, still in-table): 0.3665 —
+  local context doesn't move it
+Rerun determinism verified in fact: w16 retrained, loss trajectory
+identical all 5 rows (0.4827/0.3751/0.3710/0.3697/0.3693).
+En-route bug: lstsq-backward OOMs at 400k rows (1152GiB ask) —
+alignment takes no gradients (standard practice), fixed.
+
+Verdict: 0/36 cells pass bars (best: squirrel-tex 0.185 vs 0.07;
+held-out smooth ~0.19 vs 0.09). Blocking diagnosis: every stratum
+fails, worst in texture/nonplanar detail — monocular depth needs
+larger spatial context than per-pixel/3x3 MLPs represent; wider or
+patch-tuned variants of the same shape cannot close a 5x gap.
+Bigger patches / GATHER pyramids would be unbounded search; norms
+or conv would break the emitted-table constraint. No silent tuning
+was performed to pass — three configs, all reported, all lose.
+
+What Phase 2 leaves: banked metrics, deterministic trainer,
+harness verdicts. A future round needs either a context-capable
+in-table architecture or a ruling-constraint change (both scoped
+proposals, not this report).
