@@ -1,0 +1,296 @@
+{
+ "variants": [
+  "baseline",
+  "perc",
+  "sink",
+  "both"
+ ],
+ "flags": {
+  "baseline": {},
+  "perc": {
+   "perc": 0.1
+  },
+  "sink": {
+   "sink": 1.0
+  },
+  "both": {
+   "perc": 0.1,
+   "sink": 1.0
+  }
+ },
+ "verdict": "all variants 2-6x over bars on every held-out stratum; deltas across variants are noise-level and bidirectional (see docs/STUDENT.md Phase 4)",
+ "cells": {
+  "baseline": {
+   "church": {
+    "split": "train",
+    "strata": {
+     "far": 0.4383,
+     "near": 0.4444,
+     "nonplanar": 0.4489,
+     "planar": 0.478,
+     "smooth": 0.4467,
+     "tex": 0.4296
+    }
+   },
+   "dogs": {
+    "split": "train",
+    "strata": {
+     "far": 0.2983,
+     "near": 0.2651,
+     "nonplanar": 0.2898,
+     "planar": 0.2738,
+     "smooth": 0.3028,
+     "tex": 0.2653
+    }
+   },
+   "squirrel": {
+    "split": "train",
+    "strata": {
+     "far": 0.2132,
+     "near": 0.1841,
+     "nonplanar": 0.2114,
+     "planar": 0.1754,
+     "smooth": 0.2111,
+     "tex": 0.1557
+    }
+   },
+   "train": {
+    "split": "train",
+    "strata": {
+     "far": 0.2981,
+     "near": 0.2983,
+     "nonplanar": 0.2803,
+     "planar": 0.3333,
+     "smooth": 0.2925,
+     "tex": 0.2937
+    }
+   },
+   "geo_webcam_0_combined": {
+    "split": "heldout",
+    "strata": {
+     "far": 0.2514,
+     "near": 0.2247,
+     "nonplanar": 0.309,
+     "planar": 0.1851,
+     "smooth": 0.1689,
+     "tex": 0.3075
+    }
+   },
+   "geo_webcam_1_combined": {
+    "split": "heldout",
+    "strata": {
+     "far": 0.4881,
+     "near": 0.322,
+     "nonplanar": 0.4595,
+     "planar": 0.3819,
+     "smooth": 0.3673,
+     "tex": 0.4304
+    }
+   }
+  },
+  "perc": {
+   "church": {
+    "split": "train",
+    "strata": {
+     "far": 0.429,
+     "near": 0.441,
+     "nonplanar": 0.4484,
+     "planar": 0.4668,
+     "smooth": 0.4401,
+     "tex": 0.4232
+    }
+   },
+   "dogs": {
+    "split": "train",
+    "strata": {
+     "far": 0.2922,
+     "near": 0.2515,
+     "nonplanar": 0.282,
+     "planar": 0.2634,
+     "smooth": 0.2928,
+     "tex": 0.2539
+    }
+   },
+   "squirrel": {
+    "split": "train",
+    "strata": {
+     "far": 0.2613,
+     "near": 0.1797,
+     "nonplanar": 0.2168,
+     "planar": 0.2036,
+     "smooth": 0.2722,
+     "tex": 0.1399
+    }
+   },
+   "train": {
+    "split": "train",
+    "strata": {
+     "far": 0.3014,
+     "near": 0.302,
+     "nonplanar": 0.2815,
+     "planar": 0.3413,
+     "smooth": 0.3036,
+     "tex": 0.2919
+    }
+   },
+   "geo_webcam_0_combined": {
+    "split": "heldout",
+    "strata": {
+     "far": 0.2511,
+     "near": 0.2054,
+     "nonplanar": 0.3047,
+     "planar": 0.1738,
+     "smooth": 0.155,
+     "tex": 0.3035
+    }
+   },
+   "geo_webcam_1_combined": {
+    "split": "heldout",
+    "strata": {
+     "far": 0.4802,
+     "near": 0.3832,
+     "nonplanar": 0.4727,
+     "planar": 0.4296,
+     "smooth": 0.4132,
+     "tex": 0.4274
+    }
+   }
+  },
+  "sink": {
+   "church": {
+    "split": "train",
+    "strata": {
+     "far": 0.4626,
+     "near": 0.4663,
+     "nonplanar": 0.485,
+     "planar": 0.5005,
+     "smooth": 0.4651,
+     "tex": 0.4562
+    }
+   },
+   "dogs": {
+    "split": "train",
+    "strata": {
+     "far": 0.3141,
+     "near": 0.2845,
+     "nonplanar": 0.2917,
+     "planar": 0.3023,
+     "smooth": 0.3333,
+     "tex": 0.2722
+    }
+   },
+   "squirrel": {
+    "split": "train",
+    "strata": {
+     "far": 0.2652,
+     "near": 0.1759,
+     "nonplanar": 0.2185,
+     "planar": 0.2022,
+     "smooth": 0.2732,
+     "tex": 0.1406
+    }
+   },
+   "train": {
+    "split": "train",
+    "strata": {
+     "far": 0.3023,
+     "near": 0.2971,
+     "nonplanar": 0.2837,
+     "planar": 0.3335,
+     "smooth": 0.2912,
+     "tex": 0.2974
+    }
+   },
+   "geo_webcam_0_combined": {
+    "split": "heldout",
+    "strata": {
+     "far": 0.2668,
+     "near": 0.258,
+     "nonplanar": 0.3254,
+     "planar": 0.2184,
+     "smooth": 0.1941,
+     "tex": 0.3317
+    }
+   },
+   "geo_webcam_1_combined": {
+    "split": "heldout",
+    "strata": {
+     "far": 0.4754,
+     "near": 0.2415,
+     "nonplanar": 0.4281,
+     "planar": 0.3077,
+     "smooth": 0.2954,
+     "tex": 0.428
+    }
+   }
+  },
+  "both": {
+   "church": {
+    "split": "train",
+    "strata": {
+     "far": 0.446,
+     "near": 0.4583,
+     "nonplanar": 0.4707,
+     "planar": 0.4865,
+     "smooth": 0.455,
+     "tex": 0.4417
+    }
+   },
+   "dogs": {
+    "split": "train",
+    "strata": {
+     "far": 0.3071,
+     "near": 0.2682,
+     "nonplanar": 0.2893,
+     "planar": 0.285,
+     "smooth": 0.3193,
+     "tex": 0.2608
+    }
+   },
+   "squirrel": {
+    "split": "train",
+    "strata": {
+     "far": 0.2584,
+     "near": 0.1805,
+     "nonplanar": 0.218,
+     "planar": 0.2009,
+     "smooth": 0.2681,
+     "tex": 0.1415
+    }
+   },
+   "train": {
+    "split": "train",
+    "strata": {
+     "far": 0.3046,
+     "near": 0.3005,
+     "nonplanar": 0.2824,
+     "planar": 0.3419,
+     "smooth": 0.3042,
+     "tex": 0.2927
+    }
+   },
+   "geo_webcam_0_combined": {
+    "split": "heldout",
+    "strata": {
+     "far": 0.2573,
+     "near": 0.2294,
+     "nonplanar": 0.3117,
+     "planar": 0.193,
+     "smooth": 0.1749,
+     "tex": 0.3122
+    }
+   },
+   "geo_webcam_1_combined": {
+    "split": "heldout",
+    "strata": {
+     "far": 0.4847,
+     "near": 0.3029,
+     "nonplanar": 0.453,
+     "planar": 0.3639,
+     "smooth": 0.3453,
+     "tex": 0.4309
+    }
+   }
+  }
+ }
+}
