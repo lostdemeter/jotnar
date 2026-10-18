@@ -25,12 +25,19 @@ HALO_ZERO = frozenset({
     # rgb/LIN/Y/A fully exact; tail exact outside the halo)
     "SRGB_DECODE", "LUMA", "SQRT", "SUB", "BETA_V5", "MUL",
     "SQUARE", "GAIN", "SRGB_ENCODE",
+    # unsharp CONCAT (axis-1 glue, rows preserved -- structural
+    # halo-0, measured on the workload listing: strip blocks exact)
+    "CONCAT",
 })
 
 HALO_RADIUS = {
     # spatial ops: measured bleed radius in rows (SPLAT_BLUR: 1,
-    # pinned by seam-blur-halo -- kernel change trips the detector)
+    # pinned by seam-blur-halo -- kernel change trips the detector;
+    # SLICE: 1, measured on the unsharp 3x3-blur listing -- covers
+    # offset<=1 neighborhoods; wider offsets need re-measurement and
+    # the halo-width assertion in the workload gate is the detector)
     "SPLAT_BLUR": 1,
+    "SLICE": 1,
 }
 
 
@@ -115,29 +122,51 @@ def _stack_vals(vals):
 
 
 def _split_val(value, sizes, radius):
-    """Split a fused feed back into lanes (guard band per seam when
-    radius > 0). sizes = per-lane row counts."""
+    """Split a fused feed back into lanes.
+
+    Seam geometry (measured, not assumed): lane blocks tile the fused
+    stream with `extra = total - sum(sizes)` surplus rows shared over
+    the N-1 seams (extra=0: same geometry, contamination in place;
+    extra=2/seam: valid-trimmed streams like the unsharp blur, surplus
+    rows ARE the seam artifacts). Lane i block starts at
+    B_i (B_0=0, B_{i+1}=B_i+s_i+extra/(N-1)) and keeps the block minus
+    t=max(0, radius-extra/2/(N-1)) rows per seam side. Anything else
+    (negative/odd/uneven surplus) refuses loud -- unknown seam
+    geometry, never guessed. Single lane (no seams) returns whole.
+    sizes = per-lane row counts."""
     triple = isinstance(value, tuple)
     a = np.stack(value) if triple else np.asanyarray(value)
     ax = 1 if triple else 0
     total = a.shape[ax]
-    if sum(sizes) != total:
+    n = len(sizes)
+    if n == 1:
+        return [tuple(p.copy() for p in a) if triple else a.copy()]
+    extra = total - sum(sizes)
+    if extra < 0 or extra % (n - 1) != 0:
         raise BatchError(
-            f"split mismatch: lanes hold {sum(sizes)} rows, feed has {total}")
+            f"split mismatch: {total} rows over lanes {sizes} "
+            f"(surplus {extra} not shareable over {n - 1} seams)")
+    e = extra // (n - 1)
+    if e % 2 != 0:
+        raise BatchError(
+            f"split mismatch: odd seam surplus {e} (lanes {sizes}, "
+            f"total {total})")
+    t = max(0, radius - e // 2)
     out, off = [], 0
-    for n in sizes:
+    for i, s in enumerate(sizes):
+        lo = off + (t if i > 0 else 0)
+        hi = off + s - (t if i < n - 1 else 0)
         sl = [slice(None)] * a.ndim
-        lo = off + (radius if off > 0 else 0)
-        hi = off + n - (radius if off + n < total else 0)
         sl[ax] = slice(lo, hi)
         piece = a[tuple(sl)]
         out.append(tuple(p.copy() for p in piece) if triple
                    else piece.copy())
-        off += n
+        off += s + e
     return out
 
 
-def fuse(text, feeds_list, halo="refuse", sigs=None, trace=None):
+def fuse(text, feeds_list, halo="refuse", sigs=None, trace=None,
+         out_rows=None, plain=None):
     """Two-or-more inferences, one execution (hypotenuse, not width+height).
 
     Contract check up front via required_halo -- refuse loud before any
@@ -149,6 +178,19 @@ def fuse(text, feeds_list, halo="refuse", sigs=None, trace=None):
     radius), "drop" (mechanical guard band), "exchange" (NOT built --
     needs a seam protocol; refused loud with that reason). Unlisted op
     -> BatchError as today. Shape errors name the lane and stream.
+    out_rows maps output-stream name -> per-lane row count (int, or
+    list per lane) for streams whose geometry differs from the inputs
+    (e.g. valid-trimmed blur: H-2 per lane): those split to the given
+    sizes (mismatch refuses loud -- caller-specified, must hold).
+    plain names halo-0 streams split with trim 0 always; every other
+    stream takes the listing radius as its trim (conservative default:
+    over-trimming fails loud at byte-compare gates, under-trimming
+    would risk silent contamination). Mixed listings must map every
+    halo-0 stream class in plain.
+    Non-IN feeds that tile neither way (offset-window intermediates)
+    are shared WHOLE across lanes (true fused values, not
+    lane-partitioned -- do not mutate; exactness is graded per
+    requested output, never assumed for intermediates).
     Returns [per-lane output dicts] (feeds minus IN streams minus
     CONFIG); input row counts may differ per lane.
     """
@@ -215,13 +257,21 @@ def fuse(text, feeds_list, halo="refuse", sigs=None, trace=None):
 
     feeds = ASM.run_text(text, REGISTRY, payload, sigs=sigs, trace=trace)
     lanes = [{} for _ in feeds_list]
+    orows = {}
+    for k, n in (out_rows or {}).items():
+        orows[k] = list(n) if isinstance(n, list) else [n] * len(feeds_list)
     for k, v in feeds.items():
         if k in in_names or k == "CONFIG":
             continue
         try:
-            parts = _split_val(v, sizes, radius)
+            rk = 0 if k in (plain or {}) else radius
+            parts = _split_val(v, orows.get(k, sizes), rk)
         except BatchError as e:
-            raise BatchError(f"output {k!r}: {e}")
+            if k in orows:
+                raise BatchError(f"output {k!r}: {e}")
+            # non-tileable intermediate (offset windows): share the true
+            # fused values whole -- exactness graded per requested output
+            parts = [v] * len(feeds_list)
         for lane, piece in zip(lanes, parts):
             lane[k] = piece
     return lanes
