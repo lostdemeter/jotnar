@@ -62,3 +62,47 @@ Step 2 (cross-program alignment via block-diagonal weights) stays
 parked behind full Step-1 green, which this is not. Stream-name /
 shape alignment rules and the emitter-change question travel with
 whichever scoping option is chosen.
+
+## (c)-minimal demo — batching contract as code (`chain/batch.py`)
+
+Demonstrates scoping option (c) mechanically before any rework
+commitment. No emitter changes, no new opcodes, no protocol changes.
+
+### Contract table
+
+Two classes, nothing else. Halo-0 (batch freely, measured):
+MATMUL ADD SILU SRGB_DECODE LUMA SQRT SUB BETA_V5 MUL SQUARE GAIN
+SRGB_ENCODE. Halo-radius (declare bleed): SPLAT_BLUR: 1. Anything
+else refuses loud naming the op (`BatchError`: "measure it, then
+table it"). The table is the authority: `assert_halo` fails loud on
+any claim ≠ required (0-for-blur and widened-2 both refuse).
+
+### Mechanical rule
+
+`required_halo(text)` (assembler only, never executes) → max radius;
+`guard_band(value, H, radius)` drops radius rows per seam side for
+arrays (rows axis 0) and stacked triples (rows axis 1) — callers
+pass shapes, never indices. Flagship fused run through the contract:
+exact outside the halo with zero manual row-handling at the call
+site (gated: `seam-contract-exact`, `seam-contract-triple`).
+
+### Measured
+
+Chain contract legs green in `test_diagonal.py` (zero/unlisted/lie/
+guard-zero); flagship legs green in `test_diagonal2.py` (radius 1,
+mechanical exactness, triple path, lie0/lie2 refusals). Neighbors
+`test_asm.py` + `test_census.py` green (shared `chain/` touched).
+Same dispatch-halved/flops-identical accounting as Phase 1 — no
+latency claims.
+
+### Eyes open: what full-(c) rework would need (NOT built)
+
+- Per-opcode batch surface: every registry op measured and tabled
+  (today: 13 tabled, rest refuse) — a measurement battery, not code.
+- Halo exchange vs drop: real fusion would ferry halo rows between
+  batch slots instead of dropping them (keeps all pixels, costs a
+  seam protocol); the demo drops, honestly losing 2 rows per seam.
+- Emitter implications: a batch-aware emitter could stack/split
+  around spatial ops automatically (option (b) as codegen); today
+  that is hand-assembly. If the design starts needing emitter or
+  protocol changes, that finding is a new report, not this demo.
