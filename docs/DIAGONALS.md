@@ -68,7 +68,7 @@ whichever scoping option is chosen.
 Demonstrates scoping option (c) mechanically before any rework
 commitment. No emitter changes, no new opcodes, no protocol changes.
 
-### Contract table
+### Contract table (as built; fuse() enforces it)
 
 Two classes, nothing else. Halo-0 (batch freely, measured):
 MATMUL ADD SILU SRGB_DECODE LUMA SQRT SUB BETA_V5 MUL SQUARE GAIN
@@ -106,3 +106,42 @@ latency claims.
   around spatial ops automatically (option (b) as codegen); today
   that is hand-assembly. If the design starts needing emitter or
   protocol changes, that finding is a new report, not this demo.
+
+## DX — fuse() combinator + threading patterns (`demo_diagonals.py`)
+
+`fuse(text, feeds_list, halo="refuse")`: contract check up front
+(refuse loud before any execution), inputs identical across ALL
+lanes pass through shared (readonly weights read once — single
+execution, nothing to lock), differing inputs stack along rows
+(arrays axis 0, triples per-plane; per-lane row counts may differ),
+one `run_text`, outputs split per lane (guard band under
+halo="drop"). Returns per-lane output dicts (feeds minus IN streams
+minus CONFIG). Shape errors name the lane and stream.
+
+### Policy table
+
+- `"refuse"` (default): spatial present → loud naming the radius.
+- `"drop"`: mechanical guard band on every split output.
+- `"exchange"`: NOT built — refused loud ("needs a seam protocol:
+  halo ferry between batch slots").
+- Unknown policy string, unlisted op: loud `BatchError`.
+
+### Demo results (`demo_diagonals.py`, proof-run)
+
+fork-join (4 lanes rows 1..4, 3 vs 12 execs, split-join
+byte-exact), shared-weights (6 readers 1 weight object, byte-exact,
+no-locks observation printed), halo-drop (prefix LIN/Y/A exact) +
+halo-refuse (full flagship loud naming radius 1). Wall numbers flip
+run to run at ms scale (first-call warmth dominates: fused 10.4ms
+vs separate 2.1ms here, 8.0 vs 24.4 in Phase 1) — direction never
+asserted, dispatch-vs-flops only.
+
+### What syntax the surface wants next (NOT built)
+
+fuse() is a host-side combinator today: stacking/splitting live in
+Python around one run_text. A listing-level surface would want (a)
+a BATCH block declaring lanes + shared streams in-text, (b) the
+guard band as an op (not host slicing) so served binaries can fuse,
+(c) halo exchange as messages between batch slots (the seam
+protocol exchange-refusal names). All three are emitter/protocol
+work — parked until a fusion workload pays for them.
