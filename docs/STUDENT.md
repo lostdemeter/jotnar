@@ -82,3 +82,37 @@ fixtures (near/far? planar/non-planar? texture regimes?) with
 per-stratum teacher-vs-student deltas — needs list only. Requires:
 fixture bank (done), seeded teacher CLI (done), student lattice
 skeleton (not started).
+
+## Phase 1 — strata harness with proven falsification (`tests/test_strata_marigold.py`)
+
+Six strata over the 4 banked fixtures (rules, all deterministic):
+near/far = median split via `chain/depthprior.py:near_mask`;
+planar/nonplanar = teacher-depth Sobel-gradient 40/60 percentiles
+(20% deadband avoids boundary dithering); textured/smooth = input-
+luma gradient 40/60 percentiles. Percentile rules guarantee every
+stratum 30-70% of every frame (gated) — no fixture extension needed
+(the 4 scenes × 6 strata cover; additions only if a rule starves,
+documented here if so).
+
+Comparison: least-squares affine fit student→teacher, GLOBAL per
+frame (one scale/shift — matches affine-invariant semantics; strata
+then show where errors concentrate), MAE per stratum. Least-squares
+over RANSAC: closed-form, deterministic, standard practice.
+Alignment direction is load-bearing (fit a*student+b ≈ teacher):
+a flipped fit lets constant predictors score 0 — guarded by an
+explicit leg (constant residual ≈ teacher std, never 0).
+
+Margin bars per stratum = scaffold floor/5 (scaffold = constant
+teacher-mean stub, SKELETON SCAFFOLD, not a model):
+near 0.09, far 0.09, planar 0.09, nonplanar 0.08, tex 0.07, smooth
+0.09 (scaffold minima 0.457/0.481/0.484/0.403/0.377/0.483).
+Teacher-self scores 0.0 exactly (passes 5x+ clear); scaffold fails
+every stratum every frame (worst margins pasted in gate output).
+A harness never tested against a failing student is unproven —
+both directions gated green.
+
+## Phase-2 inherits (architecture search — named, not started)
+
+Banked fixtures + manifest, seeded teacher CLI, strata rules +
+margins, scaffold floor. A real student must beat scaffold/5 on all
+six strata; anything weaker fails visibly by construction.
