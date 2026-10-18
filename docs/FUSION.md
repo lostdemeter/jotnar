@@ -60,7 +60,59 @@ never wall time.
 - escape delta: flagship with outputs={OUT,AE} reports zero chains
   vs one normally — the no-escape rule firing, proven by delta.
 
-## Eyes open: what codegen would need next (NOT built)
+## Codegen — one kernel per chain (`chain/fuse_exec.py`, lattice)
+
+`run_fused(text, chain_lines, payload, ...)` mirrors `chain/asm.run()`
+exactly -- same assemble, same op functions, same order, same checks
+-- with one change: chain-interior ops write a side env (reads via
+ChainMap, so even hypothetical feeds-reading ops behave), chain-final
+ops (consumed outside, or sinks) materialize to feeds. Same functions
++ same order = byte-identical by construction (gated anyway, never
+trusted). Generic over chains: zero per-chain code; the consumed
+lines MUST equal the advisor's current report (the gate asserts
+identity -- hand-wiring without the advisor link is refused by
+construction here). Wall savings on lattice are feeds-dict traffic
+only (numpy allocates per-op temporaries in both arms).
+
+Measured (flagship 6-op chain, input_example.png):
+unfused 260-272ms vs fused 255-268ms -- tied, as predicted. The 10
+saved passes are memory-traffic the interpreter never paid (array
+REFS, not copies); numpy temporaries dominate both arms equally.
+Placement honesty applies: the lattice leg proves mechanics +
+exactness, never speed.
+
+### Stamp keys (specified, unbuilt)
+
+No fused binaries exist, so no stamp is written (dead contract
+refused). When fused emission lands, the key is `"fused":
+[{ops, lines, out}]` alongside the existing serve keys; any binary
+whose fused set differs from the key fails loud on the existing
+stamp-mismatch path. The `fx-cuda-block` leg below is the tripwire
+that forces this work the day coverage lands.
+
+### CUDA: blocked, with evidence (stop finding)
+
+The T-kind flagship chain cannot reach CUDA, twice over: (1) T-kind
+inputs are refused by doctrine (`cuda: T input -- decode at
+data-prep`); (2) BETA_V5/GAIN/SRGB_DECODE have zero emitted patterns
+on every backend (README opcode table: —/—/—), and SQUARE is T-only
+on non-FPU. The measured first refusal is `NoPattern: C backend: no
+pattern for SRGB_DECODE (line ...:12 ...)`. Landing the CUDA leg
+needs T-kind CUDA support everywhere (loads/stores/malloc per
+stream kind -- the whole backend assumes F) plus 3+ new kernels with
+their own parity gates: a backend-extension project, not chain
+fusion. `fx-cuda-block` pins the refusal; it fails the day anything
+compiles, demanding the real parity + determinism-0.0 gate.
+
+### What the next chain needs (demo_img's 28 passes)
+
+Four more chains, same machinery (run_fused takes any line set;
+multi-chain union works naturally). Nothing new to build except
+gate legs per chain. MATMUL-epilogue stays second (backend change,
+priced separately) -- second chain overall is fine, epilogue is not
+this task.
+
+### Eyes open remainder: emitted-kernel codegen (still parked)
 
 - Fused-elementwise emitter pattern: one kernel per reported chain
   (loop over the stream, inline the op sequence); the report's
