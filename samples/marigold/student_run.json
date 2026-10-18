@@ -1,0 +1,89 @@
+{
+ "tag": "w16",
+ "width": 16,
+ "steps": 2000,
+ "lr": 0.02,
+ "seed": 7,
+ "patch": 1,
+ "train": [
+  "church",
+  "dogs",
+  "squirrel",
+  "train"
+ ],
+ "heldout": [
+  "geo_webcam_0_combined",
+  "geo_webcam_1_combined"
+ ],
+ "torch": "2.14.1+cu130",
+ "device": "cuda",
+ "weights": "/home/balrog/student_runs/w16/weights.pt",
+ "frames": {
+  "church": {
+   "split": "train",
+   "strata": {
+    "far": 0.48151788282722774,
+    "near": 0.48354170756919324,
+    "nonplanar": 0.5174644554792978,
+    "planar": 0.5091165341960951,
+    "smooth": 0.4823116531370182,
+    "tex": 0.4763480079490004
+   }
+  },
+  "dogs": {
+   "split": "train",
+   "strata": {
+    "far": 0.36066766541384165,
+    "near": 0.3180901684557846,
+    "nonplanar": 0.31517531259670295,
+    "planar": 0.3622503423838504,
+    "smooth": 0.3974778035998708,
+    "tex": 0.29183111971245745
+   }
+  },
+  "squirrel": {
+   "split": "train",
+   "strata": {
+    "far": 0.2655330574511227,
+    "near": 0.2331644788108866,
+    "nonplanar": 0.23886892395054574,
+    "planar": 0.23824037520776717,
+    "smooth": 0.2811576234187088,
+    "tex": 0.18540932354324605
+   }
+  },
+  "train": {
+   "split": "train",
+   "strata": {
+    "far": 0.3847154346049104,
+    "near": 0.3614873902597964,
+    "nonplanar": 0.3751740150606251,
+    "planar": 0.391373488391468,
+    "smooth": 0.3665900259125658,
+    "tex": 0.3805316105775791
+   }
+  },
+  "geo_webcam_0_combined": {
+   "split": "heldout",
+   "strata": {
+    "far": 0.27587056361270745,
+    "near": 0.2744745077610799,
+    "nonplanar": 0.34600032347561827,
+    "planar": 0.23331398216184415,
+    "smooth": 0.19281798890068644,
+    "tex": 0.3676040194339189
+   }
+  },
+  "geo_webcam_1_combined": {
+   "split": "heldout",
+   "strata": {
+    "far": 0.3438680402271949,
+    "near": 0.204321225995658,
+    "nonplanar": 0.3139745444789369,
+    "planar": 0.24434169280263748,
+    "smooth": 0.20593501616582466,
+    "tex": 0.34004756208362114
+   }
+  }
+ }
+}

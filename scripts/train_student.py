@@ -24,7 +24,7 @@ FIXDIR = os.path.join(ROOT, "samples", "marigold")
 OUTBASE = os.path.expanduser("~/student_runs")
 
 
-def load_frame(name):
+def load_frame(name, patch=1):
     import numpy as np
     from PIL import Image
     man = json.load(open(os.path.join(FIXDIR, "teacher_manifest.json")))
@@ -34,7 +34,15 @@ def load_frame(name):
         os.path.join(FIXDIR, "inputs", name + ".*")))
     im = np.asarray(Image.open(cand[0]).convert("RGB")
                     .resize((t.shape[1], t.shape[0]))) / 255.0
-    return im.reshape(-1, 3), t.reshape(-1)
+    if patch == 1:
+        return im.reshape(-1, 3), im, t.reshape(-1)
+    # 3x3 neighborhood im2col (edge-replicated): deployed form is
+    # GATHER-neighborhood + MATMUL, both in-table (GATHER F, MATMUL F).
+    # Stays feedforward-dense; no new opcodes, no norms, no conv.
+    p = np.pad(im, ((1, 1), (1, 1), (0, 0)), mode="edge")
+    Hh, Ww, _ = im.shape
+    cols = [p[i:i + Hh, j:j + Ww, :] for i in range(3) for j in range(3)]
+    return np.concatenate(cols, axis=-1).reshape(-1, 27), im, t.reshape(-1)
 
 
 def main():
@@ -48,6 +56,8 @@ def main():
                     default=["church", "dogs", "squirrel", "train"])
     ap.add_argument("--heldout", nargs="+",
                     default=["geo_webcam_0_combined", "geo_webcam_1_combined"])
+    ap.add_argument("--patch", type=int, default=1,
+                    help="1 = per-pixel RGB(3); 3 = 3x3 neighborhood (27)")
     args = ap.parse_args()
 
     import numpy as np
@@ -59,7 +69,7 @@ def main():
 
     Xtr, Ttr = [], []
     for n in args.train:
-        x, t = load_frame(n)
+        x, _, t = load_frame(n, args.patch)
         Xtr.append(x)
         Ttr.append(t)
     Xtr = torch.tensor(np.concatenate(Xtr), dtype=torch.float32, device=device)
@@ -70,8 +80,9 @@ def main():
     print(f"train px: {Xs.shape[0]} (stride-7 of {Xtr.shape[0]})", flush=True)
 
     W = args.width
+    Din = 27 if args.patch == 3 else 3
     net = torch.nn.Sequential(
-        torch.nn.Linear(3, W), torch.nn.SiLU(),
+        torch.nn.Linear(Din, W), torch.nn.SiLU(),
         torch.nn.Linear(W, W), torch.nn.SiLU(),
         torch.nn.Linear(W, 1)).to(device).float()
     opt = torch.optim.Adam(net.parameters(), lr=args.lr)
@@ -79,10 +90,13 @@ def main():
     for it in range(args.steps):
         opt.zero_grad()
         p = net(Xs).reshape(-1).double()
-        ones = torch.ones_like(p)
-        A = torch.stack([p, ones], 1)
-        ab, _, _, _ = torch.linalg.lstsq(A, Ts)
-        loss = (ab[0] * p + ab[1] - Ts).abs().mean()
+        # alignment does not take gradients (standard scale-shift-
+        # invariant practice; lstsq-backward OOMs at 400k rows)
+        with torch.no_grad():
+            A = torch.stack([p.detach(), torch.ones_like(p)], 1)
+            ab, _, _, _ = torch.linalg.lstsq(A, Ts)
+            a, b = ab[0], ab[1]
+        loss = (a * p + b - Ts).abs().mean()
         loss.backward()
         opt.step()
         if it % 500 == 0 or it == args.steps - 1:
@@ -98,7 +112,8 @@ def main():
     import test_strata_marigold as H
     man = json.load(open(os.path.join(FIXDIR, "teacher_manifest.json")))
     rep = {"tag": args.tag, "width": W, "steps": args.steps, "lr": args.lr,
-           "seed": args.seed, "train": args.train, "heldout": args.heldout,
+           "seed": args.seed, "patch": args.patch,
+           "train": args.train, "heldout": args.heldout,
            "torch": torch.__version__, "device": device,
            "weights": os.path.join(outdir, "weights.pt"),
            "frames": {}}
@@ -106,14 +121,14 @@ def main():
     with torch.no_grad():
         for split, names in (("train", args.train), ("heldout", args.heldout)):
             for n in names:
-                x, t = load_frame(n)
+                x, im3, t = load_frame(n, args.patch)
                 p = net(torch.tensor(x, dtype=torch.float32,
                                      device=device)).reshape(-1).double()
                 p = p.cpu().numpy()
                 Hh, Ww = next(r["shape"] for r in man["fixtures"]
                               if r["name"] == n)
                 masks = H.strata_masks(t.reshape(Hh, Ww),
-                                       x.reshape(Hh, Ww, 3))
+                                       im3.reshape(Hh, Ww, 3))
                 per = {k: H.align_mae(p.reshape(Hh, Ww), t.reshape(Hh, Ww), masks[k])
                        for k in H.STRATA}
                 rep["frames"][n] = {"split": split, "strata": per}
