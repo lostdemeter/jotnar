@@ -35,10 +35,30 @@ beyond this row; placement honesty applies (cf. protocol reports).
 
 ## Phase 2 needs
 
-- Flagship seam: the image pipeline's ops (SPLAT_BLUR, GAIN,
-  BETA_V5, ...) must each pass the same stacked-shape trial —
-  any refusal scopes the work (split program? per-op batch rule?).
-- Cross-program alignment: two DIFFERENT listings fused needs
-  stream-name/shape alignment first (Phase 1 only covers same-text).
-- Block-diagonal weights (different weights per inference) stays
-  the documented alternate for the non-shared-weights case.
+Step 1 result (STOP — refusal found, no Step 2): the flagship seam
+refuses at SPLAT_BLUR (`tests/test_diagonal2.py` pins it green).
+
+Per-op seam table (two 288-row images stacked, split vs separates):
+
+```
+rgb LIN Y A          fully split-exact (pointwise prefix)
+AS COH (SPLAT_BLUR)  halo exactly rows {287,288} (radius-1 bleed,
+                     max 233 int units)
+D BEFF BD AE YENH G OUT  contaminated exactly at the halo;
+                     OUT exact on 574/576 rows
+fused rerun          byte-identical; 11 vs 22 op-execs
+```
+
+Scoping proposal (pick one before any Phase-2 fusion work):
+(a) guard-band halo — drop 1 row each side post-split; exact
+elsewhere, costs 2 rows per seam, zero code changes;
+(b) split program — pointwise prefix fused (exact), SPLAT_BLUR +
+tail per image (two PROGRAMs, honest seam handling);
+(c) per-op batch rule — pointwise ops batch freely, spatial ops
+need halo exchange or separate execution (a batching contract per
+opcode for future emitter work).
+
+Step 2 (cross-program alignment via block-diagonal weights) stays
+parked behind full Step-1 green, which this is not. Stream-name /
+shape alignment rules and the emitter-change question travel with
+whichever scoping option is chosen.
