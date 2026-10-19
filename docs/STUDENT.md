@@ -1307,3 +1307,22 @@ DiT-tiny needs its own constitution WITHOUT the aux (or with a
 swept λ — a new round either way, none run here). Empty table,
 loaded finding: the aux pin is the largest optimization effect
 measured since Phase-9 cosine (in reverse).
+
+## Phase 20 — faithful package, no aux, fair trial (constitution, FROZEN pre-run)
+
+Phase-19 package EXACTLY (LN+GELU-form+AdaLN+patchify+unfused,
+B2/B4/B6 ladder, W64/H4/s16, shifted-log targets, same splits)
+with the gradient aux REMOVED — disabled via `grad-w 0` PLUS a
+guard skipping the aux forward when grad-w==0 (declared here;
+0×NaN poisons, skipped NaN can't — same math, safer path).
+The single variable is aux-present vs aux-absent. Loss =
+aligned-MAE only (the pre-aux baseline that carried mixers this
+far). Schedule mirrors Phase 19 minus aux: 8k-cosine, lr 0.01,
+seed 7. Tags `ditc64b2/ditc64b4/ditc64b6` (c=clean).
+Budget: 3 rungs, wall caps 15/20/25 min (Phase-19 mirror; aux
+removal only helps), GPU solo, Qwen-7B never co-loaded.
+Winner: most held-out cells under bars; directional near/planar/
+smooth vs Phase-8 (>0.05, frozen) reopens empirically. Empty is
+complete — a clean loss here closes the faithful package
+honestly (machinery judged cleanly at last, either verdict
+binding).
