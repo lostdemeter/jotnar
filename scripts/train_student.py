@@ -153,7 +153,8 @@ def main():
     W = args.width
     if args.depth not in (2, 3):
         raise ValueError(f"undeclared depth {args.depth} (frozen axes {2, 3})")
-    Din = (9 * 3 + 25 * 3 * len(scales_for(args.field, args.densewin))
+    Din = (args.densewin * args.densewin * 3
+           + 25 * 3 * len(scales_for(args.field, args.densewin))
            if args.multi else (27 if args.patch == 3 else 3))
     layers = [torch.nn.Linear(Din, W), torch.nn.SiLU()]
     for _ in range(args.depth - 1):
