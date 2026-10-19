@@ -169,7 +169,7 @@ overloads; missing = loud `NoPattern`, never silent.
 | BMMV | 13 -> 1 | F | F | — | strided-view batched matmul (head-batched attention) |
 | CLIP | 3 -> 1 | — | — | — | parked: drilled in test_asm, no listing/demo/builder workload |
 | CONCAT | 3 -> 1 | F,T | F | T | ax1 |
-| CONV | 2 -> 1 | — | — | — | phi_conv audit-first; parked (no emitted vision lowering uses it) |
+| CONV | 2 -> 1 | F | F | — | v0.1 single-channel 2D, same/stride-1/dilation-1, edge-replicate (audited: replicate_pad EXACT); C `chain/emit_c.py` F64 loop + CUDA `k_conv_f32` (`chain/emit_cuda.py`); parity 3000dB C / 158dB CUDA |
 | DECONV | 4 -> 1 | — | — | — | parked: drilled in test_asm, no listing/demo/builder workload |
 | DIV | 2 -> 1 | — | F | — | template op=3 |
 | GAIN | 3 -> 1 | — | — | — | lattice-only (flagship + stabilize run lattice, no emitted demand) |
@@ -209,7 +209,7 @@ overloads; missing = loud `NoPattern`, never silent.
 | TSHIFT | 1 -> 1 | F | F | T | row-max; fuses into softmax |
 | WARP | 2 -> 1 | — | — | — | lattice-only (stabilize listing runs lattice, no emitted demand) |
 
-Coverage: C 25, CUDA 26, non-FPU 21. Refusal cells are gated
+Coverage: C 26, CUDA 27, non-FPU 21. Refusal cells are gated
 (`test_emit.py` loud-refusal row). Full per-mnemonic contracts with
 examples: `docs/LANGUAGE.md`. Extension recipe: registry row + shape
 rule + one pattern per backend (`chain/backends.py`).

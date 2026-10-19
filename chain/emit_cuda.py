@@ -182,6 +182,29 @@ __global__ void k_layernorm_f32(const float *x, const float *w, const float *b,
   for (int64_t j = threadIdx.x; j < D; j += TPB)
     o[r * D + j] = (x[r * D + j] - mu) * rs * w[j] + b[j];
 }
+__global__ void k_conv_f32(const float *x, const float *k, float *o,
+                           int64_t H, int64_t W, int64_t kH, int64_t kW) {
+  /* One BLOCK per row (house shape, cf. k_rmsnorm_f32), threads over
+  columns; fixed tap order oy->ox->ky->kx, no cross-thread order
+  dependence -> bit-exact re-run. Edge-replicate boundary
+  (audited: replicate_pad EXACT, zero-pad diverges). */
+  int64_t oy = (int64_t)blockIdx.x;
+  if (oy >= H) return;
+  int64_t rH = kH / 2, rW = kW / 2;
+  for (int64_t ox = threadIdx.x; ox < W; ox += TPB) {
+    double acc = 0;
+    for (int64_t ky = 0; ky < kH; ++ky) {
+      int64_t iy = oy + ky - rH;
+      iy = iy < 0 ? 0 : (iy >= H ? H - 1 : iy);
+      for (int64_t kx = 0; kx < kW; ++kx) {
+        int64_t ix = ox + kx - rW;
+        ix = ix < 0 ? 0 : (ix >= W ? W - 1 : ix);
+        acc += (double)x[iy * W + ix] * (double)k[ky * kW + kx];
+      }
+    }
+    o[oy * W + ox] = (float)acc;
+  }
+}
 __global__ void k_softmax_wide_f32(const float *x, float *o, int64_t D,
                                    int64_t N) {
   /* One BLOCK per row: parallel max + exp-sum reductions. */
@@ -666,6 +689,22 @@ class CUDABackend(Backend):
                 f"/* {o} = RMSNORM({x}) */\n"
                 f"k_rmsnorm_f32<<<({o}_N), TPB{st}>>>"
                 f"({x}, {w}, {o}, {d}, {o}_N, {eps!r}f);\n{launch}",
+                None)
+        if mn == "CONV":
+            x, k = args
+            o = outs[0]
+            if S[x][0] != "F" or S[k][0] != "F":
+                raise NoPattern("cuda CONV needs F (v0.1)")
+            H, W = S[x][2]
+            kH, kW = S[k][2]
+            if (None in (H, W, kH, kW) or kH % 2 == 0 or kW % 2 == 0
+                    or kH > H or kW > W):
+                raise AsmError("cuda CONV needs static 2D odd "
+                               f"kernel within image, got ({H},{W}) ({kH},{kW})")
+            return (
+                f"/* {o} = CONV({x}) edge-replicate {kH}x{kW} */\n"
+                f"k_conv_f32<<<({o}_N), TPB{st}>>>"
+                f"({x}, {k}, {o}, {H}, {W}, {kH}, {kW});\n{launch}",
                 None)
         if mn == "LAYERNORM":
             x, w, b = args
