@@ -479,6 +479,40 @@ def main():
     cap15 = [cells15[t].get("nparams") for t in frozen15]
     check("battery15-capacity", cap15 == [156993, 156993],
           f"{cap15} (108033 + 49216 dino_proj - 256 ctx)")
+
+    # -- Phase-16 refine battery (same integrity shape, new key) ----------
+    b16 = ab.get("battery16", {})
+    frozen16 = ["cf-frozen"]
+    check("battery16-configs", b16.get("configs") == frozen16
+          and b16.get("reference") == "jattn64b2", b16.get("configs"))
+    cells16 = b16.get("cells", {})
+    complete16 = True
+    for t in frozen16:
+        fr = cells16.get(t, {}).get("frames", {})
+        complete16 &= (len(fr) == 6 and all(
+            sorted(fr[n].get("strata", {})) == STRATA
+            and all(np.isfinite(v) and v >= 0
+                    for v in fr[n]["strata"].values())
+            for n in fr))
+    check("battery16-complete", bool(complete16), "1 config x 6x6 finite")
+    counts16 = {}
+    for t in frozen16:
+        n = 0
+        for _n, fr in cells16[t]["frames"].items():
+            if fr.get("split") != "heldout":
+                continue
+            n += sum(1 for k in STRATA if fr["strata"][k] <= BARS[k])
+        counts16[t] = n
+    check("battery16-winner-none",
+          all(v == 0 for v in counts16.values())
+          and b16.get("winner") is None,
+          f"held-out cells under bars per config: {counts16}")
+    flags16_ok = all(
+        all(k in cells16[t].get("flags", {}) for k in
+            ("field", "width", "blocks", "heads", "stride", "nctx", "steps",
+             "lr", "schedule", "seed", "mode", "pass1", "head"))
+        for t in frozen16)
+    check("battery16-flags", bool(flags16_ok), "repro metadata per config")
     # Four variants (baseline/perc/sink/both), all openly losing: the gate
     # asserts the table is complete and internally consistent (every cell
     # finite; deltas vs baseline computed, never asserted in a direction).
