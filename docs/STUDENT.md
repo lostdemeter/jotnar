@@ -677,3 +677,34 @@ verdict-reported). Winner: most held-out cells under bars; empty is
 complete. Metrics banked separately (`attn_run_<tag>.json` +
 `battery10` key, reference `jattn64b2`); Phase-8/9 primaries never
 overwritten (separate-files precedent); weights out-of-tree.
+
+### Battery results (3/3 ran, walls 373s/405s/405s, GPU solo)
+
+Capacity rule verified in the weight files: 108,033 params ×3 —
+heads, not capacity, was tested (gate-counted leg).
+
+```
+tag             heads  dim/head  train-loss  tr-mean  ho-mean  ho-best
+jattn64h1-8kcos  1     1x64      0.391       0.459    0.415    0.222
+jattn64h2-8kcos  2     2x32      0.439       0.463    0.412    0.224
+jattn64h4-8kcos  4     4x16      0.275       0.425    0.413    0.210
+(banked 8k-cos H1 shape for context: 0.344 / 0.428 / 0.406 / 0.202)
+```
+Anchor note (stated pre-run as expectation, now measured): H1 rerun
+lands near but not on the banked 8k-cos (loss 0.39 vs 0.34,
+held-out means 0.415 vs 0.406) — the head-split reshape changes
+matmul kernel order, and chaotic trajectories diverge from there.
+Same qualitative picture, not identical numbers; the comparison that
+matters (H1/H2/H4 within this round, identical code path) is clean.
+Winner: none — 0/36 held-out cells under bars (0/12 each,
+gate-counted); no retrain-match needed.
+Diagnosis: heads change nothing on held-out at matched capacity
+(0.415/0.412/0.413 — flat to ±0.003) while moving train slightly
+(H4 fits best, 0.275). The Phase-9 brief asked for directional
+near/planar/smooth movement; heads do not supply it — the split
+re-routes the same 64 dims, and routing was never the bottleneck
+(the bottleneck is what 64 dims per 32x32 cell can carry, Phase-8
+reading, unrefuted). Finer grid is now the last queued axis with a
+mechanism behind it (more tokens = narrower cells = richer per-pixel
+code); heads join schedule as moved-but-bar-blind. Empty is
+complete — the head question is answered, not open.
