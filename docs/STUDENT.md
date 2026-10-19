@@ -973,3 +973,40 @@ criterion for anything next: a student claiming joint reasoning
 must show teacher-scale shuffle deltas (≈1.2 rel, near worst) on
 this probe; mscale64-scale grace (≤0.8) disqualifies the claim.
 That criterion is banked in the gate (locality-signature leg).
+
+## Phase 15 — DINOv2-token inputs, information-vs-machinery (constitution, FROZEN pre-run)
+
+Question: does global INFORMATION save the joint-attention family,
+or is the machinery itself the wall. The only variable is input
+information; architecture family held (Phase-8 shape: B2 joint
+blocks, RMSNorm+SILU, nearest-cell broadcast head as built).
+Frozen DINOv2-base (86M ViT, local ~/student_runs/dinov2-base)
+runs ONCE per fixture (CPU, deterministic) → patch tokens
+(3504×768, CLS dropped, stated) cached out-of-tree
+(~/student_runs/dino_tokens/<fixture>.pt) with sha manifest
+in-repo; the encoder never runs at student-train time.
+Two configs (third slot deliberately empty — width⊗information is
+a follow-up conditioned on movement, confounded now):
+- `dino-tokonly`: seq = DINO tokens projected 768→64 (no RGB token
+  stream, no const: C=0 — const REPLACED by DINO, literally).
+  Head: nearest-DINO-cell broadcast (14px cells, idx (i//14)*73 +
+  (j//14), 2px edge strip clamped to last token — edge rule
+  stated) + RGB concat, as built.
+- `dino-tokrgb`: seq = DINO tokens (3504) + RGB cell tokens (672,
+  stride-32 as built); head reads RGB outs (as built, 32px cells).
+  Closest literal swap: const slot now carries image-conditional
+  global tokens.
+Schedule fixed 8k-cosine, lr 0.01, seed 7 (the mover; information
+is the variable, not optimization). Wall caps: tokonly 30 min,
+tokrgb 45 min (4176-seq attention costs ~5x s16 — stated, not
+hidden). GPU box to itself.
+Stated openly: the DINOv2 encoder is a frozen preprocessor, NOT
+in-table and NOT deployable-as-student — this round tests the
+INFORMATION hypothesis, not deployability. A win means
+"information suffices" and nominates feature-distillation next;
+it does not ship. Winner: most held-out cells under bars;
+directional near/planar/smooth vs Phase-8 (>0.05, frozen) reopens
+empirically. Empty is complete. Metrics banked separately
+(`attn_run_<tag>.json` + `battery15` key, reference `jattn64b2`,
+dino provenance in flags); weights out-of-tree; no
+emitter/opcode/assembly changes.
