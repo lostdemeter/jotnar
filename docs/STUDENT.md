@@ -239,8 +239,12 @@ neither run.
 
 Declared axes + budget, FROZEN before running (no mid-battery axis
 invention — that path is the spiral). Budget: 10 new configs, minutes
-each, single GPU to itself. Loss fixed to aligned-MAE (signals dead).
-Judge: Phase-1 bars, same alignment, verdict-reported. In-table only.
+each, single GPU to itself. Judge unchanged: Phase-1 bars, same
+alignment, verdict-reported not pass-gated. Loss fixed to aligned-MAE
+(signals are dead — relitigating them is out of scope). In-table
+architectures only (emitted-pattern law holds; gap hit =
+stop-finding). Empty battery (nothing clears bars) is a complete
+report with the table banked.
 
 Frozen axes (each config states receptive field in pixels):
 - field: 33 (dense3+s4/17+s8/33, 177 dims) → 65 (+s16/65, 252 dims)
@@ -248,7 +252,7 @@ Frozen axes (each config states receptive field in pixels):
   sampling, cf. Phase 3); averaging would need parked POOLAVG.
 - mixer: W64/d2 (reference shape) × W128/d2, W64/d3, W32/d2.
 - granularity: densewin 3 → 5 at field 33.
-- scale-count: (covered by field steps — dropping scales untested
+- scale-count: covered by field steps (dropping scales untested
   separately; noted, not run).
 Training fixed for comparability (2000 steps, lr 0.02, seed 7,
 stride-7, no-grad alignment). Reference row: committed mscale64
@@ -278,5 +282,24 @@ Winner rule: most held-out cells under bars; ties → smaller
 train-heldout gap (generalization over memorization). Winner gets
 full retrain-match (trajectory + cell table identical) before being
 claimed — integrator spot-verifies the winner only, plus harness
-integrity, not all 10. Empty battery (nothing clears bars) is a
-complete report with the table banked.
+integrity, not all 10.
+
+### Battery results (all 10 ran, minutes each, single GPU to itself)
+
+Train-loss descends with field/width as expected (0.3347 f33 →
+0.2241 f129w128d2); held-out does not follow. Best held-out cells
+per config sit 2-6x over bars everywhere; the count of held-out
+cells under bars is 0 for all 10 configs (gate-counted, not
+eyeballed). Winner: none — no retrain-match needed (nothing to
+claim; the tripwire stands ready: any passing cell with winner None
+fails the gate demanding the claim).
+
+Range-vs-bars frontier: train fit improves monotonically with
+field (33px 0.33 → 129px 0.22) and width, while held-out stays flat
+(~0.2-0.48 across all configs) — the battery maps a generalization
+wall, not a capacity slope. Depth (d2→d3), granularity (dense 3→5),
+and width (32→128) all move train loss without moving held-out.
+Diagnosis: monocular layout needs beyond-129px/global structure or
+a different inductive bias; the in-table mixer family is exhausted
+along every frozen axis. Next needs either long-range structure or
+a constraint change — scoped proposals, not this report.

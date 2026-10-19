@@ -190,7 +190,45 @@ def main():
         print(f"student cells passing bars: {npass}/{ncell} "
               f"(harness verdict, not a gate failure)", flush=True)
 
-    # -- Phase-4 ablation table (reported verdicts, integrity-gated) --------
+    # -- Phase-5 battery (constitution-bound search, verdict-reported) --------
+    # Frozen 10 configs (see docs/STUDENT.md Phase 5); the gate asserts
+    # table integrity + the winner-consistency tripwire (winner None
+    # ⟺ no config clears any cell; a passing cell with winner None
+    # fails loud demanding the retrain-match claim).
+    import json as _js3
+    ab = _js3.load(open(os.path.join(FIXDIR, "student_ablation.json")))
+    bat = ab.get("battery", {})
+    frozen = ["f65w64d2", "f129w64d2", "f65w128d2", "f129w128d2",
+              "f65w64d3", "f129w64d3", "f33w128d2", "f33dense5",
+              "f65w32d2", "f129w128d3"]
+    check("battery-configs", bat.get("configs") == frozen
+          and bat.get("reference") == "mscale64", bat.get("configs"))
+    cells = bat.get("cells", {})
+    complete = True
+    for t in frozen:
+        fr = cells.get(t, {}).get("frames", {})
+        complete &= (len(fr) == 6 and all(
+            sorted(fr[n].get("strata", {})) == STRATA
+            and all(np.isfinite(v) and v >= 0
+                    for v in fr[n]["strata"].values())
+            for n in fr))
+    check("battery-complete", bool(complete), "10 configs x 6x6 finite")
+    counts = {}
+    for t in frozen:
+        n = 0
+        for _n, fr in cells[t]["frames"].items():
+            if fr.get("split") != "heldout":
+                continue
+            n += sum(1 for k in STRATA if fr["strata"][k] <= BARS[k])
+        counts[t] = n
+    check("battery-winner-none",
+          all(v == 0 for v in counts.values()) and bat.get("winner") is None,
+          f"held-out cells under bars per config: {counts}")
+    flags_ok = all(
+        all(k in cells[t].get("flags", {}) for k in
+            ("field", "densewin", "depth", "width", "steps", "lr", "seed"))
+        for t in frozen)
+    check("battery-flags", bool(flags_ok), "repro metadata per config")
     # Four variants (baseline/perc/sink/both), all openly losing: the gate
     # asserts the table is complete and internally consistent (every cell
     # finite; deltas vs baseline computed, never asserted in a direction).
