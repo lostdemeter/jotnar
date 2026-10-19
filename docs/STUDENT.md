@@ -516,8 +516,9 @@ Architecture `jattn64b2` (field: full-frame by construction):
   frame (1024x672 → 32x21 = 672 tokens, dim 3). Strided sampling,
   honest precedent (cf. Phases 3-6); averaging would need parked
   POOLAVG — not used. Token proj 3→W (W=64, MATMUL+ADD).
-- Positions: factored learned row (32,W) + col (21,W) tables, ADD.
-  No RoPE (allowed but unneeded at 672 tokens; not run).
+- Positions: factored learned row (21,W) + col (32,W) tables, ADD
+  (32 cols x 21 rows at 1024x672; labels corrected pre-run, same
+  53xW count). No RoPE (allowed but unneeded at 672 tokens).
 - Const text fill: C=4 learned constant tokens (dim W), prepended
   to every frame's sequence — the student's analog of the teacher's
   image-independent text (Phase-7 blueprint). Fixed after training;
