@@ -1218,3 +1218,52 @@ What this closes: the last "maybe the errors are all X" structure
 hypothesis with a number attached. Errors are everywhere, in every
 system, at every scale tested — the wall has no address left
 inside the judged domain.
+
+## Phase 19 — DiT-tiny build, teacher-faithful machinery (constitution, FROZEN pre-run)
+
+Architecture frozen pre-run — teacher-faithful package at student
+scale (A1/A2/A4 verdicts cited, not re-derived):
+- Tokens: stride-16 full RGB patches (16x16x3=768, the teacher's
+  effective pixel-patch: VAE-1/8 x patch-2) at native 1024x672 →
+  64x42 = 2688 tokens; patch Linear 768→W (W=64).
+- Positions: learned row (42,W) + col (64,W), ADD (family
+  precedent; RoPE allowed-not-run, not run).
+- Conditioning: NO text stream (dropped with reason: const-text
+  never moved anything in Phases 8-13; text-stream ablation is its
+  own later question). AdaLN-Zero modulation from a LEARNED const
+  vector (SiLU→Linear→6W split shift/scale/gate — BETA const-fill
+  precedent; feedforward depth needs no diffusion step).
+- Blocks B∈{2,4,6} (depth ladder at matched width): LayerNorm
+  no-affine everywhere it belongs (A1 LANDED: LAYERNORM F, cite);
+  multi-head H4 self-attention (H4 = Phase-10 best train-fitter;
+  best-foot-forward reason), explicit-softmax unfused (A4: unfused
+  FASTER at student scale, cite); SILU MLP with GELU-form
+  activation SILU(MUL(x,1.702))/1.702 (A2: 314.6dB composition,
+  cite); gated residuals (MUL+ADD F).
+- Head: nearest-cell broadcast (16px cells, GATHER Phase-11
+  precedent) + RGB concat + MLP (W+3→W→1, SILU) — family head as
+  built (the round tests the TRUNK).
+- VAE EXPLICITLY OUT: direct depth prediction (scoping reason:
+  VAE decoder needs A3 CONV + GroupNorm + upsampling, all parked;
+  every student in this arc predicts depth maps directly).
+- Per-op citations (README table): MATMUL/ADD/MUL/SUB F,
+  LAYERNORM F (A1), RMSNORM-free, SILU/CONCAT/GATHER/BMMV/
+  SOFTMAX_WIDE/BETA F. No LAYERNORM-substitute, no GELU-substitute,
+  no fused kernel — the faithful package needs none of them.
+Training recipe frozen: log-normalization (targets z =
+(log t − μ)/σ, μ/σ fixed from train split, banked) + aligned-MAE
+(same no-grad lstsq, in z-space) + gradient loss (Sobel-gradient
+MAE on aligned preds, λ=0.1, full-frame every 50 steps —
+Phase-4 aux-cadence precedent; training-time only, zero inference
+cost; perceptual/Sinkhorn stay dead, relitigating out of scope).
+Eval: invert (exp(σẑ+μ)) → standard linear harness (gate-compatible).
+Tags `dit64b2/dit64b4/dit64b6` (H4/s16/nctx-0 in flags).
+Budget: 3 configs, 8k-cosine fixed (the mover), seed 7, wall caps
+15/20/25 min, GPU solo, Qwen-7B never co-loaded.
+Winner: most held-out cells under bars; directional near/planar/
+smooth vs prior bests (>0.05, frozen — comparator: per-stratum
+minima over banked Phases 8/10/11/13/15/17, computed spec-side;
+gate carries counts/complete/flags per precedent). Empty complete.
+Metrics banked separately (`attn_run_<tag>.json` + `battery19`
+key, reference `jattn64b2`); primaries untouched; weights
+out-of-tree.
