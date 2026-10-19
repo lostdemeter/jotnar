@@ -865,3 +865,38 @@ key, reference `jattn64b2`); primaries untouched; weights
 out-of-tree. Per-op citations unchanged (deeper stacks reuse the
 same tabled ops); `--blocks` already CLI-driven, zero code changes
 expected.
+
+### Battery results (3/3 ran, walls 549s/631s/736s, GPU solo)
+
+Determinism datum: B2 rerun is BIT-IDENTICAL to banked s16h2
+(max abs diff 0.0 across 36 cells, sessions apart) — same flags +
+same code is exactly reproducible; the Phase-10 drift came from
+changed code, not chaos. Param ladder verified in weight files:
+111425 → 161281 → 211137 (+49,856/block, as declared).
+
+```
+tag              blocks  params   train-loss  tr-mean  ho-mean  dir-moves
+jattn64-s16h2b2  2       111425   0.321       0.455    0.386    0/6
+jattn64-s16h2b3  3       161281   0.430       0.462    0.418    0/6
+jattn64-s16h2b4  4       211137   0.529       0.522    0.375    0/6
+```
+Winner: none — 0/36 under bars (gate-counted); no retrain-match
+needed. Train DEGRADES with depth at fixed budget (0.321 → 0.430
+→ 0.529-static; B4 never leaves Phase-8-2k territory) while
+held-out sits flat (0.375-0.418). Depth buys nothing twice over:
+no better optimum reached AND no better generalization at any
+reached optimum. The train-heldout gap diagnostic reads
+memorization-proof in reverse — B4 cannot even memorize (train
+0.52), so depth here is an optimization tax with no learning
+upside at 8k-cosine. More steps for deeper stacks would confound
+depth with budget (refused in spirit at declaration: the round
+tests depth at the mover schedule, not schedules per depth).
+Earned sentence: empty is complete — the in-table story is
+complete including stack depth. Remaining doors, priced, none
+opened: emitted-pattern constraint changes (LAYERNORM/GELU/CONV+
+GroupNorm/INTERP lowerings — backend work per op, drilled-only
+scaffolding exists for norms); fused joint-attention kernels
+(performance only); raw scale at matched depth (evidence prices it
+low); the textured-domain restriction from Phase 12a (textured-only
+synthetic: 4.4x headroom — needs its own round and bar, still
+stated-not-run).
