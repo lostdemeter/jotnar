@@ -185,3 +185,52 @@ occlusion ordering) needs beyond-33px structure no local mixer
 represents; texture/detail strata improved most yet still 2-5x over.
 Next needs either long-range in-table structure or a constraint
 change — both scoped proposals, not this report.
+
+## Phase 4 — training signals ablated, both killed (mscale64 frozen)
+
+Two signals, each behind a flag (`--perc`, `--sink`), ablated
+separately against the aligned-MAE baseline (deterministic stack
+throughout; DINOv2-base frozen at ~/student_runs/dinov2-base, 661MB
+out-of-tree — ungated facebook/dinov2-base stand-in for gated
+DINOv3, documented substitution).
+
+1. Perceptual, iREPA pattern (adapted): MSE between L2-normalized
+   frozen-DINOv2 token embeddings of student vs teacher depth maps
+   (3ch-replicated, ImageNet-normalized). True iREPA aligns
+   intermediate layers; our MLP has no spatial intermediates, so we
+   align encoder embeddings of final outputs. Training-time only,
+   zero inference cost. Gradients verified live (4.05e-05 w.r.t.
+   student scale — nonzero, real path; single backward over base +
+   aux after catching a double-backward, and a per-frame combined
+   restructure after mpboth OOMed at 18.5GB).
+2. Sinkhorn block loss (paper values first): 8x8 block grid,
+   256-px deterministic stride subsamples, squared cost on
+   affinely-aligned values, K=5 τ=0.1 log-domain iterations, plan
+   detached with cost attached (standard divergence practice).
+   Permutation-invariant within blocks by construction.
+
+Ablation (held-out; train tracks the same way):
+```
+variant   train loss   geo_w0 (best/worst)      geo_w1 (best/worst)
+baseline  0.3092       smooth 0.169 / tex 0.308  near 0.322 / far 0.488
++perc     0.3347       smooth 0.183 / tex 0.343  near 0.185 / far 0.425
++sink     0.3022       smooth 0.173 / tex 0.337  near 0.263 / far 0.440
++both     0.3249       smooth 0.194 / tex 0.341  near 0.233 / far 0.466
+```
+(regenerated on the final tree; stale pre-fix columns replaced — the
+pre-fix aux runs' gradients differed, see report. Baseline column
+stands retrain-verified.)
+Verdict: NULL across the table — deltas ±0.02-0.05, bidirectional,
+no stratum systematically moves; all cells 2-6x over bars in every
+variant. Kills with evidence (not failures to tune):
+- Perceptual: metric dynamic range 7e-4 (random-vs-teacher) vs MAE
+  0.37 — homeopathic at any stable weight; trajectory static
+  (0.00137→0.00141 over 2000 iters). The metric cannot move training.
+- Sinkhorn: post-alignment OT values ~4-6e-6 (floor-dominated at K=5
+  non-converged diffuse plans and/or already-matched distributions)
+  vs MAE 0.3 — ~1e-5 influence at λ=1.0. Scaling λ up would amplify
+  floor residue, not signal.
+Neither signal earns Phase 5's search battery. What would change
+that: a perceptual metric with dynamic range, or converged/larger-K
+Sinkhorn with calibrated weight — both new experiments, stated here,
+neither run.

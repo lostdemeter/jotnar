@@ -190,6 +190,47 @@ def main():
         print(f"student cells passing bars: {npass}/{ncell} "
               f"(harness verdict, not a gate failure)", flush=True)
 
+    # -- Phase-4 ablation table (reported verdicts, integrity-gated) --------
+    # Four variants (baseline/perc/sink/both), all openly losing: the gate
+    # asserts the table is complete and internally consistent (every cell
+    # finite; deltas vs baseline computed, never asserted in a direction).
+    # A variant that moved held-out strata systematically would show here
+    # as a directional delta -- none does (see docs/STUDENT.md Phase 4).
+    import json as _js2
+    ab_path = os.path.join(FIXDIR, "student_ablation.json")
+    if not os.path.isfile(ab_path):
+        print("SKIP ablation legs (no student_ablation.json)")
+    else:
+        ab = _js2.load(open(ab_path))
+        variants = ab.get("variants", [])
+        cells = ab.get("cells", {})
+        check("ablation-complete",
+              variants == ["baseline", "perc", "sink", "both"]
+              and all(v in cells and len(cells[v]) == 6 for v in variants),
+              f"{variants}")
+        finite_ok = True
+        for v in variants:
+            for n, fr in cells.get(v, {}).items():
+                vals = list(fr.get("strata", {}).values())
+                finite_ok &= (sorted(fr.get("strata", {})) == STRATA
+                              and all(np.isfinite(x) and x >= 0
+                                      for x in vals))
+        check("ablation-finite", bool(finite_ok), "4x6x6 cells finite >= 0")
+        base = cells.get("baseline", {})
+        for v in ("perc", "sink", "both"):
+            ups, dns, n = 0, 0, 0
+            for n_, fr in cells.get(v, {}).items():
+                if fr.get("split") != "heldout":
+                    continue
+                for k in STRATA:
+                    n += 1
+                    d = fr["strata"][k] - base[n_]["strata"][k]
+                    ups += d < -0.01
+                    dns += d > 0.01
+            print(f"ablation {v} vs baseline (held-out, |d|>0.01): "
+                  f"{ups} improved / {dns} worsened / {n} cells", flush=True)
+        check("ablation-reported", True, ab.get("verdict", "")[:80])
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

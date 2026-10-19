@@ -6,6 +6,10 @@
  "seed": 7,
  "patch": 1,
  "multi": true,
+ "perc": 0.0,
+ "sink": 0.0,
+ "aux_every": 50,
+ "dinov2": null,
  "train": [
   "church",
   "dogs",
