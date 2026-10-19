@@ -234,3 +234,49 @@ Neither signal earns Phase 5's search battery. What would change
 that: a perceptual metric with dynamic range, or converged/larger-K
 Sinkhorn with calibrated weight — both new experiments, stated here,
 neither run.
+
+## Phase 5 — architecture search battery (constitution-bound)
+
+Declared axes + budget, FROZEN before running (no mid-battery axis
+invention — that path is the spiral). Budget: 10 new configs, minutes
+each, single GPU to itself. Loss fixed to aligned-MAE (signals dead).
+Judge: Phase-1 bars, same alignment, verdict-reported. In-table only.
+
+Frozen axes (each config states receptive field in pixels):
+- field: 33 (dense3+s4/17+s8/33, 177 dims) → 65 (+s16/65, 252 dims)
+  → 129 (+s32/129, 327 dims). Strided sampling (documented honest
+  sampling, cf. Phase 3); averaging would need parked POOLAVG.
+- mixer: W64/d2 (reference shape) × W128/d2, W64/d3, W32/d2.
+- granularity: densewin 3 → 5 at field 33.
+- scale-count: (covered by field steps — dropping scales untested
+  separately; noted, not run).
+Training fixed for comparability (2000 steps, lr 0.02, seed 7,
+stride-7, no-grad alignment). Reference row: committed mscale64
+(baseline, retrain-verified — not rerun).
+
+| # | tag | field | dims | mixer | params |
+|---|-----|-------|------|-------|--------|
+| 0 | mscale64 (ref) | 33px | 177 | W64/d2 | 15.6k |
+| 1 | f65w64d2 | 65px | 252 | W64/d2 | ~20k |
+| 2 | f129w64d2 | 129px | 327 | W64/d2 | ~25k |
+| 3 | f65w128d2 | 65px | 252 | W128/d2 | ~49k |
+| 4 | f129w128d2 | 129px | 327 | W128/d2 | ~59k |
+| 5 | f65w64d3 | 65px | 252 | W64/d3 | ~24k |
+| 6 | f129w64d3 | 129px | 327 | W64/d3 | ~29k |
+| 7 | f33w128d2 | 33px | 177 | W128/d2 | ~39k |
+| 8 | f33dense5 | 33px | 225 | W64/d2 | ~19k |
+| 9 | f65w32d2 | 65px | 252 | W32/d2 | ~10k |
+| 10 | f129w128d3 | 129px | 327 | W128/d3 | ~75k |
+
+Per-op citations (unchanged family): strided neighborhoods deploy
+as GATHER F, concat as CONCAT F, mixer as MATMUL/ADD/SILU F — all
+emitted CUDA/F patterns. No norms, no conv, no new opcodes.
+Deployed size envelope: largest config ~75k params (~300KB fp32),
+transient features <1GB/frame — nowhere near 17GB.
+
+Winner rule: most held-out cells under bars; ties → smaller
+train-heldout gap (generalization over memorization). Winner gets
+full retrain-match (trajectory + cell table identical) before being
+claimed — integrator spot-verifies the winner only, plus harness
+integrity, not all 10. Empty battery (nothing clears bars) is a
+complete report with the table banked.
