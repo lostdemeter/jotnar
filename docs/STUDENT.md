@@ -1392,3 +1392,37 @@ axis tried).
 Metrics banked separately (`attn_run_<tag>.json` + `battery21`
 key, reference `jattn64b2`); primaries untouched; weights
 out-of-tree.
+
+### Battery results (6/6 ran, walls ~600s each, GPU solo)
+
+Train-loss finals: c1 0.854 / c3 0.740 / l1 0.854 / l3 0.427 /
+w1 0.847 / w3 0.867. Every schedule dips mid-training (0.47-0.62)
+then recollapses to the 0.854 pin — except l3, which rides
+linear-decay-to-zero down to 0.427. Linear eval cells: IDENTICAL
+across all six (max diff 1.2e-3, most bit-exact) — 0/72 under
+bars, 0/18 directional. No winner, no retrain-match.
+Mandatory disclosure (caught pre-banking, nothing hidden): the
+identical linear cells are an EXP-CLIP RAIL artifact — end-state
+log-preds are astronomically scaled, the eval clip saturates all
+six to opposite rails, and affine alignment scores every constant
+identically. This disclosure VOIDS the config-comparison content
+of the Phase-19/20/21 linear tables too (same rails, same
+artifact — their 0-under-bars verdicts stand, rails pass nothing,
+but B-vs-B deltas there were vacuous). Unclipped z-space
+diagnostic (same harness, no exp): c1/l3/w3 z-train
+0.861/0.858/0.857 — no fit ANYWHERE, including l3: its 0.427
+sample-concat loss does not survive per-frame full-frame eval
+(sample-phase-locked, stated as reading).
+Verdict: EMPTY. The sweep's only real datum is negative space:
+no LR shape in {const, linear, warmup+cosine} × {0.01, 0.003}
+escapes the constant attractor with generalizing fit; the one
+descender (l3) fits nothing per-frame. Schedule is not the key
+that was missing — 6/6 schedules agree.
+Earned sentence, as stated in advance: the in-rules arc is closed
+in full — no further schedule/architecture permutations inside
+current rules without new evidence. Mixer, attention,
+faithful-DiT, domain, probe, and pattern rounds all banked; the
+wall stands on every axis tried, and the last door (this sweep)
+opened onto the same pin. What remains lives outside current
+rules (new patterns per PATTERN_GAPS.md, or new evidence)
+— named, unopened, out of scope.
