@@ -212,7 +212,8 @@ def main():
             a, b = ab[0], ab[1]
         loss = (a * p + b - Tcat).abs().mean()
         aux = torch.zeros((), device=device)
-        if it % args.aux_every == 0 or it == args.steps - 1:
+        if args.grad_w != 0 and (it % args.aux_every == 0
+                                 or it == args.steps - 1):
             terms = []
             for n in args.train:
                 rgb, _ = frames[n]
