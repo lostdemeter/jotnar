@@ -1218,3 +1218,92 @@ What this closes: the last "maybe the errors are all X" structure
 hypothesis with a number attached. Errors are everywhere, in every
 system, at every scale tested — the wall has no address left
 inside the judged domain.
+
+## Phase 19 — DiT-tiny build, teacher-faithful machinery (constitution, FROZEN pre-run)
+
+Architecture frozen pre-run — teacher-faithful package at student
+scale (A1/A2/A4 verdicts cited, not re-derived):
+- Tokens: stride-16 full RGB patches (16x16x3=768, the teacher's
+  effective pixel-patch: VAE-1/8 x patch-2) at native 1024x672 →
+  64x42 = 2688 tokens; patch Linear 768→W (W=64).
+- Positions: learned row (42,W) + col (64,W), ADD (family
+  precedent; RoPE allowed-not-run, not run).
+- Conditioning: NO text stream (dropped with reason: const-text
+  never moved anything in Phases 8-13; text-stream ablation is its
+  own later question). AdaLN-Zero modulation from a LEARNED const
+  vector (SiLU→Linear→6W split shift/scale/gate — BETA const-fill
+  precedent; feedforward depth needs no diffusion step).
+- Blocks B∈{2,4,6} (depth ladder at matched width): LayerNorm
+  no-affine everywhere it belongs (A1 LANDED: LAYERNORM F, cite);
+  multi-head H4 self-attention (H4 = Phase-10 best train-fitter;
+  best-foot-forward reason), explicit-softmax unfused (A4: unfused
+  FASTER at student scale, cite); SILU MLP with GELU-form
+  activation SILU(MUL(x,1.702))/1.702 (A2: 314.6dB composition,
+  cite); gated residuals (MUL+ADD F).
+- Head: nearest-cell broadcast (16px cells, GATHER Phase-11
+  precedent) + RGB concat + MLP (W+3→W→1, SILU) — family head as
+  built (the round tests the TRUNK).
+- VAE EXPLICITLY OUT: direct depth prediction (scoping reason:
+  VAE decoder needs A3 CONV + GroupNorm + upsampling, all parked;
+  every student in this arc predicts depth maps directly).
+- Per-op citations (README table): MATMUL/ADD/MUL/SUB F,
+  LAYERNORM F (A1), RMSNORM-free, SILU/CONCAT/GATHER/BMMV/
+  SOFTMAX_WIDE/BETA F. No LAYERNORM-substitute, no GELU-substitute,
+  no fused kernel — the faithful package needs none of them.
+Training recipe frozen: log-normalization (targets z =
+(log(t-lo+1) − μ)/σ with lo = train-split min, μ/σ of the logged
+train split — all three fixed and banked; correction pre-run:
+banked teacher depths are SIGNED normalized (min −1), so the
+as-written log(t) is unimplementable — shifted-log keeps the log
+compression literally with one extra constant) + aligned-MAE
+(same no-grad lstsq, in z-space) + gradient loss (Sobel-gradient
+MAE on aligned preds, λ=0.1, full-frame every 50 steps —
+Phase-4 aux-cadence precedent; training-time only, zero inference
+cost; perceptual/Sinkhorn stay dead, relitigating out of scope).
+Eval: invert (t = exp(σẑ+μ) + lo − 1) → standard linear harness
+(gate-compatible).
+Tags `dit64b2/dit64b4/dit64b6` (H4/s16/nctx-0 in flags).
+Budget: 3 configs, 8k-cosine fixed (the mover), seed 7, wall caps
+15/20/25 min, GPU solo, Qwen-7B never co-loaded.
+Winner: most held-out cells under bars; directional near/planar/
+smooth vs prior bests (>0.05, frozen — comparator: per-stratum
+minima over banked Phases 8/10/11/13/15/17, computed spec-side;
+gate carries counts/complete/flags per precedent). Empty complete.
+Metrics banked separately (`attn_run_<tag>.json` + `battery19`
+key, reference `jattn64b2`); primaries untouched; weights
+out-of-tree.
+
+### Battery results (3/3 ran, walls 638s / <1200s / 1138s, GPU solo)
+
+Pre-run correction (nothing banked before it): banked teacher
+depths are SIGNED normalized (min −1) — as-written log(t) is
+unimplementable; shifted-log log(t−lo+1) keeps the recipe
+literally (lo=−1.0, μ=0.6780, σ=0.3015 banked). Param ladder
+verified: 209857 → 359233 → 508609 (+149,376/block incl. AdaLN).
+
+```
+tag      blocks  train-loss         cells vs B2 sibs  bars
+dit64b2  2       0.8666 static      —                 0/12
+dit64b4  4       (wall unrecorded*) ~0 (5.6e-16)      0/12
+dit64b6  6       0.8665→0.8542 pin  0.0 exact         0/12
+(*B4 wall: completed inside cap; exact value lost to tail-only
+capture — my capture error, stated.)
+```
+Winner: none — 0/36 (gate-counted); no retrain-match. Directional
+moves: 0 — all three depths converge to THE SAME predictions
+(B6 vs B2 bit-identical). Depth is irrelevant because nothing
+trains: the gradient aux (λ=0.1, every 50) pins optimization —
+proven by diagnostic (same code, grad-w 0: 0.867→0.489 in 300
+steps; throwaway tag, unbanked). The aux fights the MAE direction
+every 50th step back to the 0.86 fixed point (all print steps
+coincide with aux steps — the sawtooth hides inside the cadence).
+Diagnosis: RECIPE POISON, not machinery verdict. The faithful
+machinery (LN+GELUform+AdaLN+patchify+unfused attention) never
+received a clean training signal in any variant — its question
+stays REOPENED, explicitly not closed by this round. What this
+round does close: the paper-recipe transplant (lognorm+gradloss
+at λ=0.1/50-step) is dead-on-arrival for this stack; any future
+DiT-tiny needs its own constitution WITHOUT the aux (or with a
+swept λ — a new round either way, none run here). Empty table,
+loaded finding: the aux pin is the largest optimization effect
+measured since Phase-9 cosine (in reverse).
