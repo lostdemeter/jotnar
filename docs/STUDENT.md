@@ -777,3 +777,30 @@ decoder territory); fused joint-bidirectional attention kernels
 math); raw scale (evidence prices it low: train moves, held-out
 doesn't). Any of these is its own declared round with its own
 constitution.
+
+## Phase 12a — procedural analytic scenes, diagnose before training
+
+No student training this round (12b is a separate go/no-go).
+Instrument: `scripts/synth_depth.py` — pinhole renderer over
+spheres / axis-aligned boxes / floor / back wall, closed-form
+intersections, exact float64 z-depth; flat shading (fixed per-face
+shades, no lights) + 3D-checker textured variants; 320x256
+(diagnostic scale; dims divide by 32). Scenes generate on the fly
+from fixed seeds (12000+idx) — zero bytes banked; the generator is
+the fixture. Gate `tests/test_synthetic_depth.py` (SKIP-clean).
+Catalog N=24: count {1,2,4} × occlusion {single,stacked} × range
+{shallow 2.5-5, deep 2.5-11} × texture {flat,checker} — each combo
+exactly once, strata by construction in scene meta. Verified:
+24/24 combos, same-seed identical, scalar-loop self-consistency
+8.9e-16 worst dev.
+12b decision bar (preemptive — stated before measuring, frozen):
+GO iff ALL three hold — (1) teacher bias ≪ student error
+(scene-mean aligned-MAE headroom ≥2x vs mscale64-vs-GT: something
+to learn toward); (2) ≥1 construction axis separates mscale64
+error directionally (group-mean gap >0.05: layout signal inside an
+in-table student's errors); (3) teacher seeded-twice noise == 0
+(byte-identical: stable labels). Else NO-GO with evidence.
+Constraint noted regardless: jattn64b2's learned row/col pos tables
+are grid-locked (21x32 @1024x672) — off-grid eval needs retraining
+or architecture change, so any GO retrains or re-specifies the
+attn line; mscale64's strided sampling runs at any resolution.
