@@ -1272,3 +1272,38 @@ gate carries counts/complete/flags per precedent). Empty complete.
 Metrics banked separately (`attn_run_<tag>.json` + `battery19`
 key, reference `jattn64b2`); primaries untouched; weights
 out-of-tree.
+
+### Battery results (3/3 ran, walls 638s / <1200s / 1138s, GPU solo)
+
+Pre-run correction (nothing banked before it): banked teacher
+depths are SIGNED normalized (min −1) — as-written log(t) is
+unimplementable; shifted-log log(t−lo+1) keeps the recipe
+literally (lo=−1.0, μ=0.6780, σ=0.3015 banked). Param ladder
+verified: 209857 → 359233 → 508609 (+149,376/block incl. AdaLN).
+
+```
+tag      blocks  train-loss         cells vs B2 sibs  bars
+dit64b2  2       0.8666 static      —                 0/12
+dit64b4  4       (wall unrecorded*) ~0 (5.6e-16)      0/12
+dit64b6  6       0.8665→0.8542 pin  0.0 exact         0/12
+(*B4 wall: completed inside cap; exact value lost to tail-only
+capture — my capture error, stated.)
+```
+Winner: none — 0/36 (gate-counted); no retrain-match. Directional
+moves: 0 — all three depths converge to THE SAME predictions
+(B6 vs B2 bit-identical). Depth is irrelevant because nothing
+trains: the gradient aux (λ=0.1, every 50) pins optimization —
+proven by diagnostic (same code, grad-w 0: 0.867→0.489 in 300
+steps; throwaway tag, unbanked). The aux fights the MAE direction
+every 50th step back to the 0.86 fixed point (all print steps
+coincide with aux steps — the sawtooth hides inside the cadence).
+Diagnosis: RECIPE POISON, not machinery verdict. The faithful
+machinery (LN+GELUform+AdaLN+patchify+unfused attention) never
+received a clean training signal in any variant — its question
+stays REOPENED, explicitly not closed by this round. What this
+round does close: the paper-recipe transplant (lognorm+gradloss
+at λ=0.1/50-step) is dead-on-arrival for this stack; any future
+DiT-tiny needs its own constitution WITHOUT the aux (or with a
+swept λ — a new round either way, none run here). Empty table,
+loaded finding: the aux pin is the largest optimization effect
+measured since Phase-9 cosine (in reverse).
