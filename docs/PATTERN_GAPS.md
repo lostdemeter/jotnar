@@ -59,6 +59,16 @@ clear or the pricing was wrong.
 - Size: S. Dependencies: none.
 - Falsifier: variant audit showing the teacher needs neither erf
   nor tanh within 40dB (then SILU-substitution stands and A2 dies).
+- MEASURED — FIRED (`tests/test_gelu.py`, ALL OK): teacher DiT MLPs
+  use diffusers ApproximateGELU = x·sigmoid(1.702·x) (audited in
+  `transformer_qwenimage.py:628,638` → `activations.py:149-169`).
+  erf-vs-sig1702 38.6dB, tanh-vs-sig1702 38.4dB in [-4,4] (both
+  below 40dB where pre-activations live; 41.5dB on [-8,8] with
+  0.02 maxabs does not save them). A2 KILLED — no erf/tanh
+  patterns built; row stays parked (still true).
+- Smaller-than-priced note: the teacher form composes from tabled
+  ops at 314.6dB — SILU(MUL(x,1.702))/1.702 via BETA+MUL+SILU
+  (all F). DiT MLP fidelity needs NO new pattern.
 
 ### A3 — CONV past audit-first (C/CUDA)
 
@@ -102,6 +112,13 @@ clear or the pricing was wrong.
   Dependencies: emitter table; unfused composition (exists).
 - Falsifier: unfused composition matching fused within 10% wall on
   student-scale seqs (then A4 is perf theater — defer, don't build).
+- MEASURED — FIRED (`tests/test_fused_defer.py`, ALL OK; walls in
+  `samples/marigold/fused_measure.json`): unfused composite vs
+  flash-SDPA at student scale — 676 tokens 0.039ms vs 0.123ms
+  (0.31x), 2692 tokens 0.275ms vs 0.552ms (0.50x), RTX 3090Ti solo.
+  Unfused is FASTER (small-seq launch overhead dominates flash) —
+  A4 DEFERS with evidence. Composition agreement leg green;
+  no fused encoder kernel exists (tripwire).
 
 ### A5 — multi-output kernels (fusion interior taps)
 
@@ -272,6 +289,22 @@ the last standing door. What stays unknown after pricing:
 dynamic-dispatch determinism, order-fixed routing designs,
 unbounded termination (refused, not unknown — never open it).
 
+## DiT verdict (pattern-a2a4 round product — no student built)
+
+With A1 built, A2 killed, A4 deferred: the teacher-faithful path
+is OPEN with zero further patterns. LayerNorm landed (C/CUDA,
+deterministic); the teacher's GELU form composes from tabled ops
+(no pattern needed); joint attention runs as unfused composition
+(faster than fused at student scale — no kernel needed). Every DiT
+block op is now landed-or-composed. What still blocks: A3 CONV
+(VAE path only — DiT blocks need no conv), A5 taps (perf),
+the VAE itself (decoder = A3 territory). Verdict, not a build:
+a faithful-DiT student attempt is unblocked at the pattern level —
+whether it passes bars is an experiment for a declared round, and
+the mixer/attention wall (0/156 + 0/36s) prices its odds low.
+Retired unknowns: GELU pin (sig-1.702, composable), fused-attention
+walls (0.31x/0.50x unfused-wins — A4 falsifier tested).
+
 ## What stays unknown after pricing (both tracks)
 
 GELU erf-vs-tanh pin; fused-attention wall numbers; CONV audit
@@ -282,3 +315,5 @@ falsifier untested); interior-tap demand proof (A5's falsifier
 untested); unfused-vs-fused wall gap at student scale (A4's
 falsifier untested). Unknowns are design debt, not build debt —
 each names the experiment that retires it.
+(RETIRED this round: GELU pin → sig-1.702 composable, no pattern;
+A4 falsifier → tested, unfused wins 0.31x/0.50x, deferred.)
