@@ -176,7 +176,7 @@ overloads; missing = loud `NoPattern`, never silent.
 | GATHER | 2 -> 1 | T,F | F | T | rows materialized + views |
 | GAUSS | 3 -> 1 | — | — | — | parked: drilled in test_asm, no listing/demo/builder workload |
 | GELU | 1 -> 1 | — | — | — | parked: drilled in test_asm, no workload (Qwen uses SILU/SwiGLU) |
-| INTERP | 3 -> 1 | — | — | — | nearest-x2 audited; parked (no workload) |
+| INTERP | 3 -> 1 | F | F | — | bilinear half-pixel (align_corners=False, audited vs torch; nearest stays shipped degraded default); C `chain/emit_c.py` F64 loop + CUDA `k_interp_bilinear_f32` (`chain/emit_cuda.py`); dyadic-only, parity 333dB C / 156dB CUDA |
 | ISO_BLUR | 1 -> 1 | — | — | — | lattice-only (stabilize listing runs lattice, no emitted demand) |
 | LAYERNORM | 3 -> 1 | F | F | — | C `chain/emit_c.py` F64 row loop + CUDA `k_layernorm_f32` (`chain/emit_cuda.py`); eps_ln via CONFIG (RMSNORM scaffolding); parity 315dB C / 144dB CUDA |
 | LUMA | 1 -> 1 | — | — | — | lattice-only (flagship + stabilize + demo prefix run lattice) |
@@ -209,7 +209,7 @@ overloads; missing = loud `NoPattern`, never silent.
 | TSHIFT | 1 -> 1 | F | F | T | row-max; fuses into softmax |
 | WARP | 2 -> 1 | — | — | — | lattice-only (stabilize listing runs lattice, no emitted demand) |
 
-Coverage: C 26, CUDA 27, non-FPU 21. Refusal cells are gated
+Coverage: C 27, CUDA 28, non-FPU 21. Refusal cells are gated
 (`test_emit.py` loud-refusal row). Full per-mnemonic contracts with
 examples: `docs/LANGUAGE.md`. Extension recipe: registry row + shape
 rule + one pattern per backend (`chain/backends.py`).

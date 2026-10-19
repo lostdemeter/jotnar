@@ -24,7 +24,7 @@ import subprocess
 import numpy as np
 
 from chain.asm import AsmError
-from chain.emit_c import Backend, NoPattern, _dim_expr, _short_site
+from chain.emit_c import Backend, NoPattern, _dim_expr, _dyadic, _short_site
 
 # Bump when the cache protocol itself changes (key inputs are the
 # source + flags + arch + libs; emitter output changes are covered
@@ -204,6 +204,33 @@ __global__ void k_conv_f32(const float *x, const float *k, float *o,
     }
     o[oy * W + ox] = (float)acc;
   }
+}
+__global__ void k_interp_bilinear_f32(const float *x, float *o,
+                                      int64_t H, int64_t W, int64_t C,
+                                      int64_t Ho, int64_t Wo,
+                                      float shy, float shx) {
+  /* One THREAD per output element, fixed tap order (same schedule
+  as the C pattern): no cross-thread order dependence -> bit-exact
+  re-run. Half-pixel centers (align_corners=False, audited). */
+  int64_t n = (int64_t)blockDim.x * blockIdx.x + threadIdx.x;
+  int64_t N = (int64_t)Ho * Wo * C;
+  if (n >= N) return;
+  int64_t cc = n % C, tmp = n / C;
+  int64_t ox = tmp % Wo, oy = tmp / Wo;
+  float fsy = ((float)oy + 0.5f) * shy - 0.5f;
+  fsy = fsy < 0 ? 0 : (fsy > (float)(H - 1) ? (float)(H - 1) : fsy);
+  int64_t y0 = (int64_t)floorf(fsy);
+  float wy = fsy - (float)y0;
+  int64_t y1 = y0 + 1 >= H ? H - 1 : y0 + 1;
+  float fsx = ((float)ox + 0.5f) * shx - 0.5f;
+  fsx = fsx < 0 ? 0 : (fsx > (float)(W - 1) ? (float)(W - 1) : fsx);
+  int64_t x0 = (int64_t)floorf(fsx);
+  float wx = fsx - (float)x0;
+  int64_t x1 = x0 + 1 >= W ? W - 1 : x0 + 1;
+  o[n] = (1 - wy) * (1 - wx) * x[(y0 * W + x0) * C + cc]
+       + (1 - wy) * wx * x[(y0 * W + x1) * C + cc]
+       + wy * (1 - wx) * x[(y1 * W + x0) * C + cc]
+       + wy * wx * x[(y1 * W + x1) * C + cc];
 }
 __global__ void k_softmax_wide_f32(const float *x, float *o, int64_t D,
                                    int64_t N) {
@@ -705,6 +732,32 @@ class CUDABackend(Backend):
                 f"/* {o} = CONV({x}) edge-replicate {kH}x{kW} */\n"
                 f"k_conv_f32<<<({o}_N), TPB{st}>>>"
                 f"({x}, {k}, {o}, {H}, {W}, {kH}, {kW});\n{launch}",
+                None)
+        if mn == "INTERP":
+            x = args[0]
+            o = outs[0]
+            if S[x][0] != "F":
+                raise NoPattern("cuda INTERP needs F (v0.1)")
+            try:
+                sy, sx = float(args[1]), float(args[2])
+            except (TypeError, ValueError):
+                raise NoPattern("cuda INTERP needs literal scales")
+            if not (_dyadic(sy) and _dyadic(sx)):
+                raise AsmError("cuda INTERP non-dyadic scale "
+                               f"({sy},{sx}) is a LOWERING ERROR")
+            sh = S[x][2]
+            if len(sh) not in (2, 3) or None in sh:
+                raise AsmError("cuda INTERP needs static (H,W[,C])")
+            H, W = sh[0], sh[1]
+            C = sh[2] if len(sh) == 3 else 1
+            Ho = max(int(round(H * sy)), 1)
+            Wo = max(int(round(W * sx)), 1)
+            return (
+                f"/* {o} = INTERP({x}) bilinear {H}x{W}->{Ho}x{Wo} */\n"
+                f"k_interp_bilinear_f32<<<(({Ho}*{Wo}*{C} + TPB - 1) / TPB),"
+                f" TPB{st}>>>"
+                f"({x}, {o}, {H}, {W}, {C}, {Ho}, {Wo}, "
+                f"{H / Ho!r}f, {W / Wo!r}f);\n{launch}",
                 None)
         if mn == "LAYERNORM":
             x, w, b = args
