@@ -504,3 +504,82 @@ six student phases exhausted local context to full-frame scale at
 parts list, not a passing grade; the build round needs its own
 frozen constitution (axes, budget, judge unchanged), and empty stays
 a complete report there too.
+
+## Phase 8 — tiny joint-attention student (constitution, FROZEN pre-run)
+
+One nominated architecture, built as nominated. No mid-round
+invention — the Phase-5 spiral rule binds here too. Anything below
+changes only in a new declared round; violations bounce the round.
+
+Architecture `jattn64b2` (field: full-frame by construction):
+- Token grid: stride-32 cell-center RGB samples over the native
+  frame (1024x672 → 32x21 = 672 tokens, dim 3). Strided sampling,
+  honest precedent (cf. Phases 3-6); averaging would need parked
+  POOLAVG — not used. Token proj 3→W (W=64, MATMUL+ADD).
+- Positions: factored learned row (21,W) + col (32,W) tables, ADD
+  (32 cols x 21 rows at 1024x672; labels corrected pre-run, same
+  53xW count). No RoPE (allowed but unneeded at 672 tokens).
+- Const text fill: C=4 learned constant tokens (dim W), prepended
+  to every frame's sequence — the student's analog of the teacher's
+  image-independent text (Phase-7 blueprint). Fixed after training;
+  deploys as BETA const-fill F + CONCAT F.
+- Timestep: DROPPED with reason stated — feedforward depth needs no
+  diffusion step; the baked-table substitute stands declared for a
+  future round, unused here. Fewer parts than nominated is a
+  simplification, not an invention.
+- Blocks B=2, joint self-attention over 676 tokens: RMSNorm →
+  Q/K/V projs → scale+joint-softmax → values → out proj → residual;
+  RMSNorm → SILU MLP (W→4W→W) → residual. Explicit-softmax form
+  (no fused SDPA backend to vary run to run).
+- Head: nearest-cell broadcast — pixel (i,j) GATHERs token
+  (i//32,j//32) (floor indices precomputed, zero-code metadata) →
+  CONCAT [token(W), pixel RGB(3)] → MLP (W+3→W→1, SILU) → depth.
+  This is the declared upsampling: index broadcast, blocky by
+  construction and stated. INTERP is parked and untouched; no CONV,
+  no GroupNorm, no LAYERNORM (RMSNorm everywhere), no GELU (SILU
+  only), no SIN/COS. Shape views carry no compute (RESHAPE parked
+  status noted openly).
+- Per-op citations (README table): MATMUL F, ADD F, MUL F (scale),
+  RMSNORM F, SILU F, CONCAT F, GATHER F, BMMV F (head-batched
+  attention), SOFTMAX_WIDE F (joint softmax), BETA F (const text).
+  Size: ~110k params (~440KB); full-frame transient <1GB — nowhere
+  near 17GB.
+
+Budget: ONE architecture. Fallbacks (≤2) run ONLY on fails-to-train
+(loss NaN/diverged/static across a full run — losing on bars is a
+complete result, never a trigger), each declared before running:
+F1 `jattn32b2` (W32, OOM trigger only); F2 `jattn64b1` (single
+block, NaN/divergence trigger only).
+Training cap per variant: 2000 steps, Adam lr 0.01, seed 7,
+stride-7 sample, no-grad alignment (same loss/judge family);
+wall cap 5 min; GPU box to itself; Qwen-7B never co-loaded.
+Judge unchanged: Phase-1 bars, same alignment, verdict-reported.
+Winner rule: most held-out cells under bars; a claimed winner gets
+retrain-match (trajectory + cell table identical) before it counts.
+Empty (0 cells) banks the table and closes — honest-empty precedent
+stands. Metrics + configs banked in-repo (`battery8` key +
+`attn_run.json`); weights out-of-tree (`~/student_runs/<tag>/`).
+
+### Battery results (ONE variant ran, 102s wall, single GPU to itself)
+
+`jattn64b2`: 108,033 params (444,084-byte weights), grid 21x32 =
+672 tokens + 4 const, seq 676, loss 0.5288 (iters 500-1500 plateau)
+→ 0.5023 final. No NaN/divergence — trained, fallback triggers
+never met (F1/F2 never ran). Held-out: 0/12 cells under bars
+(gate-counted); best geo_w0-smooth 0.194/0.09 (2.2x), worst
+geo_w1-nonplanar 0.499/0.08 and tex 0.431/0.07 (~6x). Train cells
+0.37-0.66 sit at/above scaffold levels (squirrel-smooth 0.664 vs
+scaffold minimum 0.483) and below the Phase-3 MLP baseline
+everywhere (its held-out best smooth 0.169 vs 0.194 here).
+Winner: none — no retrain-match needed (nothing to claim).
+Diagnosis: underfit, not near-miss. The model descends late but
+never fits train: 64 dims per 32x32 cell through a single head and
+nearest-cell broadcast starve each pixel's global code, and/or 2000
+steps at lr 0.01 under-optimize attention (1000-iter plateau with a
+terminal escape reads as slow optimization, stated as reading not
+fact). The nomination's parts list is built and banked as declared;
+the architecture as sized does not learn depth layout. What would
+change that (new-round declarations, none run): optimization budget
+(steps/schedule), finer token grid, multi-head — each its own frozen
+round. Earned sentence: empty is complete — first attention datum
+banked, mixer wall now has joint-attention company at 0/12.
