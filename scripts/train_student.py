@@ -25,21 +25,30 @@ OUTBASE = os.path.expanduser("~/student_runs")
 
 
 def scales_for(field, densewin):
-    """Scale list [(stride, half)] for a field, constitution-frozen.
+    """Scale list [(stride, half)] for a field, constitution-frozen
+    per round (Phase 5: {33,65,129}; Phase 6 adds {257,513,1025}).
     Undeclared fields refuse loud (no mid-battery invention)."""
-    if field not in (33, 65, 129) or densewin not in (3, 5):
+    if field not in (33, 65, 129, 257, 513, 1025) or densewin not in (3, 5):
         raise ValueError(
             f"undeclared field/densewin {(field, densewin)} "
-            f"(frozen axes: field in {{33,65,129}}, densewin in {{3,5}})")
+            f"(frozen axes: field in {{33,65,129,257,513,1025}}, "
+            f"densewin in {{3,5}})")
     scales = [(4, 8), (8, 16)]
     if field >= 65:
         scales.append((16, 32))
     if field >= 129:
         scales.append((32, 64))
+    if field >= 257:
+        scales.append((64, 128))
+    if field >= 513:
+        scales.append((128, 256))
+    if field >= 1025:
+        scales.append((256, 512))
     return scales
 
 
-def load_frame(name, patch=1, multi=False, field=33, densewin=3):
+def load_frame(name, patch=1, multi=False, field=33, densewin=3,
+               globsum=False):
     import numpy as np
     from PIL import Image
     man = json.load(open(os.path.join(FIXDIR, "teacher_manifest.json")))
@@ -69,7 +78,17 @@ def load_frame(name, patch=1, multi=False, field=33, densewin=3):
             grid = np.concatenate(
                 [p[yy + dy, xx + dx, :] for dy in off for dx in off], axis=-1)
             parts.append(grid)
-        dims = densewin * densewin * 3 + 25 * 3 * len(scales)
+        if globsum:
+            # whole-frame summary broadcast (lossy by design): per-image
+            # mean RGB + mean luma, tiled to every pixel. Deploys as
+            # const-fill + CONCAT (both tabled).
+            luma = im @ np.array([0.299, 0.587, 0.114])
+            g = np.stack([im[:, :, 0].mean(), im[:, :, 1].mean(),
+                          im[:, :, 2].mean(),
+                          luma.mean()], axis=-1)
+            parts.append(np.broadcast_to(g, (Hh, Ww, 4)).copy())
+        dims = (densewin * densewin * 3 + 25 * 3 * len(scales)
+                + (4 if globsum else 0))
         return np.concatenate(parts, axis=-1).reshape(-1, dims), im, \
             t.reshape(-1)
     # 3x3 neighborhood im2col (edge-replicated): deployed form is
@@ -129,6 +148,9 @@ def main():
                     help="dense window, frozen axes {3,5}")
     ap.add_argument("--depth", type=int, default=2,
                     help="mixer hidden layers, frozen axes {2,3}")
+    ap.add_argument("--globsum", action="store_true",
+                    help="append whole-frame mean-RGB+luma summary "
+                    "(4 dims, lossy by design, Phase-6 axis)")
     args = ap.parse_args()
 
     import numpy as np
@@ -140,7 +162,7 @@ def main():
 
     Xtr, Ttr = [], []
     for n in args.train:
-        x, _, t = load_frame(n, args.patch, args.multi, args.field, args.densewin)
+        x, _, t = load_frame(n, args.patch, args.multi, args.field, args.densewin, args.globsum)
         Xtr.append(x)
         Ttr.append(t)
     Xtr = torch.tensor(np.concatenate(Xtr), dtype=torch.float32, device=device)
@@ -153,8 +175,9 @@ def main():
     W = args.width
     if args.depth not in (2, 3):
         raise ValueError(f"undeclared depth {args.depth} (frozen axes {2, 3})")
-    Din = (args.densewin * args.densewin * 3
-           + 25 * 3 * len(scales_for(args.field, args.densewin))
+    Din = ((args.densewin * args.densewin * 3
+            + 25 * 3 * len(scales_for(args.field, args.densewin))
+            + (4 if args.globsum else 0))
            if args.multi else (27 if args.patch == 3 else 3))
     layers = [torch.nn.Linear(Din, W), torch.nn.SiLU()]
     for _ in range(args.depth - 1):
@@ -287,7 +310,7 @@ def main():
             shapes = [tm.shape for tm in tmaps]
             for _n, _tm, (_Hh, _Ww) in zip(args.train, tmaps, shapes):
                 x0, _, _ = load_frame(_n, args.patch, args.multi,
-                                       args.field, args.densewin)
+                                       args.field, args.densewin, args.globsum)
                 f0 = net(torch.tensor(x0, dtype=torch.float32,
                                       device=device)).reshape(-1)
                 fobjs = []
@@ -333,6 +356,7 @@ def main():
            "seed": args.seed, "patch": args.patch, "multi": args.multi,
            "field": args.field, "densewin": args.densewin,
            "depth": args.depth,
+           "globsum": args.globsum,
            "perc": args.perc, "sink": args.sink, "aux_every": args.aux_every,
            "dinov2": os.path.expanduser(args.dinov2) if args.perc > 0 else None,
            "train": args.train, "heldout": args.heldout,
@@ -343,7 +367,7 @@ def main():
     with torch.no_grad():
         for split, names in (("train", args.train), ("heldout", args.heldout)):
             for n in names:
-                x, im3, t = load_frame(n, args.patch, args.multi, args.field, args.densewin)
+                x, im3, t = load_frame(n, args.patch, args.multi, args.field, args.densewin, args.globsum)
                 p = net(torch.tensor(x, dtype=torch.float32,
                                      device=device)).reshape(-1).double()
                 p = p.cpu().numpy()
