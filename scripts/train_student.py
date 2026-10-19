@@ -47,6 +47,45 @@ def scales_for(field, densewin):
     return scales
 
 
+def multiscale_features(im, field=33, densewin=3, globsum=False):
+    """Pure feature builder for an RGB float array (diagnostic reuse).
+
+    Byte-identical math to the multi branch of load_frame (extracted
+    verbatim, no behavior change); lets evaluators feed arbitrary
+    images (e.g. procedural scenes) through a banked student's
+    front-end without touching fixtures."""
+    import numpy as np
+    Hh, Ww, _ = im.shape
+    scales = scales_for(field, densewin)
+    pad = max(half for _, half in scales)
+    p = np.pad(im, ((pad, pad), (pad, pad), (0, 0)), mode="edge")
+    parts = []
+    yy, xx = np.mgrid[0:Hh, 0:Ww]
+    # dense window (stride 1)
+    hd = (densewin - 1) // 2
+    dd = np.pad(im, ((hd, hd), (hd, hd), (0, 0)), mode="edge")
+    parts.append(np.concatenate(
+        [dd[i:i + Hh, j:j + Ww, :] for i in range(densewin)
+         for j in range(densewin)], axis=-1))
+    for stride, half in scales:
+        off = pad + np.arange(-half, half + 1, stride)
+        grid = np.concatenate(
+            [p[yy + dy, xx + dx, :] for dy in off for dx in off], axis=-1)
+        parts.append(grid)
+    if globsum:
+        # whole-frame summary broadcast (lossy by design): per-image
+        # mean RGB + mean luma, tiled to every pixel. Deploys as
+        # const-fill + CONCAT (both tabled).
+        luma = im @ np.array([0.299, 0.587, 0.114])
+        g = np.stack([im[:, :, 0].mean(), im[:, :, 1].mean(),
+                      im[:, :, 2].mean(),
+                      luma.mean()], axis=-1)
+        parts.append(np.broadcast_to(g, (Hh, Ww, 4)).copy())
+    dims = (densewin * densewin * 3 + 25 * 3 * len(scales)
+            + (4 if globsum else 0))
+    return np.concatenate(parts, axis=-1).reshape(-1, dims)
+
+
 def load_frame(name, patch=1, multi=False, field=33, densewin=3,
                globsum=False):
     import numpy as np
@@ -61,35 +100,7 @@ def load_frame(name, patch=1, multi=False, field=33, densewin=3,
     if patch == 1 and not multi:
         return im.reshape(-1, 3), im, t.reshape(-1)
     if multi:
-        Hh, Ww, _ = im.shape
-        scales = scales_for(field, densewin)
-        pad = max(half for _, half in scales)
-        p = np.pad(im, ((pad, pad), (pad, pad), (0, 0)), mode="edge")
-        parts = []
-        yy, xx = np.mgrid[0:Hh, 0:Ww]
-        # dense window (stride 1)
-        hd = (densewin - 1) // 2
-        dd = np.pad(im, ((hd, hd), (hd, hd), (0, 0)), mode="edge")
-        parts.append(np.concatenate(
-            [dd[i:i + Hh, j:j + Ww, :] for i in range(densewin)
-             for j in range(densewin)], axis=-1))
-        for stride, half in scales:
-            off = pad + np.arange(-half, half + 1, stride)
-            grid = np.concatenate(
-                [p[yy + dy, xx + dx, :] for dy in off for dx in off], axis=-1)
-            parts.append(grid)
-        if globsum:
-            # whole-frame summary broadcast (lossy by design): per-image
-            # mean RGB + mean luma, tiled to every pixel. Deploys as
-            # const-fill + CONCAT (both tabled).
-            luma = im @ np.array([0.299, 0.587, 0.114])
-            g = np.stack([im[:, :, 0].mean(), im[:, :, 1].mean(),
-                          im[:, :, 2].mean(),
-                          luma.mean()], axis=-1)
-            parts.append(np.broadcast_to(g, (Hh, Ww, 4)).copy())
-        dims = (densewin * densewin * 3 + 25 * 3 * len(scales)
-                + (4 if globsum else 0))
-        return np.concatenate(parts, axis=-1).reshape(-1, dims), im, \
+        return multiscale_features(im, field, densewin, globsum), im, \
             t.reshape(-1)
     # 3x3 neighborhood im2col (edge-replicated): deployed form is
     # GATHER-neighborhood + MATMUL, both in-table (GATHER F, MATMUL F).

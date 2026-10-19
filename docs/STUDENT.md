@@ -777,3 +777,64 @@ decoder territory); fused joint-bidirectional attention kernels
 math); raw scale (evidence prices it low: train moves, held-out
 doesn't). Any of these is its own declared round with its own
 constitution.
+
+## Phase 12a — procedural analytic scenes, diagnose before training
+
+No student training this round (12b is a separate go/no-go).
+Instrument: `scripts/synth_depth.py` — pinhole renderer over
+spheres / axis-aligned boxes / floor / back wall, closed-form
+intersections, exact float64 z-depth; flat shading (fixed per-face
+shades, no lights) + 3D-checker textured variants; 320x256
+(diagnostic scale; dims divide by 32). Scenes generate on the fly
+from fixed seeds (12000+idx) — zero bytes banked; the generator is
+the fixture. Gate `tests/test_synthetic_depth.py` (SKIP-clean).
+Catalog N=24: count {1,2,4} × occlusion {single,stacked} × range
+{shallow 2.5-5, deep 2.5-11} × texture {flat,checker} — each combo
+exactly once, strata by construction in scene meta. Verified:
+24/24 combos, same-seed identical, scalar-loop self-consistency
+8.9e-16 worst dev.
+12b decision bar (preemptive — stated before measuring, frozen):
+GO iff ALL three hold — (1) teacher bias ≪ student error
+(scene-mean aligned-MAE headroom ≥2x vs mscale64-vs-GT: something
+to learn toward); (2) ≥1 construction axis separates mscale64
+error directionally (group-mean gap >0.05: layout signal inside an
+in-table student's errors); (3) teacher seeded-twice noise == 0
+(byte-identical: stable labels). Else NO-GO with evidence.
+Constraint noted regardless: jattn64b2's learned row/col pos tables
+are grid-locked (21x32 @1024x672) — off-grid eval needs retraining
+or architecture change, so any GO retrains or re-specifies the
+attn line; mscale64's strided sampling runs at any resolution.
+
+### Measurements (teacher 2x24 runs + student evals, GPU solo)
+
+Corrections made mid-round, stated openly: (a) first compared in
+z-space (teacher bias 2.17 — confounded: the teacher trains
+relative-LOG-depth per `training_relative_log_depth_config`, so
+affine comparison belongs in log space; all numbers below are
+log-space); (b) 14/24 scenes starve the `far` mask (median
+collapses to the back-wall value on box-room stats —
+`chain/depthprior.py:near_mask` assumes continuous real depths;
+those cells record null, excluded from means, counted openly —
+130 finite + 14 nulls per evaluatee).
+Teacher noise: seeded-twice byte-identical 24/24 (plus gate
+2-scene spot rerun) — condition (3) HOLDS, labels stable.
+Teacher bias (align vs analytic log-GT): scene-full mean 0.251
+(best 0.018, worst 0.609). By axis: textured checker 0.082 vs
+flat 0.420 (5x — the teacher is texture-hungry; Phases 2-6 from
+the other side), shallow 0.284 vs deep 0.218, count/occlusion flat.
+Students vs GT: mscale64 mean 0.369 (best 0.203, worst 0.652);
+jattn64b2 sidecar mean 0.536 (upscaled-1024, blur confound —
+supplementary only). mscale64 by axis: count 1/2/4 →
+0.302/0.329/0.477 (Δ0.175); stacked 0.331 vs single 0.408
+(Δ0.077); texture flat (0.376 vs 0.363 — the student is
+texture-blind where the teacher feasts). mscale64-vs-teacher gap
+on synthetic: mean 0.328 (learnable signal toward labels exists).
+Bar evaluation: (1) headroom 0.369/0.251 = 1.47x < 2x — FAILS
+(the shortfall is the teacher's own 0.42 on flat scenes:
+mimicry-training would teach teacher errors on half the set);
+(2) axis separation HOLDS (count, occlusion); (3) noise HOLDS.
+Verdict: NO-GO with evidence — the bar needs ALL three. Not
+close-call logic: the textured-only subset (teacher 0.082 vs
+student ~0.36, 4.4x) would pass alone, but flipping on a post-hoc
+subgroup is goalpost-moving; a textured-only 12b' needs its own
+round and its own bar, stated here, not run.
