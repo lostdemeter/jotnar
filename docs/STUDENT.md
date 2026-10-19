@@ -1102,3 +1102,66 @@ Dynamism-across-passes joins the wall as costed-out, and the
 earned sentence covers it: the static in-table story is complete
 including two-stage refinement attempted, stalled, and timed-out
 in the open.
+
+## Phase 17 — textured-domain restricted student (constitution, FROZEN pre-run)
+
+Domain first, exact rule: IN-DOMAIN = checker-textured procedural
+scenes (generator construction axis, not inference). 12 banked
+(idx12..23) + 12 new (idx36..47 — the next textured block from the
+same catalog arithmetic, new seeds/layouts) via seeded teacher CLI
+at 320x256 (manifest extension: 12 rows synth_t00..11 + input PNGs
++ teacher .npy, same provenance pattern — shape/dtype legs
+must pass on the extended manifest). Splits: train = 8 banked
+textured (idx12..19); in-domain heldout = 4 banked (idx20..23) +
+12 new (16 scenes x 6 strata = 96 graded cells); OUT-OF-DOMAIN =
+12 flat banked + 6 real fixtures — printed unjudged, explicitly
+unclaimed (not silently dropped). Targets throughout: teacher
+labels (student-arc doctrine; analytic GT grounds the teacher, it
+does not train the student).
+Headroom re-verified in-round from banked numbers (not inherited
+blind): teacher 0.0819 vs mscale64 0.3628 scene-mean on textured
+(n=12+12) = 4.43x. Reproduces — round proceeds.
+Architecture: mscale64-EXACT (field-33/densewin-3/W64/d2,
+177 dims, MATMUL/ADD/SILU + GATHER/CONCAT citations stand) —
+banked best on textured (0.363 vs jattn sidecar 0.536), and the bet
+is whether teacher-label training teaches it texture use. Two
+configs (third slot empty, stated): T1 `texmsc-2k` (2000 steps, lr
+0.02 const — Phase-5-comparable); T2 `texmsc-8kcos` (8000 steps
+cosine — best chance; schedule effect already measured, no new
+confound claimed). Seed 7, stride-7, no-grad alignment. Wall caps:
+teacher batch 10 min, each train 10 min. GPU box to itself.
+Winner: most in-domain heldout cells under bars (Phase-1 bars);
+empty is complete. Metrics banked separately (`student_run_<tag>`
+style per-variant files + `battery17` key, reference `mscale64`);
+primaries untouched; weights out-of-tree. Winner gets
+retrain-match before claimed.
+
+### Battery results (2/2 ran, minutes each, GPU solo)
+
+Convergence datum: T1 (2k const) vs T2 (8k cosine) differ by
+4.5e-05 max cell — different paths, same basin (same init+data,
+easy landscape, one attractor). Not a bug: weights differ from
+byte 1217 on.
+In-domain heldout (16 textured scenes x 6): T1 7/96, T2 7/96 —
+IDENTICAL 7 cells (synth_b09-planar 0.078; far 0.073-0.090 on
+synth_t00/t01/t03/t06/t10). First bar-passing student cells of
+the arc, all far/planar on simple room geometry (near-constant
+wall depth — easy, stated). Near/tex/smooth/nonplanar: nothing
+within 2-6x. Winner: TIE at 7/96 each (same basin) — no single
+claim exists, so no retrain-match runs (moot, not skipped).
+Out-of-domain, printed unjudged: flat-synthetic 0.215, real
+fixtures 0.379 (mscale64-on-real levels — no transfer gain, no
+catastrophe; the restriction is load-bearing).
+Gate notes: manifest extension (30 rows) required two minimal
+harness edits — manifest leg counts 6 real + 24 synthetic,
+coverage binds the real-fixture domain (synthetic percentile
+collapse stays characterized-not-gated per Phase-12a).
+Diagnosis: the domain restriction WORKS directionally (first
+passes, far/planar on rooms) and fails structurally (near never
+moves: 0.37-0.65 in-domain; texture the model was meant to learn
+sits 3-6x over bars). The 4.4x headroom does not convert: teacher
+labels on textured scenes teach wall/floor fidelity, not object
+layout — mimicry succeeds exactly where there is nothing to learn.
+The deployable-thing candidacy narrows to "rooms without
+furniture" and dies there honestly. Empty of winners, full of
+signal: restriction buys bar-passes, not understanding.
