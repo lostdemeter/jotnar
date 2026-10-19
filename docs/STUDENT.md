@@ -1010,3 +1010,36 @@ empirically. Empty is complete. Metrics banked separately
 (`attn_run_<tag>.json` + `battery15` key, reference `jattn64b2`,
 dino provenance in flags); weights out-of-tree; no
 emitter/opcode/assembly changes.
+
+### Battery results (2/2 ran, walls 501s/548s, GPU solo)
+
+DINO cache: 6×3504×768 fp32, CPU-rerun-identical, sha-manifested.
+Capacity verified: 156,993 ×2 (108033 + 49216 dino_proj − 256
+dead ctx — uniform construction leaves tok/pos/ctx weights dead in
+tokonly; documented, not hidden). Refactor proven behavior-
+preserving: current rgb path + banked Phase-8 weights reproduces
+banked frames to 5e-10.
+
+```
+tag           train-loss  near-train (chr/dog/sq)   held-out moves  bars
+dino-tokonly  0.054       0.52/0.64/0.59 (!!)        0/6 (near worsens x2)  0/12
+dino-tokrgb   0.413       0.33/0.40/0.20             0/6 (near worsens x1)  0/12
+```
+Winner: none — 0/24 under bars (gate-counted); no retrain-match.
+The tokonly train row demands a reading, stated as reading:
+near-field train cells collapse (0.5-0.65) while loss sits at 0.054
+and far fits (0.15-0.27) — predictions blow to 1e12 scale with
+relative structure that fits far layout and not near objects
+(verified live: near-mask pred-std ~1e12, residual 0.52). DINO
+tokens carry scene layout the tiny reader can ride for walls/floors
+but not foregrounds; adding the RGB stream back (tokrgb) breaks
+even that (loss 0.41 — longer seq, harder optimization, interference).
+Verdict: MACHINERY. Information transforms train fit (0.50→0.054,
+the largest single train move of the whole student arc) yet moves
+zero held-out cells directionally and worsens near — so global
+features do not convert through this reader, and no
+feature-distillation is nominated (a win would have nominated it;
+this is not a win). Convergent with Phase-14 (the family doesn't
+use global structure) and Phase-13 (deeper readers stall): the wall
+is the reader's capacity to convert layout into near-field depth,
+not the information fed to it. Empty is complete.
