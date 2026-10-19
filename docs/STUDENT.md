@@ -1356,3 +1356,39 @@ machinery itself never receiving trainable signal in 6/6 runs.
 What remains is NOT another mixer round: any future faithful
 attempt needs its own constitution with a swept LR (or optimizer)
 as the declared variable — stated, not run.
+
+## Phase 21 — swept LR for AdaLN-gated DiT-tiny, last in-rules door (constitution, FROZEN pre-run)
+
+Architecture byte-frozen: Phase-20 faithful package at rung B2
+(collapse was rung-independent — B2 isolates schedule cheapest;
+no architecture drift, the schedule is the ONLY variable).
+LR grid frozen, 6 configs (suggested axes adopted as-is — the
+decaying-LR diagnostic motivates the decay shapes without
+pre-selecting a winner): shapes const / linear-decay→0 /
+warmup400+cosine→0, crossed with max-LR 0.01 (mover continuity)
+and 0.003 (gentler hypothesis):
+
+| tag | shape | max-LR |
+|-----|-------|--------|
+| ditc64b2-c1 | const | 0.01 |
+| ditc64b2-c3 | const | 0.003 |
+| ditc64b2-l1 | linear-decay | 0.01 |
+| ditc64b2-l3 | linear-decay | 0.003 |
+| ditc64b2-w1 | warmup400+cosine | 0.01 |
+| ditc64b2-w3 | warmup400+cosine | 0.003 |
+
+Steps fixed 8000 (budget held — schedule, not budget, varies).
+LR plumbing only (linear + warmup paths; anything else is scope
+breach). Budget: 6 configs, wall cap 15 min each, GPU solo,
+Qwen-7B never co-loaded.
+Winner: most held-out cells under bars; directional near/planar/
+smooth vs Phase-20 `ditc64b2` numbers (>0.05, frozen) reopens
+empirically. Empty is complete — and if empty, the earned
+sentence closes the in-rules arc in full, stated in advance: no
+further schedule/architecture permutations inside current rules
+without new evidence (mixer, attention, faithful-DiT, domain,
+probe, and pattern rounds all banked; the wall stands on every
+axis tried).
+Metrics banked separately (`attn_run_<tag>.json` + `battery21`
+key, reference `jattn64b2`); primaries untouched; weights
+out-of-tree.
