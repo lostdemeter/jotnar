@@ -583,3 +583,33 @@ change that (new-round declarations, none run): optimization budget
 (steps/schedule), finer token grid, multi-head — each its own frozen
 round. Earned sentence: empty is complete — first attention datum
 banked, mixer wall now has joint-attention company at 0/12.
+
+## Phase 9 — optimization budget, architecture frozen (constitution, FROZEN pre-run)
+
+Question: was Phase 8 under-optimized or under-capacity. The only
+knob is training schedule — architecture byte-frozen (`jattn64b2`
+exactly as banked: W64/B2/stride-32/C4/row21+col32/learned-const/
+RMSNorm+SILU/nearest-GATHER head; any architecture change confounds
+the question and voids the round). Code changes confined to schedule
+plumbing (`--schedule`, cosine path); anything else is scope breach.
+Suggested shape adopted as-is (time-vs-decay, no reason to replace),
+then frozen — three variants, each with exact steps + LR + wall cap:
+
+| tag | steps | LR schedule | wall cap |
+|-----|-------|-------------|----------|
+| jattn64b2-8k-const | 8000 | Adam 0.01 constant | 12 min |
+| jattn64b2-8k-cos | 8000 | Adam cosine 0.01→0 over 8000, no warmup | 12 min |
+| jattn64b2-16k-cos | 16000 | Adam cosine 0.01→0 over 16000, no warmup | 25 min |
+
+Seed 7, stride-7, no-grad alignment, loss, data: all unchanged
+(schedule is the only variable). Trainer keeps writing
+`attn_run.json`; each variant is copied to `attn_run_<tag>.json`
+before the next run (backup dance — no output-path code change).
+Weights out-of-tree (`~/student_runs/<tag>/`); cells banked under
+`battery9` (reference: `jattn64b2`, the baseline of this round).
+Verdict rule frozen alongside: any held-out stratum improving
+>0.05 vs the banked Phase-8 numbers = "moves" (reopens the
+architecture empirically); nothing moving = "flatlines"
+(undercapacity proven). Judge otherwise unchanged (Phase-1 bars,
+same alignment, verdict-reported; winner, if any, gets retrain-match
+before claimed). GPU box to itself; Qwen-7B never co-loaded.
