@@ -451,6 +451,45 @@ def main():
     check("battery13-depth-ladder", cap13 == [111425, 161281, 211137],
           f"{cap13} (+49856/block)")
 
+    # -- Phase-19 dit-tiny battery (same integrity shape, new key) --------
+    b19 = ab.get("battery19", {})
+    frozen19 = ["dit64b2", "dit64b4", "dit64b6"]
+    check("battery19-configs", b19.get("configs") == frozen19
+          and b19.get("reference") == "jattn64b2", b19.get("configs"))
+    cells19 = b19.get("cells", {})
+    complete19 = True
+    for t in frozen19:
+        fr = cells19.get(t, {}).get("frames", {})
+        complete19 &= (len(fr) == 6 and all(
+            sorted(fr[n].get("strata", {})) == STRATA
+            and all(np.isfinite(v) and v >= 0
+                    for v in fr[n]["strata"].values())
+            for n in fr))
+    check("battery19-complete", bool(complete19), "3 configs x 6x6 finite")
+    counts19 = {}
+    for t in frozen19:
+        n = 0
+        for _n, fr in cells19[t]["frames"].items():
+            if fr.get("split") != "heldout":
+                continue
+            n += sum(1 for k in STRATA if fr["strata"][k] <= BARS[k])
+        counts19[t] = n
+    check("battery19-winner-none",
+          all(v == 0 for v in counts19.values())
+          and b19.get("winner") is None,
+          f"held-out cells under bars per config: {counts19}")
+    flags19_ok = all(
+        all(k in cells19[t].get("flags", {}) for k in
+            ("arch", "width", "blocks", "heads", "patch", "adaln",
+             "geluform", "gradloss", "stride", "steps", "lr", "schedule",
+             "seed", "field"))
+        and cells19[t]["flags"]["arch"] == "dit-tiny"
+        for t in frozen19)
+    check("battery19-flags", bool(flags19_ok), "repro metadata per config")
+    cap19 = [cells19[t].get("nparams") for t in frozen19]
+    check("battery19-depth-ladder", cap19 == [209857, 359233, 508609],
+          f"{cap19} (+149376/block incl. AdaLN)")
+
     # -- Phase-15 dino-input battery (same integrity shape, new key) ------
     b15 = ab.get("battery15", {})
     frozen15 = ["dino-tokonly", "dino-tokrgb"]
