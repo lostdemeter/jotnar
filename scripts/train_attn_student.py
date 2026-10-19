@@ -120,6 +120,9 @@ def main():
     ap.add_argument("--nctx", type=int, default=4)
     ap.add_argument("--steps", type=int, default=2000)
     ap.add_argument("--lr", type=float, default=0.01)
+    ap.add_argument("--schedule", choices=["const", "cosine"], default="const",
+                    help="Phase-9 schedule plumbing only: const keeps --lr; "
+                    "cosine anneals lr_max->0 over --steps (no warmup).")
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--train", nargs="+",
                     default=["church", "dogs", "squirrel", "train"])
@@ -154,7 +157,12 @@ def main():
 
     Tcat = torch.cat([frames[n][1].reshape(-1)[sidx] for n in args.train])
     t0 = time.time()
+    import math as _math
     for it in range(args.steps):
+        if args.schedule == "cosine":
+            lr_t = args.lr * 0.5 * (1.0 + _math.cos(_math.pi * it / args.steps))
+            for pg in opt.param_groups:
+                pg["lr"] = lr_t
         opt.zero_grad()
         ps = []
         for n in args.train:
@@ -183,7 +191,7 @@ def main():
     man = json.load(open(os.path.join(FIXDIR, "teacher_manifest.json")))
     rep = {"tag": args.tag, "width": args.width, "blocks": args.blocks,
            "stride": args.stride, "nctx": args.nctx, "steps": args.steps,
-           "lr": args.lr, "seed": args.seed, "field": "full-frame",
+           "lr": args.lr, "schedule": args.schedule, "seed": args.seed, "field": "full-frame",
            "train": args.train, "heldout": args.heldout,
            "torch": torch.__version__, "device": device,
            "weights": os.path.join(outdir, "weights.pt"),

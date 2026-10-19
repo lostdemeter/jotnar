@@ -299,6 +299,40 @@ def main():
              "seed"))
         for t in frozen8)
     check("battery8-flags", bool(flags8_ok), "repro metadata per config")
+
+    # -- Phase-9 schedule battery (same integrity shape, new key) ---------
+    b9 = ab.get("battery9", {})
+    frozen9 = ["jattn64b2-8k-const", "jattn64b2-8k-cos", "jattn64b2-16k-cos"]
+    check("battery9-configs", b9.get("configs") == frozen9
+          and b9.get("reference") == "jattn64b2", b9.get("configs"))
+    cells9 = b9.get("cells", {})
+    complete9 = True
+    for t in frozen9:
+        fr = cells9.get(t, {}).get("frames", {})
+        complete9 &= (len(fr) == 6 and all(
+            sorted(fr[n].get("strata", {})) == STRATA
+            and all(np.isfinite(v) and v >= 0
+                    for v in fr[n]["strata"].values())
+            for n in fr))
+    check("battery9-complete", bool(complete9), "3 configs x 6x6 finite")
+    counts9 = {}
+    for t in frozen9:
+        n = 0
+        for _n, fr in cells9[t]["frames"].items():
+            if fr.get("split") != "heldout":
+                continue
+            n += sum(1 for k in STRATA if fr["strata"][k] <= BARS[k])
+        counts9[t] = n
+    check("battery9-winner-none",
+          all(v == 0 for v in counts9.values())
+          and b9.get("winner") is None,
+          f"held-out cells under bars per config: {counts9}")
+    flags9_ok = all(
+        all(k in cells9[t].get("flags", {}) for k in
+            ("field", "width", "blocks", "stride", "nctx", "steps", "lr",
+             "schedule", "seed"))
+        for t in frozen9)
+    check("battery9-flags", bool(flags9_ok), "repro metadata per config")
     # Four variants (baseline/perc/sink/both), all openly losing: the gate
     # asserts the table is complete and internally consistent (every cell
     # finite; deltas vs baseline computed, never asserted in a direction).
