@@ -1073,3 +1073,32 @@ complete. Metrics banked separately (`attn_run_<tag>.json` +
 `battery16` key, reference `jattn64b2`, pass-1 provenance in
 flags); primaries untouched; weights out-of-tree. GPU solo;
 Qwen-7B never co-loaded.
+
+### Battery results (1 complete + 1 timeout, GPU solo)
+
+`cf-frozen`: loss STATIC 0.5025→0.5024 across 2000 steps (39s wall)
+— the head never trains. Mechanism measured live, not guessed:
+frozen pass-1 outputs span SEVEN orders of magnitude (coarse std
+1.7e6, code std 1084, rgb std 0.27) — SiLU saturates on day one
+and Adam never recovers in-budget. The banked jattn64b2 weights
+survive only because their own training aligned the scale away;
+as FEATURES they are pathological. Cells banked as-run (0/6 moves,
+0/12 bars — an untrained head approximately reproduces coarse).
+`cf-joint`: declared, run, EXCEEDED the frozen 10-min wall
+(killed at 600s with zero artifacts — nothing written, nothing
+banked, nothing claimed). Cost autopsy: joint full-frame
+forward+backward plus the 128-wide head over the stride sample
+runs ~2x Phase-8 per step; the 10-min cap (my mis-estimate,
+stated) covered ~2/3 of 8k steps. No rerun at a bigger cap
+(frozen is frozen) and no partial banking.
+Verdict: refinement-uses-structure is UNREACHED, not refuted —
+but the attempt prices it: static passes over frozen codes need
+normalization machinery (a design change, itself undeclared here)
+or joint budgets beyond single-pass caps. Either way the
+demand is per-input adaptivity with a price tag: data-dependent
+routing/normalization = control-flow lowering (CALL and friends),
+named as the measured demand for the constraint debate, not opened.
+Dynamism-across-passes joins the wall as costed-out, and the
+earned sentence covers it: the static in-table story is complete
+including two-stage refinement attempted, stalled, and timed-out
+in the open.
