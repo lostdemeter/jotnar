@@ -1,0 +1,90 @@
+# DENSE_PREDICTOR — DPT-shaped student design (paper, no build)
+
+Design-only round: every component cited (README-table ops) or a
+NAMED gap with price. Self-review done pre-report: no uncited
+component below (bounced twice in drafting — CLS handling and the
+3x3-in-head needed explicit entries). Zero implementation, zero
+training, zero downloads.
+
+## Operating point (frozen with the design)
+
+Input 1024x672 native (judge res; student-arc doctrine). Patch-16
+→ 64x42 = 2688 tokens. Width 128, 6 encoder blocks, 4 heads
+(DPT-Small-ish; ~25M params est.). Reassemble taps at blocks
+{2,4,5,6} → scales 1/4,1/8,1/16,1/32 (256x168 … 32x21). Fuse
+coarse-to-fine up to 1/4; head to full res. Metric Hypersim-style
+GT (positive — plain log(t) implementable, unlike Phase-19 signed
+teacher outputs; distinction stated).
+
+## Components ( Ops: = cited | Gap: = named+priced )
+
+- C1 patch-embed. Ops: unfold views (zero-code metadata; RESHAPE
+  parked status noted openly) + GATHER F (im2col form) +
+  MATMUL/ADD F (768·3→128 Linear). No CONV formulation (chosen to
+  stay in-table; the Conv2d reading of ViT patchify is the same
+  math through A3 — stated).
+- C2 positions. Ops: learned absolute tables + ADD F (family
+  precedent; RoPE allowed-not-run).
+- C3 encoder blocks x6 (plain pre-norm ViT, NO AdaLN — DPT has
+  none; simpler than DiT). Ops: LayerNorm (LAYERNORM F — A1
+  landed, cite); QKV/out MATMUL F; joint attention UNFUSED
+  (BMMV + SOFTMAX_WIDE F — A4 verdict: unfused faster here,
+  cite); MLP Linear-GELUform-Linear (SILU(MUL(x,1.702))/1.702 at
+  314.6dB — A2 note, cite); residuals ADD F; gates n/a.
+- C4 reassemble-read. Ops: DROP CLS (index select, no op);
+  project-concat MATMUL/CONCAT F where tapped.
+- C5 resample-DOWN (1/8,1/16,1/32). Ops: strided subselect
+  (GATHER F — honest-sampling precedent) + 1x1 channel proj
+  (MATMUL F).
+- C6 resample-UP. Ops now: nearest index broadcast (GATHER F —
+  blocky, stated). Gap: INTERP-BILINEAR (DPT-spec fidelity) —
+  price: one pattern per backend + gate vs
+  torch.nn.functional.interpolate (parity 40dB + edges +
+  determinism legs); size S-M; depends: emitter table; falsifier:
+  nearest matching bilinear within bars on depth maps (then the
+  gap dies — unlikely, stated).
+- C7 fusion (RefineNet-style, 4→1 scales). Ops: CONCAT/ADD F,
+  1x1 projs MATMUL F, activation SILU F (SUBSTITUTION stated:
+  DPT-spec ReLU has no row — PRELU/CLIP parked; SILU covers live
+  use per table note; deviation owned here). Gap: A3-CONV for all
+  3x3s (ResidualConvUnits + head convs) — price per A3 card
+  (phi_conv edge audit + patterns + workload); size M; falsifier
+  per A3 card.
+- C8 depth head. Ops: 1x1 proj MATMUL F + nearest-up GATHER F +
+  linear out (alignment absorbs scale; no output activation —
+  stated). Bilinear final step shares the C6 INTERP gap.
+- C9 loss recipe. log(t) on positive GT + aligned-MAE (same
+  no-grad lstsq doctrine) + Sobel-gradient aux λ=0.1 full-frame
+  cadence (Phase-4/19 precedent; perceptual/Sinkhorn stay dead —
+  relitigating out of scope). Ops: none — off-graph by design
+  (training-time only, zero inference cost; stated carve-out).
+- C10 training data. Hypersim-style photorealistic indoor with
+  metric GT (~70k frames class; stated source, NO downloads this
+  round — design only). Ops: none — off-graph by design (data is
+  not emitted; stated carve-out).
+- C11 judge. Strata bars (in-house harness, unchanged) AND
+  Marigold-style AbsRel (|p−t|/t) + δ1/δ2/δ3 with least-squares
+  alignment — public protocol adopted and cited
+  (`marigold-v2/evaluation/src/util/metric.py:49-58` AbsRel,
+  `:133-141` δ-accuracies, `:241-254` lstsq alignment scale;
+  RANSAC-family alias where their scripts use it). Judge runs on
+  CPU/numpy. Ops: none — off-graph by design (judge runs on
+  CPU/numpy; stated carve-out).
+
+## Prerequisites + sequence
+
+P1 A3-CONV (fusion/head 3x3s — the architecture's core; without
+it fusion is a different network). P2 INTERP-BILINEAR (fidelity
+upgrade on a working backbone; nearest ships first, degraded,
+stated). What builds first on a CLOSE: P1, then P2, then the
+DPT-tiny above (reason: core before polish; nearest covers all
+upsampling paths from day one).
+
+## Design verdict: CLOSES
+
+Every component cited or gap-named-with-price; gaps sequenced
+(P1→P2→build); no BLOCKED component (every gap has a priced path
+— audit-first, patterns, gates all precedented in-repo). Table
+lands 2 new rows eventually (CONV, INTERP); nothing else moves.
+A design with an uncited component would be incomplete — none
+found on self-review (CLS-drop and head-3x3 were the catches).
