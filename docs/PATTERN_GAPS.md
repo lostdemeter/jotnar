@@ -17,20 +17,31 @@ clear or the pricing was wrong.
 
 ## Track A — DiT-minimum patterns
 
-### A1 — LAYERNORM (C/CUDA)
+### A1 — LAYERNORM (C/CUDA) — BUILT (pattern-a1 round, evidence below)
 
 - Unlocks: teacher-faithful DiT blocks (norm1/norm2 as built, not
   RMSNorm-substituted); gpt2-class listings return.
-- Exists: drilled-only — `tests/test_asm.py:80-106` (0-diff vs
+- Existed: drilled-only — `tests/test_asm.py:80-106` (0-diff vs
   legacy, 40dB vs torch, eps tripwire), thin wrapper
   `chain/asm_ops.py:326-343` mirroring eps_rms doctrine; parked
   (`README.md:181`, shares RMSNORM scaffolding).
-- Parity-gate shape: per-backend parity (40dB vs torch + eps=1.0
-  tripwire, cf. existing drill) + bit-exact rerun legs
-  (C/CUDA/nonFPU) + one DiT-norm listing leg.
-- Size: S. Dependencies: none (RMSNORM F/F/T precedent carries).
-- Falsifier: any backend failing 40dB-vs-torch parity, or a DiT
-  block that still needs RMSNorm substitution after landing.
+- Built: shared `infer_shapes` branch (same-kind x(...,D)+w(D,)+b(D,));
+  C F64 row loop (mean+var+affine, CONFIG eps_ln, RMSNORM doctrine);
+  CUDA `k_layernorm_f32` (block-per-row cooperative mean+var, fixed
+  mapping → bit-exact rerun); F32 only (fp16 call sites fail at
+  nvcc loudly, never silently). Non-FPU untouched (still NoPattern).
+- Measured (`tests/test_layernorm.py`, ALL OK): lattice 65.8dB,
+  C 315.0dB, CUDA 144.3dB vs torch (40dB bar); CUDA bit-exact
+  rerun; missing-eps/width/kind all fail loud.
+- Coverage line corrected with evidence: C was stale at 20
+  (any-F convention from `4581651`: true value was 23 pre-build,
+  now 24); non-FPU 20→21 (pre-existing drift, no non-FPU change
+  made here); CUDA 25→26 exact.
+- Parity-gate shape: as priced (per-backend parity + rerun legs +
+  text-form listing leg) — landed in `tests/test_layernorm.py`.
+- Size: was S — scaffolding carried as priced.
+  Dependencies: none (confirmed).
+- Falsifier: did NOT fire (all backends clear 40dB by 25dB+).
 
 ### A2 — GELU (C/CUDA)
 
