@@ -265,6 +265,40 @@ def main():
              "globsum"))
         for t in frozen6)
     check("battery6-flags", bool(flags6_ok), "repro metadata per config")
+
+    # -- Phase-8 joint-attention build (same integrity shape, new key) -----
+    b8 = ab.get("battery8", {})
+    frozen8 = ["jattn64b2"]
+    check("battery8-configs", b8.get("configs") == frozen8
+          and b8.get("reference") == "mscale64", b8.get("configs"))
+    cells8 = b8.get("cells", {})
+    complete8 = True
+    for t in frozen8:
+        fr = cells8.get(t, {}).get("frames", {})
+        complete8 &= (len(fr) == 6 and all(
+            sorted(fr[n].get("strata", {})) == STRATA
+            and all(np.isfinite(v) and v >= 0
+                    for v in fr[n]["strata"].values())
+            for n in fr))
+    check("battery8-complete", bool(complete8), "1 config x 6x6 finite")
+    counts8 = {}
+    for t in frozen8:
+        n = 0
+        for _n, fr in cells8[t]["frames"].items():
+            if fr.get("split") != "heldout":
+                continue
+            n += sum(1 for k in STRATA if fr["strata"][k] <= BARS[k])
+        counts8[t] = n
+    check("battery8-winner-none",
+          all(v == 0 for v in counts8.values())
+          and b8.get("winner") is None,
+          f"held-out cells under bars per config: {counts8}")
+    flags8_ok = all(
+        all(k in cells8[t].get("flags", {}) for k in
+            ("field", "width", "blocks", "stride", "nctx", "steps", "lr",
+             "seed"))
+        for t in frozen8)
+    check("battery8-flags", bool(flags8_ok), "repro metadata per config")
     # Four variants (baseline/perc/sink/both), all openly losing: the gate
     # asserts the table is complete and internally consistent (every cell
     # finite; deltas vs baseline computed, never asserted in a direction).
