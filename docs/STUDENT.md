@@ -900,3 +900,39 @@ scaffolding exists for norms); fused joint-attention kernels
 low); the textured-domain restriction from Phase 12a (textured-only
 synthetic: 4.4x headroom — needs its own round and bar, still
 stated-not-run).
+
+## Phase 14 — patch-shuffle probe, no training (design FROZEN pre-run)
+
+Question: is the depth task here global-reasoning or texture-driven.
+Instrument: deterministic patch scramble (PIL/numpy only, no new
+deps) of the 6 fixture inputs at 1024x672 (the bars' resolution).
+Patch sizes frozen: 16px (exact 64x42 grid, single-pool permutation)
++ 64px (16 full cols x 10 full rows + bottom 32px partial row:
+two-pool permutation — 160 full tiles within-pool, 16 partial
+within-pool; ragged rule stated, deterministic). 64px adopted over
+32px with reason: 64px preserves object-part-scale local features
+(the 33-65px mixer-field scale), directly testing whether local
+features suffice; 32px sits inside tested field range and adds less.
+Seed 7 fixed. Three systems on intact-vs-shuffled pairs, metric =
+aligned-MAE(shuffled_pred → intact_pred) per stratum, same harness
+alignment, masks from intact (same masks all arms):
+(a) seeded teacher — intact arm reuses banked .npy (no rerun); p16
+batch runs twice (seed 2025 x2, byte-identity check — determinism
+mechanism already proven, re-checked on OOD inputs), p64 once;
+existing CLI, GPU solo. (b) DAV2 geometric replica
+(dav2_revisited/dav2_reverse/geo_depth.py, read-only, CPU) — all
+three arms live; masks at DAV2 res (nearest-depth + bilinear-RGB
+downscale of intact; stated). (c) banked students mscale64 +
+jattn64b2 (CPU; jattn native grid) — all three arms live.
+Verdict readings frozen: global-reasoning pattern =
+teacher_mean_delta / dav2_mean_delta ≥ 3 at 16px (order separation;
+family verdict: needs joint reasoning, not bigger mixers);
+texture pattern = max/min ≤ 2 across all systems' mean-deltas
+(family verdict: opposite — local features suffice, architecture
+question reopens differently). Neither pattern = mixed, reported
+with numbers, family verdict withheld (not a loophole: mixed still
+attributes dependence per system). Gate: tests/test_shuffle_probe.py
+(determinism incl. tile-multiset preservation, banked-delta
+integrity, teacher/DAV2/student spot legs, SKIP-clean).
+Numbers banked as scalars (samples/marigold/shuffle_probe.json);
+predictions stay in /tmp.
