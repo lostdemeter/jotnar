@@ -804,3 +804,37 @@ Constraint noted regardless: jattn64b2's learned row/col pos tables
 are grid-locked (21x32 @1024x672) — off-grid eval needs retraining
 or architecture change, so any GO retrains or re-specifies the
 attn line; mscale64's strided sampling runs at any resolution.
+
+### Measurements (teacher 2x24 runs + student evals, GPU solo)
+
+Corrections made mid-round, stated openly: (a) first compared in
+z-space (teacher bias 2.17 — confounded: the teacher trains
+relative-LOG-depth per `training_relative_log_depth_config`, so
+affine comparison belongs in log space; all numbers below are
+log-space); (b) 14/24 scenes starve the `far` mask (median
+collapses to the back-wall value on box-room stats —
+`chain/depthprior.py:near_mask` assumes continuous real depths;
+those cells record null, excluded from means, counted openly —
+130 finite + 14 nulls per evaluatee).
+Teacher noise: seeded-twice byte-identical 24/24 (plus gate
+2-scene spot rerun) — condition (3) HOLDS, labels stable.
+Teacher bias (align vs analytic log-GT): scene-full mean 0.251
+(best 0.018, worst 0.609). By axis: textured checker 0.082 vs
+flat 0.420 (5x — the teacher is texture-hungry; Phases 2-6 from
+the other side), shallow 0.284 vs deep 0.218, count/occlusion flat.
+Students vs GT: mscale64 mean 0.369 (best 0.203, worst 0.652);
+jattn64b2 sidecar mean 0.536 (upscaled-1024, blur confound —
+supplementary only). mscale64 by axis: count 1/2/4 →
+0.302/0.329/0.477 (Δ0.175); stacked 0.331 vs single 0.408
+(Δ0.077); texture flat (0.376 vs 0.363 — the student is
+texture-blind where the teacher feasts). mscale64-vs-teacher gap
+on synthetic: mean 0.328 (learnable signal toward labels exists).
+Bar evaluation: (1) headroom 0.369/0.251 = 1.47x < 2x — FAILS
+(the shortfall is the teacher's own 0.42 on flat scenes:
+mimicry-training would teach teacher errors on half the set);
+(2) axis separation HOLDS (count, occlusion); (3) noise HOLDS.
+Verdict: NO-GO with evidence — the bar needs ALL three. Not
+close-call logic: the textured-only subset (teacher 0.082 vs
+student ~0.36, 4.4x) would pass alone, but flipping on a post-hoc
+subgroup is goalpost-moving; a textured-only 12b' needs its own
+round and its own bar, stated here, not run.
