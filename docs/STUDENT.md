@@ -838,3 +838,65 @@ close-call logic: the textured-only subset (teacher 0.082 vs
 student ~0.36, 4.4x) would pass alone, but flipping on a post-hoc
 subgroup is goalpost-moving; a textured-only 12b' needs its own
 round and its own bar, stated here, not run.
+
+## Phase 13 — deeper attention stacks, last in-table room (constitution, FROZEN pre-run)
+
+Question: does stack depth move held-out where heads could not.
+Blocks-depth is the ONLY variable — suggested 2/3/4 adopted as-is,
+then frozen (`jattn64-s16h2b2/b3/b4`; B2 reruns at identical flags
+as the round's own anchor — expectation: near-match to banked
+`s16h2`, stated not asserted per the Phase-10 reshape-drift
+precedent). Everything else frozen: W64, heads H2 (neutral
+midpoint of a bar-blind sweep — no reason to deviate, so none
+taken), stride s16 (richest code; depth is tested where code is
+richest), 8k-cosine, seed 7, splits unchanged.
+Capacity accounting (diagnostic, not confound): each block adds
+~50k params (4×(64×64) projs + 2×(64×256) MLP + norms) — B2
+111,425 → B3 ~161k → B4 ~212k, exact counts verified in the weight
+files post-run. The train-heldout gap across depths is the
+diagnostic (memorization vs learning); growth itself is declared
+here, not hidden.
+Budget: 3 configs, GPU box to itself, wall cap 25 min each.
+Winner: most held-out cells under bars; directional near/planar/
+smooth movement vs banked Phase-8 `jattn64b2` (>0.05, same frozen
+threshold as Phase 11) reopens empirically. Empty is complete.
+Metrics banked separately (`attn_run_<tag>.json` + `battery13`
+key, reference `jattn64b2`); primaries untouched; weights
+out-of-tree. Per-op citations unchanged (deeper stacks reuse the
+same tabled ops); `--blocks` already CLI-driven, zero code changes
+expected.
+
+### Battery results (3/3 ran, walls 549s/631s/736s, GPU solo)
+
+Determinism datum: B2 rerun is BIT-IDENTICAL to banked s16h2
+(max abs diff 0.0 across 36 cells, sessions apart) — same flags +
+same code is exactly reproducible; the Phase-10 drift came from
+changed code, not chaos. Param ladder verified in weight files:
+111425 → 161281 → 211137 (+49,856/block, as declared).
+
+```
+tag              blocks  params   train-loss  tr-mean  ho-mean  dir-moves
+jattn64-s16h2b2  2       111425   0.321       0.455    0.386    0/6
+jattn64-s16h2b3  3       161281   0.430       0.462    0.418    0/6
+jattn64-s16h2b4  4       211137   0.529       0.522    0.375    0/6
+```
+Winner: none — 0/36 under bars (gate-counted); no retrain-match
+needed. Train DEGRADES with depth at fixed budget (0.321 → 0.430
+→ 0.529-static; B4 never leaves Phase-8-2k territory) while
+held-out sits flat (0.375-0.418). Depth buys nothing twice over:
+no better optimum reached AND no better generalization at any
+reached optimum. The train-heldout gap diagnostic reads
+memorization-proof in reverse — B4 cannot even memorize (train
+0.52), so depth here is an optimization tax with no learning
+upside at 8k-cosine. More steps for deeper stacks would confound
+depth with budget (refused in spirit at declaration: the round
+tests depth at the mover schedule, not schedules per depth).
+Earned sentence: empty is complete — the in-table story is
+complete including stack depth. Remaining doors, priced, none
+opened: emitted-pattern constraint changes (LAYERNORM/GELU/CONV+
+GroupNorm/INTERP lowerings — backend work per op, drilled-only
+scaffolding exists for norms); fused joint-attention kernels
+(performance only); raw scale at matched depth (evidence prices it
+low); the textured-domain restriction from Phase 12a (textured-only
+synthetic: 4.4x headroom — needs its own round and bar, still
+stated-not-run).

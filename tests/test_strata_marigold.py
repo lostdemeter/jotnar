@@ -404,6 +404,43 @@ def main():
              "lr", "schedule", "seed"))
         for t in frozen11)
     check("battery11-flags", bool(flags11_ok), "repro metadata per config")
+
+    # -- Phase-13 depth battery (same integrity shape, new key) -----------
+    b13 = ab.get("battery13", {})
+    frozen13 = ["jattn64-s16h2b2", "jattn64-s16h2b3", "jattn64-s16h2b4"]
+    check("battery13-configs", b13.get("configs") == frozen13
+          and b13.get("reference") == "jattn64b2", b13.get("configs"))
+    cells13 = b13.get("cells", {})
+    complete13 = True
+    for t in frozen13:
+        fr = cells13.get(t, {}).get("frames", {})
+        complete13 &= (len(fr) == 6 and all(
+            sorted(fr[n].get("strata", {})) == STRATA
+            and all(np.isfinite(v) and v >= 0
+                    for v in fr[n]["strata"].values())
+            for n in fr))
+    check("battery13-complete", bool(complete13), "3 configs x 6x6 finite")
+    counts13 = {}
+    for t in frozen13:
+        n = 0
+        for _n, fr in cells13[t]["frames"].items():
+            if fr.get("split") != "heldout":
+                continue
+            n += sum(1 for k in STRATA if fr["strata"][k] <= BARS[k])
+        counts13[t] = n
+    check("battery13-winner-none",
+          all(v == 0 for v in counts13.values())
+          and b13.get("winner") is None,
+          f"held-out cells under bars per config: {counts13}")
+    flags13_ok = all(
+        all(k in cells13[t].get("flags", {}) for k in
+            ("field", "width", "blocks", "heads", "stride", "nctx", "steps",
+             "lr", "schedule", "seed"))
+        for t in frozen13)
+    check("battery13-flags", bool(flags13_ok), "repro metadata per config")
+    cap13 = [cells13[t].get("nparams") for t in frozen13]
+    check("battery13-depth-ladder", cap13 == [111425, 161281, 211137],
+          f"{cap13} (+49856/block)")
     # Four variants (baseline/perc/sink/both), all openly losing: the gate
     # asserts the table is complete and internally consistent (every cell
     # finite; deltas vs baseline computed, never asserted in a direction).
