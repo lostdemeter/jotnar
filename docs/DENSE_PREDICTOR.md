@@ -79,12 +79,17 @@ upgrade on a working backbone; nearest ships first, degraded,
 stated). What builds first on a CLOSE: P1, then P2, then the
 DPT-tiny above (reason: core before polish; nearest covers all
 upsampling paths from day one).
+Status: P1 BUILT (pattern-p1 round: edge-replicate exact,
+3000/158dB) and P2 BUILT (pattern-p2 round: half-pixel bilinear,
+333/156dB) — prerequisites satisfied, DPT-tiny build unblocked
+at the pattern level (a build round of its own, none run here).
 
 ## Design verdict: CLOSES
 
 Every component cited or gap-named-with-price; gaps sequenced
 (P1→P2→build); no BLOCKED component (every gap has a priced path
 — audit-first, patterns, gates all precedented in-repo). Table
-lands 2 new rows eventually (CONV, INTERP); nothing else moves.
+landed 2 new rows eventually (CONV, INTERP — both landed in the
+pattern-p1/p2 rounds); nothing else moves.
 A design with an uncited component would be incomplete — none
 found on self-review (CLS-drop and head-3x3 were the catches).

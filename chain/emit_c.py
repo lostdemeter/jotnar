@@ -138,6 +138,15 @@ def _int_lit(a, what):
     return int(f)
 
 
+def _dyadic(f):
+    """Dyadic scale check via frexp (exact, mirrors asm _is_dyadic)."""
+    import math
+    f = float(f)
+    if f <= 0:
+        return False
+    return math.frexp(f)[0] == 0.5
+
+
 def infer_shapes(bound, sample):
     """Static shape/dtype pass over bound IR using sample payload.
 
@@ -278,6 +287,25 @@ def infer_shapes(bound, sample):
                 raise NoPattern(f"{where}: LAYERNORM needs same-kind "
                                 "x(...,D)+w(D,)+b(D,)")
             streams[o] = (xk, xsub, xsh)
+        elif mn == "INTERP":
+            # v0.1: 2D (H,W) or 3D (H,W,C), dyadic scales only (house
+            # doctrine: non-dyadic is a LOWERING ERROR, never approx).
+            xk, xsub, xsh = streams[args[0]]
+            try:
+                sy, sx = float(args[1]), float(args[2])
+            except (TypeError, ValueError):
+                raise NoPattern(f"{where}: INTERP needs literal scales "
+                                "(v0.1)")
+            if xk != "F" or len(xsh) not in (2, 3):
+                raise NoPattern(f"{where}: INTERP needs F x(H,W[,C])")
+            if not (_dyadic(sy) and _dyadic(sx)):
+                raise AsmError(f"{where}: INTERP non-dyadic scale "
+                               f"({sy},{sx}) is a LOWERING ERROR")
+            H, W = xsh[0], xsh[1]
+            if H is None or W is None:
+                raise AsmError(f"{where}: INTERP needs static HW (v0.1)")
+            Ho, Wo = max(int(round(H * sy)), 1), max(int(round(W * sx)), 1)
+            streams[o] = (xk, xsub, (Ho, Wo) + tuple(xsh[2:]))
         elif mn == "CONV":
             # v0.1: single-channel 2D, same-size output, stride 1,
             # dilation 1, edge-replicate boundary (audited). No bias.
@@ -742,6 +770,51 @@ class CBackend(Backend):
                 f"      }}\n"
                 f"    }}\n"
                 f"    {o}[oy * {W} + ox] = acc;\n"
+                f"  }}\n"
+                f"}}",
+                None)
+        if mn == "INTERP":
+            # Bilinear, half-pixel centers (align_corners=False —
+            # audited: lattice matches torch align_corners=False to
+            # fixed-point noise, True diverges). Border: clamp
+            # (torch default). 2D or 3D(HWC); channels outermost.
+            x = args[0]
+            o = outs[0]
+            if S[x][0] != "F":
+                raise NoPattern("C backend INTERP needs F (T lives "
+                                "on nonfpu)")
+            try:
+                sy, sx = float(args[1]), float(args[2])
+            except (TypeError, ValueError):
+                raise NoPattern("C backend INTERP needs literal scales")
+            if not (_dyadic(sy) and _dyadic(sx)):
+                raise AsmError("C backend INTERP non-dyadic scale "
+                               f"({sy},{sx}) is a LOWERING ERROR")
+            sh = S[x][2]
+            if len(sh) not in (2, 3) or None in sh:
+                raise AsmError("C backend INTERP needs static (H,W[,C])")
+            H, W = sh[0], sh[1]
+            C = sh[2] if len(sh) == 3 else 1
+            Ho = max(int(round(H * sy)), 1)
+            Wo = max(int(round(W * sx)), 1)
+            return (
+                f"/* {o} = INTERP({x}) bilinear {H}x{W}->{Ho}x{Wo} */\n"
+                f"for (int64_t oy = 0; oy < {Ho}; ++oy) {{\n"
+                f"  double fsy = ((double)oy + 0.5) * {(H / Ho)!r} - 0.5;\n"
+                f"  fsy = fsy < 0 ? 0 : (fsy > {H} - 1 ? {H} - 1 : fsy);\n"
+                f"  int64_t y0 = (int64_t)floor(fsy); double wy = fsy - y0;\n"
+                f"  int64_t y1 = y0 + 1 >= {H} ? {H} - 1 : y0 + 1;\n"
+                f"  for (int64_t ox = 0; ox < {Wo}; ++ox) {{\n"
+                f"    double fsx = ((double)ox + 0.5) * {(W / Wo)!r} - 0.5;\n"
+                f"    fsx = fsx < 0 ? 0 : (fsx > {W} - 1 ? {W} - 1 : fsx);\n"
+                f"    int64_t x0 = (int64_t)floor(fsx); double wx = fsx - x0;\n"
+                f"    int64_t x1 = x0 + 1 >= {W} ? {W} - 1 : x0 + 1;\n"
+                f"    for (int64_t cc = 0; cc < {C}; ++cc)\n"
+                f"      {o}[(oy * {Wo} + ox) * {C} + cc] =\n"
+                f"        (1 - wy) * (1 - wx) * {x}[(y0 * {W} + x0) * {C} + cc]\n"
+                f"        + (1 - wy) * wx * {x}[(y0 * {W} + x1) * {C} + cc]\n"
+                f"        + wy * (1 - wx) * {x}[(y1 * {W} + x0) * {C} + cc]\n"
+                f"        + wy * wx * {x}[(y1 * {W} + x1) * {C} + cc];\n"
                 f"  }}\n"
                 f"}}",
                 None)
