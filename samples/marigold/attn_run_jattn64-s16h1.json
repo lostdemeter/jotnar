@@ -1,0 +1,95 @@
+{
+ "tag": "jattn64-s16h1",
+ "width": 64,
+ "blocks": 2,
+ "heads": 1,
+ "stride": 16,
+ "nctx": 4,
+ "steps": 8000,
+ "lr": 0.01,
+ "schedule": "cosine",
+ "seed": 7,
+ "field": "full-frame",
+ "train": [
+  "church",
+  "dogs",
+  "squirrel",
+  "train"
+ ],
+ "heldout": [
+  "geo_webcam_0_combined",
+  "geo_webcam_1_combined"
+ ],
+ "torch": "2.14.1+cu130",
+ "device": "cuda",
+ "weights": "/home/balrog/student_runs/jattn64-s16h1/weights.pt",
+ "nparams": 111425,
+ "frames": {
+  "church": {
+   "split": "train",
+   "strata": {
+    "far": 0.6594018325126384,
+    "near": 0.2375065429554901,
+    "nonplanar": 0.36370548835440136,
+    "planar": 0.5747012816605606,
+    "smooth": 0.45601624096113064,
+    "tex": 0.4435217939849006
+   }
+  },
+  "dogs": {
+   "split": "train",
+   "strata": {
+    "far": 0.5124999414509448,
+    "near": 0.288031394402514,
+    "nonplanar": 0.36264200249862694,
+    "planar": 0.4426734909038754,
+    "smooth": 0.5043434434322036,
+    "tex": 0.30125606523603554
+   }
+  },
+  "squirrel": {
+   "split": "train",
+   "strata": {
+    "far": 0.7965690437869939,
+    "near": 0.3004754251554084,
+    "nonplanar": 0.4037405855044564,
+    "planar": 0.6193305160486698,
+    "smooth": 0.874953710769593,
+    "tex": 0.25078526023695896
+   }
+  },
+  "train": {
+   "split": "train",
+   "strata": {
+    "far": 0.6098222011501803,
+    "near": 0.29527870872333306,
+    "nonplanar": 0.5327543963701303,
+    "planar": 0.3896710069259609,
+    "smooth": 0.5223325068525704,
+    "tex": 0.41481803268247086
+   }
+  },
+  "geo_webcam_0_combined": {
+   "split": "heldout",
+   "strata": {
+    "far": 0.22974673946055021,
+    "near": 0.37730131800286865,
+    "nonplanar": 0.3610701762431505,
+    "planar": 0.2736934275405303,
+    "smooth": 0.21452843768419122,
+    "tex": 0.4078734050879071
+   }
+  },
+  "geo_webcam_1_combined": {
+   "split": "heldout",
+   "strata": {
+    "far": 0.41634796283576836,
+    "near": 0.5509014097189892,
+    "nonplanar": 0.4607136328344999,
+    "planar": 0.5398901864888705,
+    "smooth": 0.5356120112240497,
+    "tex": 0.40616139732105894
+   }
+  }
+ }
+}

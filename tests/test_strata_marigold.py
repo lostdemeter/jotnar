@@ -370,6 +370,40 @@ def main():
     cap10_ok = all(cells10[t].get("nparams") == 108033 for t in frozen10)
     check("battery10-capacity-matched", bool(cap10_ok),
           "108033 params x3 (heads, not capacity)")
+
+    # -- Phase-11 grid battery (same integrity shape, new key) -------------
+    b11 = ab.get("battery11", {})
+    frozen11 = ["jattn64-s16h1", "jattn64-s16h2", "jattn64-s16h4"]
+    check("battery11-configs", b11.get("configs") == frozen11
+          and b11.get("reference") == "jattn64b2", b11.get("configs"))
+    cells11 = b11.get("cells", {})
+    complete11 = True
+    for t in frozen11:
+        fr = cells11.get(t, {}).get("frames", {})
+        complete11 &= (len(fr) == 6 and all(
+            sorted(fr[n].get("strata", {})) == STRATA
+            and all(np.isfinite(v) and v >= 0
+                    for v in fr[n]["strata"].values())
+            for n in fr))
+    check("battery11-complete", bool(complete11), "3 configs x 6x6 finite")
+    counts11 = {}
+    for t in frozen11:
+        n = 0
+        for _n, fr in cells11[t]["frames"].items():
+            if fr.get("split") != "heldout":
+                continue
+            n += sum(1 for k in STRATA if fr["strata"][k] <= BARS[k])
+        counts11[t] = n
+    check("battery11-winner-none",
+          all(v == 0 for v in counts11.values())
+          and b11.get("winner") is None,
+          f"held-out cells under bars per config: {counts11}")
+    flags11_ok = all(
+        all(k in cells11[t].get("flags", {}) for k in
+            ("field", "width", "blocks", "heads", "stride", "nctx", "steps",
+             "lr", "schedule", "seed"))
+        for t in frozen11)
+    check("battery11-flags", bool(flags11_ok), "repro metadata per config")
     # Four variants (baseline/perc/sink/both), all openly losing: the gate
     # asserts the table is complete and internally consistent (every cell
     # finite; deltas vs baseline computed, never asserted in a direction).
