@@ -1193,3 +1193,28 @@ edge-band MAE >0.05 at matched budget with interior degradation
 needs a GPU). Numbers banked as scalars
 (samples/marigold/edge_analysis.json); edge maps regenerate
 deterministically from banked depth (no seeds involved).
+
+### Results (4 systems x 6 fixtures, forward-only CPU)
+
+Mean band MAEs (global fit as ever):
+
+```
+system       edge    halo    interior  edge/interior
+mscale64     0.348   0.299   0.286     1.22
+jattn64b2    0.462   0.464   0.433     1.07
+texmsc-2k    0.377   0.395   0.365     1.03
+texmsc-8kcos 0.377   0.395   0.365     1.03
+```
+Verdict: DEAD — max ratio 1.22, frozen rule needs ≥2x. No
+edge-weighted training round follows (the follow-up bar stays
+stated-not-run, permanently moot). Error spreads through
+interiors nearly as badly as edges in every system; the liminal
+story is quantitatively false. Mechanism notes: mscale64 carries
+the highest ratio (local field + hard edges = worst combination,
+still 0.8 short of the rule); jattn is flattest (1.07 — uniform
+underfit ignores edges and interiors alike); the texmsc twins
+match each other exactly (same basin, again) and sit between.
+What this closes: the last "maybe the errors are all X" structure
+hypothesis with a number attached. Errors are everywhere, in every
+system, at every scale tested — the wall has no address left
+inside the judged domain.
