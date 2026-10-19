@@ -441,6 +441,44 @@ def main():
     cap13 = [cells13[t].get("nparams") for t in frozen13]
     check("battery13-depth-ladder", cap13 == [111425, 161281, 211137],
           f"{cap13} (+49856/block)")
+
+    # -- Phase-15 dino-input battery (same integrity shape, new key) ------
+    b15 = ab.get("battery15", {})
+    frozen15 = ["dino-tokonly", "dino-tokrgb"]
+    check("battery15-configs", b15.get("configs") == frozen15
+          and b15.get("reference") == "jattn64b2", b15.get("configs"))
+    cells15 = b15.get("cells", {})
+    complete15 = True
+    for t in frozen15:
+        fr = cells15.get(t, {}).get("frames", {})
+        complete15 &= (len(fr) == 6 and all(
+            sorted(fr[n].get("strata", {})) == STRATA
+            and all(np.isfinite(v) and v >= 0
+                    for v in fr[n]["strata"].values())
+            for n in fr))
+    check("battery15-complete", bool(complete15), "2 configs x 6x6 finite")
+    counts15 = {}
+    for t in frozen15:
+        n = 0
+        for _n, fr in cells15[t]["frames"].items():
+            if fr.get("split") != "heldout":
+                continue
+            n += sum(1 for k in STRATA if fr["strata"][k] <= BARS[k])
+        counts15[t] = n
+    check("battery15-winner-none",
+          all(v == 0 for v in counts15.values())
+          and b15.get("winner") is None,
+          f"held-out cells under bars per config: {counts15}")
+    flags15_ok = all(
+        all(k in cells15[t].get("flags", {}) for k in
+            ("field", "width", "blocks", "heads", "feat", "stride", "nctx",
+             "steps", "lr", "schedule", "seed"))
+        and cells15[t]["flags"]["feat"].startswith("dino-")
+        for t in frozen15)
+    check("battery15-flags", bool(flags15_ok), "repro metadata per config")
+    cap15 = [cells15[t].get("nparams") for t in frozen15]
+    check("battery15-capacity", cap15 == [156993, 156993],
+          f"{cap15} (108033 + 49216 dino_proj - 256 ctx)")
     # Four variants (baseline/perc/sink/both), all openly losing: the gate
     # asserts the table is complete and internally consistent (every cell
     # finite; deltas vs baseline computed, never asserted in a direction).

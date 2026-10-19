@@ -93,23 +93,37 @@ def _define_model(torch):
             self.blocks = torch.nn.ModuleList([Block(W, Hh) for _ in range(B)])
             self.h1 = torch.nn.Linear(W + 3, W)
             self.h2 = torch.nn.Linear(W, 1)
+            # LAST so shared-module init draws keep Phase-8 order exactly
+            self.dino_proj = torch.nn.Linear(768, W)  # Phase-15 only
 
-        def encode(self, rgb):
-            """rgb: (H,W,3) tensor -> image-token outs (T,W)."""
+        def encode(self, rgb, dino=None, rgb_tokens=True):
+            """rgb (H,W,3); dino raw (D,768) or None.
+            rgb_tokens=False drops the RGB stream (dino-tokonly).
+            Returns head-source token outs."""
             H, W3, _ = rgb.shape
             W = self.W
-            nrows, ncols = self.row.num_embeddings, self.col.num_embeddings
-            cy = torch.arange(nrows, device=rgb.device) * (H // nrows) + (H // nrows) // 2
-            cx = torch.arange(ncols, device=rgb.device) * (W3 // ncols) + (W3 // ncols) // 2
-            gy, gx = torch.meshgrid(cy, cx, indexing="ij")
-            toks = rgb[gy.reshape(-1), gx.reshape(-1)]  # (T,3)
-            pos = (self.row.weight.repeat_interleave(ncols, dim=0)
-                   + self.col.weight.repeat(nrows, 1))
-            temb = self.tok(toks) + pos
-            seq = torch.cat([self.ctx, temb], dim=0)
+            parts = []
+            if dino is not None:
+                parts.append(self.dino_proj(dino))
+            else:
+                parts.append(self.ctx)
+            if rgb_tokens:
+                nrows, ncols = self.row.num_embeddings, self.col.num_embeddings
+                cy = torch.arange(nrows, device=rgb.device) * (H // nrows) + (H // nrows) // 2
+                cx = torch.arange(ncols, device=rgb.device) * (W3 // ncols) + (W3 // ncols) // 2
+                gy, gx = torch.meshgrid(cy, cx, indexing="ij")
+                toks = rgb[gy.reshape(-1), gx.reshape(-1)]  # (T,3)
+                pos = (self.row.weight.repeat_interleave(ncols, dim=0)
+                       + self.col.weight.repeat(nrows, 1))
+                parts.append(self.tok(toks) + pos)
+            seq = torch.cat(parts, dim=0) if len(parts) > 1 else parts[0]
             for b in self.blocks:
                 seq = b(seq)
-            return seq[self.ctx.shape[0]:]
+            if dino is not None and not rgb_tokens:
+                return seq  # all-dino outs (tokonly)
+            if dino is not None:
+                return seq[dino.shape[0]:]  # RGB outs (tokrgb, as built)
+            return seq[self.ctx.shape[0]:]  # RGB outs (rgb, as built)
 
         def head(self, tokouts, rgb, idx):
             """tokouts (T,W), rgb (H,W,3), idx (H,W) long -> (H,W) depth."""
@@ -128,6 +142,12 @@ def main():
     ap.add_argument("--heads", type=int, default=1)
     ap.add_argument("--stride", type=int, default=32)
     ap.add_argument("--nctx", type=int, default=4)
+    ap.add_argument("--feat", choices=["rgb", "dino-tokonly", "dino-tokrgb"],
+                    default="rgb",
+                    help="Phase-15 input-information plumbing only: rgb is the "
+                    "Phase-8 shape; dino modes feed cached frozen-DINOv2 patch "
+                    "tokens (encoder runs once offline, never at train time).")
+    ap.add_argument("--dino-dir", default="~/student_runs/dino_tokens")
     ap.add_argument("--steps", type=int, default=2000)
     ap.add_argument("--lr", type=float, default=0.01)
     ap.add_argument("--schedule", choices=["const", "cosine"], default="const",
@@ -158,12 +178,33 @@ def main():
     yy, xx = torch.meshgrid(torch.arange(H0, device=device),
                             torch.arange(W0, device=device), indexing="ij")
     pidx = ((yy // args.stride) * ncols + (xx // args.stride)).long()
+    pidx14 = torch.clamp((yy // 14) * 73 + (xx // 14), max=3503).long()
     sidx = torch.arange(0, H0 * W0, 7, device=device)
+
+    dino = {}
+    if args.feat != "rgb":
+        dd = os.path.expanduser(args.dino_dir)
+        for n in args.train + args.heldout:
+            t = torch.load(os.path.join(dd, n + ".pt"), map_location=device,
+                           weights_only=True).float()
+            assert tuple(t.shape) == (3504, 768), (n, tuple(t.shape))
+            dino[n] = t
+        print(f"dino tokens cached: {len(dino)} frames x 3504x768", flush=True)
+
+    def enc(n):
+        rgb, _ = frames[n]
+        if args.feat == "rgb":
+            return net.encode(rgb), pidx
+        if args.feat == "dino-tokonly":
+            return net.encode(rgb, dino[n], rgb_tokens=False), pidx14
+        return net.encode(rgb, dino[n], rgb_tokens=True), pidx
 
     net = JointAttn(args.width, nrows, ncols, args.nctx, args.blocks,
                     args.heads).to(device).float()
     nparams = sum(p.numel() for p in net.parameters())
-    print(f"params={nparams} grid={nrows}x{ncols} seq={nrows * ncols + args.nctx}", flush=True)
+    seqlen = {"rgb": nrows * ncols + args.nctx, "dino-tokonly": 3504,
+              "dino-tokrgb": 3504 + nrows * ncols}[args.feat]
+    print(f"params={nparams} feat={args.feat} seq={seqlen}", flush=True)
     opt = torch.optim.Adam(net.parameters(), lr=args.lr)
 
     Tcat = torch.cat([frames[n][1].reshape(-1)[sidx] for n in args.train])
@@ -178,8 +219,8 @@ def main():
         ps = []
         for n in args.train:
             rgb, _ = frames[n]
-            to = net.encode(rgb)
-            p = net.head(to, rgb, pidx).reshape(-1)[sidx].double()
+            to, hidx = enc(n)
+            p = net.head(to, rgb, hidx).reshape(-1)[sidx].double()
             ps.append(p)
         p = torch.cat(ps)
         with torch.no_grad():
@@ -201,7 +242,7 @@ def main():
     import test_strata_marigold as H
     man = json.load(open(os.path.join(FIXDIR, "teacher_manifest.json")))
     rep = {"tag": args.tag, "width": args.width, "blocks": args.blocks,
-           "heads": args.heads,
+           "heads": args.heads, "feat": args.feat,
            "stride": args.stride, "nctx": args.nctx, "steps": args.steps,
            "lr": args.lr, "schedule": args.schedule, "seed": args.seed, "field": "full-frame",
            "train": args.train, "heldout": args.heldout,
@@ -213,8 +254,8 @@ def main():
         for split, names in (("train", args.train), ("heldout", args.heldout)):
             for n in names:
                 rgb, t = frames[n]
-                to = net.encode(rgb)
-                p = net.head(to, rgb, pidx).cpu().numpy()
+                to, hidx = enc(n)
+                p = net.head(to, rgb, hidx).cpu().numpy()
                 t = t.cpu().numpy()
                 Hh, Ww = next(r["shape"] for r in man["fixtures"] if r["name"] == n)
                 masks = H.strata_masks(t.reshape(Hh, Ww), rgb.cpu().numpy().reshape(Hh, Ww, 3))

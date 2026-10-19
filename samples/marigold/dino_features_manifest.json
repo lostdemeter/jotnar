@@ -1,0 +1,60 @@
+{
+ "model": "~/student_runs/dinov2-base (facebook/dinov2-base, 86M)",
+ "seed": 7,
+ "frames": {
+  "church": {
+   "shape": [
+    1,
+    3504,
+    768
+   ],
+   "finite": true,
+   "sha256": "1a49a85d286f18d10a4539d3ed6e0f43c0d712828edfa7775da2ee47bab532d5"
+  },
+  "dogs": {
+   "shape": [
+    1,
+    3504,
+    768
+   ],
+   "finite": true,
+   "sha256": "851721c26f1ae579e0c0c9e506a482b881da5eddf978fc9e144728953669c29e"
+  },
+  "squirrel": {
+   "shape": [
+    1,
+    3504,
+    768
+   ],
+   "finite": true,
+   "sha256": "3a25823320ad00cc8de6068c0a4f860ecb9999c473b54dc7ef3ed3cf9af9a9a2"
+  },
+  "train": {
+   "shape": [
+    1,
+    3504,
+    768
+   ],
+   "finite": true,
+   "sha256": "3f0e407c3a41c7eadd8b0d0d4d10af465252856c9f4dd6dd27857f2965f88f01"
+  },
+  "geo_webcam_0_combined": {
+   "shape": [
+    1,
+    3504,
+    768
+   ],
+   "finite": true,
+   "sha256": "e4312458920611ee32c57a0eed6353789b47f2c972b7a13bb44cc3c92a622aa0"
+  },
+  "geo_webcam_1_combined": {
+   "shape": [
+    1,
+    3504,
+    768
+   ],
+   "finite": true,
+   "sha256": "6c8b50fab33edc7190543b66762ae0fb7233229ede410b7168889d95882217fb"
+  }
+ }
+}
