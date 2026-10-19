@@ -303,3 +303,108 @@ Diagnosis: monocular layout needs beyond-129px/global structure or
 a different inductive bias; the in-table mixer family is exhausted
 along every frozen axis. Next needs either long-range structure or
 a constraint change — scoped proposals, not this report.
+
+## Phase 6 — long-range battery, last honest round
+
+Declared axes + budget, FROZEN before running. Budget: 10 new
+configs, GPU box to itself, per-config wall cap 3min (bigger fields
+cost more: feature build O(px × samples); measured 25-60s/run).
+Judge unchanged: Phase-1 bars, same alignment, verdict-reported.
+In-table only (emitted-pattern law; LAYERNORM/CONV-type need =
+stop-finding, not implementation). Empty is complete.
+
+Long-range mechanisms (each config names its path to beyond-129px
+structure; "bigger mixer" alone is refused at declaration — depth
+appears only paired with a range mechanism, as capacity support):
+- wider spoke fields: 257px (stride-64 over ±128), 513px
+  (stride-128 over ±256), ~1025px (stride-256 over ±512, sparse
+  full-width spokes). Same 5x5-per-scale pattern (75 dims each);
+  coverage thins with range by construction (stated, not hidden).
+- coarse-global broadcast: per-image mean RGB + mean luma (4 dims)
+  appended to every pixel — whole-frame summary, lossy by design;
+  tests whether global tint/layout suffices. Deploys as const-fill
+  + CONCAT (both tabled).
+- excluded by the constitution rule: standalone depth configs
+  (d3/d4 without a new field — capacity is not a mechanism),
+  finer granularity reruns (Phase-5 axis, settled), loss/signal
+  changes (Phase-4 settled, dead).
+
+| # | tag | mechanism | field | dims | mixer |
+|---|-----|-----------|-------|------|-------|
+| 1 | g257w64d2 | quarter-frame spokes | 257px | 402 | W64/d2 |
+| 2 | g513w64d2 | half-frame spokes | 513px | 477 | W64/d2 |
+| 3 | g1025w64d2 | sparse full-width spokes | ~1025px | 552 | W64/d2 |
+| 4 | g257w128d3 | spokes + capacity | 257px | 402 | W128/d3 |
+| 5 | g513w128d3 | spokes + capacity | 513px | 477 | W128/d3 |
+| 6 | globw64d2 | whole-frame summary | 33px+global | 181 | W64/d2 |
+| 7 | glob257w64d2 | spokes + summary | 257px | 406 | W64/d2 |
+| 8 | g513w64d3 | half-frame + capacity | 513px | 477 | W64/d3 |
+| 9 | g257w32d2 | spokes, narrow check | 257px | 402 | W32/d2 |
+| 10 | g1025w128d3 | max envelope | ~1025px | 552 | W128/d3 |
+
+Dims: dense27 + 75 per spoke scale + 4 if global (552 = 27+75*7;
+field1025 adds s64+s128 scales). Largest: ~75k+ params, transient
+features <2GB/frame CPU, GPU batch <1GB — nowhere near 17GB.
+Winner rule: most held-out cells under bars; ties → train-heldout
+gap. Winner gets retrain-match before claimed. Empty (nothing
+clears bars) closes with the earned sentence (see results).
+
+### Battery results (all 10 ran, ~21-60s each, single GPU to itself)
+
+Means over banked strata (train = 4 frames × 6 strata; held-out =
+2 frames × 6 strata = 12 cells/config). Best/worst = held-out cell
+by multiples over its bar:
+
+```
+tag            field  mixer    tr-mean  ho-mean  ho-best (val/bar)      ho-worst (val/bar)      pass
+g257w64d2      257px  W64/d2   0.228    0.283    near 0.184/0.09 (2.0x)  tex 0.365/0.07 (5.2x)   0/12
+g513w64d2      513px  W64/d2   0.144    0.269    near 0.172/0.09 (1.9x)  tex 0.371/0.07 (5.3x)   0/12
+g1025w64d2     ~1025  W64/d2   0.146    0.323    smoo 0.180/0.09 (2.0x)  tex 0.436/0.07 (6.2x)   0/12
+g257w128d3     257px  W128/d3  0.208    0.291    smoo 0.189/0.09 (2.1x)  tex 0.366/0.07 (5.2x)   0/12
+g513w128d3     513px  W128/d3  0.154    0.285    smoo 0.189/0.09 (2.1x)  tex 0.363/0.07 (5.2x)   0/12
+globw64d2      33+g   W64/d2   0.320    0.304    smoo 0.180/0.09 (2.0x)  tex 0.414/0.07 (5.9x)   0/12
+glob257w64d2   257+g  W64/d2   0.182    0.280    smoo 0.192/0.09 (2.1x)  tex 0.365/0.07 (5.2x)   0/12
+g513w64d3      513px  W64/d3   0.135    0.278    near 0.191/0.09 (2.1x)  tex 0.367/0.07 (5.2x)   0/12
+g257w32d2      257px  W32/d2   0.196    0.273    near 0.182/0.09 (2.0x)  tex 0.370/0.07 (5.3x)   0/12
+g1025w128d3    ~1025  W128/d3  0.127    0.318    smoo 0.176/0.09 (2.0x)  tex 0.421/0.07 (6.0x)   0/12
+```
+(train_loss is not banked — None for every cell in both batteries,
+pre-existing shape; the frontier below is stated in banked strata
+means, not in unbanked loss.)
+
+Winner: none — 0/120 held-out cells under bars (0/12 every
+config, gate-counted, not eyeballed). No winner retrain-match
+needed (nothing to claim; the tripwire stands ready as in Phase 5).
+
+Final-tree proof (Phase-4 precedent): all 10 weight mtimes postdate
+the final trainer commit 3e2434e (08:44:39 -0400) by +36s (g257w64d2
+08:45:15) to +566s (g1025w128d3 08:54:05); the WIP checkpoint banks
+after training. No stale-code cells, nothing regenerated.
+Spot-retrain: globw64d2 rerun under distinct tag spot-globw64d2
+(same frozen flags, 21s wall) matches the banked cell in all 36/36
+strata to max abs diff 7.2e-16 (float-serialization level; 4dp
+tables identical); committed student_run.json restored byte-identical
+(sha256 f392c9fa), spot weights out-of-tree only.
+
+Range-vs-bars frontier: train fit descends 257px (0.23) → 513px
+(0.14) then flats at ~1025px (0.13-0.15), while held-out stays flat
+(0.27-0.32) — the Phase-5 generalization wall extends to
+full-frame spokes. Capacity (W32→W128, d2→d3) moves train mean
+(0.196→0.127 at matched fields) without moving held-out. The
+whole-frame summary is bidirectional on train (worst-of-battery
+0.320 at 33px+g; 0.182 at 257px+g vs 0.228 spokes-only) and never
+moves held-out systematically (0.28-0.30 both). The 1025px sparse
+envelope holds the worst held-out means (0.32) — thinnest coverage
+overfits train while generalizing least.
+Diagnosis: strided beyond-129px spokes + lossy global tint do not
+supply monocular layout reasoning (which side is far, occlusion
+ordering); texture/detail best cells stay 2x over bars everywhere,
+far/tex worst 5-6x. The in-table mixer family is now exhausted
+along every frozen range axis, as it was along every Phase-5 axis.
+Earned sentence: empty is complete — the long-range round maps the
+same wall at full-frame scale, with the table banked.
+
+What would change that (scoped proposals, not run): a
+constraint change (new emitted patterns for attention/pooling-grade
+structure) or a different inductive bias outside the mixer family —
+both need their own declared round, neither is this report.
