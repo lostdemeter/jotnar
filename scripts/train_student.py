@@ -24,7 +24,22 @@ FIXDIR = os.path.join(ROOT, "samples", "marigold")
 OUTBASE = os.path.expanduser("~/student_runs")
 
 
-def load_frame(name, patch=1, multi=False):
+def scales_for(field, densewin):
+    """Scale list [(stride, half)] for a field, constitution-frozen.
+    Undeclared fields refuse loud (no mid-battery invention)."""
+    if field not in (33, 65, 129) or densewin not in (3, 5):
+        raise ValueError(
+            f"undeclared field/densewin {(field, densewin)} "
+            f"(frozen axes: field in {{33,65,129}}, densewin in {{3,5}})")
+    scales = [(4, 8), (8, 16)]
+    if field >= 65:
+        scales.append((16, 32))
+    if field >= 129:
+        scales.append((32, 64))
+    return scales
+
+
+def load_frame(name, patch=1, multi=False, field=33, densewin=3):
     import numpy as np
     from PIL import Image
     man = json.load(open(os.path.join(FIXDIR, "teacher_manifest.json")))
@@ -38,21 +53,24 @@ def load_frame(name, patch=1, multi=False):
         return im.reshape(-1, 3), im, t.reshape(-1)
     if multi:
         Hh, Ww, _ = im.shape
-        p = np.pad(im, ((16, 16), (16, 16), (0, 0)), mode="edge")
+        scales = scales_for(field, densewin)
+        pad = max(half for _, half in scales)
+        p = np.pad(im, ((pad, pad), (pad, pad), (0, 0)), mode="edge")
         parts = []
         yy, xx = np.mgrid[0:Hh, 0:Ww]
-        # dense 3x3 (field 3)
-        d3 = np.pad(im, ((1, 1), (1, 1), (0, 0)), mode="edge")
+        # dense window (stride 1)
+        hd = (densewin - 1) // 2
+        dd = np.pad(im, ((hd, hd), (hd, hd), (0, 0)), mode="edge")
         parts.append(np.concatenate(
-            [d3[i:i + Hh, j:j + Ww, :] for i in range(3) for j in range(3)],
-            axis=-1))
-        # stride-4 over 17x17 (field 17), stride-8 over 33x33 (field 33)
-        for stride, half in ((4, 8), (8, 16)):
-            off = 16 + np.arange(-half, half + 1, stride)
+            [dd[i:i + Hh, j:j + Ww, :] for i in range(densewin)
+             for j in range(densewin)], axis=-1))
+        for stride, half in scales:
+            off = pad + np.arange(-half, half + 1, stride)
             grid = np.concatenate(
                 [p[yy + dy, xx + dx, :] for dy in off for dx in off], axis=-1)
             parts.append(grid)
-        return np.concatenate(parts, axis=-1).reshape(-1, 177), im, \
+        dims = densewin * densewin * 3 + 25 * 3 * len(scales)
+        return np.concatenate(parts, axis=-1).reshape(-1, dims), im, \
             t.reshape(-1)
     # 3x3 neighborhood im2col (edge-replicated): deployed form is
     # GATHER-neighborhood + MATMUL, both in-table (GATHER F, MATMUL F).
@@ -105,6 +123,12 @@ def main():
                     "facebook/dinov2-base stand-in for gated DINOv3)")
     ap.add_argument("--aux-every", type=int, default=50,
                     help="aux-signal cadence in steps (full frames)")
+    ap.add_argument("--field", type=int, default=33,
+                    help="context field px, frozen axes {33,65,129}")
+    ap.add_argument("--densewin", type=int, default=3,
+                    help="dense window, frozen axes {3,5}")
+    ap.add_argument("--depth", type=int, default=2,
+                    help="mixer hidden layers, frozen axes {2,3}")
     args = ap.parse_args()
 
     import numpy as np
@@ -116,7 +140,7 @@ def main():
 
     Xtr, Ttr = [], []
     for n in args.train:
-        x, _, t = load_frame(n, args.patch, args.multi)
+        x, _, t = load_frame(n, args.patch, args.multi, args.field, args.densewin)
         Xtr.append(x)
         Ttr.append(t)
     Xtr = torch.tensor(np.concatenate(Xtr), dtype=torch.float32, device=device)
@@ -127,11 +151,15 @@ def main():
     print(f"train px: {Xs.shape[0]} (stride-7 of {Xtr.shape[0]})", flush=True)
 
     W = args.width
-    Din = 177 if args.multi else (27 if args.patch == 3 else 3)
-    net = torch.nn.Sequential(
-        torch.nn.Linear(Din, W), torch.nn.SiLU(),
-        torch.nn.Linear(W, W), torch.nn.SiLU(),
-        torch.nn.Linear(W, 1)).to(device).float()
+    if args.depth not in (2, 3):
+        raise ValueError(f"undeclared depth {args.depth} (frozen axes {2, 3})")
+    Din = (9 * 3 + 25 * 3 * len(scales_for(args.field, args.densewin))
+           if args.multi else (27 if args.patch == 3 else 3))
+    layers = [torch.nn.Linear(Din, W), torch.nn.SiLU()]
+    for _ in range(args.depth - 1):
+        layers += [torch.nn.Linear(W, W), torch.nn.SiLU()]
+    layers += [torch.nn.Linear(W, 1)]
+    net = torch.nn.Sequential(*layers).to(device).float()
     opt = torch.optim.Adam(net.parameters(), lr=args.lr)
 
     # -- aux signals: frozen DINOv2 embeddings of teacher maps (once) ------
@@ -257,7 +285,8 @@ def main():
             tmaps = [tmap(n) for n in args.train]
             shapes = [tm.shape for tm in tmaps]
             for _n, _tm, (_Hh, _Ww) in zip(args.train, tmaps, shapes):
-                x0, _, _ = load_frame(_n, args.patch, args.multi)
+                x0, _, _ = load_frame(_n, args.patch, args.multi,
+                                       args.field, args.densewin)
                 f0 = net(torch.tensor(x0, dtype=torch.float32,
                                       device=device)).reshape(-1)
                 fobjs = []
@@ -301,6 +330,8 @@ def main():
     man = json.load(open(os.path.join(FIXDIR, "teacher_manifest.json")))
     rep = {"tag": args.tag, "width": W, "steps": args.steps, "lr": args.lr,
            "seed": args.seed, "patch": args.patch, "multi": args.multi,
+           "field": args.field, "densewin": args.densewin,
+           "depth": args.depth,
            "perc": args.perc, "sink": args.sink, "aux_every": args.aux_every,
            "dinov2": os.path.expanduser(args.dinov2) if args.perc > 0 else None,
            "train": args.train, "heldout": args.heldout,
@@ -311,7 +342,7 @@ def main():
     with torch.no_grad():
         for split, names in (("train", args.train), ("heldout", args.heldout)):
             for n in names:
-                x, im3, t = load_frame(n, args.patch, args.multi)
+                x, im3, t = load_frame(n, args.patch, args.multi, args.field, args.densewin)
                 p = net(torch.tensor(x, dtype=torch.float32,
                                      device=device)).reshape(-1).double()
                 p = p.cpu().numpy()
