@@ -229,6 +229,42 @@ def main():
             ("field", "densewin", "depth", "width", "steps", "lr", "seed"))
         for t in frozen)
     check("battery-flags", bool(flags_ok), "repro metadata per config")
+
+    # -- Phase-6 long-range battery (same integrity shape, new key) ---------
+    b6 = ab.get("battery6", {})
+    frozen6 = ["g257w64d2", "g513w64d2", "g1025w64d2", "g257w128d3",
+               "g513w128d3", "globw64d2", "glob257w64d2", "g513w64d3",
+               "g257w32d2", "g1025w128d3"]
+    check("battery6-configs", b6.get("configs") == frozen6
+          and b6.get("reference") == "mscale64", b6.get("configs"))
+    cells6 = b6.get("cells", {})
+    complete6 = True
+    for t in frozen6:
+        fr = cells6.get(t, {}).get("frames", {})
+        complete6 &= (len(fr) == 6 and all(
+            sorted(fr[n].get("strata", {})) == STRATA
+            and all(np.isfinite(v) and v >= 0
+                    for v in fr[n]["strata"].values())
+            for n in fr))
+    check("battery6-complete", bool(complete6), "10 configs x 6x6 finite")
+    counts6 = {}
+    for t in frozen6:
+        n = 0
+        for _n, fr in cells6[t]["frames"].items():
+            if fr.get("split") != "heldout":
+                continue
+            n += sum(1 for k in STRATA if fr["strata"][k] <= BARS[k])
+        counts6[t] = n
+    check("battery6-winner-none",
+          all(v == 0 for v in counts6.values())
+          and b6.get("winner") is None,
+          f"held-out cells under bars per config: {counts6}")
+    flags6_ok = all(
+        all(k in cells6[t].get("flags", {}) for k in
+            ("field", "densewin", "depth", "width", "steps", "lr", "seed",
+             "globsum"))
+        for t in frozen6)
+    check("battery6-flags", bool(flags6_ok), "repro metadata per config")
     # Four variants (baseline/perc/sink/both), all openly losing: the gate
     # asserts the table is complete and internally consistent (every cell
     # finite; deltas vs baseline computed, never asserted in a direction).
