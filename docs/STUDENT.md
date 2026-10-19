@@ -1307,3 +1307,52 @@ DiT-tiny needs its own constitution WITHOUT the aux (or with a
 swept λ — a new round either way, none run here). Empty table,
 loaded finding: the aux pin is the largest optimization effect
 measured since Phase-9 cosine (in reverse).
+
+## Phase 20 — faithful package, no aux, fair trial (constitution, FROZEN pre-run)
+
+Phase-19 package EXACTLY (LN+GELU-form+AdaLN+patchify+unfused,
+B2/B4/B6 ladder, W64/H4/s16, shifted-log targets, same splits)
+with the gradient aux REMOVED — disabled via `grad-w 0` PLUS a
+guard skipping the aux forward when grad-w==0 (declared here;
+0×NaN poisons, skipped NaN can't — same math, safer path).
+The single variable is aux-present vs aux-absent. Loss =
+aligned-MAE only (the pre-aux baseline that carried mixers this
+far). Schedule mirrors Phase 19 minus aux: 8k-cosine, lr 0.01,
+seed 7. Tags `ditc64b2/ditc64b4/ditc64b6` (c=clean).
+Budget: 3 rungs, wall caps 15/20/25 min (Phase-19 mirror; aux
+removal only helps), GPU solo, Qwen-7B never co-loaded.
+Winner: most held-out cells under bars; directional near/planar/
+smooth vs Phase-8 (>0.05, frozen) reopens empirically. Empty is
+complete — a clean loss here closes the faithful package
+honestly (machinery judged cleanly at last, either verdict
+binding).
+
+### Battery results (3/3 ran, walls 665s / <1200s / 1106s, GPU solo)
+
+```
+tag       blocks  train-loss              cells vs sibs  bars
+ditc64b2  2       0.8666→0.8542 pin      —              0/12
+ditc64b4  4       (wall unrecorded*)     ≤0.12          0/12
+ditc64b6  6       0.8665→0.8542 pin      0.0 exact      0/12
+(*same tail-capture class as Phase-19 B4; completed inside cap.)
+```
+Winner: none — 0/36 (gate-counted); moves 0/18; no retrain-match.
+Probed, not guessed: end-of-run predictions are enormous and
+near-constant (std 4.6e6 on mean −4.1e10 — 1e-4 relative ripple),
+residuals identical across depths. The model collapses to the
+constant predictor (loss ≈ target dispersion 0.85) under the
+mover schedule WITH aux (Phase 19) and WITHOUT (here) — while a
+300-step decaying-LR diagnostic descends to 0.489 (throwaway,
+unbanked). So the pin is schedule-shaped: sustained high LR on
+the aligned-MAE + AdaLN-gated stack collapses; decaying LR
+escapes. The mover schedule (Phase-9 mixer evidence) does not
+transfer to DiT-tiny.
+Verdict, binding per constitution: CLEAN LOSS — the faithful
+package as specified (LN+GELUform+AdaLN+patchify+unfused,
+B2/B4/B6, 8k-cosine) does not optimize, with or without the aux.
+Machinery judged cleanly at last: closed honestly, both candidate
+causes (recipe poison, schedule mismatch) now measured with the
+machinery itself never receiving trainable signal in 6/6 runs.
+What remains is NOT another mixer round: any future faithful
+attempt needs its own constitution with a swept LR (or optimizer)
+as the declared variable — stated, not run.

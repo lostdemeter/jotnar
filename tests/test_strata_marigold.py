@@ -490,6 +490,46 @@ def main():
     check("battery19-depth-ladder", cap19 == [209857, 359233, 508609],
           f"{cap19} (+149376/block incl. AdaLN)")
 
+    # -- Phase-20 dit-clean battery (same integrity shape, new key) -------
+    b20 = ab.get("battery20", {})
+    frozen20 = ["ditc64b2", "ditc64b4", "ditc64b6"]
+    check("battery20-configs", b20.get("configs") == frozen20
+          and b20.get("reference") == "jattn64b2", b20.get("configs"))
+    cells20 = b20.get("cells", {})
+    complete20 = True
+    for t in frozen20:
+        fr = cells20.get(t, {}).get("frames", {})
+        complete20 &= (len(fr) == 6 and all(
+            sorted(fr[n].get("strata", {})) == STRATA
+            and all(np.isfinite(v) and v >= 0
+                    for v in fr[n]["strata"].values())
+            for n in fr))
+    check("battery20-complete", bool(complete20), "3 configs x 6x6 finite")
+    counts20 = {}
+    for t in frozen20:
+        n = 0
+        for _n, fr in cells20[t]["frames"].items():
+            if fr.get("split") != "heldout":
+                continue
+            n += sum(1 for k in STRATA if fr["strata"][k] <= BARS[k])
+        counts20[t] = n
+    check("battery20-winner-none",
+          all(v == 0 for v in counts20.values())
+          and b20.get("winner") is None,
+          f"held-out cells under bars per config: {counts20}")
+    flags20_ok = all(
+        all(k in cells20[t].get("flags", {}) for k in
+            ("arch", "width", "blocks", "heads", "patch", "adaln",
+             "geluform", "gradloss", "stride", "steps", "lr", "schedule",
+             "seed", "field"))
+        and cells20[t]["flags"]["arch"] == "dit-tiny"
+        and cells20[t]["flags"]["gradloss"] == 0.0
+        for t in frozen20)
+    check("battery20-flags", bool(flags20_ok), "repro metadata per config")
+    cap20 = [cells20[t].get("nparams") for t in frozen20]
+    check("battery20-depth-ladder", cap20 == [209857, 359233, 508609],
+          f"{cap20} (+149376/block incl. AdaLN)")
+
     # -- Phase-15 dino-input battery (same integrity shape, new key) ------
     b15 = ab.get("battery15", {})
     frozen15 = ["dino-tokonly", "dino-tokrgb"]
