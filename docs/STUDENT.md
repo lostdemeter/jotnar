@@ -1102,3 +1102,36 @@ Dynamism-across-passes joins the wall as costed-out, and the
 earned sentence covers it: the static in-table story is complete
 including two-stage refinement attempted, stalled, and timed-out
 in the open.
+
+## Phase 17 — textured-domain restricted student (constitution, FROZEN pre-run)
+
+Domain first, exact rule: IN-DOMAIN = checker-textured procedural
+scenes (generator construction axis, not inference). 12 banked
+(idx12..23) + 12 new (idx36..47 — the next textured block from the
+same catalog arithmetic, new seeds/layouts) via seeded teacher CLI
+at 320x256 (manifest extension: 12 rows synth_t00..11 + input PNGs
++ teacher .npy, same provenance pattern — shape/dtype legs
+must pass on the extended manifest). Splits: train = 8 banked
+textured (idx12..19); in-domain heldout = 4 banked (idx20..23) +
+12 new (16 scenes x 6 strata = 96 graded cells); OUT-OF-DOMAIN =
+12 flat banked + 6 real fixtures — printed unjudged, explicitly
+unclaimed (not silently dropped). Targets throughout: teacher
+labels (student-arc doctrine; analytic GT grounds the teacher, it
+does not train the student).
+Headroom re-verified in-round from banked numbers (not inherited
+blind): teacher 0.0819 vs mscale64 0.3628 scene-mean on textured
+(n=12+12) = 4.43x. Reproduces — round proceeds.
+Architecture: mscale64-EXACT (field-33/densewin-3/W64/d2,
+177 dims, MATMUL/ADD/SILU + GATHER/CONCAT citations stand) —
+banked best on textured (0.363 vs jattn sidecar 0.536), and the bet
+is whether teacher-label training teaches it texture use. Two
+configs (third slot empty, stated): T1 `texmsc-2k` (2000 steps, lr
+0.02 const — Phase-5-comparable); T2 `texmsc-8kcos` (8000 steps
+cosine — best chance; schedule effect already measured, no new
+confound claimed). Seed 7, stride-7, no-grad alignment. Wall caps:
+teacher batch 10 min, each train 10 min. GPU box to itself.
+Winner: most in-domain heldout cells under bars (Phase-1 bars);
+empty is complete. Metrics banked separately (`student_run_<tag>`
+style per-variant files + `battery17` key, reference `mscale64`);
+primaries untouched; weights out-of-tree. Winner gets
+retrain-match before claimed.
