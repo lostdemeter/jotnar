@@ -1135,3 +1135,33 @@ empty is complete. Metrics banked separately (`student_run_<tag>`
 style per-variant files + `battery17` key, reference `mscale64`);
 primaries untouched; weights out-of-tree. Winner gets
 retrain-match before claimed.
+
+### Battery results (2/2 ran, minutes each, GPU solo)
+
+Convergence datum: T1 (2k const) vs T2 (8k cosine) differ by
+4.5e-05 max cell — different paths, same basin (same init+data,
+easy landscape, one attractor). Not a bug: weights differ from
+byte 1217 on.
+In-domain heldout (16 textured scenes x 6): T1 7/96, T2 7/96 —
+IDENTICAL 7 cells (synth_b09-planar 0.078; far 0.073-0.090 on
+synth_t00/t01/t03/t06/t10). First bar-passing student cells of
+the arc, all far/planar on simple room geometry (near-constant
+wall depth — easy, stated). Near/tex/smooth/nonplanar: nothing
+within 2-6x. Winner: TIE at 7/96 each (same basin) — no single
+claim exists, so no retrain-match runs (moot, not skipped).
+Out-of-domain, printed unjudged: flat-synthetic 0.215, real
+fixtures 0.379 (mscale64-on-real levels — no transfer gain, no
+catastrophe; the restriction is load-bearing).
+Gate notes: manifest extension (30 rows) required two minimal
+harness edits — manifest leg counts 6 real + 24 synthetic,
+coverage binds the real-fixture domain (synthetic percentile
+collapse stays characterized-not-gated per Phase-12a).
+Diagnosis: the domain restriction WORKS directionally (first
+passes, far/planar on rooms) and fails structurally (near never
+moves: 0.37-0.65 in-domain; texture the model was meant to learn
+sits 3-6x over bars). The 4.4x headroom does not convert: teacher
+labels on textured scenes teach wall/floor fidelity, not object
+layout — mimicry succeeds exactly where there is nothing to learn.
+The deployable-thing candidacy narrows to "rooms without
+furniture" and dies there honestly. Empty of winners, full of
+signal: restriction buys bar-passes, not understanding.
