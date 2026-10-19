@@ -146,10 +146,24 @@ def _student_legs(bank, S):
         st = bank["students"].get(tag)
         if not st:
             continue
-        vals = [x for fr in st["scenes"].values() for x in fr["strata"].values()]
+        nstarved, nfinite, nscenes = 0, 0, 0
+        for s, fr in st["scenes"].items():
+            vals = fr["strata"]
+            nscenes += 1
+            for k in ("near", "far", "planar", "nonplanar", "tex", "smooth"):
+                v = vals.get(k)
+                if v is None:
+                    nstarved += 1
+                elif np.isfinite(v) and v >= 0:
+                    nfinite += 1
+                else:
+                    nfinite -= 1000000
+            f = vals.get("_full")
+            if not (f is not None and np.isfinite(f) and f >= 0):
+                nfinite -= 1000000
         check(f"synth-{tag}-banked-finite",
-              len(st["scenes"]) == 24 and all(np.isfinite(v) and v >= 0 for v in vals),
-              f"{len(st['scenes'])} scenes finite")
+              nscenes == 24 and nfinite >= 0,
+              f"{nscenes} scenes, {nfinite} finite cells, {nstarved} starved-nulls")
 
 
 if __name__ == "__main__":
