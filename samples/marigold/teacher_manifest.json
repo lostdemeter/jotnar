@@ -67,6 +67,270 @@
    ],
    "dtype": "float32",
    "heldout": true
+  },
+  {
+   "name": "synth_t00",
+   "npy": "synth_t00.npy",
+   "shape": [
+    256,
+    320
+   ],
+   "dtype": "float32",
+   "synthetic": true,
+   "scene_idx": 36
+  },
+  {
+   "name": "synth_t01",
+   "npy": "synth_t01.npy",
+   "shape": [
+    256,
+    320
+   ],
+   "dtype": "float32",
+   "synthetic": true,
+   "scene_idx": 37
+  },
+  {
+   "name": "synth_t02",
+   "npy": "synth_t02.npy",
+   "shape": [
+    256,
+    320
+   ],
+   "dtype": "float32",
+   "synthetic": true,
+   "scene_idx": 38
+  },
+  {
+   "name": "synth_t03",
+   "npy": "synth_t03.npy",
+   "shape": [
+    256,
+    320
+   ],
+   "dtype": "float32",
+   "synthetic": true,
+   "scene_idx": 39
+  },
+  {
+   "name": "synth_t04",
+   "npy": "synth_t04.npy",
+   "shape": [
+    256,
+    320
+   ],
+   "dtype": "float32",
+   "synthetic": true,
+   "scene_idx": 40
+  },
+  {
+   "name": "synth_t05",
+   "npy": "synth_t05.npy",
+   "shape": [
+    256,
+    320
+   ],
+   "dtype": "float32",
+   "synthetic": true,
+   "scene_idx": 41
+  },
+  {
+   "name": "synth_t06",
+   "npy": "synth_t06.npy",
+   "shape": [
+    256,
+    320
+   ],
+   "dtype": "float32",
+   "synthetic": true,
+   "scene_idx": 42
+  },
+  {
+   "name": "synth_t07",
+   "npy": "synth_t07.npy",
+   "shape": [
+    256,
+    320
+   ],
+   "dtype": "float32",
+   "synthetic": true,
+   "scene_idx": 43
+  },
+  {
+   "name": "synth_t08",
+   "npy": "synth_t08.npy",
+   "shape": [
+    256,
+    320
+   ],
+   "dtype": "float32",
+   "synthetic": true,
+   "scene_idx": 44
+  },
+  {
+   "name": "synth_t09",
+   "npy": "synth_t09.npy",
+   "shape": [
+    256,
+    320
+   ],
+   "dtype": "float32",
+   "synthetic": true,
+   "scene_idx": 45
+  },
+  {
+   "name": "synth_t10",
+   "npy": "synth_t10.npy",
+   "shape": [
+    256,
+    320
+   ],
+   "dtype": "float32",
+   "synthetic": true,
+   "scene_idx": 46
+  },
+  {
+   "name": "synth_t11",
+   "npy": "synth_t11.npy",
+   "shape": [
+    256,
+    320
+   ],
+   "dtype": "float32",
+   "synthetic": true,
+   "scene_idx": 47
+  },
+  {
+   "name": "synth_b00",
+   "npy": "synth_b00.npy",
+   "shape": [
+    256,
+    320
+   ],
+   "dtype": "float32",
+   "synthetic": true,
+   "scene_idx": 12
+  },
+  {
+   "name": "synth_b01",
+   "npy": "synth_b01.npy",
+   "shape": [
+    256,
+    320
+   ],
+   "dtype": "float32",
+   "synthetic": true,
+   "scene_idx": 13
+  },
+  {
+   "name": "synth_b02",
+   "npy": "synth_b02.npy",
+   "shape": [
+    256,
+    320
+   ],
+   "dtype": "float32",
+   "synthetic": true,
+   "scene_idx": 14
+  },
+  {
+   "name": "synth_b03",
+   "npy": "synth_b03.npy",
+   "shape": [
+    256,
+    320
+   ],
+   "dtype": "float32",
+   "synthetic": true,
+   "scene_idx": 15
+  },
+  {
+   "name": "synth_b04",
+   "npy": "synth_b04.npy",
+   "shape": [
+    256,
+    320
+   ],
+   "dtype": "float32",
+   "synthetic": true,
+   "scene_idx": 16
+  },
+  {
+   "name": "synth_b05",
+   "npy": "synth_b05.npy",
+   "shape": [
+    256,
+    320
+   ],
+   "dtype": "float32",
+   "synthetic": true,
+   "scene_idx": 17
+  },
+  {
+   "name": "synth_b06",
+   "npy": "synth_b06.npy",
+   "shape": [
+    256,
+    320
+   ],
+   "dtype": "float32",
+   "synthetic": true,
+   "scene_idx": 18
+  },
+  {
+   "name": "synth_b07",
+   "npy": "synth_b07.npy",
+   "shape": [
+    256,
+    320
+   ],
+   "dtype": "float32",
+   "synthetic": true,
+   "scene_idx": 19
+  },
+  {
+   "name": "synth_b08",
+   "npy": "synth_b08.npy",
+   "shape": [
+    256,
+    320
+   ],
+   "dtype": "float32",
+   "synthetic": true,
+   "scene_idx": 20
+  },
+  {
+   "name": "synth_b09",
+   "npy": "synth_b09.npy",
+   "shape": [
+    256,
+    320
+   ],
+   "dtype": "float32",
+   "synthetic": true,
+   "scene_idx": 21
+  },
+  {
+   "name": "synth_b10",
+   "npy": "synth_b10.npy",
+   "shape": [
+    256,
+    320
+   ],
+   "dtype": "float32",
+   "synthetic": true,
+   "scene_idx": 22
+  },
+  {
+   "name": "synth_b11",
+   "npy": "synth_b11.npy",
+   "shape": [
+    256,
+    320
+   ],
+   "dtype": "float32",
+   "synthetic": true,
+   "scene_idx": 23
   }
  ]
 }

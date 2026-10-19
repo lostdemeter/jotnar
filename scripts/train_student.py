@@ -116,6 +116,9 @@ def main():
     ap.add_argument("--width", type=int, default=16)
     ap.add_argument("--steps", type=int, default=2000)
     ap.add_argument("--lr", type=float, default=0.02)
+    ap.add_argument("--schedule", choices=["const", "cosine"], default="const",
+                    help="Phase-17 schedule plumbing only (Phase-9 pattern): "
+                    "const keeps --lr; cosine anneals lr_max->0 over --steps.")
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--tag", default="w16")
     ap.add_argument("--train", nargs="+",
@@ -299,7 +302,12 @@ def main():
         return np.load(os.path.join(FIXDIR, row["npy"])).astype(np.float64)
 
     t0 = time.time()
+    import math as _math
     for it in range(args.steps):
+        if args.schedule == "cosine":
+            lr_t = args.lr * 0.5 * (1.0 + _math.cos(_math.pi * it / args.steps))
+            for pg in opt.param_groups:
+                pg["lr"] = lr_t
         opt.zero_grad()
         p = net(Xs).reshape(-1).double()
         # alignment does not take gradients (standard scale-shift-
@@ -364,6 +372,7 @@ def main():
     import test_strata_marigold as H
     man = json.load(open(os.path.join(FIXDIR, "teacher_manifest.json")))
     rep = {"tag": args.tag, "width": W, "steps": args.steps, "lr": args.lr,
+           "schedule": args.schedule,
            "seed": args.seed, "patch": args.patch, "multi": args.multi,
            "field": args.field, "densewin": args.densewin,
            "depth": args.depth,
