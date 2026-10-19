@@ -126,7 +126,10 @@ def main():
     ap.add_argument("--stride", type=int, default=16)
     ap.add_argument("--steps", type=int, default=8000)
     ap.add_argument("--lr", type=float, default=0.01)
-    ap.add_argument("--schedule", choices=["const", "cosine"], default="cosine")
+    ap.add_argument("--schedule", choices=["const", "cosine", "linear", "warmcos"],
+                    default="cosine")
+    ap.add_argument("--warmup", type=int, default=400,
+                    help="Phase-21 LR plumbing only: linear warmup steps for warmcos.")
     ap.add_argument("--grad-w", type=float, default=0.1)
     ap.add_argument("--aux-every", type=int, default=50)
     ap.add_argument("--seed", type=int, default=7)
@@ -198,6 +201,18 @@ def main():
             lr_t = args.lr * 0.5 * (1.0 + _math.cos(_math.pi * it / args.steps))
             for pg in opt.param_groups:
                 pg["lr"] = lr_t
+        elif args.schedule == "linear":
+            lr_t = args.lr * max(0.0, 1.0 - it / args.steps)
+            for pg in opt.param_groups:
+                pg["lr"] = lr_t
+        elif args.schedule == "warmcos":
+            if it < args.warmup:
+                lr_t = args.lr * (it + 1) / args.warmup
+            else:
+                jj = (it - args.warmup) / max(1, args.steps - args.warmup)
+                lr_t = args.lr * 0.5 * (1.0 + _math.cos(_math.pi * jj))
+            for pg in opt.param_groups:
+                pg["lr"] = lr_t
         opt.zero_grad()
         ps = []
         for n in args.train:
@@ -244,8 +259,8 @@ def main():
            "adaln": "const-vector", "geluform": "silu(x*1.702)/1.702",
            "gradloss": args.grad_w, "lognorm": {"lo": lo, "mu": mu, "sigma": sigma},
            "stride": args.stride, "nctx": 0, "steps": args.steps,
-           "lr": args.lr, "schedule": args.schedule, "seed": args.seed,
-           "field": "full-frame",
+           "lr": args.lr, "schedule": args.schedule, "warmup": args.warmup,
+           "seed": args.seed, "field": "full-frame",
            "train": args.train, "heldout": args.heldout,
            "torch": torch.__version__, "device": device,
            "weights": os.path.join(outdir, "weights.pt"),
