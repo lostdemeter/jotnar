@@ -197,6 +197,34 @@ B or the textured-domain restriction. What stays unknown after
 pricing: GELU variant pin, fused-attention wall numbers (measure
 post-build), CONV audit outcome.
 
+## P2 — INTERP-BILINEAR (DPT prerequisite) — BUILT (pattern-p2 round, evidence below)
+
+- Unlocks: DPT-spec upsampling fidelity (reassemble/head) — nearest
+  stays shipped as the degraded-but-stated default regardless.
+- Existed: lattice bilinear op (`chain/asm_ops.py:857-873`,
+  phi-core interp_fixed) with dyadic-only doctrine + drill
+  (`tests/test_asm.py:531-539`); README row said nearest (stale —
+  lattice was always bilinear; corrected with this build).
+- Audit FIRST, then build (`tests/test_interp.py` audit legs):
+  lattice == torch align_corners=False to 4.7e-4 (fixed-point
+  noise), align_corners=True diverges 0.28; 0.5x matches too.
+  Convention pinned: half-pixel centers, border-COORDINATE clamp
+  (not index clamp — caught at 18dB parity, fixed, documented).
+  Falsifier (nearest matching bilinear within bars) did NOT fire.
+- Built (v0.1 scope, stated): 2D or 3D(HWC), dyadic scales only
+  (non-dyadic/non-positive = LOWERING ERROR, loudly); shared
+  `infer_shapes` branch; C F64 loop; CUDA `k_interp_bilinear_f32`
+  thread-per-element (explicit product launch — same N-convention
+  trap as P1, avoided by construction); F32 only. Non-FPU
+  untouched (still refuses).
+- Measured (`tests/test_interp.py`, ALL OK): C 332.9dB, CUDA
+  155.6dB vs torch (40dB bar); CUDA bit-exact rerun; non-dyadic/
+  non-positive/kind/rank/scales all fail loud.
+- Coverage recount (operational): C 27 / CUDA 28 / non-FPU 21 —
+  pre-edit line already exact (no drift this round).
+- Size: was S-M — audit carried, build was S-shaped.
+- Falsifier: did NOT fire.
+
 ## Track B — adaptive control flow
 
 Substrate facts (priced from): no JUMP/WHILE/runtime dispatch
