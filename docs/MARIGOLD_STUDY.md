@@ -56,6 +56,13 @@ bit-exact confirmed 4/4 and 6/6). Runs here at ≤1024² (~19.5GB VRAM).
 | 9 | Optimization budget? | Moves-but-bar-blind — steps won't close it |
 | 10 | Multi-head at matched capacity? | Flat to ±0.003 — routing never the bottleneck |
 | 11 | Finer grid? | 0 moves (6 worsen) — mechanism fires on train only |
+| 12a | Synthetic analytic scenes — mimicry headroom? | NO-GO: headroom 1.47x < 2x; noise 0.00, bias 0.251 (5x texture hunger) |
+| 13 | Deeper attention stacks? | 0 moves — depth buys nothing twice over (train degrades, held-out flat) |
+| 14 | Patch-shuffle: global-structure dependence? | Teacher 1.27/dav2 1.33 collapse, locals don't — NEEDS JOINT REASONING |
+| 15 | DINOv2-token inputs (info vs machinery)? | MACHINERY — train 0.50→0.054, held-out 0 moves; reader is the wall |
+| 16 | Two-stage coarse-to-fine? | Dead on arrival (frozen codes 1e4 off RGB scale); CALL demand named |
+| 17 | Textured-domain restriction? | Tie 7/96 (wall/floor mimicry); near never moves — candidacy dies at rooms without furniture |
+| 18 | Liminal/edge concentration? | DEAD (1.03–1.22 vs ≥2 needed) — errors uniform everywhere |
 
 ## What the losses compose into
 
@@ -67,13 +74,17 @@ global structure no local mixer and no small attention has shown.
 The teacher's measured anatomy (rank-128 adaptation through the whole
 DiT + tuned decoder) prices the gap from the other side.
 
-## The two options (priced, neither opened)
+## The two options (one now opening)
 
-1. **Change constraints.** LAYERNORM/CONV/GELU patterns, new opcodes,
-   fused attention, quantization-adjacent weight thinking — each names
-   its falsifier the way every round above did. Needs a signature:
-   rule changes aren't worker prompts.
-2. **Accept.** Fixtures, harness, trainers, 11 rounds of negatives,
+1. **Change constraints — OPENING NOW.** The in-table arc is exhausted
+   *including* stack depth, dynamism-across-passes, domain restriction,
+   and edge-structure hypotheses (Phases 12a–18). Table gaps under
+   examination: LAYERNORM/GELU/CONV patterns, fused attention,
+   multi-output kernels, halo exchange, adaptive control flow (CALL
+   lowering). Each gap gets priced (design + parity-gate shape + size
+   + order) before anything is built — scoping round first,
+   implementation only by signature.
+2. **Accept.** Fixtures, harness, trainers, 18 rounds of negatives,
    tripwires — all banked, gated, and waiting. The dav2 geometric
    replica already supplies depth today; the student was the
    smaller-faster play. Nothing evaporates; the gates re-prove the
