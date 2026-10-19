@@ -708,3 +708,33 @@ reading, unrefuted). Finer grid is now the last queued axis with a
 mechanism behind it (more tokens = narrower cells = richer per-pixel
 code); heads join schedule as moved-but-bar-blind. Empty is
 complete — the head question is answered, not open.
+
+## Phase 11 — finer grid, last queued mechanism (constitution, FROZEN pre-run)
+
+Question: does narrower-cell global code move near/planar/smooth.
+Grid variants only — each states stride/cell-count/field plus the
+mechanism, or it is refused at declaration (including my own):
+- `s16h1`: stride-16 → 64x42 = 2688 tokens + 4 const, full-frame
+  field. Mechanism: 16x16px cells carry 4x the spatial code per
+  pixel vs 32x32 (isolates grid at H1).
+- `s16h2`: stride-16, H2 (2x32). Mechanism: fine grid × head
+  interpolation point (mirrors the Phase-10 sweep at fine grid).
+- `s16h4`: stride-16, H4 (4x16). Mechanism: finest code × best
+  Phase-10 routing (combined best).
+Stride-8 (128x84 = 10752 tokens, 250x attention entries) is refused
+at declaration: cost without proportion (hours at 8k steps), and
+stride-24/48 don't divide 1024x672. The 4th slot stays deliberately
+empty — no fourth variant carries the mechanism without confounding
+(width change would confound grid; const-text change is another
+axis). Schedule fixed: 8k-cosine (the schedule that learns), seed 7.
+Capacity accounting: pos tables grow intrinsically with grid
+(21+32 → 42+64 rows: +3.4k params, ~3%); attention entries 16x
+(457k → 7.2M); head/sample costs unchanged. Wall cap 20 min each.
+Winner: most held-out cells under bars. Directional-move rule
+frozen: any near/planar/smooth held-out stratum improving >0.05 vs
+banked Phase-8 `jattn64b2` reopens the frontier empirically even
+short of bars. Empty (nothing clears, nothing moves directionally)
+is complete. Metrics banked separately (`attn_run_<tag>.json` +
+`battery11` key, reference `jattn64b2`); primaries untouched;
+weights out-of-tree. Per-op citations unchanged (same ops, longer
+sequences); no new machinery (grid size is an index range).
