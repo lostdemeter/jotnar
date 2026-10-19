@@ -408,3 +408,99 @@ What would change that (scoped proposals, not run): a
 constraint change (new emitted patterns for attention/pooling-grade
 structure) or a different inductive bias outside the mixer family —
 both need their own declared round, neither is this report.
+
+## Phase 7 — teacher anatomy, read-only (measured, not trained)
+
+No training, no emitter/opcode/assembly changes. Two analyses
+against the banked checkpoints (54GB backbone + 1.85GB trainables,
+out-of-tree; production weights untouched — every file opened
+read-only). Numbers banked in `samples/marigold/teacher_anatomy.json`
+(114KB); gate `tests/test_teacher_anatomy.py` (SKIP-clean without
+assets; fast legs only — header reads, factor-side delta recompute,
+embeds/config checks; no 54GB load in routine runs; the full
+backbone-relative recompute is the documented manual step
+`python3 /tmp/opencode/teacher_anatomy_compute.py`, CPU-only ~35s).
+
+### 1. LoRA-delta anatomy (rank 128, alpha 128, scale 1.0, BF16)
+
+Census: 1556 tensors = 1446 Diffuser LoRA (60 blocks × 24 +
+img_in/txt_in/norm_out.linear A/B) + 108 VAE (decoder +
+post_quant_conv, full weights not LoRA) + 2 iREPA leftovers
+(Stage-1 F32 convs `[768,64,3,3]`, reported not analyzed).
+Frozen (no LoRA): img_mod/txt_mod (AdaLN producers), all QK-norms,
+txt_norm, time_text_embed, proj_out (declared target, filtered at
+load). Metric: ||B@A||_F / ||W_base||_F per module (60-layer roll-up):
+
+```
+attn.add_q_proj       0.0558   text-side joint-attn Q
+attn.to_add_out       0.0492   text-side joint-attn out
+attn.add_v_proj       0.0455
+attn.add_k_proj       0.0452
+txt_mlp.net.0.proj    0.0436
+attn.to_k             0.0428
+img_mlp.net.0.proj    0.0409
+attn.to_q             0.0409
+txt_mlp.net.2         0.0348
+img_mlp.net.2         0.0310
+attn.to_v             0.0293
+attn.to_out.0         0.0277
+diffuser global       0.0396
+VAE decoder total     0.1245   (3.1x the diffuser)
+```
+
+Stem: norm_out.linear 0.936 (delta ≈ base itself — small-norm head
+modulation moved most; absolute 74.4 vs 79.5), txt_in 0.050 (2x
+img_in 0.026). Layers: L0 0.089 (entry outlier, 2.3x mid mean),
+mid 0.036 flat (min L19), late 45-59 rising to 0.050 (L59 0.072).
+VAE groups: up-blocks 0.135 > mid 0.101 > inout 0.047 >
+post_quant_conv 0.015. Where depth-learning concentrated, in order:
+output head modulation, VAE decoder up-blocks, block-0 entry, late
+DiT blocks, text-stream projections over image-stream ones
+(add_q > to_q, to_add_out > to_out, txt_in 2x img_in). Local
+filters nowhere: every most-moved part is global routing (joint
+attention), entry/exit conditioning, or the decoder — the same
+layout-scale story Phases 2-6 told from the student side.
+
+### 2. DiT blueprint (QwenImageTransformer2DModel, diffusers, 60×3072/24h)
+
+Joint self-attention over concat [text;image], full bidirectional,
+dense, QK-RMSNorm + 3D RoPE ([16,56,56]), single joint mask; dual-
+stream AdaLN-Zero blocks (GELU-approx MLPs ×12288); VAE 1/8
+(2**len([F,T,T])), patch 2. Sequence at 1024x672: latent 128x84 →
+2688 img + 338 text = 3026 tokens/block (1024²: 4096+338 = 4434).
+Text path: precomputed embeds feed all 60 blocks as joint tokens
+(text encoder never loaded); banked pair is (8,338,3584) BF16 +
+(8,338) all-true mask, finite, sha-pinned — single pair reused via
+[0:1]/expand across batch (network_graph _match_batch,
+run_marigold_v2 [0:1]). Correction: no working-repo file ever
+verified this broadcast before (exhaustive grep negative) — the
+constancy claim is established by this round's measurement plus the
+teacher-side reuse logic, cited in the banked json, not inherited.
+Timestep fixed t=499/1000.
+
+Tiny-global-attention parts list (emitted-pattern status per README):
+in-table — MATMUL/ADD/MUL/SUB (projs, modulation), RMSNORM (QK-norm,
+txt_norm — use RMSNorm everywhere), SILU (modulation MLP),
+CONCAT/GATHER (joint tokens, neighborhoods), BMMV + SOFTMAX_WIDE
+(head-batched global attention at student scale: 256px → ~256 img
+tokens + const text), ROPE/ROTARY (baked tables), BETA const-fill
+(banked text summary — no encoder). Gaps named, not implemented —
+LAYERNORM (block norms; substitute RMSNorm), GELU (block MLPs;
+substitute SILU/SwiGLU), SIN/COS (timestep sinusoid; bake tables per
+ROTARY precedent), CONV incl. 3D + GroupNorm + INTERP (all VAE
+internals; student predicts depth directly, no VAE).
+
+### Nomination (not a kill)
+
+The anatomy nominates the next student: a tiny joint-attention
+student — global text+image tokens at low res, RMSNorm + SILU only,
+baked time tables, const text fill — every part in-table or
+substitutable-to-in-table per the list above, with each
+substitution named here before any round declares it. Why this and
+not more mixer: the teacher's own most-moved parts are attention,
+head, entry/late conditioning, and decoder — nothing local — while
+six student phases exhausted local context to full-frame scale at
+0/156 held-out cells. Bounds stated openly: anatomy nominates the
+parts list, not a passing grade; the build round needs its own
+frozen constitution (axes, budget, judge unchanged), and empty stays
+a complete report there too.
