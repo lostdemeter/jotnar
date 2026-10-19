@@ -1251,12 +1251,17 @@ scale (A1/A2/A4 verdicts cited, not re-derived):
   SOFTMAX_WIDE/BETA F. No LAYERNORM-substitute, no GELU-substitute,
   no fused kernel — the faithful package needs none of them.
 Training recipe frozen: log-normalization (targets z =
-(log t − μ)/σ, μ/σ fixed from train split, banked) + aligned-MAE
+(log(t-lo+1) − μ)/σ with lo = train-split min, μ/σ of the logged
+train split — all three fixed and banked; correction pre-run:
+banked teacher depths are SIGNED normalized (min −1), so the
+as-written log(t) is unimplementable — shifted-log keeps the log
+compression literally with one extra constant) + aligned-MAE
 (same no-grad lstsq, in z-space) + gradient loss (Sobel-gradient
 MAE on aligned preds, λ=0.1, full-frame every 50 steps —
 Phase-4 aux-cadence precedent; training-time only, zero inference
 cost; perceptual/Sinkhorn stay dead, relitigating out of scope).
-Eval: invert (exp(σẑ+μ)) → standard linear harness (gate-compatible).
+Eval: invert (t = exp(σẑ+μ) + lo − 1) → standard linear harness
+(gate-compatible).
 Tags `dit64b2/dit64b4/dit64b6` (H4/s16/nctx-0 in flags).
 Budget: 3 configs, 8k-cosine fixed (the mover), seed 7, wall caps
 15/20/25 min, GPU solo, Qwen-7B never co-loaded.
