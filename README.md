@@ -178,7 +178,7 @@ overloads; missing = loud `NoPattern`, never silent.
 | GELU | 1 -> 1 | — | — | — | parked: drilled in test_asm, no workload (Qwen uses SILU/SwiGLU) |
 | INTERP | 3 -> 1 | — | — | — | nearest-x2 audited; parked (no workload) |
 | ISO_BLUR | 1 -> 1 | — | — | — | lattice-only (stabilize listing runs lattice, no emitted demand) |
-| LAYERNORM | 3 -> 1 | — | — | — | shares RMSNORM scaffolding; parked (drilled only, gpt2 listing deleted) |
+| LAYERNORM | 3 -> 1 | F | F | — | C `chain/emit_c.py` F64 row loop + CUDA `k_layernorm_f32` (`chain/emit_cuda.py`); eps_ln via CONFIG (RMSNORM scaffolding); parity 315dB C / 144dB CUDA |
 | LUMA | 1 -> 1 | — | — | — | lattice-only (flagship + stabilize + demo prefix run lattice) |
 | MATMUL | 2 -> 1 | F/BLAS | F/cuBLAS | T | ikj+restrict; GSL hook; decode M=1 GEMV ~700-800GB/s eff. (bench/matmul_decode.cu); 113 calls/step = 96.4% of step in-situ; bit-deterministic x-process (workspace-pinned, test_matmul_cuda leg) |
 | MIXDYAD | 3 -> 1 | — | — | — | lattice-only (stabilize listing runs lattice, no emitted demand) |
@@ -209,7 +209,7 @@ overloads; missing = loud `NoPattern`, never silent.
 | TSHIFT | 1 -> 1 | F | F | T | row-max; fuses into softmax |
 | WARP | 2 -> 1 | — | — | — | lattice-only (stabilize listing runs lattice, no emitted demand) |
 
-Coverage: C 20, CUDA 25, non-FPU 20. Refusal cells are gated
+Coverage: C 24, CUDA 26, non-FPU 21. Refusal cells are gated
 (`test_emit.py` loud-refusal row). Full per-mnemonic contracts with
 examples: `docs/LANGUAGE.md`. Extension recipe: registry row + shape
 rule + one pattern per backend (`chain/backends.py`).

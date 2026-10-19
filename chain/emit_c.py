@@ -269,6 +269,15 @@ def infer_shapes(bound, sample):
                 raise NoPattern(f"{where}: RMSNORM needs same-kind "
                                 "x(...,D)+w(D,)")
             streams[o] = (xk, xsub, xsh)
+        elif mn == "LAYERNORM":
+            xk, xsub, xsh = streams[args[0]]
+            wk, _, wsh = streams[args[1]]
+            bk, _, bsh = streams[args[2]]
+            if xk not in ("F", "T") or xk != wk or xk != bk or len(xsh) < 1 \
+                    or tuple(wsh) != (xsh[-1],) or tuple(bsh) != (xsh[-1],):
+                raise NoPattern(f"{where}: LAYERNORM needs same-kind "
+                                "x(...,D)+w(D,)+b(D,)")
+            streams[o] = (xk, xsub, xsh)
         elif mn in ("MATMUL", "BATCH_MATMUL"):
             ak, asub, ash = streams[args[0]]
             bk, _, bsh = streams[args[1]]
@@ -654,6 +663,35 @@ class CBackend(Backend):
                 f"  for (int64_t r_j = 0; r_j < {d}; ++r_j)\n"
                 f"    {o}[r_i * {d} + r_j] = {x}[r_i * {d} + r_j] * rs "
                 f"* {w}[r_j];\n"
+                f"}}",
+                None)
+        if mn == "LAYERNORM":
+            x, w, b = args
+            o = outs[0]
+            if S[x][0] != "F" or S[w][0] != "F" or S[b][0] != "F":
+                raise NoPattern("C backend LAYERNORM needs F (T lives "
+                                "on nonfpu)")
+            eps = float(cfg.get("eps_ln", 0.0)) if "eps_ln" in cfg \
+                else (_ for _ in ()).throw(
+                    AsmError("LAYERNORM C pattern needs CONFIG eps_ln "
+                             "(true float; counts convention is lattice-only)"))
+            d = self._we(S, x, ctx, f"LAYERNORM {o}")
+            return (
+                f"/* {o} = LAYERNORM({x}) eps={eps} */\n"
+                f"for (int64_t r_i = 0; r_i < {o}_N; ++r_i) {{\n"
+                f"  double mu = 0;\n"
+                f"  for (int64_t r_j = 0; r_j < {d}; ++r_j)\n"
+                f"    mu += {x}[r_i * {d} + r_j];\n"
+                f"  mu /= {d};\n"
+                f"  double ss = 0;\n"
+                f"  for (int64_t r_j = 0; r_j < {d}; ++r_j) {{\n"
+                f"    double dv = {x}[r_i * {d} + r_j] - mu;\n"
+                f"    ss += dv * dv;\n"
+                f"  }}\n"
+                f"  double rs = 1.0 / sqrt(ss / {d} + {eps!r});\n"
+                f"  for (int64_t r_j = 0; r_j < {d}; ++r_j)\n"
+                f"    {o}[r_i * {d} + r_j] = ({x}[r_i * {d} + r_j] - mu) * rs "
+                f"* {w}[r_j] + {b}[r_j];\n"
                 f"}}",
                 None)
         if mn in ("MATMUL", "BATCH_MATMUL"):
