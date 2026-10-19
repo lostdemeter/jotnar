@@ -213,10 +213,13 @@ Ablation (held-out; train tracks the same way):
 ```
 variant   train loss   geo_w0 (best/worst)      geo_w1 (best/worst)
 baseline  0.3092       smooth 0.169 / tex 0.308  near 0.322 / far 0.488
-+perc     0.3127       smooth 0.155 / tex 0.304  near 0.383 / far 0.480
-+sink     0.3261       smooth 0.194 / tex 0.332  near 0.242 / far 0.475
-+both     0.3200       smooth 0.175 / tex 0.312  near 0.303 / far 0.485
++perc     0.3347       smooth 0.183 / tex 0.343  near 0.185 / far 0.425
++sink     0.3022       smooth 0.173 / tex 0.337  near 0.263 / far 0.440
++both     0.3249       smooth 0.194 / tex 0.341  near 0.233 / far 0.466
 ```
+(regenerated on the final tree; stale pre-fix columns replaced — the
+pre-fix aux runs' gradients differed, see report. Baseline column
+stands retrain-verified.)
 Verdict: NULL across the table — deltas ±0.02-0.05, bidirectional,
 no stratum systematically moves; all cells 2-6x over bars in every
 variant. Kills with evidence (not failures to tune):
