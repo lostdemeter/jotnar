@@ -333,6 +333,43 @@ def main():
              "schedule", "seed"))
         for t in frozen9)
     check("battery9-flags", bool(flags9_ok), "repro metadata per config")
+
+    # -- Phase-10 head battery (same integrity shape, new key) ------------
+    b10 = ab.get("battery10", {})
+    frozen10 = ["jattn64h1-8kcos", "jattn64h2-8kcos", "jattn64h4-8kcos"]
+    check("battery10-configs", b10.get("configs") == frozen10
+          and b10.get("reference") == "jattn64b2", b10.get("configs"))
+    cells10 = b10.get("cells", {})
+    complete10 = True
+    for t in frozen10:
+        fr = cells10.get(t, {}).get("frames", {})
+        complete10 &= (len(fr) == 6 and all(
+            sorted(fr[n].get("strata", {})) == STRATA
+            and all(np.isfinite(v) and v >= 0
+                    for v in fr[n]["strata"].values())
+            for n in fr))
+    check("battery10-complete", bool(complete10), "3 configs x 6x6 finite")
+    counts10 = {}
+    for t in frozen10:
+        n = 0
+        for _n, fr in cells10[t]["frames"].items():
+            if fr.get("split") != "heldout":
+                continue
+            n += sum(1 for k in STRATA if fr["strata"][k] <= BARS[k])
+        counts10[t] = n
+    check("battery10-winner-none",
+          all(v == 0 for v in counts10.values())
+          and b10.get("winner") is None,
+          f"held-out cells under bars per config: {counts10}")
+    flags10_ok = all(
+        all(k in cells10[t].get("flags", {}) for k in
+            ("field", "width", "blocks", "heads", "stride", "nctx", "steps",
+             "lr", "schedule", "seed"))
+        for t in frozen10)
+    check("battery10-flags", bool(flags10_ok), "repro metadata per config")
+    cap10_ok = all(cells10[t].get("nparams") == 108033 for t in frozen10)
+    check("battery10-capacity-matched", bool(cap10_ok),
+          "108033 params x3 (heads, not capacity)")
     # Four variants (baseline/perc/sink/both), all openly losing: the gate
     # asserts the table is complete and internally consistent (every cell
     # finite; deltas vs baseline computed, never asserted in a direction).
