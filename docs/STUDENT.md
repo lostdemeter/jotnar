@@ -559,3 +559,27 @@ retrain-match (trajectory + cell table identical) before it counts.
 Empty (0 cells) banks the table and closes — honest-empty precedent
 stands. Metrics + configs banked in-repo (`battery8` key +
 `attn_run.json`); weights out-of-tree (`~/student_runs/<tag>/`).
+
+### Battery results (ONE variant ran, 102s wall, single GPU to itself)
+
+`jattn64b2`: 108,033 params (444,084-byte weights), grid 21x32 =
+672 tokens + 4 const, seq 676, loss 0.5288 (iters 500-1500 plateau)
+→ 0.5023 final. No NaN/divergence — trained, fallback triggers
+never met (F1/F2 never ran). Held-out: 0/12 cells under bars
+(gate-counted); best geo_w0-smooth 0.194/0.09 (2.2x), worst
+geo_w1-nonplanar 0.499/0.08 and tex 0.431/0.07 (~6x). Train cells
+0.37-0.66 sit at/above scaffold levels (squirrel-smooth 0.664 vs
+scaffold minimum 0.483) and below the Phase-3 MLP baseline
+everywhere (its held-out best smooth 0.169 vs 0.194 here).
+Winner: none — no retrain-match needed (nothing to claim).
+Diagnosis: underfit, not near-miss. The model descends late but
+never fits train: 64 dims per 32x32 cell through a single head and
+nearest-cell broadcast starve each pixel's global code, and/or 2000
+steps at lr 0.01 under-optimize attention (1000-iter plateau with a
+terminal escape reads as slow optimization, stated as reading not
+fact). The nomination's parts list is built and banked as declared;
+the architecture as sized does not learn depth layout. What would
+change that (new-round declarations, none run): optimization budget
+(steps/schedule), finer token grid, multi-head — each its own frozen
+round. Earned sentence: empty is complete — first attention datum
+banked, mixer wall now has joint-attention company at 0/12.
