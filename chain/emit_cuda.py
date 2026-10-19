@@ -148,6 +148,40 @@ __global__ void k_rmsnorm_f32(const float *x, const float *w, float *o,
   for (int64_t j = threadIdx.x; j < D; j += TPB)
     o[r * D + j] = x[r * D + j] * rs * w[j];
 }
+__global__ void k_layernorm_f32(const float *x, const float *w, const float *b,
+                                float *o, int64_t D, int64_t N, float eps) {
+  /* One BLOCK per row: cooperative mean then variance reductions (same
+  block-per-row shape as k_rmsnorm_f32; fixed thread mapping every run,
+  no cross-block order dependence -> bit-exact re-run). F32 only: an
+  fp16-weight call sites fails at nvcc loudly, never silently. */
+  int64_t r = (int64_t)blockIdx.x;
+  if (r >= N) return;
+  __shared__ float sh[TPB];
+  double acc = 0;
+  for (int64_t j = threadIdx.x; j < D; j += TPB)
+    acc += (double)x[r * D + j];
+  sh[threadIdx.x] = (float)acc;
+  __syncthreads();
+  for (int s = TPB / 2; s > 0; s >>= 1) {
+    if ((int)threadIdx.x < s) sh[threadIdx.x] += sh[threadIdx.x + s];
+    __syncthreads();
+  }
+  float mu = sh[0] / (float)D;
+  acc = 0;
+  for (int64_t j = threadIdx.x; j < D; j += TPB) {
+    double dv = (double)x[r * D + j] - (double)mu;
+    acc += dv * dv;
+  }
+  sh[threadIdx.x] = (float)acc;
+  __syncthreads();
+  for (int s = TPB / 2; s > 0; s >>= 1) {
+    if ((int)threadIdx.x < s) sh[threadIdx.x] += sh[threadIdx.x + s];
+    __syncthreads();
+  }
+  float rs = (float)(1.0 / sqrt((double)sh[0] / (double)D + (double)eps));
+  for (int64_t j = threadIdx.x; j < D; j += TPB)
+    o[r * D + j] = (x[r * D + j] - mu) * rs * w[j] + b[j];
+}
 __global__ void k_softmax_wide_f32(const float *x, float *o, int64_t D,
                                    int64_t N) {
   /* One BLOCK per row: parallel max + exp-sum reductions. */
@@ -632,6 +666,20 @@ class CUDABackend(Backend):
                 f"/* {o} = RMSNORM({x}) */\n"
                 f"k_rmsnorm_f32<<<({o}_N), TPB{st}>>>"
                 f"({x}, {w}, {o}, {d}, {o}_N, {eps!r}f);\n{launch}",
+                None)
+        if mn == "LAYERNORM":
+            x, w, b = args
+            if S[x][0] != "F" or S[w][0] != "F" or S[b][0] != "F":
+                raise NoPattern("cuda LAYERNORM needs F (v0.1)")
+            if "eps_ln" not in cfg:
+                raise AsmError("cuda LAYERNORM needs CONFIG eps_ln")
+            o = outs[0]
+            d = self._we(S, x, ctx, f"LAYERNORM {o}")
+            eps = float(cfg["eps_ln"])
+            return (
+                f"/* {o} = LAYERNORM({x}) */\n"
+                f"k_layernorm_f32<<<({o}_N), TPB{st}>>>"
+                f"({x}, {w}, {b}, {o}, {d}, {o}_N, {eps!r}f);\n{launch}",
                 None)
         if mn == "SOFTMAX_WIDE":
             x = args[0]
