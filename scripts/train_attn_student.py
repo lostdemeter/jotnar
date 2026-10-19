@@ -51,8 +51,10 @@ def _define_model(torch):
             return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps) * self.weight
 
     class Block(torch.nn.Module):
-        def __init__(self, W):
+        def __init__(self, W, Hh=1):
             super().__init__()
+            assert W % Hh == 0, (W, Hh)
+            self.Hh = Hh
             self.n1 = RMSNorm(W)
             self.q = torch.nn.Linear(W, W)
             self.k = torch.nn.Linear(W, W)
@@ -64,24 +66,31 @@ def _define_model(torch):
 
         def forward(self, x):
             import math
+            S, W = x.shape
+            Hh, Dh = self.Hh, W // self.Hh
             h = self.n1(x)
-            q, k, v = self.q(h), self.k(h), self.v(h)
-            a = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(q.shape[-1]))
+            # heads split dim-per-head (zero-param reshape; H=1 is the
+            # Phase-8/9 path); scores batched over heads (BMMV form).
+            q = self.q(h).view(S, Hh, Dh).transpose(0, 1)
+            k = self.k(h).view(S, Hh, Dh).transpose(0, 1)
+            v = self.v(h).view(S, Hh, Dh).transpose(0, 1)
+            a = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(Dh))
             a = torch.softmax(a, dim=-1)
-            x = x + self.o(a @ v)
+            o = (a @ v).transpose(0, 1).reshape(S, W)
+            x = x + self.o(o)
             h = self.n2(x)
             x = x + self.m2(torch.nn.functional.silu(self.m1(h)))
             return x
 
     class JointAttn(torch.nn.Module):
-        def __init__(self, W, nrows, ncols, C, B):
+        def __init__(self, W, nrows, ncols, C, B, Hh=1):
             super().__init__()
             self.W = W
             self.tok = torch.nn.Linear(3, W)
             self.row = torch.nn.Embedding(nrows, W)
             self.col = torch.nn.Embedding(ncols, W)
             self.ctx = torch.nn.Parameter(torch.randn(C, W) * 0.02)
-            self.blocks = torch.nn.ModuleList([Block(W) for _ in range(B)])
+            self.blocks = torch.nn.ModuleList([Block(W, Hh) for _ in range(B)])
             self.h1 = torch.nn.Linear(W + 3, W)
             self.h2 = torch.nn.Linear(W, 1)
 
@@ -116,6 +125,7 @@ def main():
     ap.add_argument("--tag", default="jattn64b2")
     ap.add_argument("--width", type=int, default=64)
     ap.add_argument("--blocks", type=int, default=2)
+    ap.add_argument("--heads", type=int, default=1)
     ap.add_argument("--stride", type=int, default=32)
     ap.add_argument("--nctx", type=int, default=4)
     ap.add_argument("--steps", type=int, default=2000)
@@ -150,7 +160,8 @@ def main():
     pidx = ((yy // args.stride) * ncols + (xx // args.stride)).long()
     sidx = torch.arange(0, H0 * W0, 7, device=device)
 
-    net = JointAttn(args.width, nrows, ncols, args.nctx, args.blocks).to(device).float()
+    net = JointAttn(args.width, nrows, ncols, args.nctx, args.blocks,
+                    args.heads).to(device).float()
     nparams = sum(p.numel() for p in net.parameters())
     print(f"params={nparams} grid={nrows}x{ncols} seq={nrows * ncols + args.nctx}", flush=True)
     opt = torch.optim.Adam(net.parameters(), lr=args.lr)
@@ -190,6 +201,7 @@ def main():
     import test_strata_marigold as H
     man = json.load(open(os.path.join(FIXDIR, "teacher_manifest.json")))
     rep = {"tag": args.tag, "width": args.width, "blocks": args.blocks,
+           "heads": args.heads,
            "stride": args.stride, "nctx": args.nctx, "steps": args.steps,
            "lr": args.lr, "schedule": args.schedule, "seed": args.seed, "field": "full-frame",
            "train": args.train, "heldout": args.heldout,
