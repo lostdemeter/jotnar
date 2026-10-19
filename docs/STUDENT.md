@@ -613,3 +613,34 @@ architecture empirically); nothing moving = "flatlines"
 (undercapacity proven). Judge otherwise unchanged (Phase-1 bars,
 same alignment, verdict-reported; winner, if any, gets retrain-match
 before claimed). GPU box to itself; Qwen-7B never co-loaded.
+
+### Battery results (3/3 variants ran, walls 368s/372s/757s, GPU solo)
+
+Train loss: 2k 0.50 → 8k-const 0.53 (oscillates, never descends) →
+8k-cos 0.34 → 16k-cos 0.10. Cosine unlocks fitting; constant-LR
+stalls where Phase 8 stalled. Train strata follow (16k-cos:
+squirrel-tex 0.108, squirrel-near 0.105 — first sub-0.15 train cells
+of the attention line).
+
+Held-out moves vs banked Phase-8 (frozen >0.05 rule, per stratum):
+- 8k-const: 4 MOVEs (far both frames +0.09/+0.14, geo_w1
+  nonplanar +0.08, tex +0.06) with 4 worsenings (geo_w1 near
+  -0.28, planar -0.21, smooth -0.17).
+- 8k-cos: 2 MOVEs (far both +0.06/+0.08), 4 worsenings.
+- 16k-cos: 4 MOVEs (far both +0.06/+0.10, nonplanar +0.06, tex
+  +0.06), 4 worsenings (near -0.12/-0.14, planar/smooth worse).
+Verdict: MOVES — the frozen rule fires on every variant (far-side
+strata move repeatedly), so the architecture reopens empirically.
+Stated with it: moves are bidirectional and bar-blind. Every
+variant is 0/12 under bars (gate-counted, 0/36 total); best cells
+stay ~2x over bars while paired strata worsen by larger amounts;
+held-out means never leave 0.27-0.32. Optimization moves train
+dramatically (0.50→0.10) and shuffles held-out (±0.28) without
+closing anything — the Phase-5/6 generalization wall reproduced
+inside the attention family. No winner, no retrain-match needed.
+For the multi-head/finer-grid queue: the brief sharpens — capacity
+and schedule both move train freely now, so the next round must
+move held-out directionally (near/planar/smooth, the strata that
+worsen here) or join the wall at higher cost. Nothing in this round
+suggests more steps alone will do it (8k→16k cosine: train -0.24,
+held-out means flat).
