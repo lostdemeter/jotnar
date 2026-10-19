@@ -838,3 +838,30 @@ close-call logic: the textured-only subset (teacher 0.082 vs
 student ~0.36, 4.4x) would pass alone, but flipping on a post-hoc
 subgroup is goalpost-moving; a textured-only 12b' needs its own
 round and its own bar, stated here, not run.
+
+## Phase 13 — deeper attention stacks, last in-table room (constitution, FROZEN pre-run)
+
+Question: does stack depth move held-out where heads could not.
+Blocks-depth is the ONLY variable — suggested 2/3/4 adopted as-is,
+then frozen (`jattn64-s16h2b2/b3/b4`; B2 reruns at identical flags
+as the round's own anchor — expectation: near-match to banked
+`s16h2`, stated not asserted per the Phase-10 reshape-drift
+precedent). Everything else frozen: W64, heads H2 (neutral
+midpoint of a bar-blind sweep — no reason to deviate, so none
+taken), stride s16 (richest code; depth is tested where code is
+richest), 8k-cosine, seed 7, splits unchanged.
+Capacity accounting (diagnostic, not confound): each block adds
+~50k params (4×(64×64) projs + 2×(64×256) MLP + norms) — B2
+111,425 → B3 ~161k → B4 ~212k, exact counts verified in the weight
+files post-run. The train-heldout gap across depths is the
+diagnostic (memorization vs learning); growth itself is declared
+here, not hidden.
+Budget: 3 configs, GPU box to itself, wall cap 25 min each.
+Winner: most held-out cells under bars; directional near/planar/
+smooth movement vs banked Phase-8 `jattn64b2` (>0.05, same frozen
+threshold as Phase 11) reopens empirically. Empty is complete.
+Metrics banked separately (`attn_run_<tag>.json` + `battery13`
+key, reference `jattn64b2`); primaries untouched; weights
+out-of-tree. Per-op citations unchanged (deeper stacks reuse the
+same tabled ops); `--blocks` already CLI-driven, zero code changes
+expected.
