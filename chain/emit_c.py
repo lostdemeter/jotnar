@@ -278,6 +278,23 @@ def infer_shapes(bound, sample):
                 raise NoPattern(f"{where}: LAYERNORM needs same-kind "
                                 "x(...,D)+w(D,)+b(D,)")
             streams[o] = (xk, xsub, xsh)
+        elif mn == "CONV":
+            # v0.1: single-channel 2D, same-size output, stride 1,
+            # dilation 1, edge-replicate boundary (audited). No bias.
+            xk, xsub, xsh = streams[args[0]]
+            kk, _, ksh = streams[args[1]]
+            if xk != "F" or kk != "F" or len(xsh) != 2 or len(ksh) != 2:
+                raise NoPattern(f"{where}: CONV needs F x(H,W)+K(kH,kW) "
+                                "(v0.1)")
+            H, W = xsh
+            kH, kW = ksh
+            if H is None or W is None or kH is None or kW is None:
+                raise AsmError(f"{where}: CONV needs static shapes "
+                               f"(v0.1), got x({H},{W}) k({kH},{kW})")
+            if kH % 2 == 0 or kW % 2 == 0 or kH > H or kW > W:
+                raise AsmError(f"{where}: CONV needs odd kernel within "
+                               f"image, got x({H},{W}) k({kH},{kW})")
+            streams[o] = (xk, xsub, (H, W))
         elif mn in ("MATMUL", "BATCH_MATMUL"):
             ak, asub, ash = streams[args[0]]
             bk, _, bsh = streams[args[1]]
@@ -692,6 +709,40 @@ class CBackend(Backend):
                 f"  for (int64_t r_j = 0; r_j < {d}; ++r_j)\n"
                 f"    {o}[r_i * {d} + r_j] = ({x}[r_i * {d} + r_j] - mu) * rs "
                 f"* {w}[r_j] + {b}[r_j];\n"
+                f"}}",
+                None)
+        if mn == "CONV":
+            # v0.1 float single-channel 2D, same output, stride 1,
+            # dilation 1, edge-replicate boundary (audited vs torch;
+            # replicate_pad EXACT, zero-pad diverges at borders).
+            x, k = args
+            o = outs[0]
+            if S[x][0] != "F" or S[k][0] != "F":
+                raise NoPattern("C backend CONV needs F (T lives "
+                                "on nonfpu)")
+            H, W = S[x][2]
+            kH, kW = S[k][2]
+            if (None in (H, W, kH, kW) or kH % 2 == 0 or kW % 2 == 0
+                    or kH > H or kW > W):
+                raise AsmError("C backend CONV needs static 2D odd "
+                               f"kernel within image, got ({H},{W}) ({kH},{kW})")
+            rH, rW = kH // 2, kW // 2
+            return (
+                f"/* {o} = CONV({x}) edge-replicate {kH}x{kW} */\n"
+                f"for (int64_t oy = 0; oy < {H}; ++oy) {{\n"
+                f"  for (int64_t ox = 0; ox < {W}; ++ox) {{\n"
+                f"    double acc = 0;\n"
+                f"    for (int64_t ky = 0; ky < {kH}; ++ky) {{\n"
+                f"      int64_t iy = oy + ky - {rH};\n"
+                f"      iy = iy < 0 ? 0 : (iy >= {H} ? {H} - 1 : iy);\n"
+                f"      for (int64_t kx = 0; kx < {kW}; ++kx) {{\n"
+                f"        int64_t ix = ox + kx - {rW};\n"
+                f"        ix = ix < 0 ? 0 : (ix >= {W} ? {W} - 1 : ix);\n"
+                f"        acc += {x}[iy * {W} + ix] * {k}[ky * {kW} + kx];\n"
+                f"      }}\n"
+                f"    }}\n"
+                f"    {o}[oy * {W} + ox] = acc;\n"
+                f"  }}\n"
                 f"}}",
                 None)
         if mn in ("MATMUL", "BATCH_MATMUL"):

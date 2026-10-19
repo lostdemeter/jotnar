@@ -70,29 +70,37 @@ clear or the pricing was wrong.
   ops at 314.6dB — SILU(MUL(x,1.702))/1.702 via BETA+MUL+SILU
   (all F). DiT MLP fidelity needs NO new pattern.
 
-### A3 — CONV past audit-first (C/CUDA)
+### A3 — CONV past audit-first (C/CUDA) — BUILT (pattern-p1 round, evidence below)
 
 - Unlocks: VAE-grade decoders, local vision lowering, densewin
   expressed as CONV; the VAE branch of the student program.
-- Exists: lattice drill (`tests/test_asm.py:541-547`, wiring only)
+- Existed: lattice drill (`tests/test_asm.py:541-547`, wiring only)
   + C bit-exact vs numpy (`tests/test_c_conv.py:70-114`, impl
-  `c_chain/holo_conv.c`); emission `NoPattern` on all backends
-  (`chain/emit_c.py:472-473`, no case in `emit_c.py:529-966` or
-  `emit_cuda.py:475-943`).
-- Audit-first (the price driver): `c_chain/holo_conv.h:1-13` —
-  edge replicate (NOT zero-pad, differs from phi-core phi_conv),
-  order-free int64 accumulate. Landing emission needs the
-  edge-reconciliation audit vs phi_conv FIRST, then one pattern
-  per backend + workload. If the audit diverges (new semantics),
-  price grows — audit-first means the card holds either way.
-- Parity-gate shape: audit record (edge-case matrix both
-  conventions) + per-backend parity + gradient/step/impulse/
-  flat/corner/noise workload (cf. existing C suite) + one vision
-  listing leg.
-- Size: M. Dependencies: phi-core access for the audit; nothing
-  in-tree.
-- Falsifier: audit concluding zero-pad equivalence (then the audit
-  was oversized and A3 reprices to S).
+  `c_chain/holo_conv.c`); emission `NoPattern` on all backends.
+- Audit FIRST, then build (`tests/test_conv.py` audit legs):
+  edge-replicate == torch replicate_pad BIT-EXACT (0.0) on all 6
+  edge cases (gradient/step/impulse/flat/corner/noise); torch
+  zero-pad diverges up to 0.44 at borders (interior identical).
+  Falsifier did NOT fire (no zero-pad equivalence) — price held.
+- Built (v0.1 scope, stated): single-channel 2D, same-size output,
+  stride 1, dilation 1, no bias, odd kernel within image; pad/
+  stride/dilation are NOT parameters (misuse fails loudly at
+  assemble/infer). Shared `infer_shapes` branch; C F64
+  oy→ox→ky→kx loop; CUDA `k_conv_f32` block-per-row (house shape —
+  first cut used per-thread N and under-covered rows past 60px;
+  caught by parity, fixed, documented); F32 only.
+- Measured (`tests/test_conv.py`, ALL OK): C 3000.0dB, CUDA
+  158.2dB vs replicate (40dB bar); CUDA bit-exact rerun; even/
+  oversize/rank/kind/arity all fail loud; non-FPU still refuses.
+- Coverage recount (operational, A1 discipline): C 26 / CUDA 27 /
+  non-FPU 21, all verified by recount post-edit (pre-existing C
+  line was already exact at 25 per integrator fixup).
+- Parity-gate shape: as priced (audit record + per-backend parity
+  + edge-case workload + text-form leg) — landed in
+  `tests/test_conv.py`.
+- Size: was M — audit carried, build was S-shaped (scaffolding).
+  Dependencies: none beyond repo (torch only for audit oracle).
+- Falsifier: did NOT fire.
 
 ### A4 — fused encoder (joint-bidirectional) attention kernel
 
