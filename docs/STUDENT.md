@@ -644,3 +644,36 @@ move held-out directionally (near/planar/smooth, the strata that
 worsen here) or join the wall at higher cost. Nothing in this round
 suggests more steps alone will do it (8k→16k cosine: train -0.24,
 held-out means flat).
+
+## Phase 10 — multi-head, capacity-matched (constitution, FROZEN pre-run)
+
+Question: do attention heads move held-out directionally (the Phase-9
+brief: near/planar/smooth must move, not just far). Heads are the
+ONLY variable — suggested 1/2/4 adopted as-is (anchor + split +
+split again, no reason to replace), then frozen. Everything else
+byte-frozen from `jattn64b2` (W64/B2/stride-32/C4/row21+col32/
+RMSNorm+SILU/nearest-GATHER head).
+Capacity-matching rule: total width fixed at W=64, dim-per-head =
+64/H (H1: 1x64, H2: 2x32, H4: 4x16); the head-split is a reshape
+(zero params, zero code in the deployed graph beyond batching), so
+all variants carry exactly 108,033 params — matched budgets mean
+heads, not capacity, is what's tested. Per-head-dim accounting above
+is the rule; any param-count deviation voids the variant.
+Training schedule fixed: 8k-cosine (0.01→0, no warmup), seed 7 —
+8k-cosine is reused because it is the schedule that learns (train
+0.34 with far moves; constant-LR stalls at 0.53). Includes an H1
+anchor rerun at this schedule (expectation: near-match to banked
+`jattn64b2-8k-cos`, stated not asserted — plumbing differs by the
+reshape).
+Budget: 3 configs (`jattn64h1-8kcos`, `jattn64h2-8kcos`,
+`jattn64h4-8kcos`), GPU box to itself, wall cap 12 min each.
+Multi-head routes through tabled attention: scores/values batched
+over heads (BMMV F), rowwise joint softmax (SOFTMAX_WIDE F),
+explicit-softmax form kept; all other citations unchanged
+(MATMUL/ADD/MUL/RMSNORM/SILU/CONCAT/GATHER/BETA F). New attention
+machinery would be a stop-finding — none introduced (split/merge
+are views). Judge unchanged (Phase-1 bars, same alignment,
+verdict-reported). Winner: most held-out cells under bars; empty is
+complete. Metrics banked separately (`attn_run_<tag>.json` +
+`battery10` key, reference `jattn64b2`); Phase-8/9 primaries never
+overwritten (separate-files precedent); weights out-of-tree.
