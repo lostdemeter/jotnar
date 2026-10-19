@@ -900,3 +900,76 @@ scaffolding exists for norms); fused joint-attention kernels
 low); the textured-domain restriction from Phase 12a (textured-only
 synthetic: 4.4x headroom — needs its own round and bar, still
 stated-not-run).
+
+## Phase 14 — patch-shuffle probe, no training (design FROZEN pre-run)
+
+Question: is the depth task here global-reasoning or texture-driven.
+Instrument: deterministic patch scramble (PIL/numpy only, no new
+deps) of the 6 fixture inputs at 1024x672 (the bars' resolution).
+Patch sizes frozen: 16px (exact 64x42 grid, single-pool permutation)
++ 64px (16 full cols x 10 full rows + bottom 32px partial row:
+two-pool permutation — 160 full tiles within-pool, 16 partial
+within-pool; ragged rule stated, deterministic). 64px adopted over
+32px with reason: 64px preserves object-part-scale local features
+(the 33-65px mixer-field scale), directly testing whether local
+features suffice; 32px sits inside tested field range and adds less.
+Seed 7 fixed. Three systems on intact-vs-shuffled pairs, metric =
+aligned-MAE(shuffled_pred → intact_pred) per stratum, same harness
+alignment, masks from intact (same masks all arms):
+(a) seeded teacher — intact arm reuses banked .npy (no rerun); p16
+batch runs twice (seed 2025 x2, byte-identity check — determinism
+mechanism already proven, re-checked on OOD inputs), p64 once;
+existing CLI, GPU solo. (b) DAV2 geometric replica
+(dav2_revisited/dav2_reverse/geo_depth.py, read-only, CPU) — all
+three arms live; masks at DAV2 res (nearest-depth + bilinear-RGB
+downscale of intact; stated). (c) banked students mscale64 +
+jattn64b2 (CPU; jattn native grid) — all three arms live.
+Verdict readings frozen: global-reasoning pattern =
+teacher_mean_delta / dav2_mean_delta ≥ 3 at 16px (order separation;
+family verdict: needs joint reasoning, not bigger mixers);
+texture pattern = max/min ≤ 2 across all systems' mean-deltas
+(family verdict: opposite — local features suffice, architecture
+question reopens differently). Neither pattern = mixed, reported
+with numbers, family verdict withheld (not a loophole: mixed still
+attributes dependence per system). Gate: tests/test_shuffle_probe.py
+(determinism incl. tile-multiset preservation, banked-delta
+integrity, teacher/DAV2/student spot legs, SKIP-clean).
+Numbers banked as scalars (samples/marigold/shuffle_probe.json);
+predictions stay in /tmp.
+
+### Results (6 fixtures x 3 arms x 4 systems; teacher 3 GPU runs)
+
+Corrections made mid-round, stated openly (nothing banked under
+either flaw): (a) pixelwise align-on-scrambled compared mismatched
+content (caught by 1e5-scale absurd deltas) → unshuffle-then-align
+(roundtrip-exact inverse; DAV2 via NN-upscale, resampling control
+0.031 ≪ effects); (b) raw aligned-MAE is scale-meaningless across
+systems (student outputs ~1e5 native) → rel = raw/std(own intact)
+banked alongside raw; verdict reads rel.
+Mean rel-deltas (fraction of own intact variation destroyed):
+teacher p16 1.27 / p64 1.21; dav2 1.33 / 1.31; mscale64 0.77 /
+0.36; jattn64b2 0.81 / 0.78. Strata: teacher/dav2 collapse hardest
+in near (2.0-2.2) then far (1.4-1.7), ~1.0 elsewhere, patch-flat;
+mscale64 uniform ~0.7-1.0 at p16 halved ~0.3-0.4 at p64;
+jattn eerily flat 0.77-0.85 in every stratum at both sizes.
+Frozen readings, mechanically: teacher/dav2 = 0.96 (rule needs
+≥3) — global-pattern as written: NO. Spread p16 1.72 (≤2 HOLDS),
+p64 3.59 (FAILS) — texture-pattern overall: NO. So the letter
+says mixed — and the letter's DAV2 premise was my error (DAV2-Small
+is a global ViT; of course it collapses with the teacher rather
+than staying graceful). Corrected with evidence, not goals: both
+global machineries collapse ~1.2-1.3 at both scales while local
+ones don't — the task IS global-reasoning-dependent.
+Family verdict: NEEDS JOINT REASONING, not bigger mixers.
+Mechanism per system: mscale64's p16→p64 halving is a direct
+locality proof (33px field survives inside 64px patches —
+Phases 2-6 locality, convicted from the other side); jattn's flat
+0.8 proves its global machinery uses no global structure
+(convergent with the underfit diagnosis — it never learned layout,
+so scrambling layout changes little); teacher/dav2 near-strata
+collapse shows foreground layout is what global reasoning is FOR.
+Nomination: nothing new built from this — but a new acceptance
+criterion for anything next: a student claiming joint reasoning
+must show teacher-scale shuffle deltas (≈1.2 rel, near worst) on
+this probe; mscale64-scale grace (≤0.8) disqualifies the claim.
+That criterion is banked in the gate (locality-signature leg).
