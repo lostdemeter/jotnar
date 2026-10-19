@@ -1165,3 +1165,31 @@ layout — mimicry succeeds exactly where there is nothing to learn.
 The deployable-thing candidacy narrows to "rooms without
 furniture" and dies there honestly. Empty of winners, full of
 signal: restriction buys bar-passes, not understanding.
+
+## Phase 18 — edge-concentration analysis, zero training (plan FROZEN pre-run)
+
+Question: does student error concentrate at depth edges (liminal)
+or spread through interiors. Frozen plan — violations bounce.
+Edge rule (exact): Sobel gradient magnitude on banked teacher
+depth, seeds = pixels ≥ frame 80th percentile (percentile, not
+absolute — robust across scenes' depth scales; absolute thresholds
+are frame-brittle, refused at declaration). Bands adopted as-is
+(no reason to replace): edge = Chebyshev distance ≤2px from a
+seed; halo = ≤8px and not edge; interior = rest. Dilation via
+iterated 3x3-max over shifts (numpy only — scipy is absent, no new
+dependencies; exact integer morphology, no approximations).
+Systems (banked weights reloaded, forward-only, no retraining):
+mscale64, jattn64b2, texmsc-2k, texmsc-8kcos — on the 6 real
+fixtures (judge domain; twins run off-distribution, stated —
+their inclusion tests whether synthetic training changed edge
+behavior where bars live). Metric: ONE global affine fit per
+frame (doctrine as ever), then MAE per band. Verdict frozen:
+edge-band error ≥2x interior (per system, mean over fixtures) =
+liminal concentration CONFIRMED (nominates edge-weighted
+training); below = DEAD, no training round follows. Follow-up bar
+preemptive (only if confirmed): an edge-weighted round must drop
+edge-band MAE >0.05 at matched budget with interior degradation
+<0.02, else it dies too. CPU suffices (forward-only; nothing here
+needs a GPU). Numbers banked as scalars
+(samples/marigold/edge_analysis.json); edge maps regenerate
+deterministically from banked depth (no seeds involved).
