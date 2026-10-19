@@ -1356,3 +1356,73 @@ machinery itself never receiving trainable signal in 6/6 runs.
 What remains is NOT another mixer round: any future faithful
 attempt needs its own constitution with a swept LR (or optimizer)
 as the declared variable — stated, not run.
+
+## Phase 21 — swept LR for AdaLN-gated DiT-tiny, last in-rules door (constitution, FROZEN pre-run)
+
+Architecture byte-frozen: Phase-20 faithful package at rung B2
+(collapse was rung-independent — B2 isolates schedule cheapest;
+no architecture drift, the schedule is the ONLY variable).
+LR grid frozen, 6 configs (suggested axes adopted as-is — the
+decaying-LR diagnostic motivates the decay shapes without
+pre-selecting a winner): shapes const / linear-decay→0 /
+warmup400+cosine→0, crossed with max-LR 0.01 (mover continuity)
+and 0.003 (gentler hypothesis):
+
+| tag | shape | max-LR |
+|-----|-------|--------|
+| ditc64b2-c1 | const | 0.01 |
+| ditc64b2-c3 | const | 0.003 |
+| ditc64b2-l1 | linear-decay | 0.01 |
+| ditc64b2-l3 | linear-decay | 0.003 |
+| ditc64b2-w1 | warmup400+cosine | 0.01 |
+| ditc64b2-w3 | warmup400+cosine | 0.003 |
+
+Steps fixed 8000 (budget held — schedule, not budget, varies).
+LR plumbing only (linear + warmup paths; anything else is scope
+breach). Budget: 6 configs, wall cap 15 min each, GPU solo,
+Qwen-7B never co-loaded.
+Winner: most held-out cells under bars; directional near/planar/
+smooth vs Phase-20 `ditc64b2` numbers (>0.05, frozen) reopens
+empirically. Empty is complete — and if empty, the earned
+sentence closes the in-rules arc in full, stated in advance: no
+further schedule/architecture permutations inside current rules
+without new evidence (mixer, attention, faithful-DiT, domain,
+probe, and pattern rounds all banked; the wall stands on every
+axis tried).
+Metrics banked separately (`attn_run_<tag>.json` + `battery21`
+key, reference `jattn64b2`); primaries untouched; weights
+out-of-tree.
+
+### Battery results (6/6 ran, walls ~600s each, GPU solo)
+
+Train-loss finals: c1 0.854 / c3 0.740 / l1 0.854 / l3 0.427 /
+w1 0.847 / w3 0.867. Every schedule dips mid-training (0.47-0.62)
+then recollapses to the 0.854 pin — except l3, which rides
+linear-decay-to-zero down to 0.427. Linear eval cells: IDENTICAL
+across all six (max diff 1.2e-3, most bit-exact) — 0/72 under
+bars, 0/18 directional. No winner, no retrain-match.
+Mandatory disclosure (caught pre-banking, nothing hidden): the
+identical linear cells are an EXP-CLIP RAIL artifact — end-state
+log-preds are astronomically scaled, the eval clip saturates all
+six to opposite rails, and affine alignment scores every constant
+identically. This disclosure VOIDS the config-comparison content
+of the Phase-19/20/21 linear tables too (same rails, same
+artifact — their 0-under-bars verdicts stand, rails pass nothing,
+but B-vs-B deltas there were vacuous). Unclipped z-space
+diagnostic (same harness, no exp): c1/l3/w3 z-train
+0.861/0.858/0.857 — no fit ANYWHERE, including l3: its 0.427
+sample-concat loss does not survive per-frame full-frame eval
+(sample-phase-locked, stated as reading).
+Verdict: EMPTY. The sweep's only real datum is negative space:
+no LR shape in {const, linear, warmup+cosine} × {0.01, 0.003}
+escapes the constant attractor with generalizing fit; the one
+descender (l3) fits nothing per-frame. Schedule is not the key
+that was missing — 6/6 schedules agree.
+Earned sentence, as stated in advance: the in-rules arc is closed
+in full — no further schedule/architecture permutations inside
+current rules without new evidence. Mixer, attention,
+faithful-DiT, domain, probe, and pattern rounds all banked; the
+wall stands on every axis tried, and the last door (this sweep)
+opened onto the same pin. What remains lives outside current
+rules (new patterns per PATTERN_GAPS.md, or new evidence)
+— named, unopened, out of scope.

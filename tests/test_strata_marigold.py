@@ -530,6 +530,44 @@ def main():
     check("battery20-depth-ladder", cap20 == [209857, 359233, 508609],
           f"{cap20} (+149376/block incl. AdaLN)")
 
+    # -- Phase-21 sweep battery (same integrity shape, new key) -----------
+    b21 = ab.get("battery21", {})
+    frozen21 = ["ditc64b2-c1", "ditc64b2-c3", "ditc64b2-l1",
+                "ditc64b2-l3", "ditc64b2-w1", "ditc64b2-w3"]
+    check("battery21-configs", b21.get("configs") == frozen21
+          and b21.get("reference") == "jattn64b2", b21.get("configs"))
+    cells21 = b21.get("cells", {})
+    complete21 = True
+    for t in frozen21:
+        fr = cells21.get(t, {}).get("frames", {})
+        complete21 &= (len(fr) == 6 and all(
+            sorted(fr[n].get("strata", {})) == STRATA
+            and all(np.isfinite(v) and v >= 0
+                    for v in fr[n]["strata"].values())
+            for n in fr))
+    check("battery21-complete", bool(complete21), "6 configs x 6x6 finite")
+    counts21 = {}
+    for t in frozen21:
+        n = 0
+        for _n, fr in cells21[t]["frames"].items():
+            if fr.get("split") != "heldout":
+                continue
+            n += sum(1 for k in STRATA if fr["strata"][k] <= BARS[k])
+        counts21[t] = n
+    check("battery21-winner-none",
+          all(v == 0 for v in counts21.values())
+          and b21.get("winner") is None,
+          f"held-out cells under bars per config: {counts21}")
+    flags21_ok = all(
+        all(k in cells21[t].get("flags", {}) for k in
+            ("arch", "width", "blocks", "heads", "patch", "adaln",
+             "geluform", "gradloss", "stride", "steps", "lr", "schedule",
+             "warmup", "seed", "field"))
+        and cells21[t]["flags"]["arch"] == "dit-tiny"
+        and cells21[t]["flags"]["gradloss"] == 0.0
+        for t in frozen21)
+    check("battery21-flags", bool(flags21_ok), "repro metadata per config")
+
     # -- Phase-15 dino-input battery (same integrity shape, new key) ------
     b15 = ab.get("battery15", {})
     frozen15 = ["dino-tokonly", "dino-tokrgb"]
