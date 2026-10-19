@@ -1,0 +1,8 @@
+{"setup": {"seq": [676, 2692], "width": 64, "heads": 1, "dtype": "float32",
+"unfused": "torch composite Q@K^T/scale/softmax/@V (table math: BMMV+SOFTMAX_WIDE)",
+"fused": "torch SDPA flash backend (industrial fused reference)",
+"gpu": "RTX 3090Ti, solo", "iters": 31, "stat": "mean-of-iters-ms"},
+"walls_ms": {"676": {"unfused": 0.039, "fused": 0.123},
+"2692": {"unfused": 0.275, "fused": 0.552}},
+"ratio_unfused_over_fused": {"676": 0.31, "2692": 0.5},
+"verdict": "DEFER (unfused faster at student scale; falsifier fires)"}
