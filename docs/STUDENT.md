@@ -303,3 +303,48 @@ Diagnosis: monocular layout needs beyond-129px/global structure or
 a different inductive bias; the in-table mixer family is exhausted
 along every frozen axis. Next needs either long-range structure or
 a constraint change — scoped proposals, not this report.
+
+## Phase 6 — long-range battery, last honest round
+
+Declared axes + budget, FROZEN before running. Budget: 10 new
+configs, GPU box to itself, per-config wall cap 3min (bigger fields
+cost more: feature build O(px × samples); measured 25-60s/run).
+Judge unchanged: Phase-1 bars, same alignment, verdict-reported.
+In-table only (emitted-pattern law; LAYERNORM/CONV-type need =
+stop-finding, not implementation). Empty is complete.
+
+Long-range mechanisms (each config names its path to beyond-129px
+structure; "bigger mixer" alone is refused at declaration — depth
+appears only paired with a range mechanism, as capacity support):
+- wider spoke fields: 257px (stride-64 over ±128), 513px
+  (stride-128 over ±256), ~1025px (stride-256 over ±512, sparse
+  full-width spokes). Same 5x5-per-scale pattern (75 dims each);
+  coverage thins with range by construction (stated, not hidden).
+- coarse-global broadcast: per-image mean RGB + mean luma (4 dims)
+  appended to every pixel — whole-frame summary, lossy by design;
+  tests whether global tint/layout suffices. Deploys as const-fill
+  + CONCAT (both tabled).
+- excluded by the constitution rule: standalone depth configs
+  (d3/d4 without a new field — capacity is not a mechanism),
+  finer granularity reruns (Phase-5 axis, settled), loss/signal
+  changes (Phase-4 settled, dead).
+
+| # | tag | mechanism | field | dims | mixer |
+|---|-----|-----------|-------|------|-------|
+| 1 | g257w64d2 | quarter-frame spokes | 257px | 402 | W64/d2 |
+| 2 | g513w64d2 | half-frame spokes | 513px | 477 | W64/d2 |
+| 3 | g1025w64d2 | sparse full-width spokes | ~1025px | 552 | W64/d2 |
+| 4 | g257w128d3 | spokes + capacity | 257px | 402 | W128/d3 |
+| 5 | g513w128d3 | spokes + capacity | 513px | 477 | W128/d3 |
+| 6 | globw64d2 | whole-frame summary | 33px+global | 181 | W64/d2 |
+| 7 | glob257w64d2 | spokes + summary | 257px | 406 | W64/d2 |
+| 8 | g513w64d3 | half-frame + capacity | 513px | 477 | W64/d3 |
+| 9 | g257w32d2 | spokes, narrow check | 257px | 402 | W32/d2 |
+| 10 | g1025w128d3 | max envelope | ~1025px | 552 | W128/d3 |
+
+Dims: dense27 + 75 per spoke scale + 4 if global (552 = 27+75*7;
+field1025 adds s64+s128 scales). Largest: ~75k+ params, transient
+features <2GB/frame CPU, GPU batch <1GB — nowhere near 17GB.
+Winner rule: most held-out cells under bars; ties → train-heldout
+gap. Winner gets retrain-match before claimed. Empty (nothing
+clears bars) closes with the earned sentence (see results).
