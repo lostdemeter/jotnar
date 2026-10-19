@@ -973,3 +973,73 @@ criterion for anything next: a student claiming joint reasoning
 must show teacher-scale shuffle deltas (≈1.2 rel, near worst) on
 this probe; mscale64-scale grace (≤0.8) disqualifies the claim.
 That criterion is banked in the gate (locality-signature leg).
+
+## Phase 15 — DINOv2-token inputs, information-vs-machinery (constitution, FROZEN pre-run)
+
+Question: does global INFORMATION save the joint-attention family,
+or is the machinery itself the wall. The only variable is input
+information; architecture family held (Phase-8 shape: B2 joint
+blocks, RMSNorm+SILU, nearest-cell broadcast head as built).
+Frozen DINOv2-base (86M ViT, local ~/student_runs/dinov2-base)
+runs ONCE per fixture (CPU, deterministic) → patch tokens
+(3504×768, CLS dropped, stated) cached out-of-tree
+(~/student_runs/dino_tokens/<fixture>.pt) with sha manifest
+in-repo; the encoder never runs at student-train time.
+Two configs (third slot deliberately empty — width⊗information is
+a follow-up conditioned on movement, confounded now):
+- `dino-tokonly`: seq = DINO tokens projected 768→64 (no RGB token
+  stream, no const: C=0 — const REPLACED by DINO, literally).
+  Head: nearest-DINO-cell broadcast (14px cells, idx (i//14)*73 +
+  (j//14), 2px edge strip clamped to last token — edge rule
+  stated) + RGB concat, as built.
+- `dino-tokrgb`: seq = DINO tokens (3504) + RGB cell tokens (672,
+  stride-32 as built); head reads RGB outs (as built, 32px cells).
+  Closest literal swap: const slot now carries image-conditional
+  global tokens.
+Schedule fixed 8k-cosine, lr 0.01, seed 7 (the mover; information
+is the variable, not optimization). Wall caps: tokonly 30 min,
+tokrgb 45 min (4176-seq attention costs ~5x s16 — stated, not
+hidden). GPU box to itself.
+Stated openly: the DINOv2 encoder is a frozen preprocessor, NOT
+in-table and NOT deployable-as-student — this round tests the
+INFORMATION hypothesis, not deployability. A win means
+"information suffices" and nominates feature-distillation next;
+it does not ship. Winner: most held-out cells under bars;
+directional near/planar/smooth vs Phase-8 (>0.05, frozen) reopens
+empirically. Empty is complete. Metrics banked separately
+(`attn_run_<tag>.json` + `battery15` key, reference `jattn64b2`,
+dino provenance in flags); weights out-of-tree; no
+emitter/opcode/assembly changes.
+
+### Battery results (2/2 ran, walls 501s/548s, GPU solo)
+
+DINO cache: 6×3504×768 fp32, CPU-rerun-identical, sha-manifested.
+Capacity verified: 156,993 ×2 (108033 + 49216 dino_proj − 256
+dead ctx — uniform construction leaves tok/pos/ctx weights dead in
+tokonly; documented, not hidden). Refactor proven behavior-
+preserving: current rgb path + banked Phase-8 weights reproduces
+banked frames to 5e-10.
+
+```
+tag           train-loss  near-train (chr/dog/sq)   held-out moves  bars
+dino-tokonly  0.054       0.52/0.64/0.59 (!!)        0/6 (near worsens x2)  0/12
+dino-tokrgb   0.413       0.33/0.40/0.20             0/6 (near worsens x1)  0/12
+```
+Winner: none — 0/24 under bars (gate-counted); no retrain-match.
+The tokonly train row demands a reading, stated as reading:
+near-field train cells collapse (0.5-0.65) while loss sits at 0.054
+and far fits (0.15-0.27) — predictions blow to 1e12 scale with
+relative structure that fits far layout and not near objects
+(verified live: near-mask pred-std ~1e12, residual 0.52). DINO
+tokens carry scene layout the tiny reader can ride for walls/floors
+but not foregrounds; adding the RGB stream back (tokrgb) breaks
+even that (loss 0.41 — longer seq, harder optimization, interference).
+Verdict: MACHINERY. Information transforms train fit (0.50→0.054,
+the largest single train move of the whole student arc) yet moves
+zero held-out cells directionally and worsens near — so global
+features do not convert through this reader, and no
+feature-distillation is nominated (a win would have nominated it;
+this is not a win). Convergent with Phase-14 (the family doesn't
+use global structure) and Phase-13 (deeper readers stall): the wall
+is the reader's capacity to convert layout into near-field depth,
+not the information fed to it. Empty is complete.
