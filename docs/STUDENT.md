@@ -1043,3 +1043,62 @@ this is not a win). Convergent with Phase-14 (the family doesn't
 use global structure) and Phase-13 (deeper readers stall): the wall
 is the reader's capacity to convert layout into near-field depth,
 not the information fed to it. Empty is complete.
+
+## Phase 16 — two-stage coarse-to-fine, dynamism across passes (constitution, FROZEN pre-run)
+
+Question: is frozen global code + a stronger reader usable, or does
+the reader need to co-adapt. Two static passes, no new machinery.
+Pass 1 = frozen banked `jattn64b2` weights (front-end — reuse, don't
+retrain): per frame it yields image-token global code (672x64) AND
+coarse depth (its own full forward, frozen, no grad). Pass 2 =
+trained refinement MLP (68→128→128→1, SILU) on CONCAT[global code
+(64, nearest-cell GATHER broadcast) + coarse depth (1) + local RGB
+(3)] → depth. Per-op citations (README table): GATHER/CONCAT F
+(broadcast+concat, Phase-8 precedent), MATMUL/ADD/SILU F (MLP).
+Any gap = stop-finding; none introduced (wider head, same ops).
+Two variants, both run (suggested pair adopted with its reason):
+- `cf-frozen`: Pass-1 frozen; ONLY the 25,773-param head trains
+  (2000 steps, Adam lr 0.01 const, seed 7, stride-7, no-grad
+  alignment; wall cap 5 min). Freezing isolates whether the
+  information was usable.
+- `cf-joint`: same graph end-to-end (front-end warm-started from
+  banked jattn64b2 via strict=False load, head fresh; all 129,389
+  params train: 108033 − 4417 old head + 25773 new head — formula
+  declared, verified post-run). 8k-cosine, lr 0.01, seed 7
+  (the mover; wall cap 10 min). Joint confounds reader-vs-
+  information (stated) and runs second as declared.
+Winner: most held-out cells under bars; directional near/planar/
+smooth vs Phase-8 (>0.05, frozen) reopens empirically. Empty is
+complete. Metrics banked separately (`attn_run_<tag>.json` +
+`battery16` key, reference `jattn64b2`, pass-1 provenance in
+flags); primaries untouched; weights out-of-tree. GPU solo;
+Qwen-7B never co-loaded.
+
+### Battery results (1 complete + 1 timeout, GPU solo)
+
+`cf-frozen`: loss STATIC 0.5025→0.5024 across 2000 steps (39s wall)
+— the head never trains. Mechanism measured live, not guessed:
+frozen pass-1 outputs span SEVEN orders of magnitude (coarse std
+1.7e6, code std 1084, rgb std 0.27) — SiLU saturates on day one
+and Adam never recovers in-budget. The banked jattn64b2 weights
+survive only because their own training aligned the scale away;
+as FEATURES they are pathological. Cells banked as-run (0/6 moves,
+0/12 bars — an untrained head approximately reproduces coarse).
+`cf-joint`: declared, run, EXCEEDED the frozen 10-min wall
+(killed at 600s with zero artifacts — nothing written, nothing
+banked, nothing claimed). Cost autopsy: joint full-frame
+forward+backward plus the 128-wide head over the stride sample
+runs ~2x Phase-8 per step; the 10-min cap (my mis-estimate,
+stated) covered ~2/3 of 8k steps. No rerun at a bigger cap
+(frozen is frozen) and no partial banking.
+Verdict: refinement-uses-structure is UNREACHED, not refuted —
+but the attempt prices it: static passes over frozen codes need
+normalization machinery (a design change, itself undeclared here)
+or joint budgets beyond single-pass caps. Either way the
+demand is per-input adaptivity with a price tag: data-dependent
+routing/normalization = control-flow lowering (CALL and friends),
+named as the measured demand for the constraint debate, not opened.
+Dynamism-across-passes joins the wall as costed-out, and the
+earned sentence covers it: the static in-table story is complete
+including two-stage refinement attempted, stalled, and timed-out
+in the open.
