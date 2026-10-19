@@ -1,0 +1,10346 @@
+{
+ "provenance": {
+  "sibling_repo": "marigold-v2 @ 9926d93 (sibling checkout, never vendored)",
+  "trainables": {
+   "path": "Marigold-V2/depth/Log-stage2/trainables.safetensors",
+   "bytes": 1853909694,
+   "mtime": "2026-10-18 17:56:52 -0400",
+   "sha256": "3edec69490ba8e8fdc8d63e130f93cb93f514360d415a22701250b2535056892"
+  },
+  "backbone_index_total_size": 40860802176,
+  "backbone_shards": [
+   {
+    "file": "diffusion_pytorch_model-00001-of-00005.safetensors",
+    "bytes": 9973578592
+   },
+   {
+    "file": "diffusion_pytorch_model-00002-of-00005.safetensors",
+    "bytes": 9987326072
+   },
+   {
+    "file": "diffusion_pytorch_model-00003-of-00005.safetensors",
+    "bytes": 9987307440
+   },
+   {
+    "file": "diffusion_pytorch_model-00004-of-00005.safetensors",
+    "bytes": 9930685712
+   },
+   {
+    "file": "diffusion_pytorch_model-00005-of-00005.safetensors",
+    "bytes": 982130472
+   }
+  ],
+  "vae_base": {
+   "path": "Qwen-Image-Edit-2509/vae/diffusion_pytorch_model.safetensors",
+   "bytes": 253806966,
+   "sha256": "0c8bc8b758c649abef9ea407b95408389a3b2f610d0d10fcb054fe171d0a8344"
+  }
+ },
+ "lora": {
+  "rank": 128,
+  "alpha": 128,
+  "scale": 1.0,
+  "dropout": 0.0,
+  "init": "gaussian",
+  "dtype": "BF16",
+  "targets_declared": 23,
+  "targets_effective": 21,
+  "proj_out_excluded_at_load": true,
+  "evidence": [
+   "marigoldv2/experiments/20260316_qwen_depth/training_relative_log_depth_config_stage2.yaml:168-196",
+   "marigoldv2/experiments/20260316_qwen_depth/component_loader.py:230 (proj_out filtered)",
+   "evaluation/depth_completion/run_marigold_v2.py:67-90,127-134"
+  ]
+ },
+ "census": {
+  "ntensors": 1556,
+  "diffuser_lora_tensors": 1446,
+  "vae_tensors": 108,
+  "irepa_leftover_tensors": 2,
+  "blocks": 60,
+  "lora_per_block": 24,
+  "nonblock_lora": [
+   "img_in",
+   "txt_in",
+   "norm_out.linear"
+  ],
+  "irepa": [
+   {
+    "path": "iREPAStudentProjector.out__qwen_dit_hidden_state_-1.weight",
+    "shape": [
+     768,
+     64,
+     3,
+     3
+    ],
+    "dtype": "F32"
+   },
+   {
+    "path": "iREPAStudentProjector.out__qwen_dit_hidden_state_-8.weight",
+    "shape": [
+     768,
+     64,
+     3,
+     3
+    ],
+    "dtype": "F32"
+   }
+  ],
+  "note": "iREPA projector is a Stage-1 leftover (F32 convs), not a depth adapter; reported, not analyzed."
+ },
+ "delta_norms": {
+  "modules": {
+   "attn.to_q": {
+    "delta_fro": 98.51464721291255,
+    "base_fro": 2410.9670696501644,
+    "rel": 0.04086105051082561
+   },
+   "attn.to_k": {
+    "delta_fro": 97.63038165196728,
+    "base_fro": 2280.595719529768,
+    "rel": 0.042809157631891685
+   },
+   "attn.to_v": {
+    "delta_fro": 74.43796108048599,
+    "base_fro": 2544.527996620579,
+    "rel": 0.029254133253533866
+   },
+   "attn.to_out.0": {
+    "delta_fro": 71.58664988190674,
+    "base_fro": 2586.5235608552603,
+    "rel": 0.02767678244470964
+   },
+   "attn.add_q_proj": {
+    "delta_fro": 95.50899377384894,
+    "base_fro": 1712.8222268983525,
+    "rel": 0.05576118307782616
+   },
+   "attn.add_k_proj": {
+    "delta_fro": 97.5290219664507,
+    "base_fro": 2157.4786372783624,
+    "rel": 0.04520509277880154
+   },
+   "attn.add_v_proj": {
+    "delta_fro": 100.52865429326552,
+    "base_fro": 2209.0050682607234,
+    "rel": 0.04550856661112938
+   },
+   "attn.to_add_out": {
+    "delta_fro": 90.30043160344897,
+    "base_fro": 1834.0029965108938,
+    "rel": 0.04923679610951638
+   },
+   "img_mlp.net.0.proj": {
+    "delta_fro": 188.39115187485936,
+    "base_fro": 4606.016778780365,
+    "rel": 0.04090109978382315
+   },
+   "img_mlp.net.2": {
+    "delta_fro": 140.4175521034072,
+    "base_fro": 4531.122499499296,
+    "rel": 0.030989573139751526
+   },
+   "txt_mlp.net.0.proj": {
+    "delta_fro": 168.50469444444818,
+    "base_fro": 3866.388287743687,
+    "rel": 0.04358193794932652
+   },
+   "txt_mlp.net.2": {
+    "delta_fro": 122.9890607366021,
+    "base_fro": 3535.3391622569256,
+    "rel": 0.03478847575633652
+   }
+  },
+  "layers": [
+   {
+    "layer": 0,
+    "delta_fro": 110.74014073009343,
+    "base_fro": 1248.0269494692664,
+    "rel": 0.08873217102978953
+   },
+   {
+    "layer": 1,
+    "delta_fro": 54.3774888444638,
+    "base_fro": 1519.3794708901723,
+    "rel": 0.035789274428333025
+   },
+   {
+    "layer": 2,
+    "delta_fro": 54.387613661903075,
+    "base_fro": 1517.328522024812,
+    "rel": 0.03584432301405965
+   },
+   {
+    "layer": 3,
+    "delta_fro": 53.34721927278107,
+    "base_fro": 1513.9963053125327,
+    "rel": 0.03523603002569326
+   },
+   {
+    "layer": 4,
+    "delta_fro": 47.37158818905812,
+    "base_fro": 1554.980428433908,
+    "rel": 0.03046442728335058
+   },
+   {
+    "layer": 5,
+    "delta_fro": 51.20617141484801,
+    "base_fro": 1575.3934627577962,
+    "rel": 0.0325037348607562
+   },
+   {
+    "layer": 6,
+    "delta_fro": 52.678441184116096,
+    "base_fro": 1586.9701773347854,
+    "rel": 0.033194348536899516
+   },
+   {
+    "layer": 7,
+    "delta_fro": 54.779790777257425,
+    "base_fro": 1599.014217807334,
+    "rel": 0.03425847635824954
+   },
+   {
+    "layer": 8,
+    "delta_fro": 65.29610652795434,
+    "base_fro": 1601.5092539929328,
+    "rel": 0.040771607385443484
+   },
+   {
+    "layer": 9,
+    "delta_fro": 62.8864626437033,
+    "base_fro": 1609.0269380902234,
+    "rel": 0.039083536238581636
+   },
+   {
+    "layer": 10,
+    "delta_fro": 54.21753097175167,
+    "base_fro": 1594.0199673310244,
+    "rel": 0.034013081443723545
+   },
+   {
+    "layer": 11,
+    "delta_fro": 47.202015080514656,
+    "base_fro": 1603.853771973929,
+    "rel": 0.029430373208164225
+   },
+   {
+    "layer": 12,
+    "delta_fro": 53.588292182635506,
+    "base_fro": 1605.5377238833412,
+    "rel": 0.03337716167329946
+   },
+   {
+    "layer": 13,
+    "delta_fro": 60.81801135659644,
+    "base_fro": 1590.505914009753,
+    "rel": 0.0382381548040088
+   },
+   {
+    "layer": 14,
+    "delta_fro": 57.992083074945135,
+    "base_fro": 1601.3182240540136,
+    "rel": 0.03621521456748813
+   },
+   {
+    "layer": 15,
+    "delta_fro": 54.681732885086205,
+    "base_fro": 1584.7008861098993,
+    "rel": 0.03450602783426097
+   },
+   {
+    "layer": 16,
+    "delta_fro": 53.48615884438932,
+    "base_fro": 1553.245465650069,
+    "rel": 0.034435097366921415
+   },
+   {
+    "layer": 17,
+    "delta_fro": 53.441137071835975,
+    "base_fro": 1528.8233475863062,
+    "rel": 0.034955730599096624
+   },
+   {
+    "layer": 18,
+    "delta_fro": 46.54877211183587,
+    "base_fro": 1504.5897385167825,
+    "rel": 0.030937850312420336
+   },
+   {
+    "layer": 19,
+    "delta_fro": 43.78516082396097,
+    "base_fro": 1502.7222511370821,
+    "rel": 0.029137227981304963
+   },
+   {
+    "layer": 20,
+    "delta_fro": 48.51280059210211,
+    "base_fro": 1461.988148945213,
+    "rel": 0.033182759126401166
+   },
+   {
+    "layer": 21,
+    "delta_fro": 70.04074769000611,
+    "base_fro": 1439.1111976016655,
+    "rel": 0.04866944806400766
+   },
+   {
+    "layer": 22,
+    "delta_fro": 48.43800316333922,
+    "base_fro": 1430.6273659329497,
+    "rel": 0.03385787544456171
+   },
+   {
+    "layer": 23,
+    "delta_fro": 56.237729578001094,
+    "base_fro": 1418.6132271627987,
+    "rel": 0.03964275004715384
+   },
+   {
+    "layer": 24,
+    "delta_fro": 46.9603605918752,
+    "base_fro": 1423.032867845557,
+    "rel": 0.03300019391890241
+   },
+   {
+    "layer": 25,
+    "delta_fro": 51.184175264586116,
+    "base_fro": 1426.89022111899,
+    "rel": 0.03587113746174998
+   },
+   {
+    "layer": 26,
+    "delta_fro": 46.9650865700987,
+    "base_fro": 1433.4580416012357,
+    "rel": 0.03276348885499057
+   },
+   {
+    "layer": 27,
+    "delta_fro": 45.43846236394352,
+    "base_fro": 1402.9169361325353,
+    "rel": 0.03238856214053923
+   },
+   {
+    "layer": 28,
+    "delta_fro": 43.64729517610668,
+    "base_fro": 1430.8773409498629,
+    "rel": 0.030503869148652666
+   },
+   {
+    "layer": 29,
+    "delta_fro": 48.17002716133376,
+    "base_fro": 1424.1537248595216,
+    "rel": 0.03382361490932817
+   },
+   {
+    "layer": 30,
+    "delta_fro": 54.149464564612984,
+    "base_fro": 1397.711766994093,
+    "rel": 0.038741510119118736
+   },
+   {
+    "layer": 31,
+    "delta_fro": 53.01875139007333,
+    "base_fro": 1409.4605406413477,
+    "rel": 0.037616343176197164
+   },
+   {
+    "layer": 32,
+    "delta_fro": 54.32184796938596,
+    "base_fro": 1395.0033070077288,
+    "rel": 0.03894030049714069
+   },
+   {
+    "layer": 33,
+    "delta_fro": 49.41871905554433,
+    "base_fro": 1344.4323761582432,
+    "rel": 0.03675805487276336
+   },
+   {
+    "layer": 34,
+    "delta_fro": 42.53398633642987,
+    "base_fro": 1375.609136380589,
+    "rel": 0.030920110379858666
+   },
+   {
+    "layer": 35,
+    "delta_fro": 43.48955379766805,
+    "base_fro": 1374.9733790036628,
+    "rel": 0.03162937876599588
+   },
+   {
+    "layer": 36,
+    "delta_fro": 53.9186807734809,
+    "base_fro": 1364.8008826267478,
+    "rel": 0.0395066280069419
+   },
+   {
+    "layer": 37,
+    "delta_fro": 46.12109970515334,
+    "base_fro": 1366.8790180553653,
+    "rel": 0.03374190334033294
+   },
+   {
+    "layer": 38,
+    "delta_fro": 47.164825751747976,
+    "base_fro": 1321.7438262339265,
+    "rel": 0.03568378744475451
+   },
+   {
+    "layer": 39,
+    "delta_fro": 50.24250333292577,
+    "base_fro": 1299.3101775557675,
+    "rel": 0.038668598307634916
+   },
+   {
+    "layer": 40,
+    "delta_fro": 46.30108629604281,
+    "base_fro": 1246.403202563029,
+    "rel": 0.037147759409500894
+   },
+   {
+    "layer": 41,
+    "delta_fro": 56.68439183236233,
+    "base_fro": 1271.3083796206765,
+    "rel": 0.04458744451072948
+   },
+   {
+    "layer": 42,
+    "delta_fro": 51.84979179730453,
+    "base_fro": 1231.510342082538,
+    "rel": 0.04210260362866645
+   },
+   {
+    "layer": 43,
+    "delta_fro": 52.77167864620825,
+    "base_fro": 1233.4519460137067,
+    "rel": 0.0427837329348393
+   },
+   {
+    "layer": 44,
+    "delta_fro": 50.08066384579333,
+    "base_fro": 1127.7091685137618,
+    "rel": 0.04440920163112266
+   },
+   {
+    "layer": 45,
+    "delta_fro": 52.316877831386016,
+    "base_fro": 1182.0046779068812,
+    "rel": 0.04426114279347003
+   },
+   {
+    "layer": 46,
+    "delta_fro": 52.66350203474624,
+    "base_fro": 1126.0891524639046,
+    "rel": 0.04676672528060277
+   },
+   {
+    "layer": 47,
+    "delta_fro": 50.171983099208866,
+    "base_fro": 1107.0798079505719,
+    "rel": 0.04531921071895199
+   },
+   {
+    "layer": 48,
+    "delta_fro": 44.20042987804314,
+    "base_fro": 1077.309544870345,
+    "rel": 0.0410285326891471
+   },
+   {
+    "layer": 49,
+    "delta_fro": 61.85206649091174,
+    "base_fro": 1087.527927083944,
+    "rel": 0.056874002911133995
+   },
+   {
+    "layer": 50,
+    "delta_fro": 51.05921060713225,
+    "base_fro": 1037.4608991125883,
+    "rel": 0.049215551786873805
+   },
+   {
+    "layer": 51,
+    "delta_fro": 45.85214162835514,
+    "base_fro": 1039.2791071218548,
+    "rel": 0.04411917964495268
+   },
+   {
+    "layer": 52,
+    "delta_fro": 42.88240818049212,
+    "base_fro": 987.19934950549,
+    "rel": 0.043438448578772736
+   },
+   {
+    "layer": 53,
+    "delta_fro": 48.701660809798156,
+    "base_fro": 961.2122376563423,
+    "rel": 0.050666917150934396
+   },
+   {
+    "layer": 54,
+    "delta_fro": 44.75188655979012,
+    "base_fro": 953.0475188794038,
+    "rel": 0.04695661619518147
+   },
+   {
+    "layer": 55,
+    "delta_fro": 43.55899201680494,
+    "base_fro": 941.9285765701002,
+    "rel": 0.04624447447535657
+   },
+   {
+    "layer": 56,
+    "delta_fro": 41.609431653874125,
+    "base_fro": 923.7001096557935,
+    "rel": 0.04504647257147064
+   },
+   {
+    "layer": 57,
+    "delta_fro": 42.18166679285778,
+    "base_fro": 836.6451648315058,
+    "rel": 0.05041763051526493
+   },
+   {
+    "layer": 58,
+    "delta_fro": 44.33472480963963,
+    "base_fro": 741.7699924367981,
+    "rel": 0.05976883031355186
+   },
+   {
+    "layer": 59,
+    "delta_fro": 39.972056105227814,
+    "base_fro": 556.1218606796367,
+    "rel": 0.07187643380243666
+   }
+  ],
+  "stem": {
+   "img_in": {
+    "delta_fro": 2.207559108734131,
+    "base_fro": 85.0473861694336,
+    "rel": 0.025956813246011734
+   },
+   "txt_in": {
+    "delta_fro": 23.293975830078125,
+    "base_fro": 463.4542236328125,
+    "rel": 0.05026165395975113
+   },
+   "norm_out.linear": {
+    "delta_fro": 74.38245391845703,
+    "base_fro": 79.45462036132812,
+    "rel": 0.9361627101898193
+   }
+  },
+  "vae": {
+   "total": {
+    "delta_fro": 18.790985012240014,
+    "base_fro": 150.951686915672,
+    "rel": 0.12448343835161944
+   },
+   "inout": {
+    "delta_fro": 0.5993505301544038,
+    "base_fro": 12.813588890592603,
+    "rel": 0.046774602749619275
+   },
+   "mid": {
+    "delta_fro": 8.735423042909536,
+    "base_fro": 86.58264994007614,
+    "rel": 0.10089114908073757
+   },
+   "up": {
+    "delta_fro": 16.62629341844977,
+    "base_fro": 122.97497330304368,
+    "rel": 0.1352006263703597
+   },
+   "post_quant_conv": {
+    "delta_fro": 0.025457754251738556,
+    "base_fro": 1.6805930202969643,
+    "rel": 0.015148078055947251
+   }
+  },
+  "diffuser_rel_all": 0.03959967709524228
+ },
+ "pairs": [
+  {
+   "path": "transformer_blocks.0.attn.to_q",
+   "delta_fro": 18.544910430908203,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.0.attn.to_k",
+   "delta_fro": 34.20696258544922,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.0.attn.to_v",
+   "delta_fro": 8.965774536132812,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.0.attn.to_out.0",
+   "delta_fro": 5.060610294342041,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.0.attn.add_q_proj",
+   "delta_fro": 14.097631454467773,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.0.attn.add_k_proj",
+   "delta_fro": 8.053415298461914,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.0.attn.add_v_proj",
+   "delta_fro": 12.197108268737793,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.0.attn.to_add_out",
+   "delta_fro": 12.851156234741211,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.0.img_mlp.net.0.proj",
+   "delta_fro": 92.89510345458984,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.0.img_mlp.net.2",
+   "delta_fro": 23.3145751953125,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.0.txt_mlp.net.0.proj",
+   "delta_fro": 23.210832595825195,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.0.txt_mlp.net.2",
+   "delta_fro": 16.115623474121094,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.1.attn.to_q",
+   "delta_fro": 23.003517150878906,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.1.attn.to_k",
+   "delta_fro": 9.919034957885742,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.1.attn.to_v",
+   "delta_fro": 10.445503234863281,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.1.attn.to_out.0",
+   "delta_fro": 9.793137550354004,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.1.attn.add_q_proj",
+   "delta_fro": 10.280023574829102,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.1.attn.add_k_proj",
+   "delta_fro": 7.497023105621338,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.1.attn.add_v_proj",
+   "delta_fro": 8.693652153015137,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.1.attn.to_add_out",
+   "delta_fro": 11.06563949584961,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.1.img_mlp.net.0.proj",
+   "delta_fro": 26.659000396728516,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.1.img_mlp.net.2",
+   "delta_fro": 21.58135223388672,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.1.txt_mlp.net.0.proj",
+   "delta_fro": 13.574268341064453,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.1.txt_mlp.net.2",
+   "delta_fro": 19.72888946533203,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.2.attn.to_q",
+   "delta_fro": 13.010363578796387,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.2.attn.to_k",
+   "delta_fro": 15.12018871307373,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.2.attn.to_v",
+   "delta_fro": 9.85317611694336,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.2.attn.to_out.0",
+   "delta_fro": 13.614181518554688,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.2.attn.add_q_proj",
+   "delta_fro": 13.274493217468262,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.2.attn.add_k_proj",
+   "delta_fro": 13.662003517150879,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.2.attn.add_v_proj",
+   "delta_fro": 12.463919639587402,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.2.attn.to_add_out",
+   "delta_fro": 10.204940795898438,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.2.img_mlp.net.0.proj",
+   "delta_fro": 24.989784240722656,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.2.img_mlp.net.2",
+   "delta_fro": 23.430419921875,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.2.txt_mlp.net.0.proj",
+   "delta_fro": 19.091978073120117,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.2.txt_mlp.net.2",
+   "delta_fro": 10.266388893127441,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.3.attn.to_q",
+   "delta_fro": 9.73742961883545,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.3.attn.to_k",
+   "delta_fro": 14.286016464233398,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.3.attn.to_v",
+   "delta_fro": 10.879145622253418,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.3.attn.to_out.0",
+   "delta_fro": 16.412858963012695,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.3.attn.add_q_proj",
+   "delta_fro": 14.254115104675293,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.3.attn.add_k_proj",
+   "delta_fro": 16.054298400878906,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.3.attn.add_v_proj",
+   "delta_fro": 18.283151626586914,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.3.attn.to_add_out",
+   "delta_fro": 14.81619930267334,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.3.img_mlp.net.0.proj",
+   "delta_fro": 20.69254493713379,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.3.img_mlp.net.2",
+   "delta_fro": 15.48954963684082,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.3.txt_mlp.net.0.proj",
+   "delta_fro": 17.196697235107422,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.3.txt_mlp.net.2",
+   "delta_fro": 13.093337059020996,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.4.attn.to_q",
+   "delta_fro": 15.349440574645996,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.4.attn.to_k",
+   "delta_fro": 12.661903381347656,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.4.attn.to_v",
+   "delta_fro": 9.740062713623047,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.4.attn.to_out.0",
+   "delta_fro": 9.184109687805176,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.4.attn.add_q_proj",
+   "delta_fro": 10.608640670776367,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.4.attn.add_k_proj",
+   "delta_fro": 13.885027885437012,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.4.attn.add_v_proj",
+   "delta_fro": 17.235502243041992,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.4.attn.to_add_out",
+   "delta_fro": 9.684978485107422,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.4.img_mlp.net.0.proj",
+   "delta_fro": 19.287914276123047,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.4.img_mlp.net.2",
+   "delta_fro": 17.048656463623047,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.4.txt_mlp.net.0.proj",
+   "delta_fro": 14.119163513183594,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.4.txt_mlp.net.2",
+   "delta_fro": 10.150406837463379,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.5.attn.to_q",
+   "delta_fro": 15.201058387756348,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.5.attn.to_k",
+   "delta_fro": 12.546502113342285,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.5.attn.to_v",
+   "delta_fro": 9.217309951782227,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.5.attn.to_out.0",
+   "delta_fro": 9.450464248657227,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.5.attn.add_q_proj",
+   "delta_fro": 13.964834213256836,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.5.attn.add_k_proj",
+   "delta_fro": 17.47182273864746,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.5.attn.add_v_proj",
+   "delta_fro": 10.707902908325195,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.5.attn.to_add_out",
+   "delta_fro": 10.358428955078125,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.5.img_mlp.net.0.proj",
+   "delta_fro": 27.07975196838379,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.5.img_mlp.net.2",
+   "delta_fro": 15.9109468460083,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.5.txt_mlp.net.0.proj",
+   "delta_fro": 15.693916320800781,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.5.txt_mlp.net.2",
+   "delta_fro": 9.707521438598633,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.6.attn.to_q",
+   "delta_fro": 14.879494667053223,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.6.attn.to_k",
+   "delta_fro": 15.802525520324707,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.6.attn.to_v",
+   "delta_fro": 15.07064151763916,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.6.attn.to_out.0",
+   "delta_fro": 9.326292037963867,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.6.attn.add_q_proj",
+   "delta_fro": 9.812919616699219,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.6.attn.add_k_proj",
+   "delta_fro": 14.52479076385498,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.6.attn.add_v_proj",
+   "delta_fro": 19.18609046936035,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.6.attn.to_add_out",
+   "delta_fro": 12.8714017868042,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.6.img_mlp.net.0.proj",
+   "delta_fro": 22.907167434692383,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.6.img_mlp.net.2",
+   "delta_fro": 18.621252059936523,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.6.txt_mlp.net.0.proj",
+   "delta_fro": 13.464488983154297,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.6.txt_mlp.net.2",
+   "delta_fro": 9.29594612121582,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.7.attn.to_q",
+   "delta_fro": 14.720376014709473,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.7.attn.to_k",
+   "delta_fro": 10.660368919372559,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.7.attn.to_v",
+   "delta_fro": 16.96329689025879,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.7.attn.to_out.0",
+   "delta_fro": 8.740437507629395,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.7.attn.add_q_proj",
+   "delta_fro": 16.27968406677246,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.7.attn.add_k_proj",
+   "delta_fro": 18.166946411132812,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.7.attn.add_v_proj",
+   "delta_fro": 16.252885818481445,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.7.attn.to_add_out",
+   "delta_fro": 11.756063461303711,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.7.img_mlp.net.0.proj",
+   "delta_fro": 18.237672805786133,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.7.img_mlp.net.2",
+   "delta_fro": 13.924640655517578,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.7.txt_mlp.net.0.proj",
+   "delta_fro": 24.76976203918457,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.7.txt_mlp.net.2",
+   "delta_fro": 12.580869674682617,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.8.attn.to_q",
+   "delta_fro": 14.134933471679688,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.8.attn.to_k",
+   "delta_fro": 13.239775657653809,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.8.attn.to_v",
+   "delta_fro": 11.852826118469238,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.8.attn.to_out.0",
+   "delta_fro": 9.029170989990234,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.8.attn.add_q_proj",
+   "delta_fro": 11.046765327453613,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.8.attn.add_k_proj",
+   "delta_fro": 25.783241271972656,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.8.attn.add_v_proj",
+   "delta_fro": 19.062280654907227,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.8.attn.to_add_out",
+   "delta_fro": 15.958258628845215,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.8.img_mlp.net.0.proj",
+   "delta_fro": 20.04233741760254,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.8.img_mlp.net.2",
+   "delta_fro": 15.545577049255371,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.8.txt_mlp.net.0.proj",
+   "delta_fro": 38.585845947265625,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.8.txt_mlp.net.2",
+   "delta_fro": 10.576648712158203,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.9.attn.to_q",
+   "delta_fro": 14.961149215698242,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.9.attn.to_k",
+   "delta_fro": 12.515689849853516,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.9.attn.to_v",
+   "delta_fro": 13.663744926452637,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.9.attn.to_out.0",
+   "delta_fro": 10.74199104309082,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.9.attn.add_q_proj",
+   "delta_fro": 13.526663780212402,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.9.attn.add_k_proj",
+   "delta_fro": 13.474403381347656,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.9.attn.add_v_proj",
+   "delta_fro": 12.272648811340332,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.9.attn.to_add_out",
+   "delta_fro": 12.11734390258789,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.9.img_mlp.net.0.proj",
+   "delta_fro": 31.9989070892334,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.9.img_mlp.net.2",
+   "delta_fro": 16.046977996826172,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.9.txt_mlp.net.0.proj",
+   "delta_fro": 33.776824951171875,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.9.txt_mlp.net.2",
+   "delta_fro": 12.958809852600098,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.10.attn.to_q",
+   "delta_fro": 12.40841293334961,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.10.attn.to_k",
+   "delta_fro": 9.45333194732666,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.10.attn.to_v",
+   "delta_fro": 14.861525535583496,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.10.attn.to_out.0",
+   "delta_fro": 9.774702072143555,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.10.attn.add_q_proj",
+   "delta_fro": 14.381404876708984,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.10.attn.add_k_proj",
+   "delta_fro": 14.002099990844727,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.10.attn.add_v_proj",
+   "delta_fro": 19.231433868408203,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.10.attn.to_add_out",
+   "delta_fro": 9.532565116882324,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.10.img_mlp.net.0.proj",
+   "delta_fro": 17.181949615478516,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.10.img_mlp.net.2",
+   "delta_fro": 16.0629825592041,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.10.txt_mlp.net.0.proj",
+   "delta_fro": 28.708534240722656,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.10.txt_mlp.net.2",
+   "delta_fro": 11.25700569152832,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.11.attn.to_q",
+   "delta_fro": 12.605535507202148,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.11.attn.to_k",
+   "delta_fro": 9.757423400878906,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.11.attn.to_v",
+   "delta_fro": 11.549182891845703,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.11.attn.to_out.0",
+   "delta_fro": 8.173561096191406,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.11.attn.add_q_proj",
+   "delta_fro": 16.45097541809082,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.11.attn.add_k_proj",
+   "delta_fro": 17.363122940063477,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.11.attn.add_v_proj",
+   "delta_fro": 14.049630165100098,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.11.attn.to_add_out",
+   "delta_fro": 9.417627334594727,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.11.img_mlp.net.0.proj",
+   "delta_fro": 20.355222702026367,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.11.img_mlp.net.2",
+   "delta_fro": 13.950458526611328,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.11.txt_mlp.net.0.proj",
+   "delta_fro": 12.762330055236816,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.11.txt_mlp.net.2",
+   "delta_fro": 11.69269847869873,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.12.attn.to_q",
+   "delta_fro": 14.59935474395752,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.12.attn.to_k",
+   "delta_fro": 13.597323417663574,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.12.attn.to_v",
+   "delta_fro": 11.607105255126953,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.12.attn.to_out.0",
+   "delta_fro": 7.363471984863281,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.12.attn.add_q_proj",
+   "delta_fro": 27.729488372802734,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.12.attn.add_k_proj",
+   "delta_fro": 19.613954544067383,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.12.attn.add_v_proj",
+   "delta_fro": 13.169330596923828,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.12.attn.to_add_out",
+   "delta_fro": 11.550298690795898,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.12.img_mlp.net.0.proj",
+   "delta_fro": 15.607258796691895,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.12.img_mlp.net.2",
+   "delta_fro": 14.938970565795898,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.12.txt_mlp.net.0.proj",
+   "delta_fro": 16.244077682495117,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.12.txt_mlp.net.2",
+   "delta_fro": 9.311383247375488,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.13.attn.to_q",
+   "delta_fro": 9.633434295654297,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.13.attn.to_k",
+   "delta_fro": 8.768645286560059,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.13.attn.to_v",
+   "delta_fro": 10.902545928955078,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.13.attn.to_out.0",
+   "delta_fro": 10.347688674926758,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.13.attn.add_q_proj",
+   "delta_fro": 20.146873474121094,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.13.attn.add_k_proj",
+   "delta_fro": 11.615668296813965,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.13.attn.add_v_proj",
+   "delta_fro": 9.772363662719727,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.13.attn.to_add_out",
+   "delta_fro": 9.464630126953125,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.13.img_mlp.net.0.proj",
+   "delta_fro": 36.73942565917969,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.13.img_mlp.net.2",
+   "delta_fro": 14.838432312011719,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.13.txt_mlp.net.0.proj",
+   "delta_fro": 29.317001342773438,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.13.txt_mlp.net.2",
+   "delta_fro": 11.306196212768555,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.14.attn.to_q",
+   "delta_fro": 20.53812026977539,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.14.attn.to_k",
+   "delta_fro": 15.964900016784668,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.14.attn.to_v",
+   "delta_fro": 10.31986141204834,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.14.attn.to_out.0",
+   "delta_fro": 7.86603307723999,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.14.attn.add_q_proj",
+   "delta_fro": 13.1635103225708,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.14.attn.add_k_proj",
+   "delta_fro": 21.969388961791992,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.14.attn.add_v_proj",
+   "delta_fro": 8.955662727355957,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.14.attn.to_add_out",
+   "delta_fro": 9.748468399047852,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.14.img_mlp.net.0.proj",
+   "delta_fro": 28.92805290222168,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.14.img_mlp.net.2",
+   "delta_fro": 18.75585174560547,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.14.txt_mlp.net.0.proj",
+   "delta_fro": 18.216421127319336,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.14.txt_mlp.net.2",
+   "delta_fro": 12.357810974121094,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.15.attn.to_q",
+   "delta_fro": 14.792305946350098,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.15.attn.to_k",
+   "delta_fro": 13.087994575500488,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.15.attn.to_v",
+   "delta_fro": 10.639172554016113,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.15.attn.to_out.0",
+   "delta_fro": 9.403594017028809,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.15.attn.add_q_proj",
+   "delta_fro": 10.072765350341797,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.15.attn.add_k_proj",
+   "delta_fro": 22.045413970947266,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.15.attn.add_v_proj",
+   "delta_fro": 14.85645866394043,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.15.attn.to_add_out",
+   "delta_fro": 8.91983699798584,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.15.img_mlp.net.0.proj",
+   "delta_fro": 28.961490631103516,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.15.img_mlp.net.2",
+   "delta_fro": 13.847189903259277,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.15.txt_mlp.net.0.proj",
+   "delta_fro": 18.13166618347168,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.15.txt_mlp.net.2",
+   "delta_fro": 11.796977996826172,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.16.attn.to_q",
+   "delta_fro": 12.718637466430664,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.16.attn.to_k",
+   "delta_fro": 10.448471069335938,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.16.attn.to_v",
+   "delta_fro": 12.29999828338623,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.16.attn.to_out.0",
+   "delta_fro": 8.513079643249512,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.16.attn.add_q_proj",
+   "delta_fro": 10.718012809753418,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.16.attn.add_k_proj",
+   "delta_fro": 9.19638729095459,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.16.attn.add_v_proj",
+   "delta_fro": 10.815478324890137,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.16.attn.to_add_out",
+   "delta_fro": 9.131528854370117,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.16.img_mlp.net.0.proj",
+   "delta_fro": 21.802528381347656,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.16.img_mlp.net.2",
+   "delta_fro": 28.056678771972656,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.16.txt_mlp.net.0.proj",
+   "delta_fro": 18.65645980834961,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.16.txt_mlp.net.2",
+   "delta_fro": 18.4544677734375,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.17.attn.to_q",
+   "delta_fro": 12.550271987915039,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.17.attn.to_k",
+   "delta_fro": 9.18000602722168,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.17.attn.to_v",
+   "delta_fro": 14.016377449035645,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.17.attn.to_out.0",
+   "delta_fro": 7.992664813995361,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.17.attn.add_q_proj",
+   "delta_fro": 15.05626106262207,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.17.attn.add_k_proj",
+   "delta_fro": 10.937173843383789,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.17.attn.add_v_proj",
+   "delta_fro": 19.78571128845215,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.17.attn.to_add_out",
+   "delta_fro": 8.435562133789062,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.17.img_mlp.net.0.proj",
+   "delta_fro": 18.256650924682617,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.17.img_mlp.net.2",
+   "delta_fro": 14.742791175842285,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.17.txt_mlp.net.0.proj",
+   "delta_fro": 26.41316795349121,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.17.txt_mlp.net.2",
+   "delta_fro": 16.860292434692383,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.18.attn.to_q",
+   "delta_fro": 12.965282440185547,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.18.attn.to_k",
+   "delta_fro": 8.428982734680176,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.18.attn.to_v",
+   "delta_fro": 10.856204986572266,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.18.attn.to_out.0",
+   "delta_fro": 10.397692680358887,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.18.attn.add_q_proj",
+   "delta_fro": 9.101323127746582,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.18.attn.add_k_proj",
+   "delta_fro": 10.066862106323242,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.18.attn.add_v_proj",
+   "delta_fro": 13.518428802490234,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.18.attn.to_add_out",
+   "delta_fro": 8.07514762878418,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.18.img_mlp.net.0.proj",
+   "delta_fro": 19.11693000793457,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.18.img_mlp.net.2",
+   "delta_fro": 18.199304580688477,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.18.txt_mlp.net.0.proj",
+   "delta_fro": 18.237777709960938,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.18.txt_mlp.net.2",
+   "delta_fro": 15.198878288269043,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.19.attn.to_q",
+   "delta_fro": 10.27733325958252,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.19.attn.to_k",
+   "delta_fro": 7.889754295349121,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.19.attn.to_v",
+   "delta_fro": 8.528030395507812,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.19.attn.to_out.0",
+   "delta_fro": 8.146597862243652,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.19.attn.add_q_proj",
+   "delta_fro": 16.507144927978516,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.19.attn.add_k_proj",
+   "delta_fro": 11.89231014251709,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.19.attn.add_v_proj",
+   "delta_fro": 11.196511268615723,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.19.attn.to_add_out",
+   "delta_fro": 8.220985412597656,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.19.img_mlp.net.0.proj",
+   "delta_fro": 12.963273048400879,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.19.img_mlp.net.2",
+   "delta_fro": 14.970281600952148,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.19.txt_mlp.net.0.proj",
+   "delta_fro": 19.333126068115234,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.19.txt_mlp.net.2",
+   "delta_fro": 15.167261123657227,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.20.attn.to_q",
+   "delta_fro": 14.877806663513184,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.20.attn.to_k",
+   "delta_fro": 14.898226737976074,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.20.attn.to_v",
+   "delta_fro": 8.70978832244873,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.20.attn.to_out.0",
+   "delta_fro": 9.099246978759766,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.20.attn.add_q_proj",
+   "delta_fro": 9.315470695495605,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.20.attn.add_k_proj",
+   "delta_fro": 11.853965759277344,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.20.attn.add_v_proj",
+   "delta_fro": 9.633146286010742,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.20.attn.to_add_out",
+   "delta_fro": 9.532824516296387,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.20.img_mlp.net.0.proj",
+   "delta_fro": 21.072023391723633,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.20.img_mlp.net.2",
+   "delta_fro": 18.394390106201172,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.20.txt_mlp.net.0.proj",
+   "delta_fro": 18.21377944946289,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.20.txt_mlp.net.2",
+   "delta_fro": 14.722140312194824,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.21.attn.to_q",
+   "delta_fro": 16.790740966796875,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.21.attn.to_k",
+   "delta_fro": 16.609100341796875,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.21.attn.to_v",
+   "delta_fro": 8.696544647216797,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.21.attn.to_out.0",
+   "delta_fro": 9.181437492370605,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.21.attn.add_q_proj",
+   "delta_fro": 10.221734046936035,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.21.attn.add_k_proj",
+   "delta_fro": 10.973650932312012,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.21.attn.add_v_proj",
+   "delta_fro": 13.111173629760742,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.21.attn.to_add_out",
+   "delta_fro": 10.543793678283691,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.21.img_mlp.net.0.proj",
+   "delta_fro": 23.796916961669922,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.21.img_mlp.net.2",
+   "delta_fro": 26.00300407409668,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.21.txt_mlp.net.0.proj",
+   "delta_fro": 41.882110595703125,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.21.txt_mlp.net.2",
+   "delta_fro": 25.592315673828125,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.22.attn.to_q",
+   "delta_fro": 11.146383285522461,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.22.attn.to_k",
+   "delta_fro": 9.526498794555664,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.22.attn.to_v",
+   "delta_fro": 8.140877723693848,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.22.attn.to_out.0",
+   "delta_fro": 8.214391708374023,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.22.attn.add_q_proj",
+   "delta_fro": 12.042304992675781,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.22.attn.add_k_proj",
+   "delta_fro": 13.8401517868042,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.22.attn.add_v_proj",
+   "delta_fro": 11.935983657836914,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.22.attn.to_add_out",
+   "delta_fro": 10.550023078918457,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.22.img_mlp.net.0.proj",
+   "delta_fro": 16.820079803466797,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.22.img_mlp.net.2",
+   "delta_fro": 18.405595779418945,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.22.txt_mlp.net.0.proj",
+   "delta_fro": 22.644187927246094,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.22.txt_mlp.net.2",
+   "delta_fro": 16.214956283569336,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.23.attn.to_q",
+   "delta_fro": 9.778047561645508,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.23.attn.to_k",
+   "delta_fro": 11.877701759338379,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.23.attn.to_v",
+   "delta_fro": 17.660402297973633,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.23.attn.to_out.0",
+   "delta_fro": 11.719959259033203,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.23.attn.add_q_proj",
+   "delta_fro": 13.461116790771484,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.23.attn.add_k_proj",
+   "delta_fro": 8.433314323425293,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.23.attn.add_v_proj",
+   "delta_fro": 9.776633262634277,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.23.attn.to_add_out",
+   "delta_fro": 14.63200855255127,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.23.img_mlp.net.0.proj",
+   "delta_fro": 21.214479446411133,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.23.img_mlp.net.2",
+   "delta_fro": 17.236286163330078,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.23.txt_mlp.net.0.proj",
+   "delta_fro": 29.703176498413086,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.23.txt_mlp.net.2",
+   "delta_fro": 16.44981575012207,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.24.attn.to_q",
+   "delta_fro": 9.547910690307617,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.24.attn.to_k",
+   "delta_fro": 10.172614097595215,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.24.attn.to_v",
+   "delta_fro": 13.734783172607422,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.24.attn.to_out.0",
+   "delta_fro": 6.733814239501953,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.24.attn.add_q_proj",
+   "delta_fro": 10.093653678894043,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.24.attn.add_k_proj",
+   "delta_fro": 10.293525695800781,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.24.attn.add_v_proj",
+   "delta_fro": 13.262214660644531,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.24.attn.to_add_out",
+   "delta_fro": 13.16164779663086,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.24.img_mlp.net.0.proj",
+   "delta_fro": 13.432355880737305,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.24.img_mlp.net.2",
+   "delta_fro": 15.066360473632812,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.24.txt_mlp.net.0.proj",
+   "delta_fro": 25.749601364135742,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.24.txt_mlp.net.2",
+   "delta_fro": 11.808743476867676,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.25.attn.to_q",
+   "delta_fro": 11.05820369720459,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.25.attn.to_k",
+   "delta_fro": 8.576147079467773,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.25.attn.to_v",
+   "delta_fro": 13.13207721710205,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.25.attn.to_out.0",
+   "delta_fro": 7.441747665405273,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.25.attn.add_q_proj",
+   "delta_fro": 10.792645454406738,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.25.attn.add_k_proj",
+   "delta_fro": 11.600940704345703,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.25.attn.add_v_proj",
+   "delta_fro": 15.322794914245605,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.25.attn.to_add_out",
+   "delta_fro": 11.073888778686523,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.25.img_mlp.net.0.proj",
+   "delta_fro": 13.462181091308594,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.25.img_mlp.net.2",
+   "delta_fro": 17.920137405395508,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.25.txt_mlp.net.0.proj",
+   "delta_fro": 29.55135154724121,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.25.txt_mlp.net.2",
+   "delta_fro": 14.123887062072754,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.26.attn.to_q",
+   "delta_fro": 9.784201622009277,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.26.attn.to_k",
+   "delta_fro": 7.14093542098999,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.26.attn.to_v",
+   "delta_fro": 7.935617923736572,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.26.attn.to_out.0",
+   "delta_fro": 7.969905376434326,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.26.attn.add_q_proj",
+   "delta_fro": 8.677889823913574,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.26.attn.add_k_proj",
+   "delta_fro": 12.095247268676758,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.26.attn.add_v_proj",
+   "delta_fro": 8.546009063720703,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.26.attn.to_add_out",
+   "delta_fro": 16.1643009185791,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.26.img_mlp.net.0.proj",
+   "delta_fro": 12.042022705078125,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.26.img_mlp.net.2",
+   "delta_fro": 14.204806327819824,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.26.txt_mlp.net.0.proj",
+   "delta_fro": 28.605941772460938,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.26.txt_mlp.net.2",
+   "delta_fro": 14.164207458496094,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.27.attn.to_q",
+   "delta_fro": 13.028865814208984,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.27.attn.to_k",
+   "delta_fro": 13.639650344848633,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.27.attn.to_v",
+   "delta_fro": 7.638241291046143,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.27.attn.to_out.0",
+   "delta_fro": 7.870880126953125,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.27.attn.add_q_proj",
+   "delta_fro": 8.497364044189453,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.27.attn.add_k_proj",
+   "delta_fro": 13.923314094543457,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.27.attn.add_v_proj",
+   "delta_fro": 12.980216026306152,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.27.attn.to_add_out",
+   "delta_fro": 8.777106285095215,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.27.img_mlp.net.0.proj",
+   "delta_fro": 14.519295692443848,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.27.img_mlp.net.2",
+   "delta_fro": 18.19417381286621,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.27.txt_mlp.net.0.proj",
+   "delta_fro": 18.09436798095703,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.27.txt_mlp.net.2",
+   "delta_fro": 14.118818283081055,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.28.attn.to_q",
+   "delta_fro": 7.612855434417725,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.28.attn.to_k",
+   "delta_fro": 12.539323806762695,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.28.attn.to_v",
+   "delta_fro": 7.560906410217285,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.28.attn.to_out.0",
+   "delta_fro": 8.038833618164062,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.28.attn.add_q_proj",
+   "delta_fro": 8.802845001220703,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.28.attn.add_k_proj",
+   "delta_fro": 8.649852752685547,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.28.attn.add_v_proj",
+   "delta_fro": 16.68626594543457,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.28.attn.to_add_out",
+   "delta_fro": 7.1857686042785645,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.28.img_mlp.net.0.proj",
+   "delta_fro": 14.275263786315918,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.28.img_mlp.net.2",
+   "delta_fro": 15.686559677124023,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.28.txt_mlp.net.0.proj",
+   "delta_fro": 20.000471115112305,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.28.txt_mlp.net.2",
+   "delta_fro": 15.11980152130127,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.29.attn.to_q",
+   "delta_fro": 7.064326286315918,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.29.attn.to_k",
+   "delta_fro": 9.293681144714355,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.29.attn.to_v",
+   "delta_fro": 7.087320327758789,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.29.attn.to_out.0",
+   "delta_fro": 8.378045082092285,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.29.attn.add_q_proj",
+   "delta_fro": 10.803129196166992,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.29.attn.add_k_proj",
+   "delta_fro": 8.561262130737305,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.29.attn.add_v_proj",
+   "delta_fro": 8.449801445007324,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.29.attn.to_add_out",
+   "delta_fro": 7.829665184020996,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.29.img_mlp.net.0.proj",
+   "delta_fro": 23.290241241455078,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.29.img_mlp.net.2",
+   "delta_fro": 21.349836349487305,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.29.txt_mlp.net.0.proj",
+   "delta_fro": 21.62409782409668,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.29.txt_mlp.net.2",
+   "delta_fro": 16.223987579345703,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.30.attn.to_q",
+   "delta_fro": 8.792546272277832,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.30.attn.to_k",
+   "delta_fro": 7.9838032722473145,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.30.attn.to_v",
+   "delta_fro": 7.665261268615723,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.30.attn.to_out.0",
+   "delta_fro": 7.986598491668701,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.30.attn.add_q_proj",
+   "delta_fro": 9.153155326843262,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.30.attn.add_k_proj",
+   "delta_fro": 12.536587715148926,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.30.attn.add_v_proj",
+   "delta_fro": 11.111652374267578,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.30.attn.to_add_out",
+   "delta_fro": 7.840264797210693,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.30.img_mlp.net.0.proj",
+   "delta_fro": 21.662382125854492,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.30.img_mlp.net.2",
+   "delta_fro": 18.11949920654297,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.30.txt_mlp.net.0.proj",
+   "delta_fro": 29.6063232421875,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.30.txt_mlp.net.2",
+   "delta_fro": 23.4941463470459,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.31.attn.to_q",
+   "delta_fro": 9.27781867980957,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.31.attn.to_k",
+   "delta_fro": 9.828728675842285,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.31.attn.to_v",
+   "delta_fro": 6.247520446777344,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.31.attn.to_out.0",
+   "delta_fro": 7.583917140960693,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.31.attn.add_q_proj",
+   "delta_fro": 7.649272918701172,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.31.attn.add_k_proj",
+   "delta_fro": 8.033472061157227,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.31.attn.add_v_proj",
+   "delta_fro": 11.179692268371582,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.31.attn.to_add_out",
+   "delta_fro": 9.528518676757812,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.31.img_mlp.net.0.proj",
+   "delta_fro": 20.20402717590332,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.31.img_mlp.net.2",
+   "delta_fro": 16.781339645385742,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.31.txt_mlp.net.0.proj",
+   "delta_fro": 33.154232025146484,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.31.txt_mlp.net.2",
+   "delta_fro": 19.698474884033203,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.32.attn.to_q",
+   "delta_fro": 11.329659461975098,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.32.attn.to_k",
+   "delta_fro": 13.354307174682617,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.32.attn.to_v",
+   "delta_fro": 7.508307456970215,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.32.attn.to_out.0",
+   "delta_fro": 7.370316505432129,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.32.attn.add_q_proj",
+   "delta_fro": 8.375457763671875,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.32.attn.add_k_proj",
+   "delta_fro": 12.302057266235352,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.32.attn.add_v_proj",
+   "delta_fro": 9.167198181152344,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.32.attn.to_add_out",
+   "delta_fro": 9.535383224487305,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.32.img_mlp.net.0.proj",
+   "delta_fro": 15.33763313293457,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.32.img_mlp.net.2",
+   "delta_fro": 18.355213165283203,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.32.txt_mlp.net.0.proj",
+   "delta_fro": 31.82619857788086,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.32.txt_mlp.net.2",
+   "delta_fro": 23.156940460205078,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.33.attn.to_q",
+   "delta_fro": 7.328365802764893,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.33.attn.to_k",
+   "delta_fro": 10.140796661376953,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.33.attn.to_v",
+   "delta_fro": 5.665755748748779,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.33.attn.to_out.0",
+   "delta_fro": 6.886260509490967,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.33.attn.add_q_proj",
+   "delta_fro": 7.396505355834961,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.33.attn.add_k_proj",
+   "delta_fro": 9.081445693969727,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.33.attn.add_v_proj",
+   "delta_fro": 13.09609603881836,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.33.attn.to_add_out",
+   "delta_fro": 10.993680000305176,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.33.img_mlp.net.0.proj",
+   "delta_fro": 15.85095500946045,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.33.img_mlp.net.2",
+   "delta_fro": 17.48196029663086,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.33.txt_mlp.net.0.proj",
+   "delta_fro": 28.50048065185547,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.33.txt_mlp.net.2",
+   "delta_fro": 19.84835433959961,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.34.attn.to_q",
+   "delta_fro": 6.596598148345947,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.34.attn.to_k",
+   "delta_fro": 7.160089015960693,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.34.attn.to_v",
+   "delta_fro": 5.404508113861084,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.34.attn.to_out.0",
+   "delta_fro": 6.82872200012207,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.34.attn.add_q_proj",
+   "delta_fro": 6.473282337188721,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.34.attn.add_k_proj",
+   "delta_fro": 9.838216781616211,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.34.attn.add_v_proj",
+   "delta_fro": 11.78526782989502,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.34.attn.to_add_out",
+   "delta_fro": 8.839916229248047,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.34.img_mlp.net.0.proj",
+   "delta_fro": 14.336603164672852,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.34.img_mlp.net.2",
+   "delta_fro": 17.835735321044922,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.34.txt_mlp.net.0.proj",
+   "delta_fro": 23.358245849609375,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.34.txt_mlp.net.2",
+   "delta_fro": 14.289566993713379,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.35.attn.to_q",
+   "delta_fro": 7.651389122009277,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.35.attn.to_k",
+   "delta_fro": 6.886139392852783,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.35.attn.to_v",
+   "delta_fro": 5.88389253616333,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.35.attn.to_out.0",
+   "delta_fro": 7.557413578033447,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.35.attn.add_q_proj",
+   "delta_fro": 7.777649879455566,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.35.attn.add_k_proj",
+   "delta_fro": 8.550870895385742,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.35.attn.add_v_proj",
+   "delta_fro": 9.675296783447266,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.35.attn.to_add_out",
+   "delta_fro": 8.410196304321289,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.35.img_mlp.net.0.proj",
+   "delta_fro": 16.675634384155273,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.35.img_mlp.net.2",
+   "delta_fro": 16.926219940185547,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.35.txt_mlp.net.0.proj",
+   "delta_fro": 24.145776748657227,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.35.txt_mlp.net.2",
+   "delta_fro": 15.434976577758789,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.36.attn.to_q",
+   "delta_fro": 10.050536155700684,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.36.attn.to_k",
+   "delta_fro": 10.345754623413086,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.36.attn.to_v",
+   "delta_fro": 5.921104431152344,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.36.attn.to_out.0",
+   "delta_fro": 8.962163925170898,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.36.attn.add_q_proj",
+   "delta_fro": 15.745573043823242,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.36.attn.add_k_proj",
+   "delta_fro": 6.934460639953613,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.36.attn.add_v_proj",
+   "delta_fro": 10.435550689697266,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.36.attn.to_add_out",
+   "delta_fro": 17.054859161376953,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.36.img_mlp.net.0.proj",
+   "delta_fro": 20.8074951171875,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.36.img_mlp.net.2",
+   "delta_fro": 18.122364044189453,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.36.txt_mlp.net.0.proj",
+   "delta_fro": 26.14718246459961,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.36.txt_mlp.net.2",
+   "delta_fro": 20.705486297607422,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.37.attn.to_q",
+   "delta_fro": 9.36170482635498,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.37.attn.to_k",
+   "delta_fro": 9.916305541992188,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.37.attn.to_v",
+   "delta_fro": 6.097717761993408,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.37.attn.to_out.0",
+   "delta_fro": 6.810771465301514,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.37.attn.add_q_proj",
+   "delta_fro": 7.699826717376709,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.37.attn.add_k_proj",
+   "delta_fro": 12.11623764038086,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.37.attn.add_v_proj",
+   "delta_fro": 11.827706336975098,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.37.attn.to_add_out",
+   "delta_fro": 10.955400466918945,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.37.img_mlp.net.0.proj",
+   "delta_fro": 21.3497257232666,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.37.img_mlp.net.2",
+   "delta_fro": 21.384780883789062,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.37.txt_mlp.net.0.proj",
+   "delta_fro": 15.897055625915527,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.37.txt_mlp.net.2",
+   "delta_fro": 14.696772575378418,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.38.attn.to_q",
+   "delta_fro": 9.865077018737793,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.38.attn.to_k",
+   "delta_fro": 10.251903533935547,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.38.attn.to_v",
+   "delta_fro": 5.107511520385742,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.38.attn.to_out.0",
+   "delta_fro": 9.410099029541016,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.38.attn.add_q_proj",
+   "delta_fro": 11.72806167602539,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.38.attn.add_k_proj",
+   "delta_fro": 7.2816290855407715,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.38.attn.add_v_proj",
+   "delta_fro": 10.4672269821167,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.38.attn.to_add_out",
+   "delta_fro": 11.082551956176758,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.38.img_mlp.net.0.proj",
+   "delta_fro": 17.043914794921875,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.38.img_mlp.net.2",
+   "delta_fro": 20.074642181396484,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.38.txt_mlp.net.0.proj",
+   "delta_fro": 21.54405975341797,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.38.txt_mlp.net.2",
+   "delta_fro": 17.763837814331055,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.39.attn.to_q",
+   "delta_fro": 8.51451301574707,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.39.attn.to_k",
+   "delta_fro": 12.284212112426758,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.39.attn.to_v",
+   "delta_fro": 5.334639072418213,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.39.attn.to_out.0",
+   "delta_fro": 10.873247146606445,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.39.attn.add_q_proj",
+   "delta_fro": 15.259162902832031,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.39.attn.add_k_proj",
+   "delta_fro": 9.353194236755371,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.39.attn.add_v_proj",
+   "delta_fro": 13.686928749084473,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.39.attn.to_add_out",
+   "delta_fro": 11.403268814086914,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.39.img_mlp.net.0.proj",
+   "delta_fro": 19.56106948852539,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.39.img_mlp.net.2",
+   "delta_fro": 21.23210334777832,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.39.txt_mlp.net.0.proj",
+   "delta_fro": 20.859037399291992,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.39.txt_mlp.net.2",
+   "delta_fro": 15.373647689819336,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.40.attn.to_q",
+   "delta_fro": 10.222260475158691,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.40.attn.to_k",
+   "delta_fro": 10.786710739135742,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.40.attn.to_v",
+   "delta_fro": 5.883337020874023,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.40.attn.to_out.0",
+   "delta_fro": 7.6370530128479,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.40.attn.add_q_proj",
+   "delta_fro": 9.79005241394043,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.40.attn.add_k_proj",
+   "delta_fro": 7.531134605407715,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.40.attn.add_v_proj",
+   "delta_fro": 9.698068618774414,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.40.attn.to_add_out",
+   "delta_fro": 17.502731323242188,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.40.img_mlp.net.0.proj",
+   "delta_fro": 18.501155853271484,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.40.img_mlp.net.2",
+   "delta_fro": 20.423641204833984,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.40.txt_mlp.net.0.proj",
+   "delta_fro": 15.75639533996582,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.40.txt_mlp.net.2",
+   "delta_fro": 16.125932693481445,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.41.attn.to_q",
+   "delta_fro": 11.172343254089355,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.41.attn.to_k",
+   "delta_fro": 12.246360778808594,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.41.attn.to_v",
+   "delta_fro": 6.237597942352295,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.41.attn.to_out.0",
+   "delta_fro": 10.13270092010498,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.41.attn.add_q_proj",
+   "delta_fro": 10.762835502624512,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.41.attn.add_k_proj",
+   "delta_fro": 9.526045799255371,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.41.attn.add_v_proj",
+   "delta_fro": 11.90211296081543,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.41.attn.to_add_out",
+   "delta_fro": 17.333759307861328,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.41.img_mlp.net.0.proj",
+   "delta_fro": 22.877914428710938,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.41.img_mlp.net.2",
+   "delta_fro": 22.80830955505371,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.41.txt_mlp.net.0.proj",
+   "delta_fro": 24.579614639282227,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.41.txt_mlp.net.2",
+   "delta_fro": 22.015933990478516,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.42.attn.to_q",
+   "delta_fro": 10.156068801879883,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.42.attn.to_k",
+   "delta_fro": 8.21889877319336,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.42.attn.to_v",
+   "delta_fro": 5.979923248291016,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.42.attn.to_out.0",
+   "delta_fro": 6.980121612548828,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.42.attn.add_q_proj",
+   "delta_fro": 7.949611186981201,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.42.attn.add_k_proj",
+   "delta_fro": 8.086556434631348,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.42.attn.add_v_proj",
+   "delta_fro": 10.637944221496582,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.42.attn.to_add_out",
+   "delta_fro": 14.924477577209473,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.42.img_mlp.net.0.proj",
+   "delta_fro": 24.092937469482422,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.42.img_mlp.net.2",
+   "delta_fro": 18.187498092651367,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.42.txt_mlp.net.0.proj",
+   "delta_fro": 22.133453369140625,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.42.txt_mlp.net.2",
+   "delta_fro": 23.51715850830078,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.43.attn.to_q",
+   "delta_fro": 13.794547080993652,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.43.attn.to_k",
+   "delta_fro": 15.922415733337402,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.43.attn.to_v",
+   "delta_fro": 8.786056518554688,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.43.attn.to_out.0",
+   "delta_fro": 8.989218711853027,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.43.attn.add_q_proj",
+   "delta_fro": 8.167643547058105,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.43.attn.add_k_proj",
+   "delta_fro": 9.945528030395508,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.43.attn.add_v_proj",
+   "delta_fro": 14.427231788635254,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.43.attn.to_add_out",
+   "delta_fro": 8.63365650177002,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.43.img_mlp.net.0.proj",
+   "delta_fro": 23.683490753173828,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.43.img_mlp.net.2",
+   "delta_fro": 15.478313446044922,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.43.txt_mlp.net.0.proj",
+   "delta_fro": 20.105712890625,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.43.txt_mlp.net.2",
+   "delta_fro": 22.747528076171875,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.44.attn.to_q",
+   "delta_fro": 14.406275749206543,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.44.attn.to_k",
+   "delta_fro": 12.292266845703125,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.44.attn.to_v",
+   "delta_fro": 11.280106544494629,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.44.attn.to_out.0",
+   "delta_fro": 7.994338512420654,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.44.attn.add_q_proj",
+   "delta_fro": 12.780939102172852,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.44.attn.add_k_proj",
+   "delta_fro": 9.97610855102539,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.44.attn.add_v_proj",
+   "delta_fro": 15.072918891906738,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.44.attn.to_add_out",
+   "delta_fro": 10.154091835021973,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.44.img_mlp.net.0.proj",
+   "delta_fro": 21.16006851196289,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.44.img_mlp.net.2",
+   "delta_fro": 17.292604446411133,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.44.txt_mlp.net.0.proj",
+   "delta_fro": 15.764988899230957,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.44.txt_mlp.net.2",
+   "delta_fro": 18.97434425354004,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.45.attn.to_q",
+   "delta_fro": 12.451831817626953,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.45.attn.to_k",
+   "delta_fro": 11.020222663879395,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.45.attn.to_v",
+   "delta_fro": 6.682540416717529,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.45.attn.to_out.0",
+   "delta_fro": 12.013715744018555,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.45.attn.add_q_proj",
+   "delta_fro": 14.096585273742676,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.45.attn.add_k_proj",
+   "delta_fro": 6.639719486236572,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.45.attn.add_v_proj",
+   "delta_fro": 9.57432746887207,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.45.attn.to_add_out",
+   "delta_fro": 16.1572265625,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.45.img_mlp.net.0.proj",
+   "delta_fro": 21.045133590698242,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.45.img_mlp.net.2",
+   "delta_fro": 19.71879005432129,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.45.txt_mlp.net.0.proj",
+   "delta_fro": 21.709476470947266,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.45.txt_mlp.net.2",
+   "delta_fro": 18.987077713012695,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.46.attn.to_q",
+   "delta_fro": 10.296627044677734,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.46.attn.to_k",
+   "delta_fro": 15.783819198608398,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.46.attn.to_v",
+   "delta_fro": 6.088408946990967,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.46.attn.to_out.0",
+   "delta_fro": 9.04485034942627,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.46.attn.add_q_proj",
+   "delta_fro": 14.124049186706543,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.46.attn.add_k_proj",
+   "delta_fro": 8.607799530029297,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.46.attn.add_v_proj",
+   "delta_fro": 6.814224720001221,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.46.attn.to_add_out",
+   "delta_fro": 19.05263328552246,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.46.img_mlp.net.0.proj",
+   "delta_fro": 22.5494327545166,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.46.img_mlp.net.2",
+   "delta_fro": 17.615354537963867,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.46.txt_mlp.net.0.proj",
+   "delta_fro": 21.875076293945312,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.46.txt_mlp.net.2",
+   "delta_fro": 17.52471923828125,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.47.attn.to_q",
+   "delta_fro": 13.62437915802002,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.47.attn.to_k",
+   "delta_fro": 13.806976318359375,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.47.attn.to_v",
+   "delta_fro": 5.547116756439209,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.47.attn.to_out.0",
+   "delta_fro": 9.019917488098145,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.47.attn.add_q_proj",
+   "delta_fro": 12.319640159606934,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.47.attn.add_k_proj",
+   "delta_fro": 11.24565315246582,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.47.attn.add_v_proj",
+   "delta_fro": 8.01002025604248,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.47.attn.to_add_out",
+   "delta_fro": 18.45401382446289,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.47.img_mlp.net.0.proj",
+   "delta_fro": 20.24053192138672,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.47.img_mlp.net.2",
+   "delta_fro": 17.56450653076172,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.47.txt_mlp.net.0.proj",
+   "delta_fro": 20.237899780273438,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.47.txt_mlp.net.2",
+   "delta_fro": 14.41740608215332,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.48.attn.to_q",
+   "delta_fro": 9.709790229797363,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.48.attn.to_k",
+   "delta_fro": 13.299286842346191,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.48.attn.to_v",
+   "delta_fro": 6.05949592590332,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.48.attn.to_out.0",
+   "delta_fro": 9.099322319030762,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.48.attn.add_q_proj",
+   "delta_fro": 7.038725852966309,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.48.attn.add_k_proj",
+   "delta_fro": 6.6176347732543945,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.48.attn.add_v_proj",
+   "delta_fro": 9.415449142456055,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.48.attn.to_add_out",
+   "delta_fro": 12.235257148742676,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.48.img_mlp.net.0.proj",
+   "delta_fro": 19.18378257751465,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.48.img_mlp.net.2",
+   "delta_fro": 18.257436752319336,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.48.txt_mlp.net.0.proj",
+   "delta_fro": 16.134672164916992,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.48.txt_mlp.net.2",
+   "delta_fro": 16.14864730834961,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.49.attn.to_q",
+   "delta_fro": 11.353063583374023,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.49.attn.to_k",
+   "delta_fro": 11.58292293548584,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.49.attn.to_v",
+   "delta_fro": 4.798257827758789,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.49.attn.to_out.0",
+   "delta_fro": 6.201648235321045,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.49.attn.add_q_proj",
+   "delta_fro": 11.943428039550781,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.49.attn.add_k_proj",
+   "delta_fro": 8.768890380859375,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.49.attn.add_v_proj",
+   "delta_fro": 10.164178848266602,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.49.attn.to_add_out",
+   "delta_fro": 14.222532272338867,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.49.img_mlp.net.0.proj",
+   "delta_fro": 21.10341453552246,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.49.img_mlp.net.2",
+   "delta_fro": 17.894004821777344,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.49.txt_mlp.net.0.proj",
+   "delta_fro": 26.498001098632812,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.49.txt_mlp.net.2",
+   "delta_fro": 38.531227111816406,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.50.attn.to_q",
+   "delta_fro": 14.657981872558594,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.50.attn.to_k",
+   "delta_fro": 12.428874969482422,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.50.attn.to_v",
+   "delta_fro": 6.043124675750732,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.50.attn.to_out.0",
+   "delta_fro": 7.418360710144043,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.50.attn.add_q_proj",
+   "delta_fro": 15.127615928649902,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.50.attn.add_k_proj",
+   "delta_fro": 10.137328147888184,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.50.attn.add_v_proj",
+   "delta_fro": 15.81543254852295,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.50.attn.to_add_out",
+   "delta_fro": 11.785109519958496,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.50.img_mlp.net.0.proj",
+   "delta_fro": 23.70952606201172,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.50.img_mlp.net.2",
+   "delta_fro": 17.42337417602539,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.50.txt_mlp.net.0.proj",
+   "delta_fro": 13.571544647216797,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.50.txt_mlp.net.2",
+   "delta_fro": 19.105327606201172,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.51.attn.to_q",
+   "delta_fro": 14.235119819641113,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.51.attn.to_k",
+   "delta_fro": 11.727142333984375,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.51.attn.to_v",
+   "delta_fro": 7.753653526306152,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.51.attn.to_out.0",
+   "delta_fro": 8.311063766479492,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.51.attn.add_q_proj",
+   "delta_fro": 15.629883766174316,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.51.attn.add_k_proj",
+   "delta_fro": 9.369637489318848,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.51.attn.add_v_proj",
+   "delta_fro": 8.720065116882324,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.51.attn.to_add_out",
+   "delta_fro": 13.51895523071289,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.51.img_mlp.net.0.proj",
+   "delta_fro": 22.438739776611328,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.51.img_mlp.net.2",
+   "delta_fro": 18.054828643798828,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.51.txt_mlp.net.0.proj",
+   "delta_fro": 6.807229042053223,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.51.txt_mlp.net.2",
+   "delta_fro": 12.60540771484375,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.52.attn.to_q",
+   "delta_fro": 11.237039566040039,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.52.attn.to_k",
+   "delta_fro": 12.159850120544434,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.52.attn.to_v",
+   "delta_fro": 6.9317426681518555,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.52.attn.to_out.0",
+   "delta_fro": 9.924439430236816,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.52.attn.add_q_proj",
+   "delta_fro": 8.463807106018066,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.52.attn.add_k_proj",
+   "delta_fro": 11.053003311157227,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.52.attn.add_v_proj",
+   "delta_fro": 16.49628257751465,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.52.attn.to_add_out",
+   "delta_fro": 10.479559898376465,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.52.img_mlp.net.0.proj",
+   "delta_fro": 21.856164932250977,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.52.img_mlp.net.2",
+   "delta_fro": 17.935457229614258,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.52.txt_mlp.net.0.proj",
+   "delta_fro": 2.5742154121398926,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.52.txt_mlp.net.2",
+   "delta_fro": 5.513258934020996,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.53.attn.to_q",
+   "delta_fro": 20.264787673950195,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.53.attn.to_k",
+   "delta_fro": 12.198286056518555,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.53.attn.to_v",
+   "delta_fro": 9.530860900878906,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.53.attn.to_out.0",
+   "delta_fro": 6.4156107902526855,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.53.attn.add_q_proj",
+   "delta_fro": 5.518260478973389,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.53.attn.add_k_proj",
+   "delta_fro": 13.528105735778809,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.53.attn.add_v_proj",
+   "delta_fro": 13.87545108795166,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.53.attn.to_add_out",
+   "delta_fro": 14.25898265838623,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.53.img_mlp.net.0.proj",
+   "delta_fro": 23.259946823120117,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.53.img_mlp.net.2",
+   "delta_fro": 21.395931243896484,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.53.txt_mlp.net.0.proj",
+   "delta_fro": 7.066474437713623,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.53.txt_mlp.net.2",
+   "delta_fro": 3.786140203475952,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.54.attn.to_q",
+   "delta_fro": 10.977849960327148,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.54.attn.to_k",
+   "delta_fro": 10.93030834197998,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.54.attn.to_v",
+   "delta_fro": 8.494823455810547,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.54.attn.to_out.0",
+   "delta_fro": 6.769084453582764,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.54.attn.add_q_proj",
+   "delta_fro": 10.77552604675293,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.54.attn.add_k_proj",
+   "delta_fro": 13.509871482849121,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.54.attn.add_v_proj",
+   "delta_fro": 14.744197845458984,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.54.attn.to_add_out",
+   "delta_fro": 14.175264358520508,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.54.img_mlp.net.0.proj",
+   "delta_fro": 23.809391021728516,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.54.img_mlp.net.2",
+   "delta_fro": 18.491100311279297,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.54.txt_mlp.net.0.proj",
+   "delta_fro": 3.0120153427124023,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.54.txt_mlp.net.2",
+   "delta_fro": 1.618757724761963,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.55.attn.to_q",
+   "delta_fro": 7.199206829071045,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.55.attn.to_k",
+   "delta_fro": 11.72352409362793,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.55.attn.to_v",
+   "delta_fro": 7.7918314933776855,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.55.attn.to_out.0",
+   "delta_fro": 6.398317813873291,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.55.attn.add_q_proj",
+   "delta_fro": 12.292814254760742,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.55.attn.add_k_proj",
+   "delta_fro": 13.936553955078125,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.55.attn.add_v_proj",
+   "delta_fro": 15.990159034729004,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.55.attn.to_add_out",
+   "delta_fro": 8.292498588562012,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.55.img_mlp.net.0.proj",
+   "delta_fro": 25.911651611328125,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.55.img_mlp.net.2",
+   "delta_fro": 16.039060592651367,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.55.txt_mlp.net.0.proj",
+   "delta_fro": 0.5832248330116272,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.55.txt_mlp.net.2",
+   "delta_fro": 0.7923614382743835,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.56.attn.to_q",
+   "delta_fro": 10.492631912231445,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.56.attn.to_k",
+   "delta_fro": 10.697522163391113,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.56.attn.to_v",
+   "delta_fro": 9.001519203186035,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.56.attn.to_out.0",
+   "delta_fro": 7.9418206214904785,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.56.attn.add_q_proj",
+   "delta_fro": 17.34360694885254,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.56.attn.add_k_proj",
+   "delta_fro": 13.40699577331543,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.56.attn.add_v_proj",
+   "delta_fro": 10.633312225341797,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.56.attn.to_add_out",
+   "delta_fro": 5.239620685577393,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.56.img_mlp.net.0.proj",
+   "delta_fro": 22.6982364654541,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.56.img_mlp.net.2",
+   "delta_fro": 14.805041313171387,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.56.txt_mlp.net.0.proj",
+   "delta_fro": 1.1453770399093628,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.56.txt_mlp.net.2",
+   "delta_fro": 0.590357780456543,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.57.attn.to_q",
+   "delta_fro": 11.40532112121582,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.57.attn.to_k",
+   "delta_fro": 14.890456199645996,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.57.attn.to_v",
+   "delta_fro": 9.05575942993164,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.57.attn.to_out.0",
+   "delta_fro": 6.728804111480713,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.57.attn.add_q_proj",
+   "delta_fro": 9.537909507751465,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.57.attn.add_k_proj",
+   "delta_fro": 15.204124450683594,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.57.attn.add_v_proj",
+   "delta_fro": 16.23133087158203,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.57.attn.to_add_out",
+   "delta_fro": 5.240058422088623,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.57.img_mlp.net.0.proj",
+   "delta_fro": 20.143123626708984,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.57.img_mlp.net.2",
+   "delta_fro": 16.581993103027344,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.57.txt_mlp.net.0.proj",
+   "delta_fro": 0.6069729924201965,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.57.txt_mlp.net.2",
+   "delta_fro": 0.5522798299789429,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.58.attn.to_q",
+   "delta_fro": 17.482803344726562,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.58.attn.to_k",
+   "delta_fro": 14.73062515258789,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.58.attn.to_v",
+   "delta_fro": 12.056622505187988,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.58.attn.to_out.0",
+   "delta_fro": 7.781444072723389,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.58.attn.add_q_proj",
+   "delta_fro": 15.022170066833496,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.58.attn.add_k_proj",
+   "delta_fro": 13.365082740783691,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.58.attn.add_v_proj",
+   "delta_fro": 9.866891860961914,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.58.attn.to_add_out",
+   "delta_fro": 5.420371055603027,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.58.img_mlp.net.0.proj",
+   "delta_fro": 19.880210876464844,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.58.img_mlp.net.2",
+   "delta_fro": 17.42464828491211,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.58.txt_mlp.net.0.proj",
+   "delta_fro": 0.7301809191703796,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.58.txt_mlp.net.2",
+   "delta_fro": 0.5774027705192566,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.59.attn.to_q",
+   "delta_fro": 13.74262809753418,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.59.attn.to_k",
+   "delta_fro": 14.506487846374512,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.59.attn.to_v",
+   "delta_fro": 9.166814804077148,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.59.attn.to_out.0",
+   "delta_fro": 23.0085391998291,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.59.attn.add_q_proj",
+   "delta_fro": 0.0,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.59.attn.add_k_proj",
+   "delta_fro": 12.951415061950684,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.59.attn.add_v_proj",
+   "delta_fro": 12.933602333068848,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.59.attn.to_add_out",
+   "delta_fro": 0.0,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.59.img_mlp.net.0.proj",
+   "delta_fro": 15.689151763916016,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.59.img_mlp.net.2",
+   "delta_fro": 1.0558526515960693,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.59.txt_mlp.net.0.proj",
+   "delta_fro": 0.0,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    12288,
+    128
+   ]
+  },
+  {
+   "path": "transformer_blocks.59.txt_mlp.net.2",
+   "delta_fro": 0.0,
+   "ashape": [
+    128,
+    12288
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "img_in",
+   "delta_fro": 2.207559108734131,
+   "ashape": [
+    128,
+    64
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "txt_in",
+   "delta_fro": 23.293975830078125,
+   "ashape": [
+    128,
+    3584
+   ],
+   "bshape": [
+    3072,
+    128
+   ]
+  },
+  {
+   "path": "norm_out.linear",
+   "delta_fro": 74.38245391845703,
+   "ashape": [
+    128,
+    3072
+   ],
+   "bshape": [
+    6144,
+    128
+   ]
+  }
+ ],
+ "vae_pairs": [
+  {
+   "path": "decoder.conv_in.bias",
+   "delta_fro": 0.052375584840774536,
+   "shape": [
+    384
+   ]
+  },
+  {
+   "path": "decoder.conv_in.weight",
+   "delta_fro": 0.5780121088027954,
+   "shape": [
+    384,
+    16,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.conv_out.bias",
+   "delta_fro": 0.0007126244599930942,
+   "shape": [
+    3
+   ]
+  },
+  {
+   "path": "decoder.conv_out.weight",
+   "delta_fro": 0.14959456026554108,
+   "shape": [
+    3,
+    96,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.mid_block.attentions.0.norm.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    384,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.mid_block.attentions.0.proj.bias",
+   "delta_fro": 0.053498275578022,
+   "shape": [
+    384
+   ]
+  },
+  {
+   "path": "decoder.mid_block.attentions.0.proj.weight",
+   "delta_fro": 1.4790525436401367,
+   "shape": [
+    384,
+    384,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.mid_block.attentions.0.to_qkv.bias",
+   "delta_fro": 0.0741758868098259,
+   "shape": [
+    1152
+   ]
+  },
+  {
+   "path": "decoder.mid_block.attentions.0.to_qkv.weight",
+   "delta_fro": 1.9306178092956543,
+   "shape": [
+    1152,
+    384,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.mid_block.resnets.0.conv1.bias",
+   "delta_fro": 0.06723415851593018,
+   "shape": [
+    384
+   ]
+  },
+  {
+   "path": "decoder.mid_block.resnets.0.conv1.weight",
+   "delta_fro": 4.466419696807861,
+   "shape": [
+    384,
+    384,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.mid_block.resnets.0.conv2.bias",
+   "delta_fro": 0.07086639851331711,
+   "shape": [
+    384
+   ]
+  },
+  {
+   "path": "decoder.mid_block.resnets.0.conv2.weight",
+   "delta_fro": 4.132408618927002,
+   "shape": [
+    384,
+    384,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.mid_block.resnets.0.norm1.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    384,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.mid_block.resnets.0.norm2.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    384,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.mid_block.resnets.1.conv1.bias",
+   "delta_fro": 0.04912187159061432,
+   "shape": [
+    384
+   ]
+  },
+  {
+   "path": "decoder.mid_block.resnets.1.conv1.weight",
+   "delta_fro": 4.24605655670166,
+   "shape": [
+    384,
+    384,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.mid_block.resnets.1.conv2.bias",
+   "delta_fro": 0.08668676018714905,
+   "shape": [
+    384
+   ]
+  },
+  {
+   "path": "decoder.mid_block.resnets.1.conv2.weight",
+   "delta_fro": 3.911902904510498,
+   "shape": [
+    384,
+    384,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.mid_block.resnets.1.norm1.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    384,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.mid_block.resnets.1.norm2.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    384,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.norm_out.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    96,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.0.resnets.0.conv1.bias",
+   "delta_fro": 0.04955635219812393,
+   "shape": [
+    384
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.0.resnets.0.conv1.weight",
+   "delta_fro": 4.423112869262695,
+   "shape": [
+    384,
+    384,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.0.resnets.0.conv2.bias",
+   "delta_fro": 0.07981559634208679,
+   "shape": [
+    384
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.0.resnets.0.conv2.weight",
+   "delta_fro": 4.043455600738525,
+   "shape": [
+    384,
+    384,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.0.resnets.0.norm1.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    384,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.0.resnets.0.norm2.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    384,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.0.resnets.1.conv1.bias",
+   "delta_fro": 0.04456432908773422,
+   "shape": [
+    384
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.0.resnets.1.conv1.weight",
+   "delta_fro": 4.670371055603027,
+   "shape": [
+    384,
+    384,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.0.resnets.1.conv2.bias",
+   "delta_fro": 0.09058911353349686,
+   "shape": [
+    384
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.0.resnets.1.conv2.weight",
+   "delta_fro": 4.011141777038574,
+   "shape": [
+    384,
+    384,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.0.resnets.1.norm1.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    384,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.0.resnets.1.norm2.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    384,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.0.resnets.2.conv1.bias",
+   "delta_fro": 0.04253445938229561,
+   "shape": [
+    384
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.0.resnets.2.conv1.weight",
+   "delta_fro": 5.054884433746338,
+   "shape": [
+    384,
+    384,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.0.resnets.2.conv2.bias",
+   "delta_fro": 0.09244935214519501,
+   "shape": [
+    384
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.0.resnets.2.conv2.weight",
+   "delta_fro": 3.949495315551758,
+   "shape": [
+    384,
+    384,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.0.resnets.2.norm1.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    384,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.0.resnets.2.norm2.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    384,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.0.upsamplers.0.resample.1.bias",
+   "delta_fro": 0.03565087914466858,
+   "shape": [
+    192
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.0.upsamplers.0.resample.1.weight",
+   "delta_fro": 2.1149380207061768,
+   "shape": [
+    192,
+    384,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.0.upsamplers.0.time_conv.bias",
+   "delta_fro": 0.0,
+   "shape": [
+    768
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.0.upsamplers.0.time_conv.weight",
+   "delta_fro": 0.0,
+   "shape": [
+    768,
+    384,
+    3,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.1.resnets.0.conv1.bias",
+   "delta_fro": 0.06159428507089615,
+   "shape": [
+    384
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.1.resnets.0.conv1.weight",
+   "delta_fro": 2.8280324935913086,
+   "shape": [
+    384,
+    192,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.1.resnets.0.conv2.bias",
+   "delta_fro": 0.05902327597141266,
+   "shape": [
+    384
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.1.resnets.0.conv2.weight",
+   "delta_fro": 4.258859634399414,
+   "shape": [
+    384,
+    384,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.1.resnets.0.conv_shortcut.bias",
+   "delta_fro": 0.0556953102350235,
+   "shape": [
+    384
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.1.resnets.0.conv_shortcut.weight",
+   "delta_fro": 0.801349937915802,
+   "shape": [
+    384,
+    192,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.1.resnets.0.norm1.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    192,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.1.resnets.0.norm2.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    384,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.1.resnets.1.conv1.bias",
+   "delta_fro": 0.04563767462968826,
+   "shape": [
+    384
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.1.resnets.1.conv1.weight",
+   "delta_fro": 4.779735088348389,
+   "shape": [
+    384,
+    384,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.1.resnets.1.conv2.bias",
+   "delta_fro": 0.04715680703520775,
+   "shape": [
+    384
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.1.resnets.1.conv2.weight",
+   "delta_fro": 4.593347072601318,
+   "shape": [
+    384,
+    384,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.1.resnets.1.norm1.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    384,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.1.resnets.1.norm2.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    384,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.1.resnets.2.conv1.bias",
+   "delta_fro": 0.041487377136945724,
+   "shape": [
+    384
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.1.resnets.2.conv1.weight",
+   "delta_fro": 5.13962984085083,
+   "shape": [
+    384,
+    384,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.1.resnets.2.conv2.bias",
+   "delta_fro": 0.07413139939308167,
+   "shape": [
+    384
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.1.resnets.2.conv2.weight",
+   "delta_fro": 3.9458887577056885,
+   "shape": [
+    384,
+    384,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.1.resnets.2.norm1.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    384,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.1.resnets.2.norm2.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    384,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.1.upsamplers.0.resample.1.bias",
+   "delta_fro": 0.02832905389368534,
+   "shape": [
+    192
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.1.upsamplers.0.resample.1.weight",
+   "delta_fro": 2.4419443607330322,
+   "shape": [
+    192,
+    384,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.1.upsamplers.0.time_conv.bias",
+   "delta_fro": 0.0,
+   "shape": [
+    768
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.1.upsamplers.0.time_conv.weight",
+   "delta_fro": 0.0,
+   "shape": [
+    768,
+    384,
+    3,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.2.resnets.0.conv1.bias",
+   "delta_fro": 0.035002995282411575,
+   "shape": [
+    192
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.2.resnets.0.conv1.weight",
+   "delta_fro": 2.2225329875946045,
+   "shape": [
+    192,
+    192,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.2.resnets.0.conv2.bias",
+   "delta_fro": 0.03794185444712639,
+   "shape": [
+    192
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.2.resnets.0.conv2.weight",
+   "delta_fro": 2.144589424133301,
+   "shape": [
+    192,
+    192,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.2.resnets.0.norm1.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    192,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.2.resnets.0.norm2.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    192,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.2.resnets.1.conv1.bias",
+   "delta_fro": 0.04658396914601326,
+   "shape": [
+    192
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.2.resnets.1.conv1.weight",
+   "delta_fro": 2.4136691093444824,
+   "shape": [
+    192,
+    192,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.2.resnets.1.conv2.bias",
+   "delta_fro": 0.03744851425290108,
+   "shape": [
+    192
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.2.resnets.1.conv2.weight",
+   "delta_fro": 2.043562173843384,
+   "shape": [
+    192,
+    192,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.2.resnets.1.norm1.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    192,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.2.resnets.1.norm2.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    192,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.2.resnets.2.conv1.bias",
+   "delta_fro": 0.04700205847620964,
+   "shape": [
+    192
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.2.resnets.2.conv1.weight",
+   "delta_fro": 2.3867979049682617,
+   "shape": [
+    192,
+    192,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.2.resnets.2.conv2.bias",
+   "delta_fro": 0.039727210998535156,
+   "shape": [
+    192
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.2.resnets.2.conv2.weight",
+   "delta_fro": 2.033306837081909,
+   "shape": [
+    192,
+    192,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.2.resnets.2.norm1.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    192,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.2.resnets.2.norm2.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    192,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.2.upsamplers.0.resample.1.bias",
+   "delta_fro": 0.03222953528165817,
+   "shape": [
+    96
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.2.upsamplers.0.resample.1.weight",
+   "delta_fro": 1.3239610195159912,
+   "shape": [
+    96,
+    192,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.3.resnets.0.conv1.bias",
+   "delta_fro": 0.032165829092264175,
+   "shape": [
+    96
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.3.resnets.0.conv1.weight",
+   "delta_fro": 1.0169739723205566,
+   "shape": [
+    96,
+    96,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.3.resnets.0.conv2.bias",
+   "delta_fro": 0.028042269870638847,
+   "shape": [
+    96
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.3.resnets.0.conv2.weight",
+   "delta_fro": 1.153119444847107,
+   "shape": [
+    96,
+    96,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.3.resnets.0.norm1.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    96,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.3.resnets.0.norm2.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    96,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.3.resnets.1.conv1.bias",
+   "delta_fro": 0.029773015528917313,
+   "shape": [
+    96
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.3.resnets.1.conv1.weight",
+   "delta_fro": 1.0760884284973145,
+   "shape": [
+    96,
+    96,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.3.resnets.1.conv2.bias",
+   "delta_fro": 0.029301242902874947,
+   "shape": [
+    96
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.3.resnets.1.conv2.weight",
+   "delta_fro": 1.1900386810302734,
+   "shape": [
+    96,
+    96,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.3.resnets.1.norm1.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    96,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.3.resnets.1.norm2.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    96,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.3.resnets.2.conv1.bias",
+   "delta_fro": 0.022553816437721252,
+   "shape": [
+    96
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.3.resnets.2.conv1.weight",
+   "delta_fro": 1.1573296785354614,
+   "shape": [
+    96,
+    96,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.3.resnets.2.conv2.bias",
+   "delta_fro": 0.029249131679534912,
+   "shape": [
+    96
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.3.resnets.2.conv2.weight",
+   "delta_fro": 0.917161226272583,
+   "shape": [
+    96,
+    96,
+    3,
+    3,
+    3
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.3.resnets.2.norm1.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    96,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "decoder.up_blocks.3.resnets.2.norm2.gamma",
+   "delta_fro": 0.0,
+   "shape": [
+    96,
+    1,
+    1,
+    1
+   ]
+  },
+  {
+   "path": "post_quant_conv.bias",
+   "delta_fro": 0.0036038614343851805,
+   "shape": [
+    16
+   ]
+  },
+  {
+   "path": "post_quant_conv.weight",
+   "delta_fro": 0.025201378390192986,
+   "shape": [
+    16,
+    16,
+    1,
+    1,
+    1
+   ]
+  }
+ ],
+ "embeds": {
+  "prefix": "qwen_edit_2509_qwen_depth_realimg512",
+  "embeds_shape": [
+   8,
+   338,
+   3584
+  ],
+  "embeds_dtype": "BF16",
+  "mask_shape": [
+   8,
+   338
+  ],
+  "mask_dtype": "int64",
+  "mask_true_per_ctx": [
+   338,
+   338,
+   338,
+   338,
+   338,
+   338,
+   338,
+   338
+  ],
+  "finite": true,
+  "sha256": {
+   "prompt_embeds.pt": "ba752b582571d990c75ad6aac2a2eeb0cf04c2fe01b233b1675028eabf342a6d",
+   "prompt_mask.pt": "80973a6521f21a5a6faf6402cae185dafef840d91e654efbeb1097914e634798"
+  },
+  "text_encoder_loaded_at_inference": false,
+  "reuse": "single banked pair, [0:1] slice / expand-repeat across batch",
+  "evidence": [
+   "marigoldv2/experiments/20260316_qwen_depth/network_graph.py:113-124,129-138,155-177",
+   "evaluation/depth_completion/run_marigold_v2.py:155-160",
+   "scripts/infer.py:19,24,67-71"
+  ]
+ },
+ "blueprint": {
+  "class": "QwenImageTransformer2DModel (diffusers, not vendored)",
+  "num_layers": 60,
+  "width": 3072,
+  "heads": 24,
+  "head_dim": 128,
+  "gqa": false,
+  "patch_size": 2,
+  "in_channels": 64,
+  "out_channels": 16,
+  "joint_attention_dim": 3584,
+  "timestep_dim": 256,
+  "axes_dims_rope": [
+   16,
+   56,
+   56
+  ],
+  "attention": "joint self-attention over concat [text;image], full bidirectional, dense, QK-RMSNorm + 3D RoPE, single joint mask",
+  "block": "dual-stream AdaLN-Zero (img_mod/txt_mod SiLU-Linear to 6x dim, LayerNorm no-affine, gated residuals), joint attn, GELU-approx MLPs (12288), final AdaLayerNormContinuous + proj_out",
+  "vae": "AutoencoderKLQwenImage, base_dim 96, dim_mult [1,2,4,4], z_dim 16, spatial 1/8 (2**len([F,T,T]))",
+  "seq_1024x672": {
+   "latent": [
+    128,
+    84
+   ],
+   "img_tokens": 2688,
+   "text_tokens": 338,
+   "total": 3026
+  },
+  "seq_1024": {
+   "latent": [
+    128,
+    128
+   ],
+   "img_tokens": 4096,
+   "text_tokens": 338,
+   "total": 4434
+  },
+  "timestep": "fixed t=499/1000, BF16; text encoder never loaded (precomputed embeds feed all 60 blocks as joint tokens + entry txt_norm/txt_in)",
+  "evidence": [
+   "transformer/config.json",
+   "vae/config.json",
+   "diffusers transformer_qwenimage.py:490-494,505-588,608-676,699-739,832-841,924-952,984-988",
+   "diffusers autoencoder_kl_qwenimage.py:715",
+   "diffusers pipeline_qwenimage_edit.py:383-396"
+  ]
+ },
+ "frozen_map": {
+  "lora_adapted": [
+   "img_in",
+   "txt_in",
+   "to_q/k/v",
+   "to_out.0",
+   "add_q/k/v_proj",
+   "to_add_out",
+   "img_mlp.net.0.proj/net.2",
+   "txt_mlp.net.0.proj/net.2",
+   "norm_out.linear"
+  ],
+  "frozen_no_lora": [
+   "img_mod/txt_mod (AdaLN producers)",
+   "norm_q/norm_k/norm_added_q/norm_added_k",
+   "txt_norm",
+   "time_text_embed",
+   "proj_out (filtered at load)"
+  ],
+  "vae_tuned": "decoder + post_quant_conv (full weights, not LoRA); encoder absent (frozen)"
+ },
+ "recompute": {
+  "full_norms_manual": "python3 /tmp/opencode/teacher_anatomy_compute.py  # CPU-only, ~35s; streams 40GB backbone read-only; writes /tmp/opencode/anatomy_raw.json",
+  "note": "Routine gate runs header + factor-side legs only (no 54GB load); backbone-relative norms recomputed manually here and banked above."
+ }
+}
