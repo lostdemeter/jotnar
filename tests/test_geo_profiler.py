@@ -18,6 +18,10 @@ Legs (CPU-only, seconds):
   stable on-box, pasted in BACKLOG).
 - synthetic verdict edges: dispatch (tiny+slow mover), traffic (fast
   mover), compute (slow+heavy) incl. the roof-op-is-traffic rule.
+- served-profile integrity (BACKLOG item 2, banked DPT-tiny numbers —
+  still no GPU in-gate): completeness (1237 ops), reconcile (per-op +
+  gap == wall, gap <= 50%), total confirms demo-round 1192ms (±10%),
+  burn-down arithmetic (shares = 100, over = wall - 33, 37x shrink).
 Usage: python3 tests/test_geo_profiler.py
 """
 import os
@@ -31,6 +35,33 @@ sys.path.insert(0, os.environ.get("PHI_CORE_DIR", os.path.join(os.path.dirname(R
 sys.path.insert(0, ROOT)
 
 FAIL = []
+
+# Served DPT-tiny profile (BACKLOG item 2 — banked measurement, no GPU
+# in-gate). Provenance: /tmp/dptprof/{plain,timed}/ fresh binaries from
+# the 1237-op listing, kaiming seed-0 weights, zero-RGB 672x1024 input,
+# 5 fresh-process frames each, GPU solo. Per-op = time_ops event medians
+# aggregated by mnemonic; walls = end-to-end medians. Re-measured
+# 2026-10-20 (supersedes demo-round 1192ms by confirmation, ±10% leg).
+SERVED_NOPS = 1237
+SERVED_PLAIN_MS = 1219.881   # plain binary median (demo round: 1192)
+SERVED_TIMED_MS = 1222.641   # timed binary median (+2.8ms perturbation)
+SERVED_PEROP_MS = 687.172    # per-op median sum
+SERVED_PROV = "time_ops events, median-of-5"
+SERVED_ROWS = [
+    ("MATMUL", 235, 190.198),
+    ("CONCAT", 273, 149.232),
+    ("ADD", 152, 132.397),
+    ("GATHER", 407, 128.633),
+    ("SOFTMAX_WIDE", 24, 44.258),
+    ("SILU", 14, 11.793),
+    ("MUL", 12, 9.527),
+    ("SLICE", 72, 5.839),
+    ("TBETA", 6, 5.192),
+    ("BETA", 6, 4.667),
+    ("LAYERNORM", 12, 3.321),
+    ("TRANSPOSE", 24, 2.115),
+]
+SERVED_BUDGET_MS = 33.0
 
 
 def check(tag, cond, extra=""):
@@ -186,6 +217,39 @@ def main():
         capture_output=True, text=True, cwd=ROOT)
     check("geo-cli-budget-required", r.returncode != 0,
           "--budget omitted -> usage error (flag is required, not optional)")
+
+    # -- served-profile integrity (banked DPT-tiny numbers, no GPU) --------
+    perop = sum(ms for _, _, ms in SERVED_ROWS)
+    check("geo-served-complete",
+          sum(n for _, n, _ in SERVED_ROWS) == SERVED_NOPS
+          and len(SERVED_ROWS) == 12
+          and all(ms > 0 and n > 0 for _, n, ms in SERVED_ROWS),
+          f"{sum(n for _, n, _ in SERVED_ROWS)}/{SERVED_NOPS} ops, "
+          f"{len(SERVED_ROWS)} mnemonics, provenance: {SERVED_PROV}")
+    check("geo-served-reconcile",
+          abs(perop - SERVED_PEROP_MS) < 0.05
+          and abs(SERVED_PEROP_MS + (SERVED_TIMED_MS - SERVED_PEROP_MS)
+                  - SERVED_TIMED_MS) < 1e-9
+          and (SERVED_TIMED_MS - SERVED_PEROP_MS) / SERVED_TIMED_MS <= 0.50,
+          f"perop={perop:.3f} wall={SERVED_TIMED_MS:.1f} "
+          f"gap={(SERVED_TIMED_MS - SERVED_PEROP_MS):.1f} "
+          f"({100 * (SERVED_TIMED_MS - SERVED_PEROP_MS) / SERVED_TIMED_MS:.1f}% <= 50%)")
+    check("geo-served-total-confirms",
+          abs(SERVED_PLAIN_MS - 1192.0) / 1192.0 < 0.10,
+          f"re-measured {SERVED_PLAIN_MS:.0f}ms vs demo-round 1192ms "
+          f"({100 * (SERVED_PLAIN_MS - 1192.0) / 1192.0:+.1f}%, band 10%)")
+    shares = [ms / perop * 100 for _, _, ms in SERVED_ROWS]
+    check("geo-served-shares",
+          abs(sum(shares) - 100.0) < 0.2
+          and [ms for _, _, ms in SERVED_ROWS]
+          == sorted([ms for _, _, ms in SERVED_ROWS], reverse=True),
+          f"shares sum={sum(shares):.2f}%, rows worst-first")
+    over = SERVED_TIMED_MS - SERVED_BUDGET_MS
+    shrink = SERVED_TIMED_MS / SERVED_BUDGET_MS
+    check("geo-served-burndown",
+          abs(over - 1189.641) < 0.01 and 36.0 < shrink < 38.0
+          and SERVED_ROWS[0][0] == "MATMUL",
+          f"over={over:.1f}ms shrink={shrink:.1f}x head={SERVED_ROWS[0][0]}")
 
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)

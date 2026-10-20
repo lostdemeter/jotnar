@@ -39,6 +39,71 @@ impl beyond what is declared here):
 
 ### 2a. Burn-down (lands here with evidence)
 
+Method executed exactly per constitution (no deviations, no emitter
+changes): fresh `/tmp/dptprof/{plain,timed}/` binaries from the same
+1237-op listing revision (`programs/dpt_tiny.py` builder), kaiming
+weights seed 0 (`test_dpttiny.gen_weights` — training unchanged),
+deterministic zero-RGB 672×1024 input, 5 fresh-process frames each,
+GPU solo (no compute procs at launch; 670MiB/24564MiB base).
+
+Served total RE-MEASURED (supersedes — 1192ms confirmed, not inherited):
+plain walls [1195, 1219, 1220, 1243, 1396] (frame 0 = CUDA-init cold),
+median **1220ms** vs demo-round 1192ms (+2.3% — same ballpark, CONFIRMED).
+Timed binary median 1223ms → event-sync perturbation +2.8ms (+0.2%,
+well under the ~12ms estimate). Qwen never co-loaded (no Qwen
+machinery on this box path at all).
+
+Per-op table (timed stderr `op MN ms`, 1237/1237 lines parsed every
+frame; per-position median-of-5, aggregated by mnemonic):
+
+```text
+mnemonic       n    ms  share%   provenance
+MATMUL       235 190.2   27.7   time_ops events, median-of-5
+CONCAT       273 149.2   21.7   time_ops events, median-of-5
+ADD          152 132.4   19.3   time_ops events, median-of-5
+GATHER       407 128.6   18.7   time_ops events, median-of-5
+SOFTMAX_WIDE  24  44.3    6.4   time_ops events, median-of-5
+SILU          14  11.8    1.7   time_ops events, median-of-5
+MUL           12   9.5    1.4   time_ops events, median-of-5
+SLICE         72   5.8    0.8   time_ops events, median-of-5
+TBETA          6   5.2    0.8   time_ops events, median-of-5
+BETA           6   4.7    0.7   time_ops events, median-of-5
+LAYERNORM     12   3.3    0.5   time_ops events, median-of-5
+TRANSPOSE     24   2.1    0.3   time_ops events, median-of-5
+per-op sum  1237 687.2   56.2%  (of 1223ms timed wall)
+process harness — 535.5   43.8%  by subtraction, split below
+served total  —  1222.6 100.0%  re-measured median
+```
+
+Harness-bucket split (measured where possible): file I/O 16ms
+(`cat` all 489 inputs), CUDA-init 2ms (`/tmp` probe binary, 3 runs
+1.8–1.9ms); remainder ≈ 517ms = managed alloc + first-touch
+migration + cuBLAS setup + stores, RECURRING per fresh process
+(one-shot argv binary re-migrates GBs every frame — artifact of the
+harness, not the model). Reconcile: 687.2 + 535.5 = 1222.7 ≈ 1223
+(exact to rounding); gap share 43.8% ≤ 50% band (gated).
+
+Verdict — what must shrink 1220/33 = **37×**, in order:
+0. Process harness 535ms → resident serving (precedent: serve_decode
+   resident mode amortizes argv I/O + re-migration to ~0 per frame).
+   No math change; removes ~44% first.
+1. MATMUL 190ms (235 GEMMs: QKV/out ×6 blocks, MLP 128↔512, 1×1
+   projs) — 27.7% of kernel time.
+2. CONCAT 149ms (273 concats — fusion interleave traffic) — 21.7%.
+3. ADD 132ms (152 residual/bias adds) — 19.3%.
+4. GATHER 129ms (407 gathers — patchify/conv taps, upsample
+   broadcasts) — 18.7%.
+5. SOFTMAX_WIDE 44ms (24 full 2688-wide rows) — 6.4%.
+6. Tail 43ms (SILU/MUL/SLICE/BETA/TBETA/LAYERNORM/TRANSPOSE) — 6.3%.
+After harness removal, compute 687ms must shrink 687/33 ≈ 21×.
+Top-4 (MATMUL/CONCAT/ADD/GATHER) = 88% of kernel time — any plan
+that does not start there is not reading this table.
+Gate: `tests/test_geo_profiler.py` served legs (banked numbers —
+no GPU in-gate): reconcile exact, gap ≤ 50%, provenance per row,
+burn-down arithmetic (shares = 100, over = wall − 33, sorted).
+Neighbors: `test_dpttiny.py` build + demo legs green (nothing moves
+underneath — zero repo-code changes this round).
+
 ## 1. Geometric code profiler (BUILT on `exp/geo-profiler` — evidence below)
 
 **Why:** every speed round hand-rolled its own profiling (trace-`sec`
