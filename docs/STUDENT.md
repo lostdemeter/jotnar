@@ -1637,7 +1637,8 @@ heldout  nonplanar   60   1.53    0.394
 heldout  tex         60   1.77    0.445
 heldout  smooth      60   1.62    0.355
 ```
-(train mean 3.42 / best 0.453; heldout mean 1.72 / best 0.355.)
+(train mean 3.42 / best 0.453; heldout mean 1.72 / best 0.351;
+0/720 train cells under bars too.)
 Winner: none — 0/360 (gate-pinned `dithyp-winner-none`); no
 retrain-match (nothing to claim; single-seed, determinism
 explicitly NOT re-verified — hyper precedent).
@@ -1839,4 +1840,77 @@ banked telemetry with Phase-25 numbers as explicit comparison).
 Neighbors: dithyp + teacher legs green (nothing moves underneath).
 Determinism: single-seed (hyper precedent).
 
-### Battery results (TBD — run lands here)
+### Battery results (1 run, 8000 steps, 769s wall, GPU solo)
+
+Loss re-pinned in the SAME band: cadence prints 0.44→0.63→0.74→
+0.40→0.63… all 8000 steps (final 0.6200 vs aligned 0.6183 — the
+pin to 2 decimals). Held-out align-MAE vs fresh bars — 0/360
+under (0 nulls):
+
+```
+split    stratum    n    mean    best
+train    near       120   3.12    0.510
+train    far        120   3.68    0.510
+train    planar     120   3.16    0.453
+train    nonplanar  120   3.60    0.620
+train    tex        120   3.38    0.563
+train    smooth     120   3.61    0.476
+heldout  near        60   1.60    0.410
+heldout  far         60   1.82    0.385
+heldout  planar     60   1.99    0.392
+heldout  nonplanar   60   1.53    0.393
+heldout  tex         60   1.77    0.444
+heldout  smooth      60   1.62    0.351
+```
+(train mean 3.42/best 0.453; heldout mean 1.72/best 0.351 —
+identical to Phase-24 to 2 decimals, via a different path.)
+Winner: none — 0/360 (gate-pinned); no retrain-match (nothing to
+claim; single-seed, determinism NOT re-verified).
+Transfer-report (ungraded, as frozen): grid-locked (RuntimeError,
+banked note — third line, same mechanism).
+Telemetry verdict inputs: act_out max 49.1 (<1e4 bound; was
+6.6e8), act_in max 49.1 (<1e3), end mod vars max 0.0542 (<1e2
+bound; was 14415), grads ~1e-4–1e-3 all run (vs Phase-25's
+0.0018→123 swings). Final loss 0.6200 (need <0.40: MISSED).
+Frozen-rule verdict: **deeper-pathology** (bounded ✓, descended
+✗ — gate `surgery-descent` red BY MEASUREMENT, pasted, not
+hidden; `surgery-verdict` green on the recompute).
+Diagnosis, three parts. (1) Mechanism CONFIRMED: removing the
+affine rescue removed the blowup (7 orders off acts, 5 off
+mods) — scale-visibility behaved exactly as predicted, so the
+Phase-25 blowup needed the lstsq mask. The surgery worked as
+surgery. (2) The pin is NOT scale-masking: with everything
+bounded and scale fully visible, loss sits at the same numeric
+pin (final 0.6200 vs 0.6183; eval table identical to 2 decimals)
+on gradients ~1e-4 — the basin around init is FLAT in the
+directions that matter. The pathology is deeper than
+scale-visibility: same pin, no divergence to blame anymore.
+(3) What "deeper" rules out next: not attenuation-by-explosion
+(this run's grads are ~0 everywhere, late≈early), not
+self-sabotage (mods healthy ~0.01–0.05, never collapsed), not
+schedule tail (pin holds from it 500 at full lr). Remaining
+candidates live outside this round's loss line (target-side
+compression, optimizer family, or expressivity — each its own
+constitution, none run).
+Executed notes: lognorm recomputed lo=0.1940/mu=1.8670/
+sigma=0.5889 (EXACT frozen match — data pipeline identical);
+smoke (50-step, scratch tag): it0 0.4396, finite trace, acts
+7–17 at it49 (vs aligned-run already exploding — divergence
+visible that early); full it0 matches smoke it0 at 1.15e-07.
+CAUGHT BUGS (mine, all recovered openly): (1) telemetry
+defaulted to the Phase-25 banked path and overwrote it — file
+restored from git (zero diff), new run re-banked to its own
+path; default left as-is (ruling: loss-line change only) with
+this warning recorded — always pass --telemetry-out explicitly.
+(2) smoke-vs-full prefix match past it0 is INVALID across
+--steps (cosine denominator differs 50 vs 8000; measured 1.39
+divergence, fully schedule-explained) — it0 (identical init+lr,
+diff 1.15e-07) is the valid checkpoint; gate encodes the
+corrected rule. (3) First eval-table draft read the WRONG FILE
+(Phase-24's banked metrics — tag field proved it) AND transposed
+near↔far copying sorted-order output into a near-first table —
+caught by an independent recompute before anything downstream
+was affected (battery key and gate legs read the files directly
+and verify consistent); table corrected cell-by-cell against
+md5-pinned banked data. Mechanism conclusions never touched
+(telemetry analysis was always on the new-run file).
