@@ -411,6 +411,37 @@ def main():
     check("dpt-demo-privacy", repo_leak == [], "no webcam frames in-repo")
     shutil.rmtree(dtmp, ignore_errors=True)
 
+    # -- analytic-training legs (banked metrics integrity + verdict) -----
+    # No retraining here: weights live out-of-tree, metrics banked.
+    tr_path = os.path.join(ROOT, "samples", "marigold", "dpt_run_dpt-gt.json")
+    if not os.path.isfile(tr_path):
+        print("SKIP dpt-train legs (no banked training metrics yet)")
+    else:
+        tr = json.load(open(tr_path))
+        check("dpt-train-schema",
+              all(k in tr for k in ("tag", "arch", "steps", "lr", "seed",
+                                    "train", "heldout", "frames"))
+              and len([n for n, fr in tr["frames"].items()
+                       if fr["split"] == "train"]) == 12
+              and len([n for n, fr in tr["frames"].items()
+                       if fr["split"] == "heldout"]) == 8,
+              f"{tr['tag']} {tr['steps']} steps, 12+8 scenes")
+        ho = [(n, k, v) for n, fr in tr["frames"].items()
+              if fr["split"] == "heldout"
+              for k, v in fr["strata"].items()]
+        graded = [(n, k, v) for n, k, v in ho if v is not None]
+        under = [(n, k, v) for n, k, v in graded if v <= 0.10]
+        check("dpt-train-winner-none", len(under) == 0,
+              f"held-out cells under AbsRel 0.10: {len(under)}/{len(graded)} "
+              f"({len(ho) - len(graded)} nulls)")
+        check("dpt-train-no-real",
+              all(n.startswith("s") for n, fr in tr["frames"].items()),
+              "transfer ungraded by construction (synthetic frames only)")
+        wp = os.path.expanduser("~/student_runs/dpt-gt/weights.pt")
+        check("dpt-train-weights", os.path.isfile(wp)
+              and os.path.getsize(wp) > 1000000,
+              "weights out-of-tree, present")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

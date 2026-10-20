@@ -1,0 +1,383 @@
+{
+ "tag": "dpt-gt",
+ "arch": "dpt-tiny-torch",
+ "width": 128,
+ "blocks": 6,
+ "heads": 4,
+ "patch": 16,
+ "loss": "logGT-MAE",
+ "steps": 600,
+ "lr": 0.001,
+ "seed": 7,
+ "train": [
+  0,
+  1,
+  2,
+  3,
+  4,
+  5,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17
+ ],
+ "heldout": [
+  8,
+  9,
+  10,
+  11,
+  20,
+  21,
+  22,
+  23
+ ],
+ "torch": "2.14.1+cu130",
+ "device": "cuda",
+ "weights": "/home/balrog/student_runs/dpt-gt/weights.pt",
+ "nparams": 3711520,
+ "frames": {
+  "s00": {
+   "split": "train",
+   "strata": {
+    "far": 9.519576072692871,
+    "near": 14.147529602050781,
+    "nonplanar": 7.753214359283447,
+    "planar": 10.366012573242188,
+    "smooth": 10.593343734741211,
+    "tex": 10.512557029724121
+   },
+   "constr": {
+    "count": 1,
+    "occlusion": "single",
+    "range": "shallow",
+    "textured": false
+   }
+  },
+  "s01": {
+   "split": "train",
+   "strata": {
+    "far": 7.157049179077148,
+    "near": 14.931127548217773,
+    "nonplanar": 7.894384384155273,
+    "planar": 7.058159351348877,
+    "smooth": 8.920201301574707,
+    "tex": 8.990514755249023
+   },
+   "constr": {
+    "count": 2,
+    "occlusion": "single",
+    "range": "shallow",
+    "textured": false
+   }
+  },
+  "s02": {
+   "split": "train",
+   "strata": {
+    "far": 7.654958248138428,
+    "near": 14.213632583618164,
+    "nonplanar": 6.715931415557861,
+    "planar": 8.489823341369629,
+    "smooth": 9.105487823486328,
+    "tex": 9.157770156860352
+   },
+   "constr": {
+    "count": 4,
+    "occlusion": "single",
+    "range": "shallow",
+    "textured": false
+   }
+  },
+  "s03": {
+   "split": "train",
+   "strata": {
+    "far": null,
+    "near": 5.969204902648926,
+    "nonplanar": 5.715874195098877,
+    "planar": 6.067455768585205,
+    "smooth": 5.9921770095825195,
+    "tex": 5.969204902648926
+   },
+   "constr": {
+    "count": 1,
+    "occlusion": "stacked",
+    "range": "shallow",
+    "textured": false
+   }
+  },
+  "s04": {
+   "split": "train",
+   "strata": {
+    "far": null,
+    "near": 6.827481269836426,
+    "nonplanar": 6.1361284255981445,
+    "planar": 7.0585150718688965,
+    "smooth": 6.833699703216553,
+    "tex": 6.827481269836426
+   },
+   "constr": {
+    "count": 2,
+    "occlusion": "stacked",
+    "range": "shallow",
+    "textured": false
+   }
+  },
+  "s05": {
+   "split": "train",
+   "strata": {
+    "far": null,
+    "near": 5.910077095031738,
+    "nonplanar": 5.611194133758545,
+    "planar": 6.000645160675049,
+    "smooth": 5.936546802520752,
+    "tex": 5.910077095031738
+   },
+   "constr": {
+    "count": 4,
+    "occlusion": "stacked",
+    "range": "shallow",
+    "textured": false
+   }
+  },
+  "s12": {
+   "split": "train",
+   "strata": {
+    "far": null,
+    "near": 6.821829795837402,
+    "nonplanar": 7.403775215148926,
+    "planar": 6.6630120277404785,
+    "smooth": 6.816242218017578,
+    "tex": 6.821829795837402
+   },
+   "constr": {
+    "count": 1,
+    "occlusion": "single",
+    "range": "shallow",
+    "textured": true
+   }
+  },
+  "s13": {
+   "split": "train",
+   "strata": {
+    "far": 289.7189636230469,
+    "near": 106.16069030761719,
+    "nonplanar": 41.217613220214844,
+    "planar": 318.7665100097656,
+    "smooth": 268.22491455078125,
+    "tex": 247.5685272216797
+   },
+   "constr": {
+    "count": 2,
+    "occlusion": "single",
+    "range": "shallow",
+    "textured": true
+   }
+  },
+  "s14": {
+   "split": "train",
+   "strata": {
+    "far": 37.20366287231445,
+    "near": 90.23876953125,
+    "nonplanar": 29.747766494750977,
+    "planar": 53.560115814208984,
+    "smooth": 55.14716339111328,
+    "tex": 51.13270568847656
+   },
+   "constr": {
+    "count": 4,
+    "occlusion": "single",
+    "range": "shallow",
+    "textured": true
+   }
+  },
+  "s15": {
+   "split": "train",
+   "strata": {
+    "far": null,
+    "near": 6.821829795837402,
+    "nonplanar": 7.403775215148926,
+    "planar": 6.6630120277404785,
+    "smooth": 6.816242218017578,
+    "tex": 6.821829795837402
+   },
+   "constr": {
+    "count": 1,
+    "occlusion": "stacked",
+    "range": "shallow",
+    "textured": true
+   }
+  },
+  "s16": {
+   "split": "train",
+   "strata": {
+    "far": null,
+    "near": 6.821829795837402,
+    "nonplanar": 7.403775215148926,
+    "planar": 6.6630120277404785,
+    "smooth": 6.816242218017578,
+    "tex": 6.821829795837402
+   },
+   "constr": {
+    "count": 2,
+    "occlusion": "stacked",
+    "range": "shallow",
+    "textured": true
+   }
+  },
+  "s17": {
+   "split": "train",
+   "strata": {
+    "far": null,
+    "near": 7.650100231170654,
+    "nonplanar": 7.66006326675415,
+    "planar": 7.5296630859375,
+    "smooth": 7.690918445587158,
+    "tex": 7.650100231170654
+   },
+   "constr": {
+    "count": 4,
+    "occlusion": "stacked",
+    "range": "shallow",
+    "textured": true
+   }
+  },
+  "s08": {
+   "split": "heldout",
+   "strata": {
+    "far": null,
+    "near": 9.408856391906738,
+    "nonplanar": 7.050603866577148,
+    "planar": 10.197792053222656,
+    "smooth": 9.4056396484375,
+    "tex": 9.408856391906738
+   },
+   "constr": {
+    "count": 4,
+    "occlusion": "single",
+    "range": "deep",
+    "textured": false
+   }
+  },
+  "s09": {
+   "split": "heldout",
+   "strata": {
+    "far": null,
+    "near": 6.862225532531738,
+    "nonplanar": 5.966399192810059,
+    "planar": 7.1471476554870605,
+    "smooth": 6.8680315017700195,
+    "tex": 6.862225532531738
+   },
+   "constr": {
+    "count": 1,
+    "occlusion": "stacked",
+    "range": "deep",
+    "textured": false
+   }
+  },
+  "s10": {
+   "split": "heldout",
+   "strata": {
+    "far": null,
+    "near": 8.778700828552246,
+    "nonplanar": 6.481502056121826,
+    "planar": 8.683920860290527,
+    "smooth": 8.814652442932129,
+    "tex": 8.778700828552246
+   },
+   "constr": {
+    "count": 2,
+    "occlusion": "stacked",
+    "range": "deep",
+    "textured": false
+   }
+  },
+  "s11": {
+   "split": "heldout",
+   "strata": {
+    "far": 7.8993239402771,
+    "near": 22.87487030029297,
+    "nonplanar": 16.96722412109375,
+    "planar": 9.713019371032715,
+    "smooth": 11.076777458190918,
+    "tex": 11.961881637573242
+   },
+   "constr": {
+    "count": 4,
+    "occlusion": "stacked",
+    "range": "deep",
+    "textured": false
+   }
+  },
+  "s20": {
+   "split": "heldout",
+   "strata": {
+    "far": 187.2252655029297,
+    "near": 493.88128662109375,
+    "nonplanar": 410.8494567871094,
+    "planar": 177.339599609375,
+    "smooth": 263.62060546875,
+    "tex": 277.3278503417969
+   },
+   "constr": {
+    "count": 4,
+    "occlusion": "single",
+    "range": "deep",
+    "textured": true
+   }
+  },
+  "s21": {
+   "split": "heldout",
+   "strata": {
+    "far": null,
+    "near": 10.376437187194824,
+    "nonplanar": 10.9647798538208,
+    "planar": 10.080419540405273,
+    "smooth": 10.247712135314941,
+    "tex": 10.376437187194824
+   },
+   "constr": {
+    "count": 1,
+    "occlusion": "stacked",
+    "range": "deep",
+    "textured": true
+   }
+  },
+  "s22": {
+   "split": "heldout",
+   "strata": {
+    "far": null,
+    "near": 42.895652770996094,
+    "nonplanar": 79.33802032470703,
+    "planar": 29.2115421295166,
+    "smooth": 39.68981170654297,
+    "tex": 42.895652770996094
+   },
+   "constr": {
+    "count": 2,
+    "occlusion": "stacked",
+    "range": "deep",
+    "textured": true
+   }
+  },
+  "s23": {
+   "split": "heldout",
+   "strata": {
+    "far": 349.63006591796875,
+    "near": 3235806.5,
+    "nonplanar": 1731.3277587890625,
+    "planar": 945726.9375,
+    "smooth": 713969.8125,
+    "tex": 665033.625
+   },
+   "constr": {
+    "count": 4,
+    "occlusion": "stacked",
+    "range": "deep",
+    "textured": true
+   }
+  }
+ },
+ "resumed_from": "/home/balrog/student_runs/dpt-gt/weights.pt"
+}

@@ -20,6 +20,7 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
 
+FIXDIR = os.path.join(ROOT, "samples", "marigold")
 OUTBASE = os.path.expanduser("~/student_runs")
 
 
@@ -138,6 +139,9 @@ def main():
     ap.add_argument("--steps", type=int, default=600)
     ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--seed", type=int, default=7)
+    ap.add_argument("--resume", default=None,
+                    help="weights .pt to load + eval-only (no training — "
+                    "metrics reflect existing weights, e.g. after a crash fix)")
     ap.add_argument("--train", nargs="+", type=int,
                     default=list(range(6)) + list(range(12, 18)))
     ap.add_argument("--heldout", nargs="+", type=int,
@@ -173,21 +177,26 @@ def main():
     opt = torch.optim.Adam(net.parameters(), lr=args.lr)
 
     t0 = time.time()
-    for it in range(args.steps):
-        opt.zero_grad()
-        tot = 0.0
-        for n in args.train:
-            # per-scene backward (one live graph at a time — memory-safe;
-            # grads identical to a joint backward over the sum).
-            rgb, gt, _ = scenes[n]
-            l = (net(rgb) - gt).abs().mean()
-            l.backward()
-            tot += float(l)
-        loss = tot / len(args.train)
-        opt.step()
-        if it % 500 == 0 or it == args.steps - 1:
-            print(f"iter {it}: loss {loss:.4f}", flush=True)
-    print(f"train wall: {time.time() - t0:.0f}s", flush=True)
+    if args.resume:
+        net.load_state_dict(torch.load(os.path.expanduser(args.resume),
+                                       map_location=device, weights_only=True))
+        print(f"resumed {args.resume} (eval-only, no training)", flush=True)
+    else:
+        for it in range(args.steps):
+            opt.zero_grad()
+            tot = 0.0
+            for n in args.train:
+                # per-scene backward (one live graph at a time — memory-safe;
+                # grads identical to a joint backward over the sum).
+                rgb, gt, _ = scenes[n]
+                l = (net(rgb) - gt).abs().mean()
+                l.backward()
+                tot += float(l)
+            loss = tot / len(args.train)
+            opt.step()
+            if it % 500 == 0 or it == args.steps - 1:
+                print(f"iter {it}: loss {loss:.4f}", flush=True)
+        print(f"train wall: {time.time() - t0:.0f}s", flush=True)
 
     outdir = os.path.join(OUTBASE, args.tag)
     os.makedirs(outdir, exist_ok=True)
@@ -202,6 +211,8 @@ def main():
            "torch": torch.__version__, "device": device,
            "weights": os.path.join(outdir, "weights.pt"),
            "nparams": nparams, "frames": {}}
+    if args.resume:
+        rep["resumed_from"] = os.path.expanduser(args.resume)
     net.eval()
     with torch.no_grad():
         for split, idxs in (("train", args.train), ("heldout", args.heldout)):
