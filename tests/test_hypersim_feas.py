@@ -177,6 +177,65 @@ def main():
               and "grid-lock" in dtr["fixtures"].get("note", ""),
               "transfer reported-not-graded (grid-lock note)")
 
+    # -- Phase-25 telemetry legs (banked integrity + frozen verdicts) --
+    # Reads banked telemetry only (no GPU): schema, smoke-match, and a
+    # from-scratch recompute of the frozen interpretation rules (the
+    # banked verdict field must equal the recompute — integrity).
+    TP = os.path.join(ROOT, "samples", "marigold",
+                      "dithyp64b2_telemetry.json")
+    if not os.path.isfile(TP):
+        print("SKIP telemetry legs (no banked Phase-25 telemetry yet)")
+    else:
+        tel = json.load(open(TP))
+        smps = tel.get("samples", [])
+        ok_schema = (
+            tel.get("base_tag") == "dithyp64b2"
+            and tel.get("instrument", {}).get("every") == 500
+            and len(tel.get("loss_trace", [])) == 8000
+            and len(smps) == 17
+            and all(set(s) >= {"it", "loss", "blocks"} for s in smps)
+            and all(set(b) >= {"act_in", "act_out", "grad", "upd",
+                               "mod"} for s in smps for b in s["blocks"])
+            and all(set(b["mod"]) >= {"sh1", "sc1", "g1", "sh2",
+                                      "sc2", "g2"} for s in smps
+                    for b in s["blocks"]))
+        check("telemetry-schema", ok_schema,
+              f"{len(smps)} samples, trace {len(tel.get('loss_trace', []))}")
+        sm = tel.get("smoke", {})
+        check("telemetry-smoke",
+              bool(sm.get("ok")) and sm.get("maxdiff", 1) <= 1e-4
+              and abs(sm.get("banked_0", 0) - 0.4014) < 1e-4,
+              f"hooks-delta maxdiff={sm.get('maxdiff'):.2e} (tol 1e-4)")
+        ratios = [s["blocks"][0]["grad"] / s["blocks"][1]["grad"]
+                  for s in smps if s["blocks"][1]["grad"] > 0]
+        att = sum(ratios) / len(ratios)
+        allg = [s["blocks"][b]["grad"] for s in smps for b in (0, 1)]
+        health = max(allg) / min(allg)
+        endvars = [s["blocks"][b]["mod"][c]["var"]
+                   for s in smps[-1:] for b in (0, 1)
+                   for c in ("sh1", "sc1", "g1", "sh2", "sc2", "g2")]
+        firstvars = [s["blocks"][b]["mod"][c]["var"]
+                     for s in smps[:1] for b in (0, 1)
+                     for c in ("sh1", "sc1", "g1", "sh2", "sc2", "g2")]
+        sab = (all(v < 1e-6 for v in endvars)
+               and all(f0 > 100 * fe for f0, fe in zip(firstvars,
+                                                       endvars)))
+        hu = tel.get("eval_summary", {}).get("heldout_under")
+        name = ("attenuation" if att > 10.0 else
+                "self-sabotage" if sab else
+                "landscape" if (0 < health < 10.0
+                                and all(v >= 1e-6 for v in endvars)
+                                and hu == 0)
+                else "none-of-the-above")
+        check("telemetry-verdict",
+              tel.get("verdict", {}).get("name") == name
+              and abs(tel["verdict"]["numbers"]["att_ratio"] - att) < 1e-9,
+              f"banked={tel.get('verdict', {}).get('name')} "
+              f"recomputed={name} (att={att:.3f} health={health:.1f})")
+        check("telemetry-overhead",
+              0 <= tel.get("overhead", {}).get("frac", 1) < 0.10,
+              f"hook overhead frac={tel.get('overhead', {}).get('frac'):.4f}")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 
