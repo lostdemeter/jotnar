@@ -10,8 +10,10 @@ Two halves, no emitter changes (BACKLOG item 1 shape):
   static half predicts TRAFFIC, not wall: compute varies by op class (a
   stencil pass costs more than a move pass), stated scope for v1.
 - Dynamic (one traced run, after one untraced warmup that absorbs import /
-  first-op effects): measured wall per op (trace `sec`), dispatch-vs-compute
-  split, bytes per stream (trace in/out summaries: shape x dtype width) ->
+  first-op effects; GC paused during the traced run to keep µs-scale walls
+  from collecting pauses, re-enabled after): measured wall per op
+  (trace `sec`), dispatch-vs-compute split, bytes per stream (trace in/out
+  summaries: shape x dtype width) ->
   per-op bottleneck verdict (traffic/dispatch/compute-bound).
 - `--budget` flag: milliseconds-in, per-op over/under out. Each op's fair
   share is static-weighted: allowance_op = budget * passes_op / total_passes.
@@ -24,9 +26,9 @@ run itself, so verdicts are deterministic given the trace):
   dispatch-bound iff wall <= 2*floor AND bw < 0.30*roof (fast because tiny,
   not because a fast mover -- the roof op itself is always traffic-bound);
   traffic-bound  iff bw >= 0.30*roof; else compute-bound.
-Threshold 0.30 sits in the measured gap (demo_img 12x16: max compute 0.17x
+Threshold 0.30 sits in the measured gap (demo_img 24x32: max compute 0.17x
 roof, min traffic 0.46x roof; flagship: SPLAT/SUB/ADD/SQUARE/GAIN/BETA <=
-0.17x, SQRT and up >= 0.40x -- 5/5 stable verdicts on both, see BACKLOG).
+0.17x, SQRT and up >= 0.40x -- 10/10 stable verdicts on both, see BACKLOG).
 
 Bytes per element by trace summary kind: triples 6 (s:i8 + e:i32 + z:u8),
 float64 8, float32 4, float16 2, uint8/int8 1, int32 4, int64 8, mask/bool 1;
@@ -123,8 +125,13 @@ def profile_text(text, registry, payload, sigs=None, basedir=".",
 
     ASM.run_text(text, registry, payload, sigs=sigs, basedir=basedir)
     trace = []
-    ASM.run_text(text, registry, payload, sigs=sigs, trace=trace,
-                 basedir=basedir)
+    import gc
+    gc.disable()
+    try:
+        ASM.run_text(text, registry, payload, sigs=sigs, trace=trace,
+                     basedir=basedir)
+    finally:
+        gc.enable()
     if len(trace) != len(static["ops"]):
         raise ProfilerError(
             f"static/dynamic op count split: census {len(static['ops'])} "
@@ -188,8 +195,11 @@ def profile_text(text, registry, payload, sigs=None, basedir=".",
 
 def canonical(rep):
     """Determinism view: everything except absolute wall-clock leaves
-    (wall_s, bw_bps, and wall-derived budget rows). Verdicts are kept --
-    they must be stable on the gated listings (pasted evidence)."""
+    (wall_s, bw_bps, wall-derived budget magnitudes AND burn-down order:
+    near-tied overs can swap places run to run, so rows are compared
+    (op, line)-sorted; in-run worst-first order is gated separately).
+    Verdicts are kept -- they must be stable on the gated listings
+    (pasted evidence)."""
     out = {"ops": [], "totals": dict(rep["totals"]),
            "consistency": dict(rep["consistency"]), "budget": None}
     out["totals"].pop("total_wall_s", None)
@@ -200,9 +210,11 @@ def canonical(rep):
                            if k not in ("wall_s", "bw_bps")})
     if rep["budget"] is not None:
         out["budget"] = {"budget_ms": rep["budget"]["budget_ms"],
-                         "rows": [{"op": r["op"], "line": r["line"],
-                                   "verdict": r["verdict"]}
-                                  for r in rep["budget"]["rows"]]}
+                         "rows": sorted(
+                             ({"op": r["op"], "line": r["line"],
+                               "verdict": r["verdict"]}
+                              for r in rep["budget"]["rows"]),
+                             key=lambda r: (r["op"], r["line"]))}
     return out
 
 

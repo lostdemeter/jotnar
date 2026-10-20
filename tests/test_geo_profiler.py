@@ -2,9 +2,12 @@
 
 Legs (CPU-only, seconds):
 - self-consistency on two listings (flagship 24x32 synthetic rgb +
-  demo_img 12x16 triples, sizes chosen for seconds; demo size matches the
-  fusion gate's 12x16 so the static halves cross-check exactly):
-  static passes/bytes prediction vs measured within band 0.40.
+  demo_img 24x32 triples): static passes/bytes prediction vs measured
+  within band 0.40. Demo size REPLACES the suggested 12x16 with reason:
+  at 12x16 the µs-scale SLICE walls sit close enough to the verdict
+  boundary that a scheduling outlier flipped one verdict 1/10 runs;
+  at 24x32 the distribution is 10/10 stable (static structure is
+  size-independent: still 43 ops / 109 passes / 28 saved, cross-checked).
 - static cross-checks vs the fusion gate's hand-read numbers (flagship
   29 passes / 10 saved / 1 chain; demo 109 passes / 28 saved) -- the two
   halves unified, not just co-located.
@@ -45,7 +48,7 @@ def flagship():
 
 def demo():
     from chain import geo_profiler as G
-    return (*G.demo_payload(12, 16), "demo:12x16")
+    return (*G.demo_payload(24, 32), "demo:24x32")
 
 
 def main():
