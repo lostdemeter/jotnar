@@ -39,6 +39,16 @@ def main():
     ap.add_argument("--aux-every", type=int, default=50)
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--mb", type=int, default=4)
+    ap.add_argument("--telemetry", action="store_true",
+                    help="Phase-25 hooks only: per-block act/grad/update "
+                    "norms + AdaLN mod stats every --telemetry-every steps "
+                    "(+it 0), full loss trace, telemetry JSON out. "
+                    "no_grad reads, no RNG, no reordering — default off "
+                    "path is byte-untouched.")
+    ap.add_argument("--telemetry-every", type=int, default=500)
+    ap.add_argument("--telemetry-out", default=None,
+                    help="telemetry JSON path (default: "
+                    "samples/marigold/dithyp64b2_telemetry.json)")
     args = ap.parse_args()
 
     import numpy as np
@@ -100,6 +110,20 @@ def main():
     print(f"params={nparams} grid={nrows}x{ncols} seq={nrows * ncols}",
           flush=True)
     opt = torch.optim.Adam(net.parameters(), lr=args.lr)
+    TEL = None
+    if args.telemetry:
+        TEL = {"loss_trace": [], "samples": [],
+               "every": args.telemetry_every}
+
+        def _mk_hook(store, bi):
+            def _h(mod, inp, out):
+                with torch.no_grad():
+                    xi = inp[0].detach().float()
+                    xo = out.detach().float()
+                    store[bi] = (
+                        float(xi.norm().item() / (xi.numel() ** 0.5)),
+                        float(xo.norm().item() / (xo.numel() ** 0.5)))
+            return _h
     kx = torch.tensor(DIT.SOBEL_X, dtype=torch.float32, device=device).view(1, 1, 3, 3)
     ky = torch.tensor(DIT.SOBEL_Y, dtype=torch.float32, device=device).view(1, 1, 3, 3)
 
@@ -113,6 +137,13 @@ def main():
     for it in range(args.steps):
         BASE.apply_schedule(opt, args.schedule, args.lr, it, args.steps)
         opt.zero_grad()
+        sample = bool(TEL) and (it == 0 or BASE.cadence(
+            it, args.steps, TEL["every"]))
+        handles, store = [], {}
+        if sample:
+            for bi, b in enumerate(net.blocks):
+                handles.append(
+                    b.register_forward_hook(_mk_hook(store, bi)))
         ps = []
         mb = [train_idx[(it * args.mb + k) % len(train_idx)]
               for k in range(args.mb)]
@@ -142,11 +173,52 @@ def main():
                               - grad_mag(zt.float())).abs().mean())
             aux = sum(terms) / len(terms)
         (loss + args.grad_w * aux).backward()
+        if TEL:
+            TEL["loss_trace"].append(float(loss))
+        snap, gb = None, None
+        if sample:
+            with torch.no_grad():
+                snap = [[p.detach().clone() for p in b.parameters()]
+                        for b in net.blocks]
+                gb = []
+                for b in net.blocks:
+                    g2 = sum(float((p.grad.detach().float() ** 2).sum())
+                             for p in b.parameters()
+                             if p.grad is not None)
+                    gb.append(g2 ** 0.5)
+            for h in handles:
+                h.remove()
         opt.step()
+        if sample:
+            with torch.no_grad():
+                rows = []
+                for bi, b in enumerate(net.blocks):
+                    newp = list(b.parameters())
+                    d2 = sum(float(((q - p0).float() ** 2).sum())
+                             for q, p0 in zip(newp, snap[bi]))
+                    w2 = sum(float((p0.float() ** 2).sum())
+                             for p0 in snap[bi])
+                    parts = b.mod(torch.nn.functional.silu(
+                        net.temb)).detach().chunk(6, dim=-1)
+                    mods = {}
+                    for nm, t in zip(
+                            ("sh1", "sc1", "g1", "sh2", "sc2", "g2"),
+                            parts):
+                        f = t.float()
+                        mods[nm] = {"mean": float(f.mean()),
+                                    "var": float(f.var(unbiased=False))}
+                    rows.append({"act_in": store[bi][0],
+                                 "act_out": store[bi][1],
+                                 "grad": gb[bi],
+                                 "upd": (d2 ** 0.5) / (w2 ** 0.5),
+                                 "mod": mods})
+                TEL["samples"].append({"it": it, "loss": float(loss),
+                                       "blocks": rows})
         if BASE.cadence(it, args.steps, 500):
             print(f"iter {it}: loss {loss.item():.4f} aux {float(aux):.4f}",
                   flush=True)
     print(f"train wall: {time.time() - t0:.0f}s", flush=True)
+    twall_s = time.time() - t0
     assert bool(torch.isfinite(loss).all()), f"final loss non-finite: {loss.item()}"
 
     outdir = os.path.join(OUTBASE, args.tag)
@@ -195,6 +267,73 @@ def main():
                                for k, v in fr["strata"].items()}, flush=True)
     outp = os.path.join(FIXDIR, f"attn_run_{args.tag}.json")
     BASE.bank_metrics(rep, outp)
+
+    if TEL:
+        BARS_F = {"near": 0.068, "far": 0.019, "planar": 0.046,
+                  "nonplanar": 0.123, "tex": 0.132, "smooth": 0.117}
+        trm = [v for n, fr in rep["frames"].items()
+               if fr["split"] == "train"
+               for v in fr["strata"].values() if v is not None]
+        hom = [v for n, fr in rep["frames"].items()
+               if fr["split"] == "heldout"
+               for k, v in fr["strata"].items() if v is not None]
+        hunder = sum(
+            1 for n, fr in rep["frames"].items() if fr["split"] == "heldout"
+            for k, v in fr["strata"].items()
+            if v is not None and v <= BARS_F[k])
+        hn = sum(
+            1 for n, fr in rep["frames"].items() if fr["split"] == "heldout"
+            for k, v in fr["strata"].items() if v is not None)
+        smps = TEL["samples"]
+        ratios = [s["blocks"][0]["grad"] / s["blocks"][1]["grad"]
+                  for s in smps
+                  if s["blocks"][1]["grad"] > 0]
+        att = (sum(ratios) / len(ratios)) if ratios else 0.0
+        g0 = [s["blocks"][b]["mod"]["g1"]["var"] for s in smps for b in (0, 1)]
+        g2 = [s["blocks"][b]["mod"]["g2"]["var"] for s in smps for b in (0, 1)]
+        allg = [s["blocks"][b]["grad"] for s in smps for b in (0, 1)]
+        health = (max(allg) / min(allg)) if allg and min(allg) > 0 else 0.0
+        endvars = [s["blocks"][b]["mod"][c]["var"]
+                   for s in smps[-1:] for b in (0, 1)
+                   for c in ("sh1", "sc1", "g1", "sh2", "sc2", "g2")]
+        sab = (all(v < 1e-6 for v in endvars)
+               and all(f0 > 100 * fe for f0, fe in zip(
+                   [s["blocks"][b]["mod"][c]["var"]
+                    for s in smps[:1] for b in (0, 1)
+                    for c in ("sh1", "sc1", "g1", "sh2", "sc2", "g2")],
+                   endvars)))
+        name = "none-of-the-above"
+        if att > 10.0:
+            name = "attenuation"
+        elif sab:
+            name = "self-sabotage"
+        elif (health > 0 and health < 10.0
+              and all(v >= 1e-6 for v in endvars) and hunder == 0):
+            name = "landscape"
+        tpath = (args.telemetry_out or os.path.join(
+            FIXDIR, "dithyp64b2_telemetry.json"))
+        tel = {"tag": args.tag + "-telemetry", "base_tag": "dithyp64b2",
+               "instrument": {"every": TEL["every"],
+                              "hooks": ["block-act-in-out",
+                                        "block-grad", "block-upd",
+                                        "adaln-mod-recompute",
+                                        "loss-trace"]},
+               "overhead": {"steps": args.steps,
+                            "on_s_per_step": twall_s / args.steps},
+               "smoke": {"on_01": None, "off_01": None, "banked_0": 0.4014,
+                         "maxdiff": None, "tol": 1e-4, "ok": None},
+               "loss_trace": TEL["loss_trace"], "samples": smps,
+               "eval_summary": {
+                   "train_mean": float(np.mean(trm)) if trm else None,
+                   "heldout_mean": float(np.mean(hom)) if hom else None,
+                   "heldout_under": hunder, "heldout_n": hn},
+               "verdict": {"name": name,
+                           "numbers": {"att_ratio": att,
+                                       "health_maxmin": health,
+                                       "self_sabotage": bool(sab),
+                                       "heldout_under": hunder}}}
+        json.dump(tel, open(tpath, "w"), indent=1)
+        print(f"wrote {tpath}", flush=True)
 
     # transfer-report probe (ungraded): fixtures need 42x64 tables,
     # this grid is 48x64 — record the lock, don't grade it.

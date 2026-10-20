@@ -1676,3 +1676,115 @@ minibatch concat (120-frame full-batch per step is not runnable
 Dims check that fell out: params 210241 = dit64b2's 209857 +
 384 (48×64 vs 42×64 pos tables) — architecture identical modulo
 grid, as frozen.
+
+## Phase 25 — training telemetry on the faithful Hypersim run (constitution, FROZEN pre-run)
+
+Why before what-next: Phase 24 closed the data axis (collapse is
+data-independent) with the mechanism unnamed — attenuation,
+self-sabotage, and landscape all fit "pinned ~0.5". This round
+names it with numbers before any next step is proposed. No
+architecture/loss/schedule/data change exists in this round; a
+"small fix" to any of those is scope breach, however tempting the
+readings.
+Instrument list (FROZEN — dithyp shape, `scripts/train_dit_hypersim.py`
+`--telemetry` path only; default-off path byte-untouched):
+- Per-block activation norms (input AND output RMS) + per-block
+  gradient norms (over block params, post-backward pre-step) +
+  per-block update-to-weight ratios (||Δp||/||p|| across opt.step,
+  no_grad snapshots) — every N=500 steps plus it=0 (17 samples).
+- AdaLN modulation statistics: per block, mean+var of each of the
+  6 split components (sh1/sc1/g1/sh2/sc2/g2), recomputed under
+  no_grad from `block.mod(silu(temb))` on sample steps (tiny,
+  deterministic, no RNG).
+- Full per-step loss trace banked (8000 scalars — the trajectory
+  the prints subsample).
+Hooks only: attach-on-sample forward hooks (zero steady-state
+cost), no_grad reads, no RNG draws, no statement reordering. A
+behavior delta VOIDS the round.
+Frozen interpretation table (one row per reading; thresholds
+adopted as suggested except self-sabotage, tightened with reason —
+absolute 1e-6 alone could misread init scale, so a >100× drop from
+the it-0 baseline is required alongside it):
+- attenuation iff mean_over_samples(g_block0 / g_block1) > 10
+  (forward-decay, input→output; reverse ratio reported, not ruled).
+- self-sabotage iff end var(g1),var(g2) < 1e-6 in BOTH blocks AND
+  >100× below their it-0 values (gates/scales collapse).
+- landscape iff NOT attenuation AND NOT self-sabotage AND grads
+  healthy (max/min over all sample×block grad norms < 10) AND
+  modulations non-degenerate (all end vars ≥ 1e-6) AND fresh
+  held-out flat (0/360 from this run's own end-eval).
+- else none-of-the-above (readings stated, no forcing).
+Smoke rule (behavior-delta tripwire): 50-step instrumented probe
+vs uninstrumented twin (same seed) must match on printed losses
+(it 0, 49) within 1e-4 (1000× above typical GPU noise, far below
+any math-changing accident), AND the probe prefix must match the
+banked Phase-24 log prefix (iter 0: 0.4014) within 1e-4. Either
+miss voids the round — no full run on a perturbing harness.
+Budget frozen: 50-step probe first (times hook overhead) → full
+run budgeted from it; 1–2 instrumented runs MAX (probe + one
+full); wall cap 30 min (Phase-24 measured 795s train + ~4 min
+eval; hooks are no_grad reads). GPU solo (idle + VRAM stated at
+run); Qwen-7B never co-loaded.
+Banking: telemetry goes to NEW `samples/marigold/
+dithyp64b2_telemetry.json` (schema below) — banked Phase-24
+metrics are NEVER overwritten, production weights untouched.
+Gate: `tests/test_hypersim_feas.py` extended in place (telemetry
+schema integrity + verdict legs recomputing the frozen rules from
+banked telemetry + smoke-match leg). Neighbors: dithyp + teacher
+legs green (nothing moves underneath).
+Telemetry schema (gated): {tag, base_tag, instrument {every,
+hooks[]}, overhead {steps, off_s_per_step, on_s_per_step, frac},
+smoke {off_01, on_01, banked_0, maxdiff, tol, ok},
+loss_trace[8000], samples[{it, loss, blocks[{act_in, act_out,
+grad, upd, mod{comp:{mean,var}}}]}], eval_summary {heldout_under,
+heldout_n, train_mean, heldout_mean}, verdict {name, numbers{}}}.
+
+### Battery results (1 instrumented run, 8000 steps, 807s wall, GPU solo)
+
+Hooks cost 12s over the banked 795s (frac 0.0151, inside budget).
+Smoke: ON vs OFF prefix diffs 3.9e-05/1.3e-05, ON vs banked log
+prefix (iter 0: 0.4014) 3.9e-05 — all ≤ 1e-4 tol; full trajectory
+prints match the banked log to 4 decimals at all 17 cadences
+(final 0.6183 = banked). Behavior delta: none observed.
+Telemetry (17 samples, it 0–7999; grads RMS, mods var):
+
+```text
+it    loss   g0      g1      upd0     upd1     actB0in  actB1out
+0     0.4014 0.0018  0.0018  1.2e-01  1.2e-01   1.4      1.4
+500   0.4838 0.17    0.97    7.9e-03  6.6e-03   126      6.3e6
+1000  0.7154 8.2     123     4.1e-03  5.2e-03   200      3.6e8
+...
+4000  0.7373 0.23    1.14    5.7e-04  7.7e-06   326      1.1e9
+...
+7999  0.6183 0.083   0.77    4.8e-12  8.1e-13   279      6.6e8
+mod vars (it0 → end): g1 0.005 → 469/13182, g2 0.005 → 7278/14416
+(end vars both blocks; sc similar, ×1e5–1e6 up)
+fresh eval: train 3.423 / heldout 1.723, 0/360 under (matches
+Phase-24 banked means — metric-level corroboration, hooks clean)
+```
+
+Frozen-rule verdict: **none-of-the-above** (att_ratio 0.155, need
+>10; self_sabotage False — mods exploded, not collapsed; health
+146236, need <10; heldout 0/360). Gate recomputes all four from
+banked telemetry (match).
+Diagnosis — the mechanism is blowup, and the loss is blind to it
+by construction: block-1 output activations grow 1.4 → 6.6e8 and
+AdaLN modulation variances grow ×1e5–1e6 (gates/scales, both
+blocks), while the per-step lstsq alignment absorbs the scale
+explosion into (a,b) every step — the z-loss oscillates 0.4–0.7
+forever because it never sees the divergence it trains. Late
+grads exceed early ones ~6× (amplification forward, reverse of
+attenuation); grad norms swing 5 orders across samples (health
+fails at 146236); relative updates decay to ~1e-12 as parameter
+norms inflate (plus cosine →0 at the very end — schedule, not
+freezing, for the last point). This extends Phase 20's probe
+(enormous near-constant end predictions) into a mechanism:
+AdaLN-gated positive feedback (bigger acts → bigger mod weights
+→ bigger acts) with alignment masking. The quiet pin was never
+quiet inside.
+What this closes: attenuation (wrong direction, 0.155), quiet
+self-sabotage (opposite sign), and healthy-landscape (146236×
+spread) are all ruled OUT by number. What it opens (not this
+round): any next step must break the align-masks-scale loop
+(unmasked loss, activation ceilings, or modulation budgets —
+each its own constitution) — proposed, not run.
