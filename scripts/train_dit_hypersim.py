@@ -1,13 +1,13 @@
-"""DiT-faithful on Hypersim GT (student Phase 24): torch, data swap only.
+"""DiT-faithful on Hypersim GT (student Phases 24-26): torch.
 
-Phase-20 package EXACTLY (LN+GELU-form+AdaLN+patchify+unfused, B2,
-W64/H4/s16, shifted-log z + aligned-MAE, NO aux, 8k-cosine) on the
-Phase-23 Hypersim splits. Data is the ONLY variable (see
-docs/STUDENT.md Phase-24 constitution, FROZEN pre-run).
+Phase-26 alignment surgery: training alignment is SHIFT-ONLY
+(b fit no-grad, a≡1 — scale visible to the optimizer); eval keeps
+full affine alignment. See docs/STUDENT.md Phase-26 constitution
+(FROZEN pre-run) — loss is the ONLY variable vs Phase 24.
 Assembly: model from train_dit_student, scenes/frames from
-train_hyper, plumbing from train_base. No existing file's science
-touched. Weights out-of-tree; metrics -> attn_run_<tag>.json.
-Usage: python3 scripts/train_dit_hypersim.py --tag dithyp64b2
+train_hyper, plumbing from train_base. Weights out-of-tree;
+metrics -> attn_run_<tag>.json.
+Usage: python3 scripts/train_dit_hypersim.py --tag ditshift64b2
 """
 import argparse
 import json
@@ -155,10 +155,9 @@ def main():
             ps.append(p)
         p = torch.cat(ps)
         with torch.no_grad():
-            A = torch.stack([p.detach(), torch.ones_like(p)], 1)
-            ab, _, _, _ = torch.linalg.lstsq(A, Tm)
-            a, b = ab[0], ab[1]
-        loss = (a * p + b - Tm).abs().mean()
+            b = (Tm - p.detach()).mean()
+        a = 1.0
+        loss = (p + b - Tm).abs().mean()
         aux = torch.zeros((), device=device)
         if args.grad_w != 0 and (it % args.aux_every == 0
                                  or it == args.steps - 1):
