@@ -236,6 +236,93 @@ def main():
               0 <= tel.get("overhead", {}).get("frac", 1) < 0.10,
               f"hook overhead frac={tel.get('overhead', {}).get('frac'):.4f}")
 
+    # -- Phase-26 alignment-surgery legs (banked integrity + verdicts) --
+    # Same integrity shape (not a fork): 60 heldout frames x 6 strata
+    # finite-or-null, winner tripwire vs Phase-22 fresh bars, transfer
+    # reported-not-graded. Plus scale-boundedness legs on banked
+    # telemetry (Phase-25 blowup numbers as explicit comparison) and
+    # the round-verdict recompute (bounded+descended =
+    # confirmed-progressing, else deeper-pathology).
+    if "ditshift" not in ab:
+        print("SKIP ditshift legs (no banked surgery battery yet)")
+    else:
+        ds, dsc = ab["ditshift"], ab["ditshift"]["cells"]
+        check("ditshift-configs",
+              ds.get("configs") == ["ditshift64b2"]
+              and ds.get("reference") == "dithyp64b2",
+              "1 banked arch (loss line only), no new shapes")
+        BARS_FRESH = {"near": 0.068, "far": 0.019, "planar": 0.046,
+                      "nonplanar": 0.123, "tex": 0.132, "smooth": 0.117}
+        scomplete, scounts = True, {}
+        for t in ds["configs"]:
+            fr = {n: f for n, f in dsc[t]["frames"].items()
+                  if f.get("split") == "heldout"}
+            scomplete &= (len(fr) == 60 and all(
+                len(fr[n].get("strata", {})) == 6
+                and all(v is None or (np.isfinite(v) and v >= 0)
+                        for v in fr[n]["strata"].values())
+                for n in fr))
+            scounts[t] = sum(
+                1 for n in fr for k in BARS_FRESH
+                if fr[n]["strata"][k] is not None
+                and fr[n]["strata"][k] <= BARS_FRESH[k])
+        check("ditshift-complete", bool(scomplete), "1x60x6 finite-or-null")
+        check("ditshift-winner-none",
+              all(v == 0 for v in scounts.values())
+              and ds.get("winner") is None,
+              f"held-out cells under fresh bars: {scounts}")
+        check("ditshift-determinism-note", True,
+              "single-seed, retrain NOT verified (stated, not green-washed)")
+        str_ = ds.get("transfer", {})
+        check("ditshift-transfer-unjudged",
+              set(str_) == {"fixtures"}
+              and all(str_[t].get("judged") is False for t in str_)
+              and "grid-lock" in str_["fixtures"].get("note", ""),
+              "transfer reported-not-graded (grid-lock note)")
+
+    # -- Phase-26 scale-boundedness legs (banked telemetry) --------------
+    # Frozen bounds: act_out < 1e4, act_in < 1e3, end mod vars < 1e2,
+    # final loss < 0.40 (descent past the 0.40-0.74 pin). Phase-25
+    # recurrence numbers alongside every assertion (6.6e8 / 14415 /
+    # final 0.6183). Round verdict recomputed: bounded+descended =
+    # mechanism-confirmed-and-progressing, else deeper-pathology.
+    TP26 = os.path.join(ROOT, "samples", "marigold",
+                        "ditshift64b2_telemetry.json")
+    if not os.path.isfile(TP26):
+        print("SKIP surgery-telemetry legs (no banked Phase-26 telemetry)")
+    else:
+        st = json.load(open(TP26))
+        smps = st.get("samples", [])
+        mx_out = max(b["act_out"] for x in smps for b in x["blocks"])
+        mx_in = max(b["act_in"] for x in smps for b in x["blocks"])
+        endvars = [x["blocks"][b]["mod"][c]["var"]
+                   for x in smps[-1:] for b in (0, 1)
+                   for c in ("sh1", "sc1", "g1", "sh2", "sc2", "g2")]
+        mx_mod = max(endvars)
+        fin = st["loss_trace"][-1]
+        check("surgery-acts-bounded",
+              mx_out < 1e4 and mx_in < 1e3,
+              f"act_out max={mx_out:.1f} (<1e4; P25 6.6e8) "
+              f"act_in max={mx_in:.1f} (<1e3)")
+        check("surgery-mods-bounded",
+              mx_mod < 1e2,
+              f"end mod var max={mx_mod:.4f} (<1e2; P25 14415)")
+        check("surgery-descent",
+              fin < 0.40,
+              f"final loss={fin:.4f} (<0.40 past pin; P25 0.6183)")
+        bounded = mx_out < 1e4 and mx_in < 1e3 and mx_mod < 1e2
+        rv = ("mechanism-confirmed-and-progressing"
+              if (bounded and fin < 0.40) else "deeper-pathology")
+        check("surgery-verdict",
+              st.get("round_verdict", {}).get("name") == rv,
+              f"banked={st.get('round_verdict', {}).get('name')} "
+              f"recomputed={rv}")
+        sk = st.get("smoke", {})
+        check("surgery-smoke",
+              bool(sk.get("ok")) and sk.get("it0_diff", 1) <= 1e-4,
+              f"it0 match diff={sk.get('it0_diff'):.2e} (tol 1e-4; "
+              f"prefix-past-it0 invalid across schedules, stated)")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 
