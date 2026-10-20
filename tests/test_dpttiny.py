@@ -364,6 +364,53 @@ def main():
                   db(ref["OUT"].astype(np.float32), outs[0]) >= 40,
                   f"{db(ref['OUT'].astype(np.float32), outs[0]):.1f}dB (CUDA vs torch)")
 
+    # -- demo-pipeline integrity (no camera; stills fallback end-to-end) ---
+    # The live loop itself is demo, never gate. This leg runs the
+    # stills-fallback path: capture + preprocess + served step +
+    # banner + out-of-tree default.
+    sys.path.insert(0, os.path.join(ROOT, "scripts"))
+    import demo_dpt_webcam as DEMO
+    check("dpt-demo-outdir", DEMO.OUTDIR.startswith("/tmp"),
+          f"default out-of-tree: {DEMO.OUTDIR}")
+    check("dpt-demo-banner", "UNTRAINED" in DEMO.BANNER,
+          "untrained banner present")
+    dtmp = "/tmp/dpttiny_demo_leg"
+    shutil.rmtree(dtmp, ignore_errors=True)
+    dpaths, dorigin = DEMO.capture("stills", 2, dtmp)
+    check("dpt-demo-capture",
+          len(dpaths) == 2 and dorigin.startswith("stills")
+          and all(os.path.isfile(p) for p in dpaths),
+          f"stills fallback: {dorigin}")
+    from PIL import Image as _Image
+    rgb0 = np.asarray(_Image.open(dpaths[0]).convert("RGB"))
+    depth0 = DEMO.served_step(
+        os.path.join("/tmp/dpttiny_cu", "dpttiny"),
+        [ln.split()[1] for ln in text.splitlines()
+         if ln.startswith("IN ")],
+        "/tmp/dpttiny_cu", rgb0.astype(np.float64) / 255.0,
+        {k: v for k, v in Wd.items()},
+        {"patch": ids["patch"], "up16_8": ids["up16_8"],
+         "up16_4": ids["up16_4"], "dn16_32": ids["dn16_32"],
+         "up8_4": ids["up8_4"], "up4_full": ids["up4_full"],
+         "up32_16": ids["up32_16"]}) \
+        if (shutil.which("nvcc") is not None and _t.cuda.is_available()
+            and os.path.isfile("/tmp/dpttiny_cu/dpttiny")) else None
+    if depth0 is None:
+        print("SKIP dpt-demo-served (needs built served binary + GPU)")
+    else:
+        check("dpt-demo-served",
+              depth0.shape == (672, 1024) and bool(np.isfinite(depth0).all()),
+              "served step finite (672,1024)")
+        viz = DEMO.visualize(depth0)
+        check("dpt-demo-viz", viz.size == (1024, 672), f"viz {viz.size}")
+    repo_leak = [p for p in
+                 glob.glob(os.path.join(ROOT, "samples", "**", "*strip*.png"),
+                           recursive=True)
+                 + glob.glob(os.path.join(ROOT, "samples", "**", "cam*.png"),
+                             recursive=True)]
+    check("dpt-demo-privacy", repo_leak == [], "no webcam frames in-repo")
+    shutil.rmtree(dtmp, ignore_errors=True)
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 
