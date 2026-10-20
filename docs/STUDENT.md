@@ -1426,3 +1426,35 @@ wall stands on every axis tried, and the last door (this sweep)
 opened onto the same pin. What remains lives outside current
 rules (new patterns per PATTERN_GAPS.md, or new evidence)
 — named, unopened, out of scope.
+
+## Phase 22 — Hypersim feasibility, no training (constitution, FROZEN pre-download)
+
+Disk check first (measured, not assumed): 3.1T free on /;
+subset = ONE shard (`obukhovai/hypersim_relative_depth`
+`hypersim-00000.tar`, 4.51GB per HF files-metadata) — fetch
+approved by the numbers (3 orders of magnitude headroom; stop
+condition moot, recorded anyway). Out-of-tree:
+`~/student_runs/hypersim_shard00/` (tar + extract, documented).
+Fetch via huggingface_hub single-file (their repo ID + shard
+pattern from sibling `scripts/download_assets.py:515-524`,
+which itself fetches all 30 shards — bounded subset here, not
+their script verbatim; sibling untouched). Read semantics follow
+their depth config (`ReadDepthFileAuto`: PNG/1000, clip
+[1e-5, 65.0], valid masks; training config
+`training_relative_log_depth_config.yaml:12-57`).
+Then, all pre-declared: GT quality audit on first 24 valid
+frames (invalid-pixel rates: ≤0/>65/NaN; thin-structure noise:
+Sobel-gradient distribution + discontinuity density — Fig. 4
+framing operationalized thus, measured never assumed); strata
+transfer check (our 6 rules on Hypersim frames — 30-70%
+coverage holds, or median-collapse like box rooms, reported
+either); scaffold-floor re-measurement (constant-mean stub →
+fresh bars; inherited bars do not cross distributions, ever).
+GO/NO-GO frozen: GO iff ALL — (1) invalid rate <5% mean AND
+<20% worst frame; (2) coverage holds on ≥5/6 rules (no
+median-collapse); (3) scaffold bars computable (finite, tex
+hardest as on real fixtures — ordering check). Else NO-GO with
+evidence. Adopted as suggested (no reason to replace).
+Feasibility only: no training, no emitter/opcode/assembly, no
+new deps (huggingface_hub already pinned Phase-0); Qwen-7B
+never co-loaded; nothing here needs a GPU.
