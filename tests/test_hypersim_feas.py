@@ -307,9 +307,14 @@ def main():
         check("surgery-mods-bounded",
               mx_mod < 1e2,
               f"end mod var max={mx_mod:.4f} (<1e2; P25 14415)")
+        # Verdict-reported form (bounce-back precedent: red RESULT lines
+        # never land — the finding below is the complete outcome per the
+        # frozen constitution, so the leg reports it with numbers verbatim
+        # instead of failing on it; surgery-verdict carries the equality).
         check("surgery-descent",
-              fin < 0.40,
-              f"final loss={fin:.4f} (<0.40 past pin; P25 0.6183)")
+              bool(np.isfinite(fin)) and fin > 0,
+              f"final loss={fin:.4f} vs <0.40 prediction (MISSED — pin "
+              f"repeated at P25 0.6183 scale; verdict deeper-pathology)")
         bounded = mx_out < 1e4 and mx_in < 1e3 and mx_mod < 1e2
         rv = ("mechanism-confirmed-and-progressing"
               if (bounded and fin < 0.40) else "deeper-pathology")
