@@ -1527,3 +1527,26 @@ Metrics + configs banked in-repo (`hyper_run_<tag>.json` +
 `hyper` battery key, reference `mscale64`); weights out-of-tree;
 no further downloads (shard suffices — more data is a later
 round, not mid-round scope growth).
+
+### Battery results (2/2 ran: 1451s + 40s walls, GPU solo)
+
+In-domain heldout vs fresh bars: BOTH 0/360 (gate-counted, 0 nulls —
+Hypersim continuous stats, consistent with 6/6 coverage).
+Means tell the shape: hyper-mscale train 0.495 → heldout 0.977;
+hyper-jattn train 0.648 → heldout 1.595. Best cells 0.26-0.40
+(3-4x over bars); worst strata (near 1.8-2.8) worst everywhere.
+No winner, no retrain-match (nothing to claim; determinism
+explicitly NOT re-verified — single-seed result, stated in gate).
+Transfer (secondary, ungraded): mscale-on-real mean 0.381
+(banked-mixer levels — no gain, no collapse); jattn grid-locked
+(pos tables resolution-specific, RuntimeError pattern).
+Diagnosis: scale + exact GT move nothing past the wall — train
+means (0.5-0.6) never approach bars, so this is underfit AND
+generalization gap stacked (2x train→heldout on both). The
+wall reproduces on real indoor GT at 30x the data: same shape
+as every synthetic round (train fits partway, held-out flat,
+far/texture best, near worst). Reuses honorable mention: twin
+schedules converging identically is the only tight number here.
+Empty of winners, full of signal: real data does not rescue
+either family; the restriction/pattern doors from prior rounds
+remain the only ones with positive evidence (7/96 tie).
