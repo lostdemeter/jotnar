@@ -21,6 +21,9 @@ import time
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(ROOT, "scripts"))
+
+import train_base as BASE
 
 FIXDIR = os.path.join(ROOT, "samples", "marigold")
 OUTBASE = os.path.expanduser("~/student_runs")
@@ -163,10 +166,8 @@ def main():
     import numpy as np
     import torch
     JointAttn = _define_model(torch)
-    torch.manual_seed(args.seed)
-    np.random.seed(args.seed)
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"device={device} torch={torch.__version__}", flush=True)
+    BASE.seed_all(args.seed)
+    device = BASE.pick_device()
 
     frames = {}
     for n in args.train + args.heldout:
@@ -179,7 +180,7 @@ def main():
                             torch.arange(W0, device=device), indexing="ij")
     pidx = ((yy // args.stride) * ncols + (xx // args.stride)).long()
     pidx14 = torch.clamp((yy // 14) * 73 + (xx // 14), max=3503).long()
-    sidx = torch.arange(0, H0 * W0, 7, device=device)
+    sidx = BASE.stride_index(H0 * W0, 7, device)
 
     dino = {}
     if args.feat != "rgb":
@@ -208,29 +209,28 @@ def main():
     opt = torch.optim.Adam(net.parameters(), lr=args.lr)
 
     Tcat = torch.cat([frames[n][1].reshape(-1)[sidx] for n in args.train])
+    timer = BASE.PhaseTimer()
     t0 = time.time()
-    import math as _math
     for it in range(args.steps):
-        if args.schedule == "cosine":
-            lr_t = args.lr * 0.5 * (1.0 + _math.cos(_math.pi * it / args.steps))
-            for pg in opt.param_groups:
-                pg["lr"] = lr_t
+        BASE.apply_schedule(opt, args.schedule, args.lr, it, args.steps)
         opt.zero_grad()
         ps = []
         for n in args.train:
             rgb, _ = frames[n]
-            to, hidx = enc(n)
-            p = net.head(to, rgb, hidx).reshape(-1)[sidx].double()
+            with timer.time("forward"):
+                to, hidx = enc(n)
+                p = net.head(to, rgb, hidx).reshape(-1)[sidx].double()
             ps.append(p)
         p = torch.cat(ps)
-        with torch.no_grad():
-            A = torch.stack([p.detach(), torch.ones_like(p)], 1)
-            ab, _, _, _ = torch.linalg.lstsq(A, Tcat)
-            a, b = ab[0], ab[1]
-        loss = (a * p + b - Tcat).abs().mean()
-        loss.backward()
+        with timer.time("backward"):
+            with torch.no_grad():
+                A = torch.stack([p.detach(), torch.ones_like(p)], 1)
+                ab, _, _, _ = torch.linalg.lstsq(A, Tcat)
+                a, b = ab[0], ab[1]
+            loss = (a * p + b - Tcat).abs().mean()
+            loss.backward()
         opt.step()
-        if it % 500 == 0 or it == args.steps - 1:
+        if BASE.cadence(it, args.steps, 500):
             print(f"iter {it}: loss {loss.item():.4f}", flush=True)
     print(f"train wall: {time.time() - t0:.0f}s", flush=True)
 
@@ -250,23 +250,24 @@ def main():
            "weights": os.path.join(outdir, "weights.pt"),
            "nparams": nparams, "frames": {}}
     net.eval()
-    with torch.no_grad():
-        for split, names in (("train", args.train), ("heldout", args.heldout)):
-            for n in names:
-                rgb, t = frames[n]
-                to, hidx = enc(n)
-                p = net.head(to, rgb, hidx).cpu().numpy()
-                t = t.cpu().numpy()
-                Hh, Ww = next(r["shape"] for r in man["fixtures"] if r["name"] == n)
-                masks = H.strata_masks(t.reshape(Hh, Ww), rgb.cpu().numpy().reshape(Hh, Ww, 3))
-                per = {k: H.align_mae(p.reshape(Hh, Ww), t.reshape(Hh, Ww), masks[k])
-                       for k in H.STRATA}
-                rep["frames"][n] = {"split": split, "strata": per}
+    with timer.time("eval"):
+        with torch.no_grad():
+            for split, names in (("train", args.train), ("heldout", args.heldout)):
+                for n in names:
+                    rgb, t = frames[n]
+                    to, hidx = enc(n)
+                    p = net.head(to, rgb, hidx).cpu().numpy()
+                    t = t.cpu().numpy()
+                    Hh, Ww = next(r["shape"] for r in man["fixtures"] if r["name"] == n)
+                    masks = H.strata_masks(t.reshape(Hh, Ww), rgb.cpu().numpy().reshape(Hh, Ww, 3))
+                    per = {k: H.align_mae(p.reshape(Hh, Ww), t.reshape(Hh, Ww), masks[k])
+                           for k in H.STRATA}
+                    rep["frames"][n] = {"split": split, "strata": per}
+    timer.summary()
     for n, fr in rep["frames"].items():
         print(n, fr["split"], {k: round(v, 4) for k, v in fr["strata"].items()},
               flush=True)
-    json.dump(rep, open(os.path.join(FIXDIR, "attn_run.json"), "w"), indent=1)
-    print("wrote samples/marigold/attn_run.json", flush=True)
+    BASE.bank_metrics(rep, os.path.join(FIXDIR, "attn_run.json"))
 
 
 if __name__ == "__main__":
