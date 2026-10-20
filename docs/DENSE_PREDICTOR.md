@@ -93,3 +93,33 @@ landed 2 new rows eventually (CONV, INTERP — both landed in the
 pattern-p1/p2 rounds); nothing else moves.
 A design with an uncited component would be incomplete — none
 found on self-review (CLS-drop and head-3x3 were the catches).
+
+## Build (pattern round product — listing executes, no training)
+
+`programs/dpt_tiny.py` (builder-constructed, 1237 ops) +
+`tests/test_dpttiny.py` (torch twin + parity/determinism gate).
+ALL OK: lattice OUT 77.6dB, scales 52-57dB, fusion interiors
+40.5-43.7dB, shapes exact x4 scales, finite, lattice rerun
+bit-exact, P1-equivalence exact (GATHER-form == emitted-C P1),
+CUDA run OK + bit-exact rerun + 84.8dB vs twin (40dB bar
+throughout, drill convention).
+As-built deviations from design (with reasons): fiber doctrine
+throughout (no reshape exists — GATHER-tap convs per Phase-5
+precedent instead of P1-CONV in-situ; nearest-GATHER upsamples
+instead of INTERP, which needs HWC streams); attention scale
+baked into Wq (only two const fills exist: BETA/TBETA spent on
+GELU-form); bias-free linears/convs (v0.1); no text stream, no
+AdaLN, no timestep (plain DPT blocks); shared LN ones/zeros;
+fixed-point scales = builder_block convention (file defaults
+measure 12dB on O(1) matmuls); twin proof setup global 0.04x
+(measured sweep for ±1.0 coverage; listing scale-agnostic).
+Bugs caught by the gates, documented: same-name stream reuse
+(`px` x255, `B0cc` x3) breaks emitter dim capture (lattice is
+immune — feeds-dict overwrite is sequential-correct) → SSA
+discipline (unique names) now and always; N-convention traps
+(O_N=rows vs elements) in CONV/INTERP launches; border-coord
+vs border-index clamp in INTERP (caught at 18dB).
+What training needs next (explicitly NOT this round): kaiming→
+trained weights, Hypersim pipeline, LR/schedule constitution,
+log+aligned+grad loss, strata + AbsRel/δ1 judge, retrain-match
+discipline for any claimed winner.
