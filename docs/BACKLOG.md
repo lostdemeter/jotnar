@@ -1,6 +1,6 @@
 # Backlog — queued work, in order
 
-## 1. Geometric code profiler (NEXT UP — starts after the DPT-tiny training verdict)
+## 1. Geometric code profiler (BUILT on `exp/geo-profiler` — evidence below)
 
 **Why:** every speed round hand-rolled its own profiling (trace-`sec`
 attribution, intercept fits, N-sweeps, `/tmp/profrep` workdirs,
@@ -20,3 +20,60 @@ real-time goal.
 within a band). CPU-first. Small, wraps existing trace + census.
 
 **Trigger:** MET (training verdict landed as e974eaf, empty 0/360) — prompt next.
+
+### 1a. Built with evidence (`chain/geo_profiler.py`, `tests/test_geo_profiler.py`)
+
+Placement: `chain/geo_profiler.py` — alongside the `census.py`/`fusion.py`
+it wraps, sharing their import surface and the `python3 tests/test_x.py`
+gate pattern. No emitter changes, no new dependencies, CPU-only.
+Static half predicts TRAFFIC (passes → bytes linearly), not wall: compute
+varies by op class (stated v1 scope). Dynamic half is one traced run after
+one untraced warmup (GC paused during the trace). Floor/roof come from the
+run itself (no magic constants): dispatch iff wall ≤ 2×floor and slow
+mover; traffic iff bw ≥ 0.30×roof (0.30 sits in the measured gap:
+max-compute 0.17× roof, min-traffic 0.46× roof); else compute.
+`bench/matmul_decode.cu` stays the served-path GPU reference — cited, not
+executed (no served-path profile needed CPU-first anything here).
+Demo sizes: flagship 24×32 as suggested; demo 24×32 REPLACES suggested
+12×16 with reason (at 12×16 a scheduling outlier flipped one verdict
+1/10 runs; at 24×32 verdicts are 10/10 stable, statics size-independent).
+
+Measured example — flagship 24×32, `--budget 33` (gate: WMAPE 0.173 ≤ 0.40):
+
+```text
+op           class       P  predB     B  wall_ms  bw_MBps verdict fused
+SRGB_DECODE  elementwise  2  10805  11520    0.048    240.3 traffic  -
+LUMA         reduce       2  10805  15360    0.035    443.2 traffic  -
+SQRT         elementwise  2  10805  10752    0.067    159.7 traffic  -
+SPLAT_BLUR   stencil      3  16207  13824   11.737      1.2 compute  -
+SUB          elementwise  3  16207  13824    0.189     73.1 compute  -
+BETA_V5      elementwise  3  16207  13824    1.388     10.0 compute  Y
+MUL          elementwise  3  16207  13824    0.033    423.6 traffic  Y
+ADD          elementwise  3  16207  13824    0.161     85.7 compute  Y
+SQUARE       elementwise  2  10805   9216    0.196     47.0 compute  Y
+GAIN         broadcast    4  21610  29184    0.400     73.0 compute  Y
+SRGB_ENCODE  elementwise  2  10805  11520    0.030    381.1 traffic  Y
+totals: passes=29 saved=10 (1 chains) bytes=156672 wall=14.284ms
+consistency: WMAPE=0.173 band=0.40 OK
+budget 33ms burn-down head: SPLAT_BLUR +8.323ms over (the frame-buster);
+next worst BETA_V5 already -2.026ms under (total over -18.716ms).
+```
+
+Demo 24×32: 43 ops, passes=109 saved=28 (4 chains), bytes=466800,
+wall≈3ms, WMAPE=0.066 OK; verdicts 27 traffic (memcpy movers: MUL/SLICE/
+CONCAT) + 16 compute (lattice ADD/SUB), zero dispatch; 33ms budget head
+is a SLICE at -0.586ms (whole listing fits the frame 10× over).
+Gate `tests/test_geo_profiler.py` (CPU, <1s): band ×2 listings, budget
+over/under/sorted/sums, determinism (canonical + verdicts), synthetic
+verdict edges, fail-loud legs, CLI smoke (`--budget` required).
+Neighbors green: `test_census.py`, `test_fusion_advisor.py`.
+Bugs caught while building (mechanisms): (1) demo 12×16 verdict flipped
+1/10 runs — µs-scale wall outlier crossed the 0.30✕roof boundary
+(bw/roof 0.29 vs 0.30); fixed by profiling demo at 24×32 (absolute jitter
+shrinks relative to walls; 10/10 stable since). (2) burn-down ROW ORDER
+is wall-derived — two near-tied overs swapped places between runs, so
+`canonical()` compares budget rows (op,line)-sorted while in-run
+worst-first order is gated separately. Gap named: dispatch-bound never
+fires on these CPU listings (every op moves ≥140 elems; Python overhead
+never dominates) — the branch is covered by synthetic unit legs only,
+live dispatch verdicts await a served-path (GPU) profile.
