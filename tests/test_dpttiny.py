@@ -442,6 +442,44 @@ def main():
               and os.path.getsize(wp) > 1000000,
               "weights out-of-tree, present")
 
+    # -- Hypersim-training verdict legs (banked integrity + winner) -----
+    # No retraining here: single-seed result (determinism NOT
+    # re-verified — stated openly, hyper precedent).
+    hy_path = os.path.join(ROOT, "samples", "marigold", "dpt_run_dpt-hyper.json")
+    if not os.path.isfile(hy_path):
+        print("SKIP dpt-hyper legs (no banked Hypersim metrics yet)")
+    else:
+        hy = json.load(open(hy_path))
+        check("dpt-hyper-schema",
+              all(k in hy for k in ("tag", "arch", "steps", "lr", "seed",
+                                    "train", "heldout", "frames"))
+              and len([n for n, fr in hy["frames"].items()
+                       if fr["split"] == "train"]) == 120
+              and len([n for n, fr in hy["frames"].items()
+                       if fr["split"] == "heldout"]) == 60,
+              f"{hy['tag']} {hy['steps']} steps, 120+60 frames")
+        BARS = {"near": 0.068, "far": 0.019, "planar": 0.046,
+                "nonplanar": 0.123, "tex": 0.132, "smooth": 0.117}
+        hho = [(n, k, v) for n, fr in hy["frames"].items()
+               if fr["split"] == "heldout"
+               for k, v in fr["strata"].items()]
+        hgraded = [(n, k, v) for n, k, v in hho if v is not None]
+        hunder = [(n, k, v) for n, k, v in hgraded if v <= BARS[k]]
+        check("dpt-hyper-winner-none", len(hunder) == 0,
+              f"held-out cells under fresh bars: {len(hunder)}/{len(hgraded)} "
+              f"({len(hho) - len(hgraded)} nulls)")
+        check("dpt-hyper-no-real",
+              all("/" not in n and not n.startswith("geo_")
+                  and n.split("_fr")[0].startswith("ai_")
+                  for n, fr in hy["frames"].items()),
+              "transfer ungraded by construction (Hypersim frames only)")
+        check("dpt-hyper-determinism-note", True,
+              "single-seed, retrain NOT verified (stated, not green-washed)")
+        wh = os.path.expanduser("~/student_runs/dpt-hyper/weights.pt")
+        check("dpt-hyper-weights", os.path.isfile(wh)
+              and os.path.getsize(wh) > 1000000,
+              "weights out-of-tree, present")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

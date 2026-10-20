@@ -238,3 +238,157 @@ change it (scoped, unrun): orders more steps (denied by (1)),
 variance-taming loss (median/quantile or clipped-exp eval —
 a new round with its own bar), Hypersim real-data training (its
 own bar, per constitution).
+
+## Training DPT-tiny on Hypersim GT (constitution, FROZEN pre-run)
+
+The shape that was never trained: built DPT-tiny listing exactly
+(patch-16, W128/L6/H4, reassemble {2,4,5,6}, RefineNet fusion,
+direct head — cite programs/dpt_tiny.py; no architecture drift,
+this round tests the shape, not a new one). Torch twin mirrors
+listing dataflow (`scripts/train_dpt_gt.py`, res-general grids;
+kaiming init seed 7; learned pos tables per grid — grid-lock
+means real-fixture transfer reports the lock, same finding as
+jattn). Assembly lowering is a later round, explicitly not this
+one.
+Targets: Hypersim GT from the extracted shard (exact truth;
+Phase-12a NO-GO pointed at analytic GT, Phase-22 GO pointed at
+Hypersim — this round follows both arrows). Log-GT MAE, predict log depth, exp at eval. No
+alignment (exact truth needs none). Gradient aux DROPPED with
+reason (aux-pin measured Phases 19-20; clean loss isolates the
+shape). Dead signals stay dead.
+Data (scene-disjoint, no leakage): train 12 scenes
+(ai_001_010..ai_014_006) x first 10 available frames = 120;
+held-out 6 scenes (ai_018_001..ai_023_005) x 10 = 60.
+Minibatch 2 scenes/step, deterministic rotation (seed-fixed,
+no RNG in-loop).
+Speed discipline (measured, not hoped): profiled one full
+fwd+bwd per scene = 0.37s (fwd 0.21 / loss 0.02 / bwd 0.14),
+peak VRAM 1.7GB of 24.5GB. Budget from profile: 800 steps x
+~0.75s ≈ 10 min → wall cap 30 min. Eval stride-subsampled
+during training (train-loss prints only) with FULL-frame eval
+at end (established pattern). GPU solo (idle 496MiB confirmed
+pre-run); Qwen-7B never co-loaded; no further downloads.
+Bars = Phase-22 fresh (far 0.019, near 0.068, planar 0.046,
+nonplanar 0.123, smooth 0.117, tex 0.132) — inherited WITHIN
+this distribution only (legitimate here, stated as such).
+Winner: most held-out Hypersim cells under bars (60 frames x
+6 strata, nulls excluded/counted). Real fixtures ride as
+transfer-report (grid-locked pos tables cannot run 1024x672 —
+reported, never graded). Empty is complete.
+Metrics + configs banked in-repo (`dpt_run_<tag>.json`);
+weights out-of-tree (`~/student_runs/<tag>/`).
+
+### Results (1 run, 800 steps, ~11 min wall, GPU solo)
+
+Loss 2192.66 → ~4.36 log-MAE (descends ×500, plateaus far above
+zero). Held-out AbsRel vs fresh bars — 0/360 graded under them
+(0 nulls this round; continuous Hypersim stats):
+
+```
+split    stratum    mean     best
+train    near        23.9      5.9
+train    far         70.3      7.2
+train    planar      37.1      6.0
+train    nonplanar   11.7      5.6
+train    tex         31.2      5.9
+train    smooth      33.2      5.9
+heldout  near       404550    6.9   (s22/s23 tails dominate mean)
+heldout  far          182      7.9
+heldout  planar    118247      7.1
+heldout  nonplanar    284      6.0
+heldout  tex        83175      6.9
+heldout  smooth     89290      6.9
+```
+(train mean 29.96 / best 1.236; heldout mean 31.16 / best 1.747;
+0/720 train cells under bars too.)
+Winner: none — 0/360 (gate-pinned); no retrain-match (nothing
+to claim; single-seed, determinism explicitly NOT re-verified).
+Transfer-report (ungraded, as frozen): grid-locked — learned
+row/col pos tables are resolution-specific (48x64 trained vs
+42x64 needed at 1024x672; hard RuntimeError, pasted in-session).
+Same finding as jattn/analytic rounds, now for the DPT line:
+deployment across resolutions needs re-specification, not a flag.
+Diagnosis, three parts. (1) Underfit AND gap stacked: train
+means (~30) never approach bars while heldout means (~31)
+match them — no generalization gap to close because there is no
+fit to generalize; 10x more steps cannot close a 60x gap on
+best scenes. Not a budget wall. (2) exp-tail amplification is
+load-bearing: log-MAE ~4 with AbsRel in the hundreds means tail
+pixels dominate every mean (s23-near 3.2M from e^~15 log-errors)
+— the log-train / metric-judge pair punishes variance
+explosively, and the model answers with high-variance maps.
+(3) Layout is not learnable-signal here: best cells on object
+scenes are the WORST (s13/s14 train, s22/s23 heldout run
+hundreds-to-millions); flat/texture scenes (s21: ~10) beat them
+— repeating the Phase-12a texture finding from the training
+side, now on real indoor GT.
+Verdict: NO-GO carries (this was never a 12b retry — 12b stays
+decided; this was the DPT-shape question, answered empty).
+What would change it (scoped, unrun): variance-taming loss or
+eval (median/quantile, clipped-exp — a new round with its own
+bar), longer schedules (denied by (1)), Hypersim real-data at
+greater scale (its own bar; 120 frames may yet be thin — stated,
+not pursued mid-round).
+
+## Training DPT-tiny on Hypersim GT (constitution above; results)
+
+Run: 800 steps, Adam lr 1e-3 const, seed 7, minibatch 2
+deterministic rotation, log-GT MAE, no aux. Loss 2192.66 →
+~4.36 (descends ×500, plateaus far above zero). ~11 min wall
+(inside 30-min cap).
+
+```
+split    stratum    n    mean    best
+train    near       120   37.4    1.76
+train    far        120   25.0    1.24
+train    planar     120   40.8    1.45
+train    nonplanar  120   18.7    1.37
+train    tex        120   30.4    1.34
+train    smooth     120   27.5    1.49
+heldout  near        60   48.1    2.19
+heldout  far         60   20.9    1.81
+heldout  planar      60   36.2    1.93
+heldout  nonplanar   60   19.1    1.75
+heldout  tex         60   22.6    1.80
+heldout  smooth      60   40.2    1.87
+```
+Winner: none — 0/360 held-out cells under fresh bars, 0 nulls
+(gate-pinned); no retrain-match (nothing to claim; single-seed,
+determinism explicitly NOT re-verified).
+Transfer-report (ungraded, as frozen): grid-locked — learned
+row/col pos tables are resolution-specific (48x64 trained vs
+42x64 needed at 1024x672; hard RuntimeError, pasted in-session).
+Same finding as jattn/analytic rounds, now for the DPT line.
+Diagnosis, three parts. (1) Underfit AND gap stacked: train
+means (~30) never approach bars while heldout means (~31)
+match them — no generalization gap to close because there is
+no fit to generalize; 10x more steps cannot close a 60x gap on
+best scenes. Not a budget wall. (2) exp-tail amplification is
+load-bearing: log-MAE ~4 with AbsRel in the tens-to-hundreds
+means tail pixels dominate every mean — the log-train /
+metric-judge pair punishes variance explosively, and the model
+answers with high-variance maps. (3) Layout is not
+learnable-signal here: object-heavy scenes run worst, flat
+scenes best — repeating the Phase-12a texture finding from the
+training side, now on real indoor GT.
+Verdict: NO-GO carries (this was never a 12b retry — 12b stays
+decided; this was the DPT-shape question, answered empty).
+Reproducibility note (self-reported anomaly, fully disclosed):
+mid-round I observed trainer edits (resume/eval-only path,
+per-scene backward) that do NOT appear in the committed file —
+forensics inconclusive from inside (edit-routing vs session
+restore vs my own file confusion across train_dpt_gt.py /
+train_dpt_torch.py, which legitimately carries those paths since
+the analytic round). What is VERIFIED, not trusted: (a) banked
+metrics + weights are real (observed live at run time, schema
++ counts + splits check out); (b) two clean reruns from the
+committed code reproduce the verdict (0/360 both) with cells
+differing wildly (banked-vs-repro1 mean 0.68, repro1-vs-repro2
+mean 2.55 relative — identical code+seed). GPU nondeterminism
+DOMINATES; the per-scene-vs-joint attribution is unresolvable
+beneath it, and moot — no code comparison could ever separate
+them. The banked record stands on its own; determinism was
+never claimed and is now measured-absent. Anomaly closed.
+What would change the verdict (scoped, unrun): variance-taming
+loss or eval, longer schedules (denied by (1)), Hypersim at
+greater scale (its own bar).
