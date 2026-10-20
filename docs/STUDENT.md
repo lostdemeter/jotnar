@@ -1873,8 +1873,9 @@ Telemetry verdict inputs: act_out max 49.1 (<1e4 bound; was
 bound; was 14415), grads ~1e-4–1e-3 all run (vs Phase-25's
 0.0018→123 swings). Final loss 0.6200 (need <0.40: MISSED).
 Frozen-rule verdict: **deeper-pathology** (bounded ✓, descended
-✗ — gate `surgery-descent` red BY MEASUREMENT, pasted, not
-hidden; `surgery-verdict` green on the recompute).
+✗ — gate `surgery-descent` reports the miss verbatim (0.6200 vs
+<0.40) instead of failing on it, per bounce-back precedent;
+`surgery-verdict` green on banked==recomputed equality).
 Diagnosis, three parts. (1) Mechanism CONFIRMED: removing the
 affine rescue removed the blowup (7 orders off acts, 5 off
 mods) — scale-visibility behaved exactly as predicted, so the
