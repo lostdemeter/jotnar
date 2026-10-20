@@ -19,5 +19,4 @@ real-time goal.
 **Bar:** gated on self-consistency (static prediction vs measured
 within a band). CPU-first. Small, wraps existing trace + census.
 
-**Trigger:** worker prompt goes out once the training round
-(`student/train-dpttiny`) merges and the box is free.
+**Trigger:** MET (training verdict landed as e974eaf, empty 0/360) — prompt next.
