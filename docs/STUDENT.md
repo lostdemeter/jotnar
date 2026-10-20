@@ -1614,4 +1614,65 @@ Implementation: new `scripts/train_dit_hypersim.py` assembling
 existing file's science touched; assembly lowering waits behind
 a winner, explicitly not this round.
 
-### Battery results (TBD — run lands here)
+### Battery results (1 run, 8000 steps, 795s wall, GPU solo)
+
+Loss never descends: cadence prints oscillate 0.40–0.74 all 8000
+steps (final 0.6183) — the Phase-19/20 pin shape at a lower floor
+(z-loss ~0.5 vs 0.85; different target distribution, same
+non-optimization). Held-out align-MAE vs fresh bars — 0/360 under
+(0 nulls; continuous Hypersim stats):
+
+```
+split    stratum    n    mean    best
+train    near       120   3.12    0.510
+train    far        120   3.68    0.510
+train    planar     120   3.16    0.453
+train    nonplanar  120   3.60    0.620
+train    tex        120   3.38    0.563
+train    smooth     120   3.61    0.476
+heldout  near        60   1.60    0.412
+heldout  far         60   1.82    0.386
+heldout  planar      60   1.99    0.393
+heldout  nonplanar   60   1.53    0.394
+heldout  tex         60   1.77    0.445
+heldout  smooth      60   1.62    0.355
+```
+(train mean 3.42 / best 0.453; heldout mean 1.72 / best 0.355.)
+Winner: none — 0/360 (gate-pinned `dithyp-winner-none`); no
+retrain-match (nothing to claim; single-seed, determinism
+explicitly NOT re-verified — hyper precedent).
+Transfer-report (ungraded, as frozen): grid-locked — fixture grid
+needs 42×64 tables, this grid is 48×64 (`RuntimeError`, caught in
+run, banked note). Same mechanism as jattn/DPT lines.
+Diagnosis, three parts. (1) The Phase-20 collapse reproduces on
+new data with the identical package: z-loss pinned ~0.5 across
+8000 cosine steps, best cells 0.36–0.56 (3–4× over bars — the
+same band as hyper's bests). Collapse is data-independent; data
+was never the missing key for this line. (2) Inverted gap:
+heldout means (1.7) BEAT train means (3.4) — no generalization
+gap because there is no fit; the pin level is scene-dependent
+(heldout scenes happen flatter). Reading train→heldout as
+progress here would be the same error Phase 21 disclosed on
+rails. (3) The unit pairing held: align-MAE eval vs
+align-flavored scaffold bars behaved (finite everywhere, 0
+nulls, ordered strata) — the round's metrology is sound, the
+machinery under it is not trainable by this recipe on either
+distribution.
+Verdict: EMPTY — the data swap moves nothing. The faithful
+package (LN+GELUform+AdaLN+patchify+unfused, 8k-cosine) does not
+optimize on fixtures (Phases 19–21) or Hypersim (here): 7/7
+fixture runs + 1 scale run agree. Cross-distribution
+directionals refused (junk comparison, stated in advance).
+What remains is unchanged from Phase 21's earned sentence (new
+patterns or new evidence — named, unopened, out of scope), now
+with the data axis closed alongside schedule and recipe.
+Executed notes (deviations: none from frozen spec; necessities
+as classed): lognorm constants from valid pixels only (NaN/0
+depths make all-pixel log unimplementable); masks & valid
+intersect at eval (same necessity); per-step lstsq over the
+minibatch concat (120-frame full-batch per step is not runnable
+— rotation is the hyper precedent); frames preloaded to GPU
+(~9.3GB VRAM of 24GB — same values/order as per-step loading).
+Dims check that fell out: params 210241 = dit64b2's 209857 +
+384 (48×64 vs 42×64 pos tables) — architecture identical modulo
+grid, as frozen.
