@@ -1484,3 +1484,46 @@ Verdict: GO — all three frozen conditions hold (0.0 invalid,
 Mid-round corrections, stated: gate filename mapping (bank
 stores RGB names) + per-frame (not minima) scaffold recompute
 — both caught pre-commit, nothing banked under either.
+
+## Phase 23 — scale training on Hypersim GT (constitution, FROZEN pre-run)
+
+Architectures banked ONLY, ≤3 (no new shapes — new shapes are a
+separate round, not smuggled in here):
+- H1 `hyper-mscale`: mscale64-EXACT (field-33/densewin-3/W64/d2,
+  177 dims; MATMUL/ADD/SILU + GATHER/CONCAT citations stand).
+  Reason: best banked operator (fits train everywhere, first
+  passes) — the workhorse carries the scale question.
+- H2 `hyper-jattn`: jattn SHAPE fresh at Hypersim grid
+  (W64/B2/H1/stride-32/C4 → 24x32=768 tokens + 4 const; pos
+  tables sized per-grid, trained from scratch — grid-lock
+  forbids weight reuse, architecture reuse is the point).
+  Reason: global machinery on real indoor GT (Phase-14-nominated
+  direction tested where it counts).
+- Third slot EMPTY (stated): ditc pinned 6/6 runs (Phases 19-21)
+  + constant-collapse under all schedules — heavy-round budget
+  on a known-pinned shape is unjustified.
+Loss declared: LOG-GT MAE (predict log depth, exp at eval,
+judge AbsRel on metric; log compresses 2-65m dynamic range and
+matches relative doctrine — reason stated). No alignment
+(exact truth needs no crutch).
+Data (1787 in-shard; split BY SCENE, no leakage across views):
+10 frames/scene (fr0000-fr0009); train 12 scenes
+(ai_001_010..ai_014_006 alphabetical) = 120 frames; held-out 6
+(ai_018_001..ai_023_005) = 60 frames. Minibatch 4 scenes/step,
+deterministic rotation (seed-fixed order, no RNG in-loop).
+Schedule + budget: H1 300 steps Adam lr 0.02 const; H2 300 steps
+Adam lr 0.01 const; seed 7 both. Measured ~7-8s/step (1.1s/frame
+feature build) → wall caps 90 min each. GPU solo (idle 398MiB,
+24GB headroom; transient <1GB).
+Bars = Phase-22 fresh (far 0.019, near 0.068, planar 0.046,
+nonplanar 0.123, smooth 0.117, tex 0.132) — inherited WITHIN
+this distribution only (legitimate here, stated as such).
+Winner: most held-out Hypersim cells under bars (per-frame per
+stratum: 60 frames x 6 = 360 graded cells, nulls excluded/
+counted). Real fixtures ride as transfer-report (secondary:
+mscale64-on-real runs anywhere — reported; jattn grid-locked —
+reported; both NOT graded).
+Metrics + configs banked in-repo (`hyper_run_<tag>.json` +
+`hyper` battery key, reference `mscale64`); weights out-of-tree;
+no further downloads (shard suffices — more data is a later
+round, not mid-round scope growth).
