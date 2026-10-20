@@ -1,5 +1,44 @@
 # Backlog — queued work, in order
 
+## 2. DPT-tiny served-step profile, burn-down vs 33ms (measurement round)
+
+Constitution (written BEFORE any measurement — violations bounce;
+scoping-round discipline: implementation only by this signature, no
+impl beyond what is declared here):
+
+- Method (FROZEN): per-op CUDA event timing via EXISTING served
+  machinery — `compile_program(..., time_ops=True)` wraps each op body
+  with `cudaEventRecord/sync/elapsed` and prints `op MN ms` to stderr
+  in program order (1237 ops → 1237 lines). Reason: it measures the
+  actual served kernels (right backend/shapes/launches), not a proxy
+  that would need a scaling fudge (fudge voids comparability); nsys is
+  not installed; precedent `serve_decode.py` (`QWEN_TIME_OPS=1`).
+  Perturbation stated: one event-sync per op (~10µs × 1237 ≈ 12ms on a
+  ~1192ms step, ~1%) — the reconcile leg bounds it.
+- NO listing/emitter/opcode changes. `time_ops` already exists, so NO
+  profiler extensions are needed; stderr parsing lives in test-side
+  analysis only. Any emitter edit or new profiler flag voids this
+  constitution (no-impl tripwire).
+- Served total re-measured — the 1192ms demo-round number is NEVER
+  inherited blind. Fresh workdir `/tmp/dptprof/` (never `/tmp/dec7b`,
+  never touching `/tmp/dpttiny_cu` the demo gate reads); two fresh
+  binaries from the same listing revision (plain + timed); 5 frames
+  each, median; deterministic zero-RGB 672×1024 input (pipeline timing
+  is input-shape-bound, not content-bound); random kaiming weights
+  (`test_dpttiny.gen_weights`, seed 0 — training state unchanged, this
+  profiles the pipeline not the model); GPU solo for served runs
+  (idle + VRAM stated); Qwen-7B never co-loaded.
+- Honest unit (DECLARED): raw = per-op stderr lines (complete iff 1237
+  parsed); table = by-mnemonic aggregates (same kernel pattern per
+  mnemonic) with n_ops/total-ms/share — every op counted, provenance
+  per row (`time_ops` event). Mixing methods mid-round voids
+  comparability — this section is the freeze point.
+- Target: 33ms frame (1192/33 ≈ 36× must shrink; "40×" is shorthand —
+  the verdict uses the re-measured ratio). Winner rule: N/A —
+  deliverable is the table + burn-down + verdict.
+
+### 2a. Burn-down (lands here with evidence)
+
 ## 1. Geometric code profiler (BUILT on `exp/geo-profiler` — evidence below)
 
 **Why:** every speed round hand-rolled its own profiling (trace-`sec`
