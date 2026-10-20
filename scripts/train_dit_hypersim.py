@@ -218,6 +218,7 @@ def main():
             print(f"iter {it}: loss {loss.item():.4f} aux {float(aux):.4f}",
                   flush=True)
     print(f"train wall: {time.time() - t0:.0f}s", flush=True)
+    twall_s = time.time() - t0
     assert bool(torch.isfinite(loss).all()), f"final loss non-finite: {loss.item()}"
 
     outdir = os.path.join(OUTBASE, args.tag)
@@ -318,7 +319,7 @@ def main():
                                         "adaln-mod-recompute",
                                         "loss-trace"]},
                "overhead": {"steps": args.steps,
-                            "on_s_per_step": (time.time() - t0) / args.steps},
+                            "on_s_per_step": twall_s / args.steps},
                "smoke": {"on_01": None, "off_01": None, "banked_0": 0.4014,
                          "maxdiff": None, "tol": 1e-4, "ok": None},
                "loss_trace": TEL["loss_trace"], "samples": smps,
