@@ -1637,7 +1637,8 @@ heldout  nonplanar   60   1.53    0.394
 heldout  tex         60   1.77    0.445
 heldout  smooth      60   1.62    0.355
 ```
-(train mean 3.42 / best 0.453; heldout mean 1.72 / best 0.355.)
+(train mean 3.42 / best 0.453; heldout mean 1.72 / best 0.351;
+0/720 train cells under bars too.)
 Winner: none — 0/360 (gate-pinned `dithyp-winner-none`); no
 retrain-match (nothing to claim; single-seed, determinism
 explicitly NOT re-verified — hyper precedent).
@@ -1788,3 +1789,129 @@ spread) are all ruled OUT by number. What it opens (not this
 round): any next step must break the align-masks-scale loop
 (unmasked loss, activation ceilings, or modulation budgets —
 each its own constitution) — proposed, not run.
+
+## Phase 26 — alignment surgery, shift-only training loss (constitution, FROZEN pre-run)
+
+Mechanism bet from Phase 25 (stated): per-step full-affine alignment
+absorbs the AdaLN scale explosion into (a,b), so the z-loss never
+sees the divergence it trains (acts 1.4→6.6e8 while loss sits
+0.40–0.74). Surgery: training alignment becomes SHIFT-ONLY (b fit,
+a≡1) — scale errors visible to the optimizer immediately. The loss
+is the ONLY variable.
+Frozen reuse (Phase-24 banked run, stated explicitly): dit-tiny
+W64/B2/H4/s16 patch-16 grid 48×64, Hypersim same 120+60 splits,
+lognorm lo=0.1940/mu=1.8670/sigma=0.5889 (recomputed — must match),
+8k-cosine lr 0.01 seed 7 mb-4 stride-7 grad-w 0, tag
+`ditshift64b2` (new), battery key `ditshift` (new, reference
+`dithyp64b2`).
+Loss-line change (exact, the whole diff): `lstsq(A,Tm)→(a,b)` BECOMES
+`b=mean(Tm−p)` under no_grad, `a≡1.0`; `loss=(p+b−Tm).abs().mean()`
+(aux uses the same (a,b); grad-w 0 keeps it dead). No-grad doctrine
+kept (shift fit takes no gradients, same as lstsq). Evaluation
+KEEPS full affine alignment (`align_mae` untouched — fairness
+doctrine unchanged; training/eval split stated, not conflated).
+Mechanism prediction frozen pre-run (telemetry hooks reused as the
+PRIMARY endpoints — same instrument list, N=500; act norms + mod
+vars ARE the verdict inputs, not side observations):
+- activation norms bounded: act_out (both blocks, all 17 samples)
+  < 1e4 AND act_in < 1e3 (recurrence hit 6.6e8; healthy scale ~1–
+  400; bounds sit 100×+ each side, stated);
+- modulation vars bounded: all end-sample mod vars < 1e2
+  (recurrence hit 14415; init 0.005);
+- train descends past the pin: final printed loss < 0.40 (pin band
+  was 0.40–0.74, banked final 0.6183).
+If collapse repeats identically (bounds broken, pin re-pinned),
+the pathology is deeper than scale-visibility — that outcome is
+COMPLETE (verdict: deeper-pathology), not a failure to tune
+further. No second knob exists in this round.
+Winner: most held-out cells (60×6=360) under Phase-22 fresh bars;
+empty is complete. Retrain-match before ANY claim.
+Budget frozen: one 50-step smoke (scratch tag, telemetry to /tmp
+— verifies the new loss path end-to-end incl. banking) + ONE full
+8000-step run; wall cap 30 min (surgery drops the per-step lstsq,
+so at-or-under Phase-25's 807s). GPU solo (idle + VRAM stated at
+run); Qwen-7B never co-loaded; no downloads.
+Banking: NEW `attn_run_ditshift64b2.json` + NEW `ditshift` battery
+key + NEW `ditshift64b2_telemetry.json` (primaries untouched;
+production weights untouched; weights out-of-tree).
+Gate: `tests/test_hypersim_feas.py` extended in place (ditshift
+key: schema + winner/bars verdicts + scale-boundedness legs on
+banked telemetry with Phase-25 numbers as explicit comparison).
+Neighbors: dithyp + teacher legs green (nothing moves underneath).
+Determinism: single-seed (hyper precedent).
+
+### Battery results (1 run, 8000 steps, 769s wall, GPU solo)
+
+Loss re-pinned in the SAME band: cadence prints 0.44→0.63→0.74→
+0.40→0.63… all 8000 steps (final 0.6200 vs aligned 0.6183 — the
+pin to 2 decimals). Held-out align-MAE vs fresh bars — 0/360
+under (0 nulls):
+
+```
+split    stratum    n    mean    best
+train    near       120   3.12    0.510
+train    far        120   3.68    0.510
+train    planar     120   3.16    0.453
+train    nonplanar  120   3.60    0.620
+train    tex        120   3.38    0.563
+train    smooth     120   3.61    0.476
+heldout  near        60   1.60    0.410
+heldout  far         60   1.82    0.385
+heldout  planar     60   1.99    0.392
+heldout  nonplanar   60   1.53    0.393
+heldout  tex         60   1.77    0.444
+heldout  smooth      60   1.62    0.351
+```
+(train mean 3.42/best 0.453; heldout mean 1.72/best 0.351 —
+identical to Phase-24 to 2 decimals, via a different path.)
+Winner: none — 0/360 (gate-pinned); no retrain-match (nothing to
+claim; single-seed, determinism NOT re-verified).
+Transfer-report (ungraded, as frozen): grid-locked (RuntimeError,
+banked note — third line, same mechanism).
+Telemetry verdict inputs: act_out max 49.1 (<1e4 bound; was
+6.6e8), act_in max 49.1 (<1e3), end mod vars max 0.0542 (<1e2
+bound; was 14415), grads ~1e-4–1e-3 all run (vs Phase-25's
+0.0018→123 swings). Final loss 0.6200 (need <0.40: MISSED).
+Frozen-rule verdict: **deeper-pathology** (bounded ✓, descended
+✗ — gate `surgery-descent` reports the miss verbatim (0.6200 vs
+<0.40) instead of failing on it, per bounce-back precedent;
+`surgery-verdict` green on banked==recomputed equality).
+Diagnosis, three parts. (1) Mechanism CONFIRMED: removing the
+affine rescue removed the blowup (7 orders off acts, 5 off
+mods) — scale-visibility behaved exactly as predicted, so the
+Phase-25 blowup needed the lstsq mask. The surgery worked as
+surgery. (2) The pin is NOT scale-masking: with everything
+bounded and scale fully visible, loss sits at the same numeric
+pin (final 0.6200 vs 0.6183; eval table identical to 2 decimals)
+on gradients ~1e-4 — the basin around init is FLAT in the
+directions that matter. The pathology is deeper than
+scale-visibility: same pin, no divergence to blame anymore.
+(3) What "deeper" rules out next: not attenuation-by-explosion
+(this run's grads are ~0 everywhere, late≈early), not
+self-sabotage (mods healthy ~0.01–0.05, never collapsed), not
+schedule tail (pin holds from it 500 at full lr). Remaining
+candidates live outside this round's loss line (target-side
+compression, optimizer family, or expressivity — each its own
+constitution, none run).
+Executed notes: lognorm recomputed lo=0.1940/mu=1.8670/
+sigma=0.5889 (EXACT frozen match — data pipeline identical);
+smoke (50-step, scratch tag): it0 0.4396, finite trace, acts
+7–17 at it49 (vs aligned-run already exploding — divergence
+visible that early); full it0 matches smoke it0 at 1.15e-07.
+CAUGHT BUGS (mine, all recovered openly): (1) telemetry
+defaulted to the Phase-25 banked path and overwrote it — file
+restored from git (zero diff), new run re-banked to its own
+path; default left as-is (ruling: loss-line change only) with
+this warning recorded — always pass --telemetry-out explicitly.
+(2) smoke-vs-full prefix match past it0 is INVALID across
+--steps (cosine denominator differs 50 vs 8000; measured 1.39
+divergence, fully schedule-explained) — it0 (identical init+lr,
+diff 1.15e-07) is the valid checkpoint; gate encodes the
+corrected rule. (3) First eval-table draft read the WRONG FILE
+(Phase-24's banked metrics — tag field proved it) AND transposed
+near↔far copying sorted-order output into a near-first table —
+caught by an independent recompute before anything downstream
+was affected (battery key and gate legs read the files directly
+and verify consistent); table corrected cell-by-cell against
+md5-pinned banked data. Mechanism conclusions never touched
+(telemetry analysis was always on the new-run file).
