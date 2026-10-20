@@ -1,0 +1,56 @@
+{
+ "variants": {
+  "V1_luma": "frozen docs/RESONANCE.md",
+  "V2_lumapos": "frozen docs/RESONANCE.md",
+  "V3_rgbpack": "frozen docs/RESONANCE.md"
+ },
+ "key_spec": {
+  "V1_luma": "round(mean_luma*1000)",
+  "V2_lumapos": "luma_q*4096+cell_index",
+  "V3_rgbpack": "R*65536+G*256+B of quantized mean"
+ },
+ "frames": [
+  "church",
+  "dogs",
+  "squirrel",
+  "train",
+  "geo_webcam_0_combined",
+  "geo_webcam_1_combined"
+ ],
+ "cell": 32,
+ "eps": 0.1,
+ "tau": 0.1,
+ "heads": 4,
+ "null": "seeded shuffle (seed 0)",
+ "bar": 0.1,
+ "results": {
+  "V1_luma": {
+   "n_tokens": 4032,
+   "rate_same": 0.36538201534370807,
+   "rate_same_cross": 0.35634919447727037,
+   "rate_null": 0.35789736425186425,
+   "lift": 0.007484651091843819,
+   "spearman": 0.0038937192818852156,
+   "pass": false
+  },
+  "V2_lumapos": {
+   "n_tokens": 4032,
+   "rate_same": 0.3444892421862993,
+   "rate_same_cross": 0.3445139190139265,
+   "rate_null": 0.3441506590814807,
+   "lift": 0.00033858310481860165,
+   "spearman": 0.0006211205359831204,
+   "pass": false
+  },
+  "V3_rgbpack": {
+   "n_tokens": 4032,
+   "rate_same": 0.34395305597252507,
+   "rate_same_cross": 0.3433262030485707,
+   "rate_null": 0.3440015900694615,
+   "lift": -4.8534096936447835e-05,
+   "spearman": -0.00016213815151330108,
+   "pass": false
+  }
+ },
+ "verdict": "dead-for-depth"
+}
