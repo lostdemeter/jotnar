@@ -1458,3 +1458,29 @@ evidence. Adopted as suggested (no reason to replace).
 Feasibility only: no training, no emitter/opcode/assembly, no
 new deps (huggingface_hub already pinned Phase-0); Qwen-7B
 never co-loaded; nothing here needs a GPU.
+
+### Audit (1 shard, 24 frames, CPU only)
+
+Fetched `hypersim-00000.tar` (4,512,522,240 bytes on disk) +
+extract to `~/student_runs/hypersim_shard00/` (out-of-tree).
+Layout: `test/<scene>/{rgb,depth}_cam_00_frNNNN.png`, 1787
+paired frames in-shard; first 24 valid audited (0 rejects).
+Frames 1024x768, indoor depth p50 3.0–4.3m, max 7.0m, grad-p99
+≤3.7, discontinuity ≤1.8%.
+GT quality: invalid rate mean 0.0000, worst 0.0000 (<5%/<20% —
+passes with four nines to spare; preprocessed shards arrive
+filtered, measured not assumed).
+Strata transfer: 6/6 rules hold 30-70% on all 24 frames — NO
+median-collapse (continuous real depth stats, unlike box rooms).
+Scaffold-floor re-measured (fresh bars = minima/5): far 0.019,
+near 0.068, planar 0.046, nonplanar 0.123, smooth 0.117, tex
+0.132 — finite, tex hardest (ordering holds vs real fixtures).
+Note for buyers: fresh bars run LOOSER than inherited ones on
+tex/smooth/nonplanar (0.12-0.13 vs 0.07-0.08) — Hypersim rooms
+punish constant predictors harder; inherited bars must never
+cross distributions (this re-measurement is why).
+Verdict: GO — all three frozen conditions hold (0.0 invalid,
+6/6 coverage, bars computable+ordered).
+Mid-round corrections, stated: gate filename mapping (bank
+stores RGB names) + per-frame (not minima) scaffold recompute
+— both caught pre-commit, nothing banked under either.
