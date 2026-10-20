@@ -148,3 +148,93 @@ gate asserts the default outdir + scans the repo clean.
 What training would change: kaiming→trained weights is the ONLY
 delta (pipeline identical) — viz would show structure instead of
 noise under the same banner-minus-UNTRAINED.
+
+## Training — analytic GT, not teacher mimicry (constitution, FROZEN pre-run)
+
+Phase-12a NO-GO'd mimicry-training with evidence (1.47x headroom);
+this round is the alternative it pointed at (train toward truth,
+not toward teacher) — stated, not smuggled.
+Targets: analytic GT from `scripts/synth_depth.py` (exact truth;
+log-GT MAE, predict log depth, exp at eval). No alignment —
+exact truth needs none. Data are metric-positive, so plain log
+is implementable (unlike Phase-19 signed outputs — distinction
+stated).
+Splits (synthetic only for grading; axes-balanced): train idx
+0..5 + 12..17 (12 scenes: 6 flat + 6 textured); held-out idx
+8..11 + 20..23 (8 scenes: 4 flat + 4 textured).
+Architecture: DPT-tiny as designed/built (W128/L6/H4, patch-16,
+reassemble {2,4,5,6}, RefineNet GATHER-form fusion, head),
+trained as torch twin (`scripts/train_dpt_torch.py`;
+res-general grid from dims; kaiming init seed 7; learned pos
+tables per grid — grid-lock means real-fixture transfer reports
+the lock, same finding as jattn Phase-12a). Assembly lowering is
+a later round, explicitly not this one.
+Schedule: 600 steps, Adam lr 1e-3 const, seed 7 (measured 0.4s
+per full fwd+bwd per scene; ~5s/step over 12 scenes → wall cap
+70 min). GPU box to itself; Qwen-7B never co-loaded.
+Bars (GT-relative, set from generator statistics BEFORE running,
+never after seeing numbers): AbsRel ≤ 0.10 per (scene,
+harness-stratum) cell — 10% of truth, deployment-meaningful.
+Depth stats: train median 14.0 (wall-dominance noted — near/
+object strata carry the weight), range 2.2–14.0 both splits.
+Starved cells record null, excluded, counted (Phase-12a
+precedent). 8 heldout scenes x 6 strata = 48 graded cells.
+Winner: most held-out synthetic cells under bars. Real fixtures
+(teacher-labeled) ride as transfer-report only (different truth
+source — reported, never graded). Empty is complete.
+Metrics + configs banked in-repo (`dpt_run_<tag>.json`);
+weights out-of-tree (`~/student_runs/<tag>/`). Hypersim
+downloads explicitly out of scope (synthetic-first by design;
+real-data training is a later round with its own bar).
+
+### Results (1 run, 600 steps, 48s wall, GPU solo)
+
+Loss 2.88 → 1.37 log-MAE (descends, never converges). Held-out
+AbsRel vs the 0.10 bar — 0/43 graded under it (5 nulls), best
+cell 5.97 (60x over):
+
+```
+split    stratum    n    mean        best
+train    near       12     23.9        5.9
+train    far         5     70.3        7.2
+train    planar     12     37.1        6.0
+train    nonplanar  12     11.7        5.6
+train    tex        12     31.2        5.9
+train    smooth     12     33.2        5.9
+heldout  near        8 404550.2        6.9
+heldout  far         3    181.6        7.9
+heldout  planar      8 118247.4        7.1
+heldout  nonplanar   8    283.6        6.0
+heldout  tex         8  83175.2        6.9
+heldout  smooth      8  89289.9        6.9
+```
+(heldout means dominated by s22/s23 tail explosions; bests all
+60x+ over bar on both splits.)
+Winner: none — 0/43, gate-pinned. Empty, decisively.
+Diagnosis, three parts. (1) Underfit at 600 steps is real but
+not the story: train bests sit at ~6 AbsRel (60x over), so 10x
+more steps cannot close a 60x gap on its best scenes — this is
+not a budget wall. (2) exp() tail amplification is load-bearing:
+log-MAE 1.37 with AbsRel in the hundreds means a few pixels per
+scene carry astronomical error (s23-near 3.2M) — the log-train /
+metric-judge pair punishes variance explosively, and the model
+answers with high-variance maps (checker texture noise? object
+edges? — unattributed, stated as such). (3) The layout question
+this round existed to answer: controlled layout + exact GT moved
+nothing — best cells on object scenes (s13/s14 train, s22/s23
+heldout) are the WORST, not the best. Layout is not
+learnable-signal for this student at this budget; texture scenes
+(s21: ~10) beat object scenes (s22/s23: hundreds), repeating the
+Phase-12a texture finding from the training side.
+Transfer-report (ungraded, as frozen): grid-locked — learned
+row/col pos tables are resolution-specific (21x32... 16x20 grid
+vs 42x64 needed at 1024x672; hard RuntimeError, pasted in-session).
+Same finding as jattn Phase-12a, now for the DPT line: deployment
+across resolutions needs re-specification, not a flag.
+Verdict: NO-GO carries (this was never a 12b retry — 12b stays
+decided). The analytic-GT path is measured: 0/43 with bests 60x
+over bars, transfer grid-locked, exp-tails explosive. What would
+change it (scoped, unrun): orders more steps (denied by (1)),
+variance-taming loss (median/quantile or clipped-exp eval —
+a new round with its own bar), Hypersim real-data training (its
+own bar, per constitution).
