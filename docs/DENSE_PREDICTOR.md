@@ -123,3 +123,28 @@ What training needs next (explicitly NOT this round): kaiming→
 trained weights, Hypersim pipeline, LR/schedule constitution,
 log+aligned+grad loss, strata + AbsRel/δ1 judge, retrain-match
 discipline for any claimed winner.
+
+## Demo (scripts/demo_dpt_webcam.py — pipeline, untrained, measured)
+
+Step 0 measurement (served CUDA end-to-end, 672x1024, existing
+served path, random weights): 1192ms/frame median over 5
+(1178-1306). Cadence follows the number: seconds → frame-strip
+timelapse (a 0.8fps "live loop" would be a slideshow, stated not
+sold). ffmpeg snapshots (cv2 absent, no new deps); static
+weights/ids written once (per-frame only RGB moves — first cut
+rewrote ~60MB/frame at 2.7s, fixed, documented).
+Camera was FREE (/dev/video0 grabbed clean — no fallback needed
+for the proof run); stills fallback (dav2_reverse/captures,
+read-only) implemented + gate-tested for held-desktop days;
+never signals user processes (open-grab-close per frame, no
+fuser -k ever). Proof run: 6 live desk frames, median step
+1338ms, strip `/tmp/opencode/dptstrip_live/dptstrip.png` (RGB +
+noise-viz side-by-side per row).
+Banner rule: UNTRAINED weights / pipeline-demo on EVERY artifact
+(console + strip rows + viz) — the depth panels are visibly noise
+and labeled as such; nobody mistakes them for depth.
+Privacy: captured frames out-of-tree only (`/tmp/opencode`);
+gate asserts the default outdir + scans the repo clean.
+What training would change: kaiming→trained weights is the ONLY
+delta (pipeline identical) — viz would show structure instead of
+noise under the same banner-minus-UNTRAINED.
