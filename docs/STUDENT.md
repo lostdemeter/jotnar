@@ -1788,3 +1788,55 @@ spread) are all ruled OUT by number. What it opens (not this
 round): any next step must break the align-masks-scale loop
 (unmasked loss, activation ceilings, or modulation budgets —
 each its own constitution) — proposed, not run.
+
+## Phase 26 — alignment surgery, shift-only training loss (constitution, FROZEN pre-run)
+
+Mechanism bet from Phase 25 (stated): per-step full-affine alignment
+absorbs the AdaLN scale explosion into (a,b), so the z-loss never
+sees the divergence it trains (acts 1.4→6.6e8 while loss sits
+0.40–0.74). Surgery: training alignment becomes SHIFT-ONLY (b fit,
+a≡1) — scale errors visible to the optimizer immediately. The loss
+is the ONLY variable.
+Frozen reuse (Phase-24 banked run, stated explicitly): dit-tiny
+W64/B2/H4/s16 patch-16 grid 48×64, Hypersim same 120+60 splits,
+lognorm lo=0.1940/mu=1.8670/sigma=0.5889 (recomputed — must match),
+8k-cosine lr 0.01 seed 7 mb-4 stride-7 grad-w 0, tag
+`ditshift64b2` (new), battery key `ditshift` (new, reference
+`dithyp64b2`).
+Loss-line change (exact, the whole diff): `lstsq(A,Tm)→(a,b)` BECOMES
+`b=mean(Tm−p)` under no_grad, `a≡1.0`; `loss=(p+b−Tm).abs().mean()`
+(aux uses the same (a,b); grad-w 0 keeps it dead). No-grad doctrine
+kept (shift fit takes no gradients, same as lstsq). Evaluation
+KEEPS full affine alignment (`align_mae` untouched — fairness
+doctrine unchanged; training/eval split stated, not conflated).
+Mechanism prediction frozen pre-run (telemetry hooks reused as the
+PRIMARY endpoints — same instrument list, N=500; act norms + mod
+vars ARE the verdict inputs, not side observations):
+- activation norms bounded: act_out (both blocks, all 17 samples)
+  < 1e4 AND act_in < 1e3 (recurrence hit 6.6e8; healthy scale ~1–
+  400; bounds sit 100×+ each side, stated);
+- modulation vars bounded: all end-sample mod vars < 1e2
+  (recurrence hit 14415; init 0.005);
+- train descends past the pin: final printed loss < 0.40 (pin band
+  was 0.40–0.74, banked final 0.6183).
+If collapse repeats identically (bounds broken, pin re-pinned),
+the pathology is deeper than scale-visibility — that outcome is
+COMPLETE (verdict: deeper-pathology), not a failure to tune
+further. No second knob exists in this round.
+Winner: most held-out cells (60×6=360) under Phase-22 fresh bars;
+empty is complete. Retrain-match before ANY claim.
+Budget frozen: one 50-step smoke (scratch tag, telemetry to /tmp
+— verifies the new loss path end-to-end incl. banking) + ONE full
+8000-step run; wall cap 30 min (surgery drops the per-step lstsq,
+so at-or-under Phase-25's 807s). GPU solo (idle + VRAM stated at
+run); Qwen-7B never co-loaded; no downloads.
+Banking: NEW `attn_run_ditshift64b2.json` + NEW `ditshift` battery
+key + NEW `ditshift64b2_telemetry.json` (primaries untouched;
+production weights untouched; weights out-of-tree).
+Gate: `tests/test_hypersim_feas.py` extended in place (ditshift
+key: schema + winner/bars verdicts + scale-boundedness legs on
+banked telemetry with Phase-25 numbers as explicit comparison).
+Neighbors: dithyp + teacher legs green (nothing moves underneath).
+Determinism: single-seed (hyper precedent).
+
+### Battery results (TBD — run lands here)
