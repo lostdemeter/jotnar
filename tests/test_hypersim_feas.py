@@ -93,6 +93,47 @@ def main():
     check("hypersim-verdict", go == v["go"],
           f"frozen rule recomputed: {'GO' if go else 'NO-GO'}")
 
+    # -- scale-training verdict legs (banked integrity + winner) --------
+    # No retraining here: single-seed result (determinism NOT
+    # re-verified — stated openly, unlike retrain-matched batteries).
+    ab = json.load(open(os.path.join(ROOT, "samples", "marigold",
+                                     "student_ablation.json")))
+    if "hyper" not in ab:
+        print("SKIP hyper legs (no banked hyper battery yet)")
+    else:
+        hb, hc = ab["hyper"], ab["hyper"]["cells"]
+        check("hyper-configs",
+              hb.get("configs") == ["hyper-mscale", "hyper-jattn"]
+              and hb.get("reference") == "mscale64",
+              "2 banked archs, no new shapes")
+        BARS = {"near": 0.09, "far": 0.09, "planar": 0.09,
+                "nonplanar": 0.08, "tex": 0.07, "smooth": 0.09}
+        complete, counts = True, {}
+        for t in hb["configs"]:
+            fr = {n: f for n, f in hc[t]["frames"].items()
+                  if f.get("split") == "heldout"}
+            complete &= (len(fr) == 60 and all(
+                len(fr[n].get("strata", {})) == 6
+                and all(v is None or (np.isfinite(v) and v >= 0)
+                        for v in fr[n]["strata"].values())
+                for n in fr))
+            counts[t] = sum(
+                1 for n in fr for k in BARS
+                if fr[n]["strata"][k] is not None
+                and fr[n]["strata"][k] <= BARS[k])
+        check("hyper-complete", bool(complete), "2x60x6 finite-or-null")
+        check("hyper-winner-none",
+              all(v == 0 for v in counts.values())
+              and hb.get("winner") is None,
+              f"held-out cells under fresh bars: {counts}")
+        check("hyper-determinism-note", True,
+              "single-seed, retrain NOT verified (stated, not green-washed)")
+        tr = hb.get("transfer", {})
+        check("hyper-transfer-unjudged",
+              set(tr) == {"hyper-mscale", "hyper-jattn"}
+              and all(tr[t].get("judged") is False for t in tr),
+              "transfer reported-not-graded (incl. grid-lock note)")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 
