@@ -238,3 +238,42 @@ change it (scoped, unrun): orders more steps (denied by (1)),
 variance-taming loss (median/quantile or clipped-exp eval —
 a new round with its own bar), Hypersim real-data training (its
 own bar, per constitution).
+
+## Training DPT-tiny on Hypersim GT (constitution, FROZEN pre-run)
+
+The shape that was never trained: built DPT-tiny listing exactly
+(patch-16, W128/L6/H4, reassemble {2,4,5,6}, RefineNet fusion,
+direct head — cite programs/dpt_tiny.py; no architecture drift,
+this round tests the shape, not a new one). Torch twin mirrors
+listing dataflow (`scripts/train_dpt_gt.py`, res-general grids;
+kaiming init seed 7; learned pos tables per grid — grid-lock
+means real-fixture transfer reports the lock, same finding as
+jattn). Assembly lowering is a later round, explicitly not this
+one.
+Targets: Hypersim GT from the extracted shard (exact truth;
+Phase-12a NO-GO pointed at analytic GT, Phase-22 GO pointed at
+Hypersim — this round follows both arrows). Log-GT MAE, predict log depth, exp at eval. No
+alignment (exact truth needs none). Gradient aux DROPPED with
+reason (aux-pin measured Phases 19-20; clean loss isolates the
+shape). Dead signals stay dead.
+Data (scene-disjoint, no leakage): train 12 scenes
+(ai_001_010..ai_014_006) x first 10 available frames = 120;
+held-out 6 scenes (ai_018_001..ai_023_005) x 10 = 60.
+Minibatch 2 scenes/step, deterministic rotation (seed-fixed,
+no RNG in-loop).
+Speed discipline (measured, not hoped): profiled one full
+fwd+bwd per scene = 0.37s (fwd 0.21 / loss 0.02 / bwd 0.14),
+peak VRAM 1.7GB of 24.5GB. Budget from profile: 800 steps x
+~0.75s ≈ 10 min → wall cap 30 min. Eval stride-subsampled
+during training (train-loss prints only) with FULL-frame eval
+at end (established pattern). GPU solo (idle 496MiB confirmed
+pre-run); Qwen-7B never co-loaded; no further downloads.
+Bars = Phase-22 fresh (far 0.019, near 0.068, planar 0.046,
+nonplanar 0.123, smooth 0.117, tex 0.132) — inherited WITHIN
+this distribution only (legitimate here, stated as such).
+Winner: most held-out Hypersim cells under bars (60 frames x
+6 strata, nulls excluded/counted). Real fixtures ride as
+transfer-report (grid-locked pos tables cannot run 1024x672 —
+reported, never graded). Empty is complete.
+Metrics + configs banked in-repo (`dpt_run_<tag>.json`);
+weights out-of-tree (`~/student_runs/<tag>/`).
