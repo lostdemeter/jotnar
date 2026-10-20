@@ -14,3 +14,12 @@ Files: `input.png` source (352x288); `c_<effect>.png` per effect;
 `cu_us.png` / `nf_us.png` backend comparison; `cu_strip.png`
 crop|blur strip. Regenerate: `python3 demo_img.py`. Gates:
 `tests/test_img_demo.py`.
+
+## Student depth strips (honest negatives)
+
+`church_strip.png` / `dogs_strip.png` / `squirrel_strip.png`:
+input | teacher | mscale64 | texmsc-2k (percentile-normalized).
+The students paint local texture, not global layout — visible
+without statistics, matching the banked 0/36 verdicts. Kept as the
+visual record of the gap, not as results. See `docs/STUDENT.md`
+Phases 2–17 and `docs/MARIGOLD_STUDY.md`.
