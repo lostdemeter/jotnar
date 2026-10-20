@@ -134,7 +134,55 @@ def main():
               and all(tr[t].get("judged") is False for t in tr),
               "transfer reported-not-graded (incl. grid-lock note)")
 
+    # -- faithful-on-Hypersim verdict legs (banked integrity + winner) --
+    # No retraining here: single-seed result (determinism NOT
+    # re-verified — stated openly, hyper precedent). Same integrity
+    # shape as the hyper legs above (not a fork): 60 heldout frames x
+    # 6 strata finite-or-null, winner tripwire vs Phase-22 fresh bars,
+    # transfer reported-not-graded.
+    if "dithyp" not in ab:
+        print("SKIP dithyp legs (no banked faithful-on-Hypersim battery yet)")
+    else:
+        dh, dc = ab["dithyp"], ab["dithyp"]["cells"]
+        check("dithyp-configs",
+              dh.get("configs") == ["dithyp64b2"]
+              and dh.get("reference") == "ditc64b2",
+              "1 banked arch (data swap only), no new shapes")
+        BARS_FRESH = {"near": 0.068, "far": 0.019, "planar": 0.046,
+                      "nonplanar": 0.123, "tex": 0.132, "smooth": 0.117}
+        dcomplete, dcounts = True, {}
+        for t in dh["configs"]:
+            fr = {n: f for n, f in dc[t]["frames"].items()
+                  if f.get("split") == "heldout"}
+            dcomplete &= (len(fr) == 60 and all(
+                len(fr[n].get("strata", {})) == 6
+                and all(v is None or (np.isfinite(v) and v >= 0)
+                        for v in fr[n]["strata"].values())
+                for n in fr))
+            dcounts[t] = sum(
+                1 for n in fr for k in BARS_FRESH
+                if fr[n]["strata"][k] is not None
+                and fr[n]["strata"][k] <= BARS_FRESH[k])
+        check("dithyp-complete", bool(dcomplete), "1x60x6 finite-or-null")
+        check("dithyp-winner-none",
+              all(v == 0 for v in dcounts.values())
+              and dh.get("winner") is None,
+              f"held-out cells under fresh bars: {dcounts}")
+        check("dithyp-determinism-note", True,
+              "single-seed, retrain NOT verified (stated, not green-washed)")
+        dtr = dh.get("transfer", {})
+        check("dithyp-transfer-unjudged",
+              set(dtr) == {"fixtures"}
+              and all(dtr[t].get("judged") is False for t in dtr)
+              and "grid-lock" in dtr["fixtures"].get("note", ""),
+              "transfer reported-not-graded (grid-lock note)")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
+    sys.exit(1 if FAIL else 0)
+
+
+if __name__ == "__main__":
+    main()
     sys.exit(1 if FAIL else 0)
 
 

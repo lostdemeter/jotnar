@@ -1550,3 +1550,129 @@ schedules converging identically is the only tight number here.
 Empty of winners, full of signal: real data does not rescue
 either family; the restriction/pattern doors from prior rounds
 remain the only ones with positive evidence (7/96 tie).
+
+## Phase 24 — DiT-faithful on Hypersim GT, data swap (constitution, FROZEN pre-run)
+
+Corrected premise (verified pre-round, stated plainly): no RMSNorm
+substitution ever existed in this line — the built DPT-tiny listing
+is LAYERNORM-only, both torch twins (`train_dpt_gt.py`,
+`train_dit_student.py`) are `torch.nn.LayerNorm`-only, and the
+repo's sole RMSNorm is the joint-attention student family (different
+architecture). There was no norm swap to run or unrun. The genuinely
+unrun combination is the DATA swap: the DiT-faithful package
+(Phases 19/20) on Hypersim GT. Phase 23 ran mscale/jattn on
+Hypersim, never this line — that gap is the whole round.
+Architecture frozen: `scripts/train_dit_student.py` EXACTLY as
+banked (W64/B2/H4/s16, patch-16 768→W tokens, learned row/col ADD,
+AdaLN-Zero from a learned const vector — no timestep, no text —
+LayerNorm no-affine ×2/block, unfused H4 explicit-softmax
+attention, GELU-form SILU MLP per A2, gated residuals,
+nearest-cell + RGB family head). No drift: data is the ONLY
+variable. Rung B2 (collapse was rung-independent per Phase 20 —
+B2 isolates the data question cheapest; the ladder is answered).
+Recipe frozen (Phase-20 mirror): shifted-log z-norm (lo/μ/σ from
+the Hypersim train split, banked — same procedure, new numbers) +
+aligned-MAE (per-step no-grad lstsq over the minibatch concat) +
+NO aux (`grad-w 0` plus the forward guard; dead signals stay
+dead). Eval mirrors dit exactly (invert z→linear, `align_mae` per
+stratum, full-frame train 120 + heldout 60 at end) with one
+data-driven necessity, stated: masks & valid intersect (Hypersim
+has invalid pixels; fixtures had none).
+Data frozen: shard scenes, the SAME scene-disjoint splits as
+Phase 23/hyper (train 12×10 = 120, heldout 6×10 = 60 — reuse is
+comparability, not convenience). Minibatch 4 scenes/step,
+deterministic rotation (hyper precedent; dit's full-batch covered
+4 fixtures — 120 frames need batching, stated deviation; per-step
+work class matches Phase 20: ~450k stride rows vs ~393k).
+Schedule + budget frozen: 8000 steps, 8k-cosine, lr 0.01, seed 7
+(Phase-20 mirror — the round tests data, not schedule, even with
+Phase 21's collapse warning on record). Wall cap 30 min
+(Phase-20 B2 ran 665s; Hypersim frames/tokens are bigger).
+GPU solo (idle + VRAM stated pre-run); Qwen-7B never co-loaded;
+no further downloads.
+Bars = Phase-22 fresh (far 0.019, near 0.068, planar 0.046,
+nonplanar 0.123, smooth 0.117, tex 0.132) — inherited WITHIN the
+Hypersim distribution only (legitimate here, stated as such).
+Unit rationale, recorded: both sides are lstsq-align + MAE in
+Hypersim meters (the feas-gate scaffold recompute ≡
+align_mae(constant); dit eval ≡ align_mae(pred)) — apples to
+apples, cleaner than the e974eaf AbsRel-vs-absolute pairing.
+Winner: most held-out cells under bars (60×6 = 360, nulls
+excluded/counted). Retrain-match before ANY claim (winner gets
+the treatment, not the announcement). Empty is complete.
+Banking: per-tag `attn_run_dithyp64b2.json` + `dithyp` battery key
+(configs `["dithyp64b2"]`, reference `ditc64b2` — the fixture
+fair-trial comparator for provenance, NOT for cross-distribution
+directionals, which would be junk); primaries untouched; weights
+out-of-tree. Transfer: real fixtures ride as transfer-report
+(grid-lock expected — 48×64 tables vs 42×64 needed — recorded,
+ungraded). Determinism: single-seed, retrain NOT verified unless
+winner (hyper precedent, stated not green-washed).
+Implementation: new `scripts/train_dit_hypersim.py` assembling
+`train_dit_student._define_model` + `train_hyper` scene/data fns +
+`train_base` plumbing (seed/schedule/cadence/weights/bank). No
+existing file's science touched; assembly lowering waits behind
+a winner, explicitly not this round.
+
+### Battery results (1 run, 8000 steps, 795s wall, GPU solo)
+
+Loss never descends: cadence prints oscillate 0.40–0.74 all 8000
+steps (final 0.6183) — the Phase-19/20 pin shape at a lower floor
+(z-loss ~0.5 vs 0.85; different target distribution, same
+non-optimization). Held-out align-MAE vs fresh bars — 0/360 under
+(0 nulls; continuous Hypersim stats):
+
+```
+split    stratum    n    mean    best
+train    near       120   3.12    0.510
+train    far        120   3.68    0.510
+train    planar     120   3.16    0.453
+train    nonplanar  120   3.60    0.620
+train    tex        120   3.38    0.563
+train    smooth     120   3.61    0.476
+heldout  near        60   1.60    0.412
+heldout  far         60   1.82    0.386
+heldout  planar      60   1.99    0.393
+heldout  nonplanar   60   1.53    0.394
+heldout  tex         60   1.77    0.445
+heldout  smooth      60   1.62    0.355
+```
+(train mean 3.42 / best 0.453; heldout mean 1.72 / best 0.355.)
+Winner: none — 0/360 (gate-pinned `dithyp-winner-none`); no
+retrain-match (nothing to claim; single-seed, determinism
+explicitly NOT re-verified — hyper precedent).
+Transfer-report (ungraded, as frozen): grid-locked — fixture grid
+needs 42×64 tables, this grid is 48×64 (`RuntimeError`, caught in
+run, banked note). Same mechanism as jattn/DPT lines.
+Diagnosis, three parts. (1) The Phase-20 collapse reproduces on
+new data with the identical package: z-loss pinned ~0.5 across
+8000 cosine steps, best cells 0.36–0.56 (3–4× over bars — the
+same band as hyper's bests). Collapse is data-independent; data
+was never the missing key for this line. (2) Inverted gap:
+heldout means (1.7) BEAT train means (3.4) — no generalization
+gap because there is no fit; the pin level is scene-dependent
+(heldout scenes happen flatter). Reading train→heldout as
+progress here would be the same error Phase 21 disclosed on
+rails. (3) The unit pairing held: align-MAE eval vs
+align-flavored scaffold bars behaved (finite everywhere, 0
+nulls, ordered strata) — the round's metrology is sound, the
+machinery under it is not trainable by this recipe on either
+distribution.
+Verdict: EMPTY — the data swap moves nothing. The faithful
+package (LN+GELUform+AdaLN+patchify+unfused, 8k-cosine) does not
+optimize on fixtures (Phases 19–21) or Hypersim (here): 7/7
+fixture runs + 1 scale run agree. Cross-distribution
+directionals refused (junk comparison, stated in advance).
+What remains is unchanged from Phase 21's earned sentence (new
+patterns or new evidence — named, unopened, out of scope), now
+with the data axis closed alongside schedule and recipe.
+Executed notes (deviations: none from frozen spec; necessities
+as classed): lognorm constants from valid pixels only (NaN/0
+depths make all-pixel log unimplementable); masks & valid
+intersect at eval (same necessity); per-step lstsq over the
+minibatch concat (120-frame full-batch per step is not runnable
+— rotation is the hyper precedent); frames preloaded to GPU
+(~9.3GB VRAM of 24GB — same values/order as per-step loading).
+Dims check that fell out: params 210241 = dit64b2's 209857 +
+384 (48×64 vs 42×64 pos tables) — architecture identical modulo
+grid, as frozen.
