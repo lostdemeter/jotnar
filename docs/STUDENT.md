@@ -1676,3 +1676,67 @@ minibatch concat (120-frame full-batch per step is not runnable
 Dims check that fell out: params 210241 = dit64b2's 209857 +
 384 (48×64 vs 42×64 pos tables) — architecture identical modulo
 grid, as frozen.
+
+## Phase 25 — training telemetry on the faithful Hypersim run (constitution, FROZEN pre-run)
+
+Why before what-next: Phase 24 closed the data axis (collapse is
+data-independent) with the mechanism unnamed — attenuation,
+self-sabotage, and landscape all fit "pinned ~0.5". This round
+names it with numbers before any next step is proposed. No
+architecture/loss/schedule/data change exists in this round; a
+"small fix" to any of those is scope breach, however tempting the
+readings.
+Instrument list (FROZEN — dithyp shape, `scripts/train_dit_hypersim.py`
+`--telemetry` path only; default-off path byte-untouched):
+- Per-block activation norms (input AND output RMS) + per-block
+  gradient norms (over block params, post-backward pre-step) +
+  per-block update-to-weight ratios (||Δp||/||p|| across opt.step,
+  no_grad snapshots) — every N=500 steps plus it=0 (17 samples).
+- AdaLN modulation statistics: per block, mean+var of each of the
+  6 split components (sh1/sc1/g1/sh2/sc2/g2), recomputed under
+  no_grad from `block.mod(silu(temb))` on sample steps (tiny,
+  deterministic, no RNG).
+- Full per-step loss trace banked (8000 scalars — the trajectory
+  the prints subsample).
+Hooks only: attach-on-sample forward hooks (zero steady-state
+cost), no_grad reads, no RNG draws, no statement reordering. A
+behavior delta VOIDS the round.
+Frozen interpretation table (one row per reading; thresholds
+adopted as suggested except self-sabotage, tightened with reason —
+absolute 1e-6 alone could misread init scale, so a >100× drop from
+the it-0 baseline is required alongside it):
+- attenuation iff mean_over_samples(g_block0 / g_block1) > 10
+  (forward-decay, input→output; reverse ratio reported, not ruled).
+- self-sabotage iff end var(g1),var(g2) < 1e-6 in BOTH blocks AND
+  >100× below their it-0 values (gates/scales collapse).
+- landscape iff NOT attenuation AND NOT self-sabotage AND grads
+  healthy (max/min over all sample×block grad norms < 10) AND
+  modulations non-degenerate (all end vars ≥ 1e-6) AND fresh
+  held-out flat (0/360 from this run's own end-eval).
+- else none-of-the-above (readings stated, no forcing).
+Smoke rule (behavior-delta tripwire): 50-step instrumented probe
+vs uninstrumented twin (same seed) must match on printed losses
+(it 0, 49) within 1e-4 (1000× above typical GPU noise, far below
+any math-changing accident), AND the probe prefix must match the
+banked Phase-24 log prefix (iter 0: 0.4014) within 1e-4. Either
+miss voids the round — no full run on a perturbing harness.
+Budget frozen: 50-step probe first (times hook overhead) → full
+run budgeted from it; 1–2 instrumented runs MAX (probe + one
+full); wall cap 30 min (Phase-24 measured 795s train + ~4 min
+eval; hooks are no_grad reads). GPU solo (idle + VRAM stated at
+run); Qwen-7B never co-loaded.
+Banking: telemetry goes to NEW `samples/marigold/
+dithyp64b2_telemetry.json` (schema below) — banked Phase-24
+metrics are NEVER overwritten, production weights untouched.
+Gate: `tests/test_hypersim_feas.py` extended in place (telemetry
+schema integrity + verdict legs recomputing the frozen rules from
+banked telemetry + smoke-match leg). Neighbors: dithyp + teacher
+legs green (nothing moves underneath).
+Telemetry schema (gated): {tag, base_tag, instrument {every,
+hooks[]}, overhead {steps, off_s_per_step, on_s_per_step, frac},
+smoke {off_01, on_01, banked_0, maxdiff, tol, ok},
+loss_trace[8000], samples[{it, loss, blocks[{act_in, act_out,
+grad, upd, mod{comp:{mean,var}}}]}], eval_summary {heldout_under,
+heldout_n, train_mean, heldout_mean}, verdict {name, numbers{}}}.
+
+### Battery results (TBD — instrumented run lands here)
