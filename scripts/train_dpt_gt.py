@@ -25,6 +25,7 @@ sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
 
 OUTBASE = os.path.expanduser("~/student_runs")
+FIXDIR = os.path.join(ROOT, "samples", "marigold")
 
 
 def _define_model(torch):
@@ -232,8 +233,7 @@ def main():
     for n, fr in rep["frames"].items():
         print(n, fr["split"], {k: (None if v is None else round(v, 4))
                                for k, v in fr["strata"].items()}, flush=True)
-    outp = os.path.join(FIXDIR := os.path.join(ROOT, "samples", "marigold"),
-                        f"dpt_run_{args.tag}.json")
+    outp = os.path.join(FIXDIR, f"dpt_run_{args.tag}.json")
     json.dump(rep, open(outp, "w"), indent=1)
     print(f"wrote {outp}", flush=True)
 
