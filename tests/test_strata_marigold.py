@@ -767,6 +767,73 @@ def main():
           f"under-bars {lccounts}, deltas "
           f"{ {t: round(lcdelta[t], 4) for t in lcfrozen} }")
 
+    # -- Phase-29 lesion-matched training (damage profile, not outputs) --
+    # Frozen 6 configs (lm-clean control + lm-A..E basin targets);
+    # term-inventory covers the target source (target_maps present
+    # exactly on lesioned arms, None on control; loss_space value
+    # everywhere — coordinates frozen); materialization integrity
+    # (banked map sha + determinism-rerun flag); winner tripwire
+    # (winner None ⟺ no cells and no directional move).
+    lm = ab.get("lesionmatch", {})
+    lmfrozen = ["lm-clean", "lm-A", "lm-B", "lm-C", "lm-D", "lm-E"]
+    check("lesionmatch-configs", lm.get("configs") == lmfrozen
+          and lm.get("reference") == "lm-clean", lm.get("configs"))
+    lmcells = lm.get("cells", {})
+    lmcomplete = all(
+        t in lmcells and len(lmcells[t].get("frames", {})) == 6 and all(
+            sorted(fr.get("strata", {})) == STRATA
+            and all(np.isfinite(v) and v >= 0
+                    for v in fr["strata"].values())
+            for fr in lmcells[t]["frames"].values())
+        for t in lmfrozen)
+    check("lesionmatch-complete", bool(lmcomplete), "6 configs x 6x6 finite")
+    lmflags = {t: lmcells.get(t, {}).get("flags", {}) for t in lmfrozen}
+    check("lesionmatch-terms",
+          all(f.get("loss_space") == "value" for f in lmflags.values())
+          and lmflags["lm-clean"].get("target_maps") is None
+          and all(lmflags[t].get("target_files", {}).keys()
+                  == {"church", "dogs", "squirrel", "train"}
+                  and all(v.endswith(f"lm-{t.split('-')[1]}_{k}.npy")
+                          for k, v in lmflags[t]["target_files"].items())
+                  for t in lmfrozen[1:])
+          and all(f.get("perc") == 0.0 and f.get("sink") == 0.0
+                  for f in lmflags.values()),
+          "per-frame lesioned maps inventoried, value-space, aux absent")
+    lmcounts, lmdelta = {}, {}
+    for t in lmfrozen:
+        n = 0
+        for _n, fr in lmcells[t]["frames"].items():
+            if fr.get("split") != "heldout":
+                continue
+            n += sum(1 for k in STRATA if fr["strata"][k] <= BARS[k])
+        lmcounts[t] = n
+        ds = [lmcells[t]["frames"][_n]["strata"][k]
+              - lmcells["lm-clean"]["frames"][_n]["strata"][k]
+              for _n, fr in lmcells[t]["frames"].items()
+              if fr.get("split") == "heldout" for k in STRATA]
+        lmdelta[t] = sum(ds) / len(ds)
+    for t in lmfrozen[1:]:
+        print(f"lesionmatch {t} vs lm-clean (held-out mean delta): "
+              f"{lmdelta[t]:+.4f}", flush=True)
+    check("lesionmatch-winner-none",
+          all(v == 0 for v in lmcounts.values())
+          and all(lmdelta[t] >= -0.05 for t in lmfrozen[1:])
+          and lm.get("winner") is None,
+          f"under-bars {lmcounts}, deltas "
+          f"{ {t: round(lmdelta[t], 4) for t in lmfrozen} }")
+    mat = lm.get("materialization", {})
+    import hashlib as _hl
+    sha_ok = True
+    for fn, h in mat.get("map_sha256", {}).items():
+        p = os.path.join(ROOT, "samples", "marigold", "inputs_lesioned", fn)
+        if not os.path.isfile(p) or \
+                _hl.sha256(open(p, "rb").read()).hexdigest()[:16] != h:
+            sha_ok = False
+    check("lesionmatch-materialization",
+          bool(mat.get("determinism_rerun_match")) and sha_ok
+          and len(mat.get("map_sha256", {})) == 20,
+          "rerun byte-identical (pasted) + 20 map shas recomputed")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

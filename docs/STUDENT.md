@@ -2149,3 +2149,140 @@ between arms is the second frame's features. Banked mscale64
 (fixtures) rides as secondary context (same recipe, different
 data — reported, never ruling). Gate battery key holds both arms
 (configs temp-pair + temp-single) as frozen.
+
+## Phase 29 — lesion-matched training (constitution, FROZEN pre-run)
+
+Amendment record (written first, before any other commit — the
+Phase-28-style premise check found the original constitution's
+core mechanism unbanked): lesioned-teacher OUTPUT MAPS were
+never stored — every lesion/attractor bank holds metrics
+(AbsRel floats), digests (sha hex), or stats (mean/std/corr),
+by the attractor round's stated design (maps never stored).
+This amendment OPENLY LIFTS the no-new-teacher-runs clause for
+ONE materialization pass and nothing else. Clause, reason,
+boundary, all frozen here: (reason) without maps there are no
+lesion-perturbed targets, and every alternative (synthetic
+targets shaped from numbers, damage-profile aux heads,
+student self-lesions) contradicts the parenthetical or the
+banked-shape rule; (boundary) materialize BANKED lesion configs
+only — the 5 attractor-basin representatives below, no new
+lesion designs, no new frames beyond the frozen fixture set;
+(clause) after materialization the prohibition reinstates in
+full — training reads maps from disk, never runs the teacher.
+Target construction frozen (the "which lesion levels"
+question): FIVE variants, one per attractor basin (basins are
+this arc's own finding — training on basin outputs directly):
+lm-A..lm-E ← teacher maps under subset_20_0 (A), subset_10_1
+(B), subset_10_0 (C), subset_30_1 (D), subset_5_0 (E), all
+banked Phase-H subsets (first-listed member per basin —
+deterministic pick, no cherry-picking), computed on the 4
+TRAIN fixtures (1024×672 → harness 768×576 → Bilinear back to
+native, mirror of the judge path), banked as float32 .npy
+(f32→f64 lossless; ~55MB total, fixture-.npy precedent).
+Control lm-clean: same architecture/seed/schedule on clean
+banked fixture teacher outputs (no teacher run needed —
+already on disk). Without the control any result is
+uninterpretable (frozen).
+Architecture frozen: mscale64-EXACT (W64, multi, field 33,
+densewin 3, depth 2 — banked shape; the variable is the
+target, never the model; an arch tweak to suit perturbed
+targets is scope breach). Schedule frozen: const lr 0.02,
+2000 steps, seed 7 (banked recipe). Eval frozen (linear
+align_mae per stratum on heldout fixtures vs clean banked
+teacher — same judge for all six arms).
+Schedule + budget frozen: CPU (Phase-27 mscale pace ~9
+min/coordinate; 6 arms ≈ 1h; GPU unjustified, not assumed),
+wall cap 3h all arms. Materialization ≈ 2 min GPU (20 evals,
+known 1s/frame) + loads. GPU solo for the materialization
+(idle + VRAM stated at run); Qwen-7B never co-loaded; no
+downloads (fixtures + banked subsets on disk suffice).
+Winner: most held-out cells (2×6=12) under Phase-1 bars;
+directional moves vs all prior bests (per-frame-stratum minima
+over banked mscale64/jattn64b2/ditc64b2/lc-value heldout
+cells, computed spec-side; same >0.05 frozen threshold);
+empty is complete. Retrain-match before ANY claim.
+Banking: per-variant `student_run_lm-<x>.json` + `lesionmatch`
+battery key (configs lm-clean + lm-A..E, reference lm-clean,
+cells mirror hyper shape); maps under
+`samples/marigold/inputs_lesioned/` (tracked, fixture-.npy
+precedent); primaries untouched; weights out-of-tree per tag;
+production weights untouched.
+Gate: `tests/test_strata_marigold.py` extended in place
+(lesionmatch key: schema + winner/bars verdicts +
+control-comparison legs — clean-target control banked
+alongside, delta computed, never asserted directionally
+beyond it; + materialization-integrity legs — fresh maps match
+banked digests where digests exist — there are none for
+fixtures, so integrity = determinism rerun: ONE lesion×frame
+recomputed, byte-identical to banked map — closing the loop
+on the premise that started this). Neighbors: teacher,
+strata, lesion-basin legs green (read-only reuse — nothing
+moves underneath).
+Implementation: `--target-maps` flag + source branch in
+`scripts/train_student.py` (loss-geometry surface only —
+eval path byte-untouched); materialization via existing
+`scripts/teacher_lesion.py` lesion mode (frozen subsets as
+targets, fixture frames — no harness changes except a
+`--save-maps` bank path for model-res float32 maps).
+
+### Battery results (6 arms, 2000 steps each, ~10 min/arm CPU wall)
+
+All rc=0, finite everywhere. Held-out align-MAE (linear judge
+for all six) vs Phase-1 bars — 0/12 under on every arm:
+
+```text
+arm      split    far      near     nonplanar planar   smooth   tex
+lm-clean train    0.3432   0.3091   0.3255    0.3400   0.3469   0.2952
+lm-clean heldout  0.3602   0.2367   0.3682    0.2472   0.2254   0.3723
+lm-A     train    0.4495   0.4304   0.4200    0.4661   0.4769   0.4002
+lm-A     heldout  0.3708   0.3315   0.3918    0.3412   0.3330   0.3688
+lm-B     train    0.4331   0.4272   0.4202   [SECURITY_DATA]   0.4608   0.3873
+lm-B     heldout  0.3542   0.3081   0.3837    0.3088   0.2788   0.3751
+lm-C     train    0.4331   0.4272   0.4202    0.4494   0.4608   0.3873
+lm-C     heldout  0.2992   0.2016   0.3145    0.2048   0.1732   0.3394
+lm-D     train    0.4576   0.4333   0.4267    0.4706   0.4823   0.4063
+lm-D     heldout  0.3740   0.3328   0.3954    0.3420   0.3335   0.3719
+lm-E     train    0.4583   0.4359   0.4273    0.4732   0.4853   0.4070
+lm-E     heldout  0.3770   0.3474   0.4044    0.3530   0.3409   0.3800
+```
+Directionals vs lm-clean control (heldout mean delta):
+A +0.0545 (0 improved / 3 worsened), B +0.0588 (0/3),
+C −0.0462 (6/0), D +0.0566 (0/3), E +0.0654 (0/4).
+Winner by bars: none (0/12 everywhere — no retrain by bars).
+BUT lm-C: 6/12 cells beat ALL prior bests (mscale64/jattn64b2/
+ditc64b2/lc-value minima) by >0.05 — all on geo_webcam_1
+(far −0.138, near −0.104, nonplanar −0.127, planar −0.128,
+smooth −0.121, tex −0.109), while geo_webcam_0 worsens
+(+0.03..+0.07 throughout). Retrain-match (frozen rule for a
+first-damage-profile candidate): identical rerun → full table
+BIT-IDENTICAL (max abs diff 0.00e+00) AND the same 6 cells
+beat prior bests (reproduced exactly). Claimed therefore as a
+**directional-move** (not winner — no bars cleared): basin-C
+(block-57 attractor, most-structured remnant) targets teach
+damage-matching that output-matching never did — on one frame.
+Frame-specificity unexplained and stated as such (mechanism
+open: why webcam_1 only?); the move is real (bit-reproduced),
+narrow (one frame), and asymmetric (A/B/D/E lesioned targets
+all HURT by +0.05..+0.07 — only the most-structured basin
+helps, and only somewhere).
+Diagnosis, three parts. (1) Damage-matching is not nothing:
+5 lesioned-target arms separate cleanly (C helps one frame;
+A/B/D/E hurt both) where coordinates (Phase 27) could not
+separate anything — targets carry signal that loss geometry
+doesn't. (2) Lesioned targets fit EASIER (train losses
+0.02–0.12 vs 0.33 control; smoother maps) yet generalize
+indifferently-or-worse — ease-of-fit ≠ truth, same lesson as
+every round, now with the sign flipped per basin. (3) The
+C-effect size (−0.10..−0.14 uniformly across all 6 strata of
+one frame) smells global (scale/shift the alignment then
+grades?) rather than structural — reported, not resolved;
+a per-stratum-shaped win would be more convincing than a
+uniform one, stated openly.
+Executed notes: C2-style crash absent (targets finite by
+construction); materialization 20 maps + manifest in ~3 min
+GPU; determinism rerun byte-identical; tm_* selector paths
+fixed after a bash `$b_` interpolation ate the basin letter
+(all five lesioned arms initially crashed loud on missing
+files — FileNotFoundError, rc=1 — then ran clean; the battery
+script now banks only on rc=0). CPU training per frozen rule
+(~10 min/arm; GPU never justified, never used).

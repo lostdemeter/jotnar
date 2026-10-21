@@ -1,0 +1,103 @@
+{
+ "tag": "lm-D",
+ "width": 64,
+ "steps": 2000,
+ "lr": 0.02,
+ "schedule": "const",
+ "seed": 7,
+ "patch": 1,
+ "multi": true,
+ "field": 33,
+ "densewin": 3,
+ "depth": 2,
+ "globsum": false,
+ "loss_space": "value",
+ "loss_lo": -0.4722202718257904,
+ "loss_q": 0.005757136789022708,
+ "target_maps": "/tmp/opencode/tm_D.json",
+ "perc": 0.0,
+ "sink": 0.0,
+ "aux_every": 50,
+ "dinov2": null,
+ "train": [
+  "church",
+  "dogs",
+  "squirrel",
+  "train"
+ ],
+ "heldout": [
+  "geo_webcam_0_combined",
+  "geo_webcam_1_combined"
+ ],
+ "torch": "2.14.1+cu130",
+ "device": "cpu",
+ "weights": "/home/balrog/student_runs/lm-D/weights.pt",
+ "frames": {
+  "church": {
+   "split": "train",
+   "strata": {
+    "far": 0.475185052609276,
+    "near": 0.48240123263243617,
+    "nonplanar": 0.5156189531485297,
+    "planar": 0.5054109679003204,
+    "smooth": 0.48340753400518777,
+    "tex": 0.4676727677825527
+   }
+  },
+  "dogs": {
+   "split": "train",
+   "strata": {
+    "far": 0.3573942933119557,
+    "near": 0.341769099274895,
+    "nonplanar": 0.3285495519894804,
+    "planar": 0.36800398864317374,
+    "smooth": 0.4086788853959597,
+    "tex": 0.30237418864074367
+   }
+  },
+  "squirrel": {
+   "split": "train",
+   "strata": {
+    "far": 0.6188474793254348,
+    "near": 0.5544106212003385,
+    "nonplanar": 0.49250810466899747,
+    "planar": 0.6318067000096835,
+    "smooth": 0.6941175263203191,
+    "tex": 0.46677015498377306
+   }
+  },
+  "train": {
+   "split": "train",
+   "strata": {
+    "far": 0.3791330952787335,
+    "near": 0.35446674698137703,
+    "nonplanar": 0.3700531400666591,
+    "planar": 0.3771103820453076,
+    "smooth": 0.3428586361681312,
+    "tex": 0.3884674910533657
+   }
+  },
+  "geo_webcam_0_combined": {
+   "split": "heldout",
+   "strata": {
+    "far": 0.2810124144243106,
+    "near": 0.28005232864987095,
+    "nonplanar": 0.34624024189121777,
+    "planar": 0.2437952803035064,
+    "smooth": 0.20123260327562306,
+    "tex": 0.37056238803424874
+   }
+  },
+  "geo_webcam_1_combined": {
+   "split": "heldout",
+   "strata": {
+    "far": 0.46703301998630625,
+    "near": 0.3856186689417517,
+    "nonplanar": 0.4446330519657168,
+    "planar": 0.4401789688904852,
+    "smooth": 0.4657882867977297,
+    "tex": 0.3731658466371369
+   }
+  }
+ }
+}
