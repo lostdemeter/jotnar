@@ -552,3 +552,63 @@ graceful-vs-snap comparison table + what the architecture
 implies for distillation (stated as implication, not plan).
 
 ### Attractor results (TBD — reruns land here)
+
+### Attractor results (1 baseline rerun + 15 subset reruns + 3 stability reruns, ~7 min GPU solo)
+
+Basin partition (exact concatenated-8-frame digests — 5 classes,
+every subset in exactly one; per-frame consistency holds: tied
+overall ⟹ tied on every frame):
+
+```text
+basin  n  members                                            AbsRel
+A      8  5_1 5_2 20_0 20_1 30_0 40_0 40_1 40_2               0.6902
+B      3  10_1 10_2 30_2                                     0.7458
+C      2  10_0 20_2                                           0.9813
+D      1  30_1                                               0.7103
+E      1  5_0                                                0.7241
+```
+
+Characterization (frozen rules + one open correction): NO basin
+is constant (model-res std 0.06–0.31, all ≫ 1e-6 floor) — all
+five are structured remnants (corr vs unlesioned +0.23–0.39,
+corr vs GT +0.15–0.30; basin C most remnant, consistent with
+block-57 dominance). Correction recorded openly: the scene-mean
+rule as frozen (<5% cross-unit) cannot fire — basin means live
+in model units (+0.25–0.69), GT means in meters (3.5–7.5) — a
+design bug in my rule, not in the data; characterization rests
+on the constant rule (fired negative everywhere) plus remnant
+corrs. Stability green: 3/3 same-seed reruns bit-identical
+digests; baseline rerun AbsRel identical to holography
+baseline (determinism corroborated a third time).
+Graceful-vs-snap comparison (banked numbers, both sides):
+teacher subsets snap to 5 discrete attractors (non-graded
+curve R² 0.186, cliff ×2.39) | flagship listing lesions grade
+continuously (255/83/47/26 — every op a share) | mscale64
+lesions uniform total-kill (spread 1.0000 — brittle) |
+jattn64b2 lesions differentiated 71.2× (graded distribution).
+The teacher snaps like mscale, not like the listing: discrete
+degenerate states, not continuous shares.
+Implication for distillation (stated as implication, not
+plan): a student fitting these maps with smooth MLPs chases a
+target landscape that is itself discontinuous under damage —
+the pin may live in fitting attractor-jumps with graded
+machinery. What would test it (not run): lesion-matched
+training (train with random blocks zeroed and see if the pin
+moves) — a new round with its own constitution, named here
+only.
+Gate `tests/test_teacher_lesion.py` extended in place (CPU,
+0.08s): schema (15 rows + baseline, 8 mapstats each),
+partition recomputed == banked {8,3,2,1,1}, pairwise
+distinct, per-frame consistency, 3/3 stability, all
+structured-remnant, yarnball numbers both sides. Neighbors
+green: lesion (Phase-A + holography legs), anatomy, teacher —
+read-only reuse, nothing moves underneath.
+Bugs caught while building (mechanisms): (1) corr_ref
+computed native-vs-model-res (786432 vs 442368 broadcast
+crash on the first frame) — corr_ref lives at model res by
+construction, corr_gt at native; shapes now asserted by use.
+(2) Scene-mean characterization rule frozen cross-unit
+(model outputs vs meters) — cannot fire as written; recorded
+above instead of silently dropped. Gaps named: none new —
+self-closing round; sub-block basins and VAE/family basins
+unmapped (priced, not run).
