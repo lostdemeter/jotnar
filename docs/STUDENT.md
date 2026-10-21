@@ -2077,7 +2077,62 @@ Implementation: new `scripts/train_temporal_student.py`
 (assembles train_student multiscale/load fns + own pair loop);
 train_student.py itself UNTOUCHED (the control must be pristine).
 
-### Battery results (TBD — runs land here)
+### Battery results (2 arms, 2000 steps each, ~7/~4 min train CPU wall)
+
+Both rc=0, finite everywhere (0 nulls — continuous Hypersim
+stats). Held-out align-MAE vs fresh bars — 0/324 under on both
+arms (54 pairs × 6):
+
+```text
+arm     split    far      near     nonplanar planar   smooth   tex
+pair    train    2.98     2.37     2.90      2.38     2.63     2.86
+pair    heldout  1.78     1.57     1.51      1.93     1.57     1.74
+single  train    3.38     2.77     3.35      2.66     3.11     3.21
+single  heldout  1.78     1.55     1.52      1.88     1.56     1.74
+```
+(pair means/bests: heldout 1.51–1.93 / 0.46–0.57; single:
+1.52–1.88 / 0.45–0.55.)
+Parallax delta (pair−single heldout mean): +0.0110 (58 improved
+/ 78 worsened of 324 — coin flip). Winner: none — 0 cells under
+bars both arms, no directional move (needs < −0.05);
+no retrain-match (nothing to claim; single-seed, determinism
+NOT re-verified — hyper precedent).
+Transfer: none (no grid to lock, no fixture video — as frozen).
+Verdict: **empty** — parallax adds no measured information at
+this rung (concat-fusion, mscale-class, 2000 steps, Hypersim
+pairs). The second frame moves heldout by +0.01 against a
+±0.05 directional bar.
+Diagnosis, three parts. (1) Same pin, both arms: train fits
+partway (~2.4–3.4), heldout flat (~1.5–1.9), far/tex worst —
+the wall reproduces with identical shape whether the mixer sees
+one frame or two. The extra frame is not extra signal here.
+(2) Capacity confound named and closed: the pair net carries
++11k params (27k vs 16k) and fits train BETTER (2.4–3.0 vs
+2.8–3.4) yet heldout is identical to 2 decimals — more
+capacity, same wall; the pin is not a capacity wall at this
+rung either. (3) Common-mode transients: BOTH arms spiked
+(~6–7 at it500/1500) and recovered (~0.95) — aligned-MAE lstsq
+instability on rotating minibatches, parallax-independent
+(same signature both arms; the pin, not the spike, is the
+verdict). The named limitation stands and sharpens: per-pixel
+concat sees same-pixel + context-window neighborhoods only —
+whether EXPLICIT correspondence (cost-volume) would differ is
+still untested (follow-up named, not run).
+Executed notes: 50-step smokes both modes (finite, sane);
+preload 180 unique frames ~3 min/arm; control is the
+post-correction Hypersim single-frame mode (banked mscale64
+fixtures ride as secondary context only — 0.32 heldout means
+there vs 1.7 here are different distributions AND different
+judges... note: fixture eval is align_mae in teacher units,
+Hypersim in meters — cross-table comparison refused, stated).
+CAUGHT BUGS (mine, recovered openly): (1) preload stored FULL
+557MB/frame features (120GB trajectory — would OOM silently);
+fixed to sample-immediately (17GB→ in-RAM sampled) pre-run.
+(2) preload shape check compared full rows to the SAMPLED
+count (always fires) — fixed to full-vs-full pre-run. (3) My
+battery assembler asserted 108 frames/arm instead of 162
+(108+54) — assertion fired on correct data, fixed, nothing
+written under it (verified).
 
 ### Phase-28 correction (pre-run, nothing executed yet — Phase-19 precedent)
 
