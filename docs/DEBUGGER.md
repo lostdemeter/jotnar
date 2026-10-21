@@ -447,3 +447,50 @@ Spec: this section + curve table + verdict (holographic or
 modular) — nothing more.
 
 ### Holography results (TBD — run lands here)
+
+### Holography results (1 baseline re-bank + 15 subset evals, ~6 min wall, GPU solo)
+
+Baseline re-banked in-round: mean 0.2936 (EXACT match to Phase-A
+0.2936 to 4 decimals — cross-round reproducibility, same harness/
+seed/frames; determinism corroborated, not just claimed).
+Curve (size: rep0 rep1 rep2 | mean | seed max/min | step-ratio):
+
+```text
+ 0: baseline                                   0.2936
+ 5: 0.7241 0.6902 0.6902 | mean 0.7015 | 1.049 | x2.39
+10: 0.9813 0.7458 0.7458 | mean 0.8243 | 1.316 | x1.18
+20: 0.6902 0.6902 0.9813 | mean 0.7872 | 1.422 | x0.96
+30: 0.6902 0.7103 0.7458 | mean 0.7154 | 1.081 | x0.91
+40: 0.6902 0.6902 0.6902 | mean 0.6902 | 1.000 | x0.96
+linear fit: slope +0.0053, R² = 0.1860 (needs >0.8)
+```
+
+Frozen-rule verdict: **modular** (R² 0.186 fails holographic;
+0→5 step ×2.39 fails no-cliff — doubly determined).
+Diagnosis — the curve is NOT a dosage response, it's attractor
+membership: 8 configs snap to ONE bit-identical per-frame
+output (0.6902 attractor), and subset_10_0 (contains block 57 +
+9 others) reproduces Phase-A block-57-alone per-frame EXACTLY —
+block 57 totally dominates its subset (9 extra dead blocks
+change nothing). Lesioned DiT falls into a few discrete
+degenerate states rather than decaying gracefully: no dosage,
+no hologram. Consistent with Phase A (every block load-bearing
+alone) and sharper: not only does each block matter, but
+beyond ~5 dead blocks the model stops degrading FURTHER —
+collapse saturates at shared attractors. Seed agreement holds
+(max/min ≤ 1.422 < 1.5 — seeds agree the curve is flat
+garbage, not signal).
+What this closes: graceful-degradation/holographic storage for
+this teacher at block granularity. What it doesn't touch:
+sub-block structure (Phase B), VAE/family subsets (unrun),
+recovery dynamics (can the model re-converge post-lesion?
+untrained here — training is out of scope).
+Gate `tests/test_teacher_lesion.py` extended in place (CPU,
+0.06s): schema (15 rows, frozen subsets re-derived from the
+frozen RNG scheme), finite, R²/cliff/seeds recomputed,
+verdict equality. Neighbors green: lesion (Phase-A legs),
+anatomy, teacher — read-only reuse, nothing moves underneath.
+Bugs caught while building (mechanisms): (1) gate `_cm`
+assumed wrapped strata-dicts; banked frames are flat (fixed).
+(2) Step loop off-by-one (6 points → 5 steps, not 6).
+Gaps named: none new — the round is self-closing by design.
