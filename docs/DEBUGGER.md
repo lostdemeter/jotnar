@@ -115,3 +115,70 @@ the stride sample); jattn64b2 = rgb-path encode+head on church
 forwards are seconds on CPU — no GPU need established, none
 used). Qwen and teacher weights never loaded (students only —
 teacher lesion is the next round, explicitly not this one).
+
+## Torch results (students, CPU seconds — `scripts/bank_student_lesions.py`)
+
+mscale64 (church full-frame, 5 leaves, all fired; outputs ~3.6e5 —
+blown-up like the arc's constant-attractor findings, so every
+lesion ≈ total-kill and biases vanish relatively):
+
+```text
+module          fires worst_maxabs
+0                   1 3.652e+05
+1                   1 3.652e+05
+2                   1 3.656e+05
+3                   1 3.656e+05
+4                   1 3.652e+05
+control: exactly zero
+```
+
+jattn64b2 (rgb path, 22 leaves; unfired exactly {row, col,
+dino_proj} — row/col BYPASSED (encode reads `.weight`
+directly, never calls the modules), dino_proj genuinely unused
+in rgb path; the fire-count tripwire tells them apart from
+measured zeros):
+
+```text
+module            fires worst_maxabs
+blocks.0.q/k/v/o    1   4.3-4.4e6
+blocks.0.n1         1   3.3e6
+blocks.0.m1/m2/n2   1   2.2-2.3e6
+blocks.1.m1/m2/n2   1   2.6e6
+blocks.1.q/k/v/o/n1 1   6.2-7.4e4
+h1/h2/tok           1   4.4e6
+row/col/dino_proj   0   0
+control: exactly zero
+```
+
+Profiles compared (the open question, answered): YES, they
+differ the way failures do. mscale = uniform total-kill (chain
+MLP, no residuals — every layer load-bearing, outputs
+astronomical). jattn = differentiated (block-0 attention path
+~1e6, head h1/h2 + tok ~4.4e6 load-bearing, block-1 qkv/o/n1
+~70× smaller than block-1 MLP — the second attention block is
+near-dead weight; only h1/h2 carry the head). The mixer fails
+as one fused rope; the attention stack fails in named places.
+Gate `tests/test_debugger.py` extended in place (CPU ~9s):
+lesion-every-module, control-zero ×2, live==banked both models
+(cross-process determinism), session-twice identical,
+container/root/bad-path fail-loud, dino_proj exact-zero,
+unfired-set exact. Listing legs green unmodified (shared code
+untouched behaviorally — proven by the unchanged legs, not
+claimed). Neighbors green: `test_asm.py`, `test_census.py`.
+Bugs caught while building (mechanisms): (1) mscale rows
+printed identically at 4 sig figs — full precision shows
+bias-scale differences (3.652e5 vs 3.656e5); the model IS blown
+up, the printer hid it. (2) row/col zeros are hook-BYPASS
+artifacts (encode reads `.weight`, never calls forward), NOT
+causal findings — fire counts added to every row; the gate pins
+the unfired set exactly. (3) Test helper `sess()` shadowed by a
+loop variable of the same name (UnboundLocalError) — renamed.
+
+## What teacher lesion will need
+
+Per-layer hooks on the teacher twin (no_grad, eval), a
+reference run returning named decisions (argmax-rank/fluency —
+serving grades decisions, never exact strings, per house
+contract), banked teacher outputs to diff against, and the same
+fire-count tripwire (dead vs bypassed). Qwen-7B stays unloaded
+until that round's constitution says otherwise.
