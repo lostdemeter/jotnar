@@ -278,6 +278,11 @@ def main():
                     help="sibling-CLI .npy dir (parity mode)")
     ap.add_argument("--out", default="",
                     help="bank JSON path (default per mode under samples/)")
+    ap.add_argument("--mapstats", action="store_true",
+                    help="bank per-frame map digests+stats (sha256 of "
+                    "model-res float32 bytes; mean/std; corr vs GT and "
+                    "vs unlesioned ref at native res; null corr when "
+                    "either side has zero variance)")
     args = ap.parse_args()
     need = ["diffusers", "peft", "bitsandbytes", "cv2"]
     try:
@@ -334,7 +339,8 @@ def main():
         print(f"DRY OK ({len(targets)} targets)", flush=True)
         return
 
-    def judge(pred576, s, fr):
+    def judge(pred576, s, fr, refmap=None, do_stats=False):
+        import hashlib
         base = os.path.join(SHARD, s)
         depth = np.asarray(Image.open(os.path.join(
             base, f"depth_plane_cam_00_fr{fr}.png"))).astype(np.float64) / 1000.0
@@ -358,29 +364,70 @@ def main():
                 per[k] = None
                 continue
             per[k] = float(np.abs(up[m] - rel[m]).mean())
-        return per
+        ms = None
+        if do_stats:
+            a = np.ascontiguousarray(pred576, dtype=np.float32)
+            mu, sd = float(a.mean()), float(a.std())
 
-    def run_eval(hooks=()):
+            def _corr(x, y):
+                xs = x.reshape(-1).astype(np.float64)
+                ys = y.reshape(-1).astype(np.float64)
+                if float(xs.std()) == 0.0 or float(ys.std()) == 0.0:
+                    return None
+                return float(((xs - xs.mean()) * (ys - ys.mean())).mean()
+                             / (xs.std() * ys.std()))
+
+            ms = {"sha": hashlib.sha256(a.tobytes()).hexdigest(),
+                  "mean": mu, "std": sd,
+                  "corr_gt": _corr(up[valid], depth[valid]),
+                  "corr_ref": (_corr(up, refmap) if refmap is not None
+                               else None)}
+        return per, ms
+
+    def run_eval(hooks=(), refmaps=None, do_stats=False):
         from collections import Counter
-        per_frame, walls, fall = {}, [], Counter()
+        per_frame, walls, fall, mstats = {}, [], Counter(), {}
         for i, (s, fr) in enumerate(frames):
             p = os.path.join(SHARD, s, f"rgb_cam_00_fr{fr}.png")
             pred, wall, fires = infer_one(transformer, vae, pe, pm, p,
                                           SEED + i, hooks)
             walls.append(wall)
             fall.update(fires)
-            per_frame[f"{s}_fr{fr}"] = judge(pred, s, fr)
+            per, ms = judge(
+                pred, s, fr,
+                refmap=(refmaps.get(f"{s}_fr{fr}")
+                        if refmaps else None),
+                do_stats=do_stats)
+            per_frame[f"{s}_fr{fr}"] = per
+            if ms is not None:
+                mstats[f"{s}_fr{fr}"] = ms
             print(f"eval {s}/fr{fr}: wall {wall:.0f}s "
                   f"meanAbsRel "
                   f"{np.mean([v for v in per_frame[f'{s}_fr{fr}'].values() if v is not None]):.4f}",
                   flush=True)
-        return per_frame, walls, dict(fall)
+        return per_frame, walls, dict(fall), mstats
+
+    def refmaps_all():
+        """Unlesioned model-res maps for corr_ref (8 evals, RAM-resident)."""
+        import torch
+        out = {}
+        for i, (s, fr) in enumerate(frames):
+            p = os.path.join(SHARD, s, f"rgb_cam_00_fr{fr}.png")
+            pred, _, _ = infer_one(transformer, vae, pe, pm, p,
+                                   SEED + i, ())
+            out[f"{s}_fr{fr}"] = np.ascontiguousarray(
+                pred, dtype=np.float32)
+        return out
 
     if args.mode == "baseline":
-        per_frame, walls, _ = run_eval()
+        rm = refmaps_all() if args.mapstats else None
+        per_frame, walls, _, mstats = run_eval(
+            refmaps=rm, do_stats=args.mapstats)
         rep = {"tag": args.tag, "mode": "baseline", "seed": SEED,
                "frames": {n: {"strata": v} for n, v in per_frame.items()},
                "walls": walls}
+        if args.mapstats:
+            rep["mapstats"] = mstats
         outp = args.out or os.path.join(
             ROOT, "samples", "marigold", "teacher_baseline_A.json")
         json.dump(rep, open(outp, "w"), indent=1)
@@ -392,7 +439,7 @@ def main():
         assert targets, "--targets required (2 pilot blocks)"
         for t in targets:
             t0 = time.time()
-            per_frame, walls, fires = run_eval(hooks=[t])
+            per_frame, walls, fires, _ = run_eval(hooks=[t])
             print(f"pilot {t}: per-eval wall {np.mean(walls):.0f}s "
                   f"(frames {len(walls)}) fires={fires}", flush=True)
         print(f"pilot total {time.time() - t0:.0f}s", flush=True)
@@ -412,15 +459,22 @@ def main():
         rows = json.load(open(outp)).get("rows", [])
         print(f"resuming {outp} ({len(rows)} rows banked)", flush=True)
     done = {r["target"] for r in rows}
+    rm = None
+    if args.mapstats and any(n not in done for n, _, _ in groups):
+        print("mapstats: computing unlesioned refmaps once", flush=True)
+        rm = refmaps_all()
     for name, hooks, idx in groups:
         if name in done:
             print(f"skip {name} (banked)", flush=True)
             continue
-        per_frame, walls, fires = run_eval(hooks=hooks)
+        per_frame, walls, fires, mstats = run_eval(
+            hooks=hooks, refmaps=rm, do_stats=args.mapstats)
         row = {"target": name, "fires": fires, "walls": walls,
                "frames": per_frame}
         if idx is not None:
             row["subset"] = idx
+        if args.mapstats:
+            row["mapstats"] = mstats
         rows.append(row)
         json.dump({"rows": rows}, open(outp, "w"), indent=1)
         print(f"banked {name} -> {outp}", flush=True)
