@@ -1,0 +1,132 @@
+{
+ "subset_20_0": {
+  "basin": "A",
+  "subset": [
+   1,
+   4,
+   6,
+   7,
+   10,
+   12,
+   14,
+   17,
+   19,
+   21,
+   25,
+   28,
+   29,
+   30,
+   47,
+   50,
+   52,
+   55,
+   58,
+   59
+  ],
+  "files": {
+   "church": "lm-A_church.npy",
+   "dogs": "lm-A_dogs.npy",
+   "squirrel": "lm-A_squirrel.npy",
+   "train": "lm-A_train.npy"
+  }
+ },
+ "subset_10_1": {
+  "basin": "B",
+  "subset": [
+   1,
+   18,
+   22,
+   25,
+   40,
+   44,
+   45,
+   47,
+   50,
+   51
+  ],
+  "files": {
+   "church": "lm-B_church.npy",
+   "dogs": "lm-B_dogs.npy",
+   "squirrel": "lm-B_squirrel.npy",
+   "train": "lm-B_train.npy"
+  }
+ },
+ "subset_10_0": {
+  "basin": "C",
+  "subset": [
+   2,
+   27,
+   30,
+   35,
+   36,
+   38,
+   39,
+   40,
+   51,
+   57
+  ],
+  "files": {
+   "church": "lm-C_church.npy",
+   "dogs": "lm-C_dogs.npy",
+   "squirrel": "lm-C_squirrel.npy",
+   "train": "lm-C_train.npy"
+  }
+ },
+ "subset_30_1": {
+  "basin": "D",
+  "subset": [
+   0,
+   1,
+   3,
+   4,
+   6,
+   8,
+   9,
+   10,
+   12,
+   14,
+   15,
+   16,
+   17,
+   18,
+   20,
+   21,
+   27,
+   33,
+   36,
+   37,
+   38,
+   40,
+   41,
+   42,
+   44,
+   45,
+   50,
+   52,
+   54,
+   56
+  ],
+  "files": {
+   "church": "lm-D_church.npy",
+   "dogs": "lm-D_dogs.npy",
+   "squirrel": "lm-D_squirrel.npy",
+   "train": "lm-D_train.npy"
+  }
+ },
+ "subset_5_0": {
+  "basin": "E",
+  "subset": [
+   0,
+   10,
+   20,
+   43,
+   47
+  ],
+  "files": {
+   "church": "lm-E_church.npy",
+   "dogs": "lm-E_dogs.npy",
+   "squirrel": "lm-E_squirrel.npy",
+   "train": "lm-E_train.npy"
+  }
+ }
+}
