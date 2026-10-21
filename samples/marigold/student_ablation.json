@@ -17439,5 +17439,592 @@
    }
   },
   "winner": null
+ },
+ "lesionmatch": {
+  "configs": [
+   "lm-clean",
+   "lm-A",
+   "lm-B",
+   "lm-C",
+   "lm-D",
+   "lm-E"
+  ],
+  "reference": "lm-clean",
+  "cells": {
+   "lm-clean": {
+    "arch": "mscale64",
+    "flags": {
+     "width": 64,
+     "steps": 2000,
+     "lr": 0.02,
+     "schedule": "const",
+     "seed": 7,
+     "multi": true,
+     "field": 33,
+     "densewin": 3,
+     "depth": 2,
+     "loss_space": "value",
+     "target_maps": null,
+     "target_files": null,
+     "perc": 0.0,
+     "sink": 0.0
+    },
+    "frames": {
+     "church": {
+      "split": "train",
+      "strata": {
+       "far": 0.47719612135277945,
+       "near": 0.47966764890937486,
+       "nonplanar": 0.5077508807259081,
+       "planar": 0.5099260563857618,
+       "smooth": 0.4798939166865734,
+       "tex": 0.4694310262821013
+      }
+     },
+     "dogs": {
+      "split": "train",
+      "strata": {
+       "far": 0.31923727644588656,
+       "near": 0.28174527098877766,
+       "nonplanar": 0.28380201926799603,
+       "planar": 0.31252132844323255,
+       "smooth": 0.3391717508841564,
+       "tex": 0.2684731451339858
+      }
+     },
+     "squirrel": {
+      "split": "train",
+      "strata": {
+       "far": 0.2653459043365731,
+       "near": 0.17649780523068653,
+       "nonplanar": 0.21797910970444823,
+       "planar": 0.2027337289963478,
+       "smooth": 0.2745464011174157,
+       "tex": 0.13903489159011514
+      }
+     },
+     "train": {
+      "split": "train",
+      "strata": {
+       "far": 0.31086899752512864,
+       "near": 0.29868916973998694,
+       "nonplanar": 0.29256861302511067,
+       "planar": 0.33497708173983826,
+       "smooth": 0.29402210552951197,
+       "tex": 0.30399320406112346
+      }
+     },
+     "geo_webcam_0_combined": {
+      "split": "heldout",
+      "strata": {
+       "far": 0.2612602854471517,
+       "near": 0.24421108441238168,
+       "nonplanar": 0.32508250171438124,
+       "planar": 0.20088251665212406,
+       "smooth": 0.17744378384758316,
+       "tex": 0.3294608935934468
+      }
+     },
+     "geo_webcam_1_combined": {
+      "split": "heldout",
+      "strata": {
+       "far": 0.4591490592004808,
+       "near": 0.22914137854378,
+       "nonplanar": 0.4114143460186411,
+       "planar": 0.2935369561679746,
+       "smooth": 0.2732710410624615,
+       "tex": 0.41519862996916096
+      }
+     }
+    }
+   },
+   "lm-A": {
+    "arch": "mscale64",
+    "flags": {
+     "width": 64,
+     "steps": 2000,
+     "lr": 0.02,
+     "schedule": "const",
+     "seed": 7,
+     "multi": true,
+     "field": 33,
+     "densewin": 3,
+     "depth": 2,
+     "loss_space": "value",
+     "target_maps": "/tmp/opencode/tm_A.json",
+     "target_files": {
+      "church": "samples/marigold/inputs_lesioned/lm-A_church.npy",
+      "dogs": "samples/marigold/inputs_lesioned/lm-A_dogs.npy",
+      "squirrel": "samples/marigold/inputs_lesioned/lm-A_squirrel.npy",
+      "train": "samples/marigold/inputs_lesioned/lm-A_train.npy"
+     },
+     "perc": 0.0,
+     "sink": 0.0
+    },
+    "frames": {
+     "church": {
+      "split": "train",
+      "strata": {
+       "far": 0.4747878473728421,
+       "near": 0.4817721348011125,
+       "nonplanar": 0.5166998789864736,
+       "planar": 0.5039260960687755,
+       "smooth": 0.48232582026404947,
+       "tex": 0.4678692281409835
+      }
+     },
+     "dogs": {
+      "split": "train",
+      "strata": {
+       "far": 0.3466537190406825,
+       "near": 0.341097648380483,
+       "nonplanar": 0.32225565617772167,
+       "planar": 0.36173305052267263,
+       "smooth": 0.4010540423292835,
+       "tex": 0.2984552164421172
+      }
+     },
+     "squirrel": {
+      "split": "train",
+      "strata": {
+       "far": 0.6155090798828493,
+       "near": 0.5513477045192263,
+       "nonplanar": 0.48819278027765883,
+       "planar": 0.6292971041197,
+       "smooth": 0.6905555507475519,
+       "tex": 0.46446954556725784
+      }
+     },
+     "train": {
+      "split": "train",
+      "strata": {
+       "far": 0.36104177158412226,
+       "near": 0.34719976323099205,
+       "nonplanar": 0.35282985671942113,
+       "planar": 0.3693568459770276,
+       "smooth": 0.33380347472630145,
+       "tex": 0.3698871357105954
+      }
+     },
+     "geo_webcam_0_combined": {
+      "split": "heldout",
+      "strata": {
+       "far": 0.2798160415968332,
+       "near": 0.2791457316863849,
+       "nonplanar": 0.34525120725588604,
+       "planar": 0.24404991686476352,
+       "smooth": 0.19820117831212433,
+       "tex": 0.37224149158686937
+      }
+     },
+     "geo_webcam_1_combined": {
+      "split": "heldout",
+      "strata": {
+       "far": 0.4616903315205872,
+       "near": 0.383786023977638,
+       "nonplanar": 0.4383821915103532,
+       "planar": 0.43828136090074454,
+       "smooth": 0.4678353754086409,
+       "tex": 0.3653080729686871
+      }
+     }
+    }
+   },
+   "lm-B": {
+    "arch": "mscale64",
+    "flags": {
+     "width": 64,
+     "steps": 2000,
+     "lr": 0.02,
+     "schedule": "const",
+     "seed": 7,
+     "multi": true,
+     "field": 33,
+     "densewin": 3,
+     "depth": 2,
+     "loss_space": "value",
+     "target_maps": "/tmp/opencode/tm_B.json",
+     "target_files": {
+      "church": "samples/marigold/inputs_lesioned/lm-B_church.npy",
+      "dogs": "samples/marigold/inputs_lesioned/lm-B_dogs.npy",
+      "squirrel": "samples/marigold/inputs_lesioned/lm-B_squirrel.npy",
+      "train": "samples/marigold/inputs_lesioned/lm-B_train.npy"
+     },
+     "perc": 0.0,
+     "sink": 0.0
+    },
+    "frames": {
+     "church": {
+      "split": "train",
+      "strata": {
+       "far": 0.4751540269208227,
+       "near": 0.4821446128547584,
+       "nonplanar": 0.5162059992701009,
+       "planar": 0.5047730932902716,
+       "smooth": 0.48278700983458755,
+       "tex": 0.46809569670658896
+      }
+     },
+     "dogs": {
+      "split": "train",
+      "strata": {
+       "far": 0.3553620764024807,
+       "near": 0.3443090813426458,
+       "nonplanar": 0.3269097123090509,
+       "planar": 0.3694810881205487,
+       "smooth": 0.40980361996967,
+       "tex": 0.30242979221610816
+      }
+     },
+     "squirrel": {
+      "split": "train",
+      "strata": {
+       "far": 0.6225434103852409,
+       "near": 0.5577939973854747,
+       "nonplanar": 0.49551694301488375,
+       "planar": 0.6362796818517664,
+       "smooth": 0.6976816880401027,
+       "tex": 0.47078108330960977
+      }
+     },
+     "train": {
+      "split": "train",
+      "strata": {
+       "far": 0.3799290951681423,
+       "near": 0.35832406356269964,
+       "nonplanar": 0.3736170236272073,
+       "planar": 0.3778355717582833,
+       "smooth": 0.34582203097341163,
+       "tex": 0.38993600237726417
+      }
+     },
+     "geo_webcam_0_combined": {
+      "split": "heldout",
+      "strata": {
+       "far": 0.2800297227015904,
+       "near": 0.27891531800614294,
+       "nonplanar": 0.34527393362510894,
+       "planar": 0.2434214460260531,
+       "smooth": 0.19895764889350875,
+       "tex": 0.37127598931736183
+      }
+     },
+     "geo_webcam_1_combined": {
+      "split": "heldout",
+      "strata": {
+       "far": 0.4679679807449644,
+       "near": 0.39557443994506414,
+       "nonplanar": 0.4486968978191857,
+       "planar": 0.4478318869683268,
+       "smooth": 0.4731852926022034,
+       "tex": 0.37503547089185046
+      }
+     }
+    }
+   },
+   "lm-C": {
+    "arch": "mscale64",
+    "flags": {
+     "width": 64,
+     "steps": 2000,
+     "lr": 0.02,
+     "schedule": "const",
+     "seed": 7,
+     "multi": true,
+     "field": 33,
+     "densewin": 3,
+     "depth": 2,
+     "loss_space": "value",
+     "target_maps": "/tmp/opencode/tm_C.json",
+     "target_files": {
+      "church": "samples/marigold/inputs_lesioned/lm-C_church.npy",
+      "dogs": "samples/marigold/inputs_lesioned/lm-C_dogs.npy",
+      "squirrel": "samples/marigold/inputs_lesioned/lm-C_squirrel.npy",
+      "train": "samples/marigold/inputs_lesioned/lm-C_train.npy"
+     },
+     "perc": 0.0,
+     "sink": 0.0
+    },
+    "frames": {
+     "church": {
+      "split": "train",
+      "strata": {
+       "far": 0.4815135145044134,
+       "near": 0.4835731219977593,
+       "nonplanar": 0.5200337219428732,
+       "planar": 0.5076775264815597,
+       "smooth": 0.48286317564021564,
+       "tex": 0.475812409662735
+      }
+     },
+     "dogs": {
+      "split": "train",
+      "strata": {
+       "far": 0.3804386954252043,
+       "near": 0.3964878031810002,
+       "nonplanar": 0.3517824556242394,
+       "planar": 0.41952869996475123,
+       "smooth": 0.44793139682121247,
+       "tex": 0.3475062033925894
+      }
+     },
+     "squirrel": {
+      "split": "train",
+      "strata": {
+       "far": 0.5116273586268678,
+       "near": 0.4679844427893451,
+       "nonplanar": 0.4638690752920209,
+       "planar": 0.4912506264706669,
+       "smooth": 0.5541600063492275,
+       "tex": 0.36921431850912567
+      }
+     },
+     "train": {
+      "split": "train",
+      "strata": {
+       "far": 0.3589636024517316,
+       "near": 0.360896580474582,
+       "nonplanar": 0.3452287895346991,
+       "planar": 0.37923698828713437,
+       "smooth": 0.35813248696496336,
+       "tex": 0.35668248764460636
+      }
+     },
+     "geo_webcam_0_combined": {
+      "split": "heldout",
+      "strata": {
+       "far": 0.27716006469625676,
+       "near": 0.2782362374011488,
+       "nonplanar": 0.3441507821766245,
+       "planar": 0.2438890016410355,
+       "smooth": 0.19433252610750304,
+       "tex": 0.3728487276529853
+      }
+     },
+     "geo_webcam_1_combined": {
+      "split": "heldout",
+      "strata": {
+       "far": 0.3212363243557526,
+       "near": 0.12502643761758192,
+       "nonplanar": 0.28477135217105265,
+       "planar": 0.16581080476578033,
+       "smooth": 0.152115002933439,
+       "tex": 0.3059461593872895
+      }
+     }
+    }
+   },
+   "lm-D": {
+    "arch": "mscale64",
+    "flags": {
+     "width": 64,
+     "steps": 2000,
+     "lr": 0.02,
+     "schedule": "const",
+     "seed": 7,
+     "multi": true,
+     "field": 33,
+     "densewin": 3,
+     "depth": 2,
+     "loss_space": "value",
+     "target_maps": "/tmp/opencode/tm_D.json",
+     "target_files": {
+      "church": "samples/marigold/inputs_lesioned/lm-D_church.npy",
+      "dogs": "samples/marigold/inputs_lesioned/lm-D_dogs.npy",
+      "squirrel": "samples/marigold/inputs_lesioned/lm-D_squirrel.npy",
+      "train": "samples/marigold/inputs_lesioned/lm-D_train.npy"
+     },
+     "perc": 0.0,
+     "sink": 0.0
+    },
+    "frames": {
+     "church": {
+      "split": "train",
+      "strata": {
+       "far": 0.475185052609276,
+       "near": 0.48240123263243617,
+       "nonplanar": 0.5156189531485297,
+       "planar": 0.5054109679003204,
+       "smooth": 0.48340753400518777,
+       "tex": 0.4676727677825527
+      }
+     },
+     "dogs": {
+      "split": "train",
+      "strata": {
+       "far": 0.3573942933119557,
+       "near": 0.341769099274895,
+       "nonplanar": 0.3285495519894804,
+       "planar": 0.36800398864317374,
+       "smooth": 0.4086788853959597,
+       "tex": 0.30237418864074367
+      }
+     },
+     "squirrel": {
+      "split": "train",
+      "strata": {
+       "far": 0.6188474793254348,
+       "near": 0.5544106212003385,
+       "nonplanar": 0.49250810466899747,
+       "planar": 0.6318067000096835,
+       "smooth": 0.6941175263203191,
+       "tex": 0.46677015498377306
+      }
+     },
+     "train": {
+      "split": "train",
+      "strata": {
+       "far": 0.3791330952787335,
+       "near": 0.35446674698137703,
+       "nonplanar": 0.3700531400666591,
+       "planar": 0.3771103820453076,
+       "smooth": 0.3428586361681312,
+       "tex": 0.3884674910533657
+      }
+     },
+     "geo_webcam_0_combined": {
+      "split": "heldout",
+      "strata": {
+       "far": 0.2810124144243106,
+       "near": 0.28005232864987095,
+       "nonplanar": 0.34624024189121777,
+       "planar": 0.2437952803035064,
+       "smooth": 0.20123260327562306,
+       "tex": 0.37056238803424874
+      }
+     },
+     "geo_webcam_1_combined": {
+      "split": "heldout",
+      "strata": {
+       "far": 0.46703301998630625,
+       "near": 0.3856186689417517,
+       "nonplanar": 0.4446330519657168,
+       "planar": 0.4401789688904852,
+       "smooth": 0.4657882867977297,
+       "tex": 0.3731658466371369
+      }
+     }
+    }
+   },
+   "lm-E": {
+    "arch": "mscale64",
+    "flags": {
+     "width": 64,
+     "steps": 2000,
+     "lr": 0.02,
+     "schedule": "const",
+     "seed": 7,
+     "multi": true,
+     "field": 33,
+     "densewin": 3,
+     "depth": 2,
+     "loss_space": "value",
+     "target_maps": "/tmp/opencode/tm_E.json",
+     "target_files": {
+      "church": "samples/marigold/inputs_lesioned/lm-E_church.npy",
+      "dogs": "samples/marigold/inputs_lesioned/lm-E_dogs.npy",
+      "squirrel": "samples/marigold/inputs_lesioned/lm-E_squirrel.npy",
+      "train": "samples/marigold/inputs_lesioned/lm-E_train.npy"
+     },
+     "perc": 0.0,
+     "sink": 0.0
+    },
+    "frames": {
+     "church": {
+      "split": "train",
+      "strata": {
+       "far": 0.4746716914575511,
+       "near": 0.48192732586145137,
+       "nonplanar": 0.5162641976309201,
+       "planar": 0.5041259887781957,
+       "smooth": 0.48246031220939967,
+       "tex": 0.46779601752719413
+      }
+     },
+     "dogs": {
+      "split": "train",
+      "strata": {
+       "far": 0.35748385102739405,
+       "near": 0.34696600885184664,
+       "nonplanar": 0.3264099484940468,
+       "planar": 0.3746349216714421,
+       "smooth": 0.4168806371299404,
+       "tex": 0.30092409870987086
+      }
+     },
+     "squirrel": {
+      "split": "train",
+      "strata": {
+       "far": 0.6231328579572479,
+       "near": 0.5583557903999743,
+       "nonplanar": 0.4959950073128466,
+       "planar": 0.6370254537703657,
+       "smooth": 0.6982879862307944,
+       "tex": 0.4713451944217889
+      }
+     },
+     "train": {
+      "split": "train",
+      "strata": {
+       "far": 0.3779538903996093,
+       "near": 0.3562708955174153,
+       "nonplanar": 0.3705561270602712,
+       "planar": 0.376899490759584,
+       "smooth": 0.3436423242232446,
+       "tex": 0.38785794621211506
+      }
+     },
+     "geo_webcam_0_combined": {
+      "split": "heldout",
+      "strata": {
+       "far": 0.2801154127549645,
+       "near": 0.2782451894601955,
+       "nonplanar": 0.3445272499522739,
+       "planar": 0.24355404814370443,
+       "smooth": 0.1990716335054478,
+       "tex": 0.37049697647220264
+      }
+     },
+     "geo_webcam_1_combined": {
+      "split": "heldout",
+      "strata": {
+       "far": 0.47393720260984673,
+       "near": 0.41648537521536316,
+       "nonplanar": 0.46419489170456396,
+       "planar": 0.4623680336013899,
+       "smooth": 0.48270946638245943,
+       "tex": 0.389561171060195
+      }
+     }
+    }
+   }
+  },
+  "winner": null,
+  "materialization": {
+   "determinism_rerun_match": true,
+   "rerun_file": "lm-A_church.npy",
+   "map_sha256": {
+    "lm-A_church.npy": "bbad8f8b1c6f5e68",
+    "lm-A_dogs.npy": "9faa9ccb32aca58d",
+    "lm-A_squirrel.npy": "f717a408594c6d51",
+    "lm-A_train.npy": "c8db2061959f942e",
+    "lm-B_church.npy": "03e6c70620a27040",
+    "lm-B_dogs.npy": "1b1f340e3621f114",
+    "lm-B_squirrel.npy": "5d3af90e550c8f08",
+    "lm-B_train.npy": "76ea9009b590926b",
+    "lm-C_church.npy": "c7c182cbb6dbcfbe",
+    "lm-C_dogs.npy": "a6752199e896cc88",
+    "lm-C_squirrel.npy": "5af4ea4636b13800",
+    "lm-C_train.npy": "045d3e52356501bf",
+    "lm-D_church.npy": "8872a39c3699e53a",
+    "lm-D_dogs.npy": "cff00d4c5cc421ee",
+    "lm-D_squirrel.npy": "2e96fb761195ea11",
+    "lm-D_train.npy": "4b5a2b3d294744e7",
+    "lm-E_church.npy": "e175410deb309835",
+    "lm-E_dogs.npy": "873256f60df8e4b2",
+    "lm-E_squirrel.npy": "2d9f378f00af3c9e",
+    "lm-E_train.npy": "ea528b0ee59ec390"
+   }
+  }
  }
 }
