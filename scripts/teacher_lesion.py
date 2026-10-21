@@ -380,8 +380,9 @@ def main():
             ms = {"sha": hashlib.sha256(a.tobytes()).hexdigest(),
                   "mean": mu, "std": sd,
                   "corr_gt": _corr(up[valid], depth[valid]),
-                  "corr_ref": (_corr(up, refmap) if refmap is not None
-                               else None)}
+                  "corr_ref": (_corr(
+                      np.ascontiguousarray(pred576, dtype=np.float32),
+                      refmap) if refmap is not None else None)}
         return per, ms
 
     def run_eval(hooks=(), refmaps=None, do_stats=False):
