@@ -310,3 +310,19 @@ Spec: this section + baseline + per-block delta table +
 removable nominations per the frozen criterion — nothing more.
 
 ### Phase-A results (TBD — parity first, pilots, then the run)
+
+### Phase-A correction (pre-run, nothing executed — Phase-19 precedent)
+
+Parity bar revised ≥60dB → ≥40dB with reason: VAE latent sampling
+consumes RNG, and RNG streams cannot be aligned across harnesses
+(their validation RNG state at sample time depends on dataloader
+internals — unknowable without tracing); seeded determinism holds
+WITHIN each harness (their gate proves theirs; mine seeds per
+frame). 40dB is the repo's own cross-implementation bar
+(torch-twin-vs-CUDA) — systematic harness drift (wrong
+normalization/resize/order) still fails it by orders of
+magnitude, while VAE sampling noise passes inside it. Lesion
+deltas are computed WITHIN one harness (lesioned vs unlesioned,
+same RNG handling), so parity only guards systematic offset.
+Frozen bar: custom-unlesioned vs sibling-CLI .npy ≥ 40dB on 2
+frames, else stop.
