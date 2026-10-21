@@ -322,6 +322,12 @@ def main():
             (depth.shape[1], depth.shape[0]), Image.BILINEAR),
             dtype=np.float64)
         valid = np.isfinite(depth) & (depth > 0) & (depth <= 65.0)
+        # GT percentile-affine normalize (their NormalizeDepthPercentileAffine:
+        # p2/p98 on valid -> [-1,1]); plain AbsRel, NO alignment (their metric).
+        dv = depth[valid]
+        lo, hi = np.percentile(dv, [2.0, 98.0])
+        denom = max(hi - lo, 1e-12)
+        rel = np.clip(2.0 * (depth - lo) / denom - 1.0, -1.0, 1.0)
         masks = H.strata_masks(depth, rgbn)
         per = {}
         for k in H.STRATA:
@@ -329,12 +335,7 @@ def main():
             if int(m.sum()) == 0:
                 per[k] = None
                 continue
-            A = np.stack([up[m].ravel(),
-                          np.ones(int(m.sum()))], 1)
-            (a, b), _, _, _ = np.linalg.lstsq(A, depth[m].ravel(),
-                                              rcond=None)
-            per[k] = float(np.abs(a * up[m] - depth[m]).mean()
-                           / depth[m].mean())
+            per[k] = float(np.abs(up[m] - rel[m]).mean())
         return per
 
     def run_eval(hooks=()):
