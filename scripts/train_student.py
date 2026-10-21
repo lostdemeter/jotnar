@@ -121,6 +121,15 @@ def main():
                     "const keeps --lr; cosine anneals lr_max->0 over --steps.")
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--tag", default="w16")
+    ap.add_argument("--loss-space", choices=["value", "log", "quantum"],
+                    default="value",
+                    help="Phase-27 loss-geometry surface (ONLY variable this "
+                    "round): value = aligned-MAE (current practice); log = "
+                    "shifted-log targets + aligned-MAE in z-space (net "
+                    "predicts z, eval inverts); quantum = U8-quantum MAE "
+                    "(both sides rounded to the train-range/255 grid, "
+                    "straight-through backward — round has zero grad, "
+                    "stated). Eval judge identical (linear align_mae).")
     ap.add_argument("--train", nargs="+",
                     default=["church", "dogs", "squirrel", "train"])
     ap.add_argument("--heldout", nargs="+",
@@ -185,6 +194,14 @@ def main():
     idx = torch.arange(0, Xtr.shape[0], 7, device=device)
     Xs, Ts = Xtr[idx], Ttr[idx]
     print(f"train px: {Xs.shape[0]} (stride-7 of {Xtr.shape[0]})", flush=True)
+    # Phase-27 loss coordinates (frozen spaces; alignment doctrine shared).
+    # LO: train-split min (signed teacher depths make plain log
+    # unimplementable — Phase-19 correction precedent). Q: U8-quantum
+    # of the train range (serving-visibility floor, serving doctrine).
+    LO = float(Ttr.min())
+    QQ = float((Ttr.max() - Ttr.min()) / 255.0)
+    print(f"loss-space {args.loss_space}: lo={LO:.4f} q={QQ:.6f}", flush=True)
+    Zs = torch.log(torch.clamp(Ts - LO + 1.0, min=1e-9))
 
     W = args.width
     if args.depth not in (2, 3):
@@ -310,13 +327,23 @@ def main():
                 pg["lr"] = lr_t
         opt.zero_grad()
         p = net(Xs).reshape(-1).double()
+        if args.loss_space == "log":
+            P, Tt = p, Zs
+        elif args.loss_space == "quantum":
+            # straight-through: VALUES rounded per frozen spec (round
+            # has zero grad — measured pre-round — so grads pass
+            # through; forward matches spec exactly, stated).
+            P = p + (torch.round(p / QQ) * QQ - p).detach()
+            Tt = torch.round(Ts / QQ) * QQ
+        else:
+            P, Tt = p, Ts
         # alignment does not take gradients (standard scale-shift-
         # invariant practice; lstsq-backward OOMs at 400k rows)
         with torch.no_grad():
-            A = torch.stack([p.detach(), torch.ones_like(p)], 1)
-            ab, _, _, _ = torch.linalg.lstsq(A, Ts)
+            A = torch.stack([P.detach(), torch.ones_like(P)], 1)
+            ab, _, _, _ = torch.linalg.lstsq(A, Tt)
             a, b = ab[0], ab[1]
-        loss = (a * p + b - Ts).abs().mean()
+        loss = (a * P + b - Tt).abs().mean()
         aux = ""
         if (use_perc or use_sink) and (it % args.aux_every == 0
                                        or it == args.steps - 1):
@@ -377,6 +404,7 @@ def main():
            "field": args.field, "densewin": args.densewin,
            "depth": args.depth,
            "globsum": args.globsum,
+           "loss_space": args.loss_space, "loss_lo": LO, "loss_q": QQ,
            "perc": args.perc, "sink": args.sink, "aux_every": args.aux_every,
            "dinov2": os.path.expanduser(args.dinov2) if args.perc > 0 else None,
            "train": args.train, "heldout": args.heldout,
@@ -391,6 +419,8 @@ def main():
                 p = net(torch.tensor(x, dtype=torch.float32,
                                      device=device)).reshape(-1).double()
                 p = p.cpu().numpy()
+                if args.loss_space == "log":
+                    p = np.exp(p) - 1.0 + LO  # z-space preds -> linear
                 Hh, Ww = next(r["shape"] for r in man["fixtures"]
                               if r["name"] == n)
                 masks = H.strata_masks(t.reshape(Hh, Ww),
