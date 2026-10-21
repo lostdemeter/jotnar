@@ -2286,3 +2286,49 @@ fixed after a bash `$b_` interpolation ate the basin letter
 files — FileNotFoundError, rc=1 — then ran clean; the battery
 script now banks only on rc=0). CPU training per frozen rule
 (~10 min/arm; GPU never justified, never used).
+
+## Phase 30 — basin-C replication + specificity (constitution, FROZEN pre-run)
+
+Two questions on the Phase-29 directional-move (lm-C: 6
+geo_webcam_1 cells beat all prior bests, bit-reproduced once),
+both frozen with exact success rules.
+(1) Replication: basin-C damage-matching rerun END-TO-END —
+fresh lesioned maps regenerated via the committed generator
+path (`--save-maps`, same 5-basin subsets incl. C) + fresh
+training on the fresh C maps (same flags). Success = the same
+6 geo_webcam_1 cells beat priors again (retrain-identical
+already shown once for stored maps; this tests
+PIPELINE-reproducibility: map regen + training, not weight
+identity). Map regen verified first (fresh C maps byte-identical
+to banked C maps — else stop, the generator drifted).
+(2) Specificity: same architecture trained on basin-A/B/D/E
+damage + clean control, all else equal — REUSED from banked
+Phase-29 arms (bit-determinism proven 0.00e+00: fresh reruns
+would be identical numbers, so rerunning adds zero
+information; stated openly, not cut silently). Success for
+"C is special" = C alone moves those cells (A/B/D/E stay
+flat-or-worse vs control); if every damage variant moves
+them, the finding is "damage beats clean" (still a finding,
+different mechanism — report which, don't prefer).
+Winner rule: most held-out cells under Phase-1 bars across
+all arms (C-rep included); empty (nothing replicates, nothing
+specific) is complete and kills the lead honestly.
+Schedule + budget frozen: CPU (mscale pace ~10 min/arm; ONE
+fresh training (C-rep) + map regen (~3 min GPU) + rerun-digest
+compare; GPU solo for regen (idle + VRAM stated); Qwen-7B
+never co-loaded; no downloads. Wall cap 1h total.
+Banking: per-arm `student_run_lm-C-rep.json` + `lmrep`
+battery key (configs ["lm-C-rep"], reference lm-clean
+(via lesionmatch — cross-key reference, stated), cells mirror
+hyper shape; banked Phase-29 arms referenced, never
+duplicated); primaries untouched; weights out-of-tree per tag;
+production weights untouched.
+Gate: extend the strata gate surface in place (lmrep key:
+schema + replication legs (C-rep vs banked C cells) +
+specificity legs (per-basin deltas vs control incl. banked
+arms, printed with the frozen rule) + winner tripwire).
+Neighbors: teacher, strata, lesion-basin legs green
+(read-only reuse — nothing moves underneath).
+Determinism: single-seed throughout (hyper precedent).
+
+### Battery results (TBD — regenerate, retrain, compare)
