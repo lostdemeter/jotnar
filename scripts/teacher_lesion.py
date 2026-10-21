@@ -207,6 +207,17 @@ def infer_one(transformer, vae, pe, pm, rgb_path, seed, hooks=()):
         assert hit, f"lesion target matches nothing: {pat}"
         for n in hit:
             handles.append(named[n].register_forward_hook(_zero(n)))
+    def _match_batch(t, B):
+        # mirror QwenImageEdit2509Step._match_batch exactly (incl. truncate)
+        if t.size(0) == B:
+            return t
+        if t.size(0) == 1 and B > 1:
+            return t.expand(B, *t.shape[1:])
+        if t.size(0) > B:
+            return t[:B]
+        reps = (B + t.size(0) - 1) // t.size(0)
+        return t.repeat((reps,) + (1,) * (t.ndim - 1))[:B]
+
     t0 = _t.time()
     try:
         with torch.no_grad():
@@ -220,8 +231,8 @@ def infer_one(transformer, vae, pe, pm, rgb_path, seed, hooks=()):
                 lat4, batch_size=B, num_channels_latents=C,
                 height=H, width=W).to(dt)
             ts = torch.full((B,), 0.499, device=dev, dtype=dt)
-            emb = pe.to(device=dev, dtype=dt)
-            msk = pm.to(device=dev, dtype=torch.bool)
+            emb = _match_batch(pe, B).to(device=dev, dtype=dt)
+            msk = _match_batch(pm, B).to(device=dev, dtype=torch.bool)
             pred = transformer(
                 hidden_states=packed, timestep=ts,
                 encoder_hidden_states=emb,
