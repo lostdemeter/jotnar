@@ -1970,4 +1970,39 @@ Implementation: `--loss-space` flag + transform branch in
 `scripts/train_student.py` loss + eval-invert (loss-geometry
 only; the round's declared surface).
 
-### Battery results (TBD — runs land here)
+### Battery results (3 runs, 2000 steps each, ~9 min/coord CPU wall)
+
+All rc=0, finite everywhere. Held-out align-MAE (linear judge for
+all three) vs harness bars — 0/12 under on every coordinate:
+
+```text
+coord    split    far      near     nonplanar planar   smooth   tex
+value    train    0.3432   0.3091   0.3255    0.3400   0.3469   0.2952
+value    heldout  0.3602   0.2367   0.3682    0.2472   0.2254   0.3723
+log      train    0.5325   0.5065   0.4977    0.5421   0.5859   0.4552
+log      heldout  0.3542   0.3081   0.3837    0.3088   0.2788   0.3751
+quantum  train    0.3097   0.3002   0.3084    0.3157   0.3109   0.2882
+quantum  heldout  0.3693   0.2607   0.3792    0.2717   0.2524   0.3776
+```
+Directionals vs value (heldout mean delta): log +0.0331 (0
+improved / 3 worsened of 12), quantum +0.0168 (0/0). Winner:
+none — no coordinate clears bars or the >0.05 directional bar;
+no retrain-match (nothing to claim; single-seed).
+Verdict: **coordinates-innocent**. All three pin alike (heldout
+means 0.30/0.33/0.31 — within noise; bests 0.18–0.33 across the
+board). Readings: (1) log-space trains a WORSE linear model
+(train 0.45–0.59 vs 0.29–0.34) yet lands the same heldout —
+compression mildly regularizes, never wins. (2) quantum ==
+value to 2 decimals on train (0.29–0.32 vs 0.29–0.34) and
+heldout (delta +0.017, zero cells either way) — sub-U8 detail
+is inert; the pin does not live below the visibility floor.
+(3) The pin reproduces in three geometries with the same shape
+(train fits partway ~0.3, heldout flat ~0.3, far/tex worst) —
+downhill geometry moves nothing past the wall.
+Executed notes: C2's first attempt died in EVAL (unclipped exp
+overflowed → inf → lstsq SVD no-convergence; training itself
+finished 1999 iters) — fixed with dit-precedented z-clip on the
+log invert (eval-only; train path untouched), rerun rc=0. The
+overflow is itself a datum (z-preds drift unbounded — aligned
+z-MAE doesn't pin scale either). CPU device per frozen rule
+(measured 33s/50-step probe; GPU never justified, never used).
