@@ -36,6 +36,7 @@ TRAINABLES = os.path.join(CKPT, "Marigold-V2/depth/Log-stage2/trainables.safeten
 EMBDIR = os.path.join(CKPT, "Marigold-V2/qwen_text_embeddings")
 PREFIX = "qwen_edit_2509_qwen_depth_realimg512"
 SHARD = os.path.expanduser("~/student_runs/hypersim_shard00/extract/test")
+FIXDIR = os.path.join(ROOT, "samples", "marigold")
 EVAL_SCENES = ["ai_018_001", "ai_021_001", "ai_022_001", "ai_023_005"]
 MW, MH = 768, 576
 SEED = 2025
