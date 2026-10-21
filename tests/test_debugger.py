@@ -138,6 +138,66 @@ def main():
         except D.DebuggerError:
             check(f"dbg-loud-{exc}", True, "DebuggerError")
 
+    # -- torch lesions (students, CPU, banked weights read-only) ---------------
+    import torch
+    sys.path.insert(0, os.path.join(ROOT, "scripts"))
+    import bank_student_lesions as BK
+    have_weights = True
+    for tag in ("mscale64", "jattn64b2"):
+        p = os.path.expanduser(f"~/student_runs/{tag}/weights.pt")
+        if not os.path.isfile(p):
+            check(f"dbg-torch-{tag}-weights", False, f"missing {p}")
+            have_weights = False
+    if have_weights:
+        banked = {t: __import__("json").load(open(os.path.join(
+            ROOT, "samples", "marigold", f"lesion_{t}.json")))
+            for t in ("mscale64", "jattn64b2")}
+        live = {}
+        for tag, build in (("mscale64", BK.build_mscale),
+                           ("jattn64b2", BK.build_jattn)):
+            net, run, _ = build(torch)
+            tsess = D.TorchSession(net, run)
+            live[tag] = (tsess, tsess.lesion_table())
+        mrows = live["mscale64"][1]
+        check("dbg-torch-mscale-rows",
+              len(mrows) == 5 and all(r["fires"] > 0 for r in mrows)
+              and all(math.isfinite(r["worst"]) for r in mrows),
+              "5 leaves, all fired, finite")
+        jrows = live["jattn64b2"][1]
+        check("dbg-torch-jattn-rows",
+              len(jrows) == 22
+              and sorted(r["module"] for r in jrows if r["fires"] == 0)
+              == ["col", "dino_proj", "row"]
+              and all(math.isfinite(r["worst"]) for r in jrows),
+              "22 leaves; unfired exactly {row,col,dino_proj}")
+        check("dbg-torch-dead-module",
+              next(r for r in jrows
+                   if r["module"] == "dino_proj")["worst"] == 0.0,
+              "dino_proj reads exactly zero in rgb path")
+        for tag in ("mscale64", "jattn64b2"):
+            check(f"dbg-torch-banked-{tag}",
+                  live[tag][1] == banked[tag]["rows"],
+                  "live table == banked table (cross-process determinism)")
+            ctl = live[tag][0].control()
+            check(f"dbg-torch-control-{tag}",
+                  all(v["maxabs"] == 0.0 and v["mean"] == 0.0
+                      for v in ctl["deltas"].values()),
+                  "zero-module control reads exactly zero")
+        net0, run0, _ = BK.build_mscale(torch)
+        s0a, s0b = D.TorchSession(net0, run0), D.TorchSession(net0, run0)
+        check("dbg-torch-determinism",
+              s0a.lesion_table() == s0b.lesion_table(),
+              "same session twice identical")
+        jsess = live["jattn64b2"][0]
+        for path in ("blocks.0", "", "h3"):
+            try:
+                jsess.lesion(path)
+                check(f"dbg-torch-loud-{path or 'root'}", False,
+                      "must raise")
+            except D.DebuggerError:
+                check(f"dbg-torch-loud-{path or 'root'}", True,
+                      "DebuggerError")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 
