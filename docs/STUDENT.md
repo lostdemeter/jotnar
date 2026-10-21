@@ -2225,4 +2225,64 @@ eval path byte-untouched); materialization via existing
 targets, fixture frames — no harness changes except a
 `--save-maps` bank path for model-res float32 maps).
 
-### Battery results (TBD — materialize first, then train)
+### Battery results (6 arms, 2000 steps each, ~10 min/arm CPU wall)
+
+All rc=0, finite everywhere. Held-out align-MAE (linear judge
+for all six) vs Phase-1 bars — 0/12 under on every arm:
+
+```text
+arm      split    far      near     nonplanar planar   smooth   tex
+lm-clean train    0.3432   0.3091   0.3255    0.3400   0.3469   0.2952
+lm-clean heldout  0.3602   0.2367   0.3682    0.2472   0.2254   0.3723
+lm-A     train    0.4495   0.4304   0.4200    0.4661   0.4769   0.4002
+lm-A     heldout  0.3708   0.3315   0.3918    0.3412   0.3330   0.3688
+lm-B     train    0.4331   0.4272   0.4202   [SECURITY_DATA]   0.4608   0.3873
+lm-B     heldout  0.3542   0.3081   0.3837    0.3088   0.2788   0.3751
+lm-C     train    0.4331   0.4272   0.4202    0.4494   0.4608   0.3873
+lm-C     heldout  0.2992   0.2016   0.3145    0.2048   0.1732   0.3394
+lm-D     train    0.4576   0.4333   0.4267    0.4706   0.4823   0.4063
+lm-D     heldout  0.3740   0.3328   0.3954    0.3420   0.3335   0.3719
+lm-E     train    0.4583   0.4359   0.4273    0.4732   0.4853   0.4070
+lm-E     heldout  0.3770   0.3474   0.4044    0.3530   0.3409   0.3800
+```
+Directionals vs lm-clean control (heldout mean delta):
+A +0.0545 (0 improved / 3 worsened), B +0.0588 (0/3),
+C −0.0462 (6/0), D +0.0566 (0/3), E +0.0654 (0/4).
+Winner by bars: none (0/12 everywhere — no retrain by bars).
+BUT lm-C: 6/12 cells beat ALL prior bests (mscale64/jattn64b2/
+ditc64b2/lc-value minima) by >0.05 — all on geo_webcam_1
+(far −0.138, near −0.104, nonplanar −0.127, planar −0.128,
+smooth −0.121, tex −0.109), while geo_webcam_0 worsens
+(+0.03..+0.07 throughout). Retrain-match (frozen rule for a
+first-damage-profile candidate): identical rerun → full table
+BIT-IDENTICAL (max abs diff 0.00e+00) AND the same 6 cells
+beat prior bests (reproduced exactly). Claimed therefore as a
+**directional-move** (not winner — no bars cleared): basin-C
+(block-57 attractor, most-structured remnant) targets teach
+damage-matching that output-matching never did — on one frame.
+Frame-specificity unexplained and stated as such (mechanism
+open: why webcam_1 only?); the move is real (bit-reproduced),
+narrow (one frame), and asymmetric (A/B/D/E lesioned targets
+all HURT by +0.05..+0.07 — only the most-structured basin
+helps, and only somewhere).
+Diagnosis, three parts. (1) Damage-matching is not nothing:
+5 lesioned-target arms separate cleanly (C helps one frame;
+A/B/D/E hurt both) where coordinates (Phase 27) could not
+separate anything — targets carry signal that loss geometry
+doesn't. (2) Lesioned targets fit EASIER (train losses
+0.02–0.12 vs 0.33 control; smoother maps) yet generalize
+indifferently-or-worse — ease-of-fit ≠ truth, same lesson as
+every round, now with the sign flipped per basin. (3) The
+C-effect size (−0.10..−0.14 uniformly across all 6 strata of
+one frame) smells global (scale/shift the alignment then
+grades?) rather than structural — reported, not resolved;
+a per-stratum-shaped win would be more convincing than a
+uniform one, stated openly.
+Executed notes: C2-style crash absent (targets finite by
+construction); materialization 20 maps + manifest in ~3 min
+GPU; determinism rerun byte-identical; tm_* selector paths
+fixed after a bash `$b_` interpolation ate the basin letter
+(all five lesioned arms initially crashed loud on missing
+files — FileNotFoundError, rc=1 — then ran clean; the battery
+script now banks only on rc=0). CPU training per frozen rule
+(~10 min/arm; GPU never justified, never used).
