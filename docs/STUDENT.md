@@ -2149,3 +2149,80 @@ between arms is the second frame's features. Banked mscale64
 (fixtures) rides as secondary context (same recipe, different
 data — reported, never ruling). Gate battery key holds both arms
 (configs temp-pair + temp-single) as frozen.
+
+## Phase 29 — lesion-matched training (constitution, FROZEN pre-run)
+
+Amendment record (written first, before any other commit — the
+Phase-28-style premise check found the original constitution's
+core mechanism unbanked): lesioned-teacher OUTPUT MAPS were
+never stored — every lesion/attractor bank holds metrics
+(AbsRel floats), digests (sha hex), or stats (mean/std/corr),
+by the attractor round's stated design (maps never stored).
+This amendment OPENLY LIFTS the no-new-teacher-runs clause for
+ONE materialization pass and nothing else. Clause, reason,
+boundary, all frozen here: (reason) without maps there are no
+lesion-perturbed targets, and every alternative (synthetic
+targets shaped from numbers, damage-profile aux heads,
+student self-lesions) contradicts the parenthetical or the
+banked-shape rule; (boundary) materialize BANKED lesion configs
+only — the 5 attractor-basin representatives below, no new
+lesion designs, no new frames beyond the frozen fixture set;
+(clause) after materialization the prohibition reinstates in
+full — training reads maps from disk, never runs the teacher.
+Target construction frozen (the "which lesion levels"
+question): FIVE variants, one per attractor basin (basins are
+this arc's own finding — training on basin outputs directly):
+lm-A..lm-E ← teacher maps under subset_40_0 (A), subset_10_1
+(B), subset_10_0 (C), subset_30_1 (D), subset_5_0 (E), all
+banked Phase-H subsets (first-listed member per basin —
+deterministic pick, no cherry-picking), computed on the 4
+TRAIN fixtures (1024×672 → harness 768×576 → Bilinear back to
+native, mirror of the judge path), banked as float32 .npy
+(f32→f64 lossless; ~55MB total, fixture-.npy precedent).
+Control lm-clean: same architecture/seed/schedule on clean
+banked fixture teacher outputs (no teacher run needed —
+already on disk). Without the control any result is
+uninterpretable (frozen).
+Architecture frozen: mscale64-EXACT (W64, multi, field 33,
+densewin 3, depth 2 — banked shape; the variable is the
+target, never the model; an arch tweak to suit perturbed
+targets is scope breach). Schedule frozen: const lr 0.02,
+2000 steps, seed 7 (banked recipe). Eval frozen (linear
+align_mae per stratum on heldout fixtures vs clean banked
+teacher — same judge for all six arms).
+Schedule + budget frozen: CPU (Phase-27 mscale pace ~9
+min/coordinate; 6 arms ≈ 1h; GPU unjustified, not assumed),
+wall cap 3h all arms. Materialization ≈ 2 min GPU (20 evals,
+known 1s/frame) + loads. GPU solo for the materialization
+(idle + VRAM stated at run); Qwen-7B never co-loaded; no
+downloads (fixtures + banked subsets on disk suffice).
+Winner: most held-out cells (2×6=12) under Phase-1 bars;
+directional moves vs all prior bests (per-frame-stratum minima
+over banked mscale64/jattn64b2/ditc64b2/lc-value heldout
+cells, computed spec-side; same >0.05 frozen threshold);
+empty is complete. Retrain-match before ANY claim.
+Banking: per-variant `student_run_lm-<x>.json` + `lesionmatch`
+battery key (configs lm-clean + lm-A..E, reference lm-clean,
+cells mirror hyper shape); maps under
+`samples/marigold/inputs_lesioned/` (tracked, fixture-.npy
+precedent); primaries untouched; weights out-of-tree per tag;
+production weights untouched.
+Gate: `tests/test_strata_marigold.py` extended in place
+(lesionmatch key: schema + winner/bars verdicts +
+control-comparison legs — clean-target control banked
+alongside, delta computed, never asserted directionally
+beyond it; + materialization-integrity legs — fresh maps match
+banked digests where digests exist — there are none for
+fixtures, so integrity = determinism rerun: ONE lesion×frame
+recomputed, byte-identical to banked map — closing the loop
+on the premise that started this). Neighbors: teacher,
+strata, lesion-basin legs green (read-only reuse — nothing
+moves underneath).
+Implementation: `--target-maps` flag + source branch in
+`scripts/train_student.py` (loss-geometry surface only —
+eval path byte-untouched); materialization via existing
+`scripts/teacher_lesion.py` lesion mode (frozen subsets as
+targets, fixture frames — no harness changes except a
+`--save-maps` bank path for model-res float32 maps).
+
+### Battery results (TBD — materialize first, then train)
