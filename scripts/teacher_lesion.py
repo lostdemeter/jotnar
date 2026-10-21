@@ -203,7 +203,10 @@ def infer_one(transformer, vae, pe, pm, rgb_path, seed, hooks=()):
     named.update({"VAE." + n: m for n, m in vae.named_modules()})
     handles = []
     for pat in hooks:
-        hit = [n for n in named if n == pat or fnmatch.fnmatch(n, pat)]
+        wild = any(c in pat for c in "*?[")
+        hit = [n for n in named
+               if n == pat or n == "VAE." + pat
+               or (wild and fnmatch.fnmatch(n, pat))]
         assert hit, f"lesion target matches nothing: {pat}"
         for n in hit:
             handles.append(named[n].register_forward_hook(_zero(n)))
@@ -266,6 +269,8 @@ def main():
     ap.add_argument("--tag", default="teacher-base-A")
     ap.add_argument("--targets", default="",
                     help="comma-separated module paths/patterns (lesion)")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="load + verify all targets match + VRAM, no eval")
     ap.add_argument("--cli-dir", default="",
                     help="sibling-CLI .npy dir (parity mode)")
     ap.add_argument("--out", default="",
@@ -311,6 +316,20 @@ def main():
 
     transformer, vae = load_all()
     pe, pm = load_embeds()
+
+    if args.dry_run:
+        targets = [t for t in args.targets.split(",") if t]
+        named = dict(transformer.named_modules())
+        named.update({"VAE." + n: m for n, m in vae.named_modules()})
+        for pat in targets:
+            wild = any(c in pat for c in "*?[")
+            hit = [n for n in named
+                   if n == pat or n == "VAE." + pat
+                   or (wild and fnmatch.fnmatch(n, pat))]
+            print(f"dry {pat}: {len(hit)} modules", flush=True)
+            assert hit, f"lesion target matches nothing: {pat}"
+        print(f"DRY OK ({len(targets)} targets)", flush=True)
+        return
 
     def judge(pred576, s, fr):
         base = os.path.join(SHARD, s)
