@@ -1,0 +1,102 @@
+{
+ "tag": "lc-log",
+ "width": 64,
+ "steps": 2000,
+ "lr": 0.02,
+ "schedule": "const",
+ "seed": 7,
+ "patch": 1,
+ "multi": true,
+ "field": 33,
+ "densewin": 3,
+ "depth": 2,
+ "globsum": false,
+ "loss_space": "log",
+ "loss_lo": -1.0,
+ "loss_q": 0.00784313725490196,
+ "perc": 0.0,
+ "sink": 0.0,
+ "aux_every": 50,
+ "dinov2": null,
+ "train": [
+  "church",
+  "dogs",
+  "squirrel",
+  "train"
+ ],
+ "heldout": [
+  "geo_webcam_0_combined",
+  "geo_webcam_1_combined"
+ ],
+ "torch": "2.14.1+cu130",
+ "device": "cpu",
+ "weights": "/home/balrog/student_runs/lc-log/weights.pt",
+ "frames": {
+  "church": {
+   "split": "train",
+   "strata": {
+    "far": 0.4810364042634765,
+    "near": 0.483239121686254,
+    "nonplanar": 0.5200061478465956,
+    "planar": 0.5072392928994833,
+    "smooth": 0.4826102869910786,
+    "tex": 0.47524563171806466
+   }
+  },
+  "dogs": {
+   "split": "train",
+   "strata": {
+    "far": 0.480721073202396,
+    "near": 0.4571863673590371,
+    "nonplanar": 0.4032361867117529,
+    "planar": 0.5284920672370932,
+    "smooth": 0.5702395584389369,
+    "tex": 0.37739437597197045
+   }
+  },
+  "squirrel": {
+   "split": "train",
+   "strata": {
+    "far": 0.6399527604386561,
+    "near": 0.5729030080473413,
+    "nonplanar": 0.5147993301000621,
+    "planar": 0.6533087314469499,
+    "smooth": 0.712340207830027,
+    "tex": 0.4878917596143214
+   }
+  },
+  "train": {
+   "split": "train",
+   "strata": {
+    "far": 0.528340524409327,
+    "near": 0.512861959703547,
+    "nonplanar": 0.5528664705997438,
+    "planar": 0.4793822586800139,
+    "smooth": 0.5785881903012137,
+    "tex": 0.4804489802502008
+   }
+  },
+  "geo_webcam_0_combined": {
+   "split": "heldout",
+   "strata": {
+    "far": 0.2642632801087045,
+    "near": 0.25935887889361475,
+    "nonplanar": 0.34308804557765255,
+    "planar": 0.21001986607675255,
+    "smooth": 0.17114123619348356,
+    "tex": 0.36208790543409664
+   }
+  },
+  "geo_webcam_1_combined": {
+   "split": "heldout",
+   "strata": {
+    "far": 0.4440647640833834,
+    "near": 0.35683823777381807,
+    "nonplanar": 0.4243391585736057,
+    "planar": 0.407526768499271,
+    "smooth": 0.3863777185212258,
+    "tex": 0.3880917753548487
+   }
+  }
+ }
+}
