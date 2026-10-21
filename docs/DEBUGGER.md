@@ -182,3 +182,65 @@ serving grades decisions, never exact strings, per house
 contract), banked teacher outputs to diff against, and the same
 fire-count tripwire (dead vs bypassed). Qwen-7B stays unloaded
 until that round's constitution says otherwise.
+
+## Teacher lesion Phase A — block sweep, causal table (constitution, FROZEN pre-run)
+
+Target list frozen (exact paths, no "and neighbors" mid-round):
+- 60 × `transformer_blocks.{0..59}` whole-block zero (diffusers
+  QwenImageTransformer2DModel, 60×3072 — banked blueprint).
+- VAE-decoder stages (9): `decoder.{conv_in, up_blocks.0..3,
+  mid_block, norm_out, conv_out}` + `post_quant_conv` (grouped
+  from the 108 banked vae_pairs — full-weight tuned, not LoRA).
+- Top-5 tuned families by banked rel LoRA-delta, GROUP lesions
+  (zero across all 60 blocks at once — instance-level would be
+  300 runs, out of budget, stated): `attn.add_q_proj` (0.0558),
+  `attn.to_add_out` (0.0492), `attn.add_v_proj` (0.0455),
+  `attn.add_k_proj` (0.0452), `txt_mlp.net.0.proj` (0.0436).
+Baseline first: unlesioned teacher AbsRel on the eval set,
+banked before any lesion runs. Eval set: 8 Hypersim frames
+(first 2 available of ai_018_001, ai_021_001, ai_022_001,
+ai_023_005 — deterministic, no cherry-picking), GT-anchored
+(masks & valid intersect — no teacher-mimicry circularity;
+webcam fixtures excluded: no GT there, stated reason).
+Metric: AbsRel-delta per lesion vs baseline, relative %
+((les−base)/base); alignment lstsq (same doctrine as every
+student round + Marigold's own lstsq-scale recipe — RANSAC
+unjustified here, not run). Removal criterion frozen: delta <
+5% nominates removable (below single-seed noise family; the
+criterion judges, Phase C validates).
+Harness (read-only sibling use): custom loader mirroring their
+component path (4-bit NF4 transformer + LoRA trainables +
+bf16 VAE + cached prompt embeds — never the text encoder) +
+encode → ONE flow step (t=0.499, velocity) → decode →
+channel-mean (mirroring QwenImageEncode/2509Step/Decode/
+SelectChannel node-for-node) + seeded VAE sampling. PARITY GATE
+first: custom-unlesioned == sibling-CLI output on 2 frames
+(else stop — cross-harness deltas are incomparable, no rescue).
+Lesions ride forward hooks (zeros_like block outputs);
+peft/quant wrappers respected (fire-count tripwire carried
+from student lesions — bypassed vs dead distinguished).
+Budget: per-eval wall measured on 2 pilot blocks FIRST (early
+idx 3 + late idx 56 — not 0/59: edges are atypical, stated),
+then total = per-eval × 75 configs (1 baseline + 60 + 9 + 5);
+proceed iff projected ≤ 12h else shrink the eval subset first
+(documented fallback) or stop with pilot evidence (timeout
+precedent). GPU solo (idle + VRAM stated at run); Qwen-7B never
+co-loaded (VRAM math: ~10GB 4-bit DiT + ~2GB VAE + embeds +
+activations « 24GB; text encoder and Qwen-7B stay on disk).
+Weights read-only out-of-tree (lesion at runtime — a single
+modified weight file voids the round; sha256 of the 7 files —
+5 transformer shards + trainables + VAE safetensors — banked
+pre AND post, gate compares).
+Ruling: hooks only; no emitter/opcode/assembly changes (gap
+hit = stop-finding); no new deps (torch/diffusers/peft live in
+marigold-env); production weights untouched (teacher AND
+Qwen-7B); no downloads (shard suffices).
+Gate: new tests/test_teacher_lesion.py (CPU-fast legs +
+banked-table integrity; heavy reruns NOT routine — checksums,
+schema, baseline-recompute-from-banked, delta arithmetic
+re-derived in-gate). Neighbors: anatomy + teacher gates green
+(read-only reuse).
+Spec: this section + baseline + per-block delta table +
+removable nominations per the frozen criterion — nothing more.
+
+### Phase-A results (TBD — pilots first, then the run)
