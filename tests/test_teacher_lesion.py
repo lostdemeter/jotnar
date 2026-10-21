@@ -83,6 +83,83 @@ def main():
           and len(sha["pre"]) == 7,
           "7 weight files, pre==post (nothing written)")
 
+    # -- Holography subset-curve legs (banked integrity + verdict) -------
+    # Same integrity shape (not a fork): 15 subset rows with frozen
+    # subsets, linear-fit R2 + cliff + seed-agreement recomputed,
+    # verdict equality. Heavy reruns NOT routine.
+    HP = os.path.join(FIXDIR, "teacher_lesion_H.json")
+    HB = os.path.join(FIXDIR, "teacher_baseline_H.json")
+    if not (os.path.isfile(HP) and os.path.isfile(HB)):
+        print("SKIP holography legs (no banked H battery yet)")
+    else:
+        import random as _rd
+        import numpy as _np
+        hrep = json.load(open(HP))
+        hbase = json.load(open(HB))
+        hrows = hrep.get("rows", [])
+        check("holo-schema",
+              len(hrows) == 15
+              and all(set(r) >= {"target", "fires", "frames", "subset"}
+                      for r in hrows)
+              and all(len(r["frames"]) == 8 for r in hrows),
+              "15 subset rows x 8 frames with frozen subsets")
+        check("holo-subsets",
+              all(sorted(r["subset"])
+                  == sorted(_rd.Random(
+                      28000 + int(r["target"].split("_")[1]) * 100
+                      + int(r["target"].split("_")[2])).sample(
+                          range(60), int(r["target"].split("_")[1])))
+                  for r in hrows),
+              "banked subsets == frozen RNG scheme re-derived")
+        check("holo-finite",
+              all(v is not None and _np.isfinite(v)
+                  for r in hrows for fr in r["frames"].values()
+                  for v in fr.values()),
+              "0 nulls, all finite")
+
+        def _cm(frames):
+            vs = []
+            for fr in frames.values():
+                d = fr["strata"] if "strata" in fr else fr
+                vs += [v for v in d.values() if v is not None]
+            return sum(vs) / len(vs)
+
+        hbmean = _cm(hbase["frames"])
+        hmeans = [hbmean]
+        hagree = {}
+        for s in (5, 10, 20, 30, 40):
+            vs = [_cm(next(r for r in hrows
+                           if r["target"] == f"subset_{s}_{i}")["frames"])
+                  for i in (0, 1, 2)]
+            hmeans.append(sum(vs) / 3)
+            hagree[s] = max(vs) / min(vs)
+        xs = _np.array([0, 5, 10, 20, 30, 40], dtype=float)
+        ys = _np.array(hmeans)
+        A = _np.stack([xs, _np.ones_like(xs)], 1)
+        (ha, hb2), _, _, _ = _np.linalg.lstsq(A, ys, rcond=None)
+        pred = ha * xs + hb2
+        r2 = 1 - float(((ys - pred) ** 2).sum()) / float(
+            ((ys - ys.mean()) ** 2).sum())
+        steps = [hmeans[i + 1] / hmeans[i]
+                 for i in range(len(hmeans) - 1)]
+        check("holo-linear",
+              abs(r2 - hrep.get("linear", {}).get("r2", -1)) < 1e-9,
+              f"R2={r2:.4f} (banked match; holographic needs >0.8)")
+        check("holo-cliff",
+              abs(max(steps) - hrep.get("max_step", -1)) < 1e-9
+              and max(steps) > 2.0,
+              f"max step x{max(steps):.2f} (>2x = cliff)")
+        check("holo-seeds",
+              all(v < 1.5 for v in hagree.values()),
+              f"seed max/min per size "
+              f"{ {s: round(v, 3) for s, v in hagree.items()} } (<1.5)")
+        rv = ("holographic"
+              if (r2 > 0.8 and max(steps) <= 2.0) else "modular")
+        check("holo-verdict",
+              hrep.get("verdict", {}).get("name") == rv,
+              f"banked={hrep.get('verdict', {}).get('name')} "
+              f"recomputed={rv}")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

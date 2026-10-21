@@ -405,3 +405,92 @@ across scenes (fr0000 × 4) — scene-qualified.
 Gaps named: sub-block granularity (qkv vs MLP inside a block)
 is Phase B; per-instance (not family) LoRA-target lesions
 would be 300 runs — priced, not run.
+
+## Teacher holography — subset-lesion curve (constitution, FROZEN pre-run)
+
+Question: does teacher quality degrade GRACEFULLY (holographic —
+every block carries a little) or CLIFF (modular — some subset is
+load-bearing)? Phase A proved every SINGLE block matters
+(+92–234%); this round lesioned RANDOM SUBSETS and reads the
+curve shape.
+Design frozen: subset sizes {0, 5, 10, 20, 30, 40} of 60 (0 =
+unlesioned baseline RE-BANKED in this round, not inherited —
+guards harness drift between rounds), 3 seeds per nonzero size
+(subset RNG: `random.Random(28000 + size*100 + rep).sample(
+range(60), size)`, rep ∈ {0,1,2} — stdlib RNG only, torch/numpy
+streams untouched so inference RNG matches Phase A exactly).
+16 configs total (1 + 15). VAE untouched (DiT-block question).
+Metric: mean AbsRel over the Phase-A fixture set (same 8
+Hypersim frames, same relative-space judge — comparability
+with Phase A is the point). Fired-block sets banked per row
+(integrity: row claims match hook counts).
+Verdict rule frozen: LINEAR-ish degradation (least-squares fit
+of mean-vs-size over the 6 sizes: R² > 0.8 AND no single step
+>2× the previous size's mean = holographic) vs CLIFF (any step
+>2× = modular, not holographic). Seed-agreement gate: max/min
+across 3 seeds per size < 1.5× (subsets shouldn't wildly
+disagree). Characterization round — no removal nominations,
+no Phase-C anything.
+Budget: per-eval wall KNOWN (1s/frame from Phase A — no new
+pilots needed, stated reason): 16 configs × 8 frames × ~1s +
+load ≈ 5 min. GPU solo (idle + VRAM stated at run); Qwen-7B
+never co-loaded (~14GB footprint as measured); no downloads.
+Weights read-only out-of-tree (checksums pre/post in-gate,
+Phase-A precedent). Ruling: hooks only; no emitter/opcode/
+assembly changes; no new deps; production weights untouched.
+Gate: extend tests/test_teacher_lesion.py in place
+(subset-curve legs: schema, linear-fit R², cliff check,
+seed-agreement — same integrity shape as Phase A; heavy
+reruns NOT routine). Neighbors: lesion + anatomy + teacher
+gates green (read-only reuse).
+Spec: this section + curve table + verdict (holographic or
+modular) — nothing more.
+
+### Holography results (TBD — run lands here)
+
+### Holography results (1 baseline re-bank + 15 subset evals, ~6 min wall, GPU solo)
+
+Baseline re-banked in-round: mean 0.2936 (EXACT match to Phase-A
+0.2936 to 4 decimals — cross-round reproducibility, same harness/
+seed/frames; determinism corroborated, not just claimed).
+Curve (size: rep0 rep1 rep2 | mean | seed max/min | step-ratio):
+
+```text
+ 0: baseline                                   0.2936
+ 5: 0.7241 0.6902 0.6902 | mean 0.7015 | 1.049 | x2.39
+10: 0.9813 0.7458 0.7458 | mean 0.8243 | 1.316 | x1.18
+20: 0.6902 0.6902 0.9813 | mean 0.7872 | 1.422 | x0.96
+30: 0.6902 0.7103 0.7458 | mean 0.7154 | 1.081 | x0.91
+40: 0.6902 0.6902 0.6902 | mean 0.6902 | 1.000 | x0.96
+linear fit: slope +0.0053, R² = 0.1860 (needs >0.8)
+```
+
+Frozen-rule verdict: **modular** (R² 0.186 fails holographic;
+0→5 step ×2.39 fails no-cliff — doubly determined).
+Diagnosis — the curve is NOT a dosage response, it's attractor
+membership: 8 configs snap to ONE bit-identical per-frame
+output (0.6902 attractor), and subset_10_0 (contains block 57 +
+9 others) reproduces Phase-A block-57-alone per-frame EXACTLY —
+block 57 totally dominates its subset (9 extra dead blocks
+change nothing). Lesioned DiT falls into a few discrete
+degenerate states rather than decaying gracefully: no dosage,
+no hologram. Consistent with Phase A (every block load-bearing
+alone) and sharper: not only does each block matter, but
+beyond ~5 dead blocks the model stops degrading FURTHER —
+collapse saturates at shared attractors. Seed agreement holds
+(max/min ≤ 1.422 < 1.5 — seeds agree the curve is flat
+garbage, not signal).
+What this closes: graceful-degradation/holographic storage for
+this teacher at block granularity. What it doesn't touch:
+sub-block structure (Phase B), VAE/family subsets (unrun),
+recovery dynamics (can the model re-converge post-lesion?
+untrained here — training is out of scope).
+Gate `tests/test_teacher_lesion.py` extended in place (CPU,
+0.06s): schema (15 rows, frozen subsets re-derived from the
+frozen RNG scheme), finite, R²/cliff/seeds recomputed,
+verdict equality. Neighbors green: lesion (Phase-A legs),
+anatomy, teacher — read-only reuse, nothing moves underneath.
+Bugs caught while building (mechanisms): (1) gate `_cm`
+assumed wrapped strata-dicts; banked frames are flat (fixed).
+(2) Step loop off-by-one (6 points → 5 steps, not 6).
+Gaps named: none new — the round is self-closing by design.
