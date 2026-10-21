@@ -420,7 +420,11 @@ def main():
                                      device=device)).reshape(-1).double()
                 p = p.cpu().numpy()
                 if args.loss_space == "log":
-                    p = np.exp(p) - 1.0 + LO  # z-space preds -> linear
+                    # z-space preds -> linear (dit range hygiene: clip
+                    # touches insane values only — unclipped exp overflows
+                    # once z-preds drift, crashing eval lstsq; measured).
+                    p = np.exp(np.clip(p, np.log(1e-9), np.log(1e4))) \
+                        - 1.0 + LO
                 Hh, Ww = next(r["shape"] for r in man["fixtures"]
                               if r["name"] == n)
                 masks = H.strata_masks(t.reshape(Hh, Ww),
