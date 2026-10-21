@@ -101,3 +101,30 @@ null cross-check (synthetic-uniform 0.343 vs seeded-shuffle
 0.349), schema, lifts vs bar, verdict, null-documented.
 Neighbors: none touched (strata read-only reuse only —
 `test_strata_marigold.py` green, pasted below).
+
+## Discord — the complement test (constitution, FROZEN pre-run)
+
+Resonance asked whether NEAR phases share depth (+0.0075 max —
+dead). Discord asks the complement: do ANTI-phase pairs share
+depth? Same three key variants V1/V2/V3 (comparability — no new
+keys; mid-round metric invention voids the round).
+Discord metric frozen: discordant ⟺ min_h d_h > 1−τ (far in EVERY
+head — the exact complement of resonate's ∃-head-closeness),
+τ=0.1, H=4, same tokens/pairs/ε as the resonance round.
+Discord lift = P(discord | same-depth) − P(discord | shuffled
+null), same seeded-shuffle nulls (seed 0), same 0.10 nominating
+bar. The heads-share-key correction carries over (cited, not
+re-derived): no independence formula anywhere near this metric —
+empirical nulls rule, now and always.
+Winner rule: discord lift ≥ 0.10 on any variant = signal
+(nominates the routing/content-split investigation — nothing
+more; no student round, no machinery). Below = dead, and the
+resonance pair is complete (similarity AND complement both
+measured — the phase-depth question closed in both directions).
+Note on power (stated pre-run, not a hedge): discord pairs may
+be rare (uniform-independent guess said 1e-4; linkage decides
+empirically) — N_discord is banked alongside; a tiny N with zero
+same-depth hits is itself a finding (anti-phase pairs barely
+exist under these keys), reported not smoothed.
+
+### Discord results (TBD — analysis lands here)
