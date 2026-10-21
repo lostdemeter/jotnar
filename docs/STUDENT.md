@@ -1915,3 +1915,59 @@ was affected (battery key and gate legs read the files directly
 and verify consistent); table corrected cell-by-cell against
 md5-pinned banked data. Mechanism conclusions never touched
 (telemetry analysis was always on the new-run file).
+
+## Phase 27 — loss coordinates, same student different downhill (constitution, FROZEN pre-run)
+
+Question: does the pin live in the loss's coordinate system? Same
+student, three downhill geometries; everything else frozen.
+Coordinates frozen (exact forms, ≤3 — the spaces ARE the round):
+- C1 `value`: aligned-MAE on the stride-7 sample (lstsq no-grad +
+  MAE) — current practice, the baseline. Command mirrors banked
+  mscale64 flags exactly.
+- C2 `log`: shifted-log targets zt=log(t−lo+1), lo=train-split min
+  (banked; signed teacher depths make plain log unimplementable —
+  Phase-19 correction precedent), net predicts in z-space,
+  aligned-MAE in z-space. Eval inverts (exp−1+lo) then harness
+  align_mae (dit precedent). One variable: the space (both sides
+  live in it).
+- C3 `quantum`: U8-quantum MAE — q=(train max−min)/255, round BOTH
+  sides to the q grid, aligned-MAE. Names what it drops (sub-U8
+  detail — the serving-visibility floor); full-precision rule
+  honored (declared variant, never silent default).
+No-term-dropping rule honored: the recipe is single-term MAE in
+all three (perc=sink=0, banked present-off in every config —
+Navier-Stokes-f discipline: no floor/tail/aux exists to drop).
+Eval frozen for all coordinates (linear align_mae per stratum —
+same judge, different downhill).
+Architecture frozen: mscale64-EXACT (W64, multi, field 33,
+densewin 3, depth 2, patch 1 — cheapest that trains; full
+177-dim front end, no toy substitute). Data/splits/schedule/seed
+frozen to banked mscale64 (4 train + 2 heldout fixtures, const
+lr 0.02, 2000 steps, seed 7). Only the loss coordinates vary —
+anything else moving confounds the question.
+Device stated pre-run with reason: CPU. Pace probe (50 steps +
+full eval, scratch tag, primary guarded+restored): 33s wall →
+~14 min per 2000-step coordinate, ~45 min battery. GPU need is
+therefore NOT established (rule: justified, not assumed) — CPU
+keeps the GPU box free; wall is background-cheap. Qwen-7B never
+co-loaded (nothing here needs it).
+Winner: directional held-out moves vs the C1 value baseline
+(same >0.05 frozen threshold, Phase-19 precedent); harness bars
+(0.09/0.09/0.09/0.08/0.07/0.09) ride as secondary context.
+Empty (all coordinates pin alike) is complete and means
+coordinates are innocent. Retrain-match before ANY claim.
+Banking: per-coordinate `student_run_lc-<coord>.json` (primaries
+untouched — fixed-name outputs guarded+restored around runs) +
+`losscoord` battery key (configs lc-value/lc-log/lc-quantum,
+reference lc-value, cells mirror hyper shape); weights
+out-of-tree per tag; production weights untouched.
+Gate: `tests/test_strata_marigold.py` extended in place
+(losscoord key: schema + winner/bars verdicts + term-inventory
+legs — loss_space ∈ {value,log,quantum} + align + perc/sink==0,
+programmatic). Neighbors: teacher + strata legs green (nothing
+moves underneath).
+Implementation: `--loss-space` flag + transform branch in
+`scripts/train_student.py` loss + eval-invert (loss-geometry
+only; the round's declared surface).
+
+### Battery results (TBD — runs land here)
