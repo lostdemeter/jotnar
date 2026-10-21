@@ -87,3 +87,31 @@ What teacher debugging would need: per-layer activation capture
 (the overrides analogue for teacher inputs), align-and-compare
 vs banked teacher outputs with first-divergence reporting.
 Named here so the shape is on record; none of it is built.
+
+## Torch lesions (constitution, FROZEN pre-build)
+
+Surface mirrors the listing semantics exactly (`chain/debugger.py`,
+torch section — same module, not a second tool): `TorchSession`
+over a fixed net + a reference `run()` returning named output
+tensors. `lesion(module_path)` zeroes that LEAF module's outputs
+via a forward hook (zeros_like — shapes/dtypes/kinds preserved,
+only values change) and reruns; tabled as per-output
+(maxabs, mean) deltas vs the reference run. Zero-module control
+(empty hook set) must read exactly zero. Same session twice →
+identical tables. Bad module paths refuse loud (no silent
+skips — every leaf lesionable is gated, not claimed).
+Validation targets, frozen: mscale64 + jattn64b2 BANKED weights
+(read-only out-of-tree `~/student_runs/<tag>/weights.pt`,
+`weights_only` load, eval + no_grad throughout — no training,
+no weight writes, ever). Lesion tables banked per model
+(`samples/marigold/lesion_<tag>.json`); shapes compared across
+families with the open question stated, never assumed: do
+lesion profiles differ the way failures do (MLP mixer vs joint
+attention — uniform spread vs load-bearing blocks)?
+Reference runs (frozen): mscale64 = full-frame MLP forward on
+banked church fixture (stride math untouched — full frame, not
+the stride sample); jattn64b2 = rgb-path encode+head on church
+(Phase-8 shape: W64/B2/H1/s32/C4). CPU suffices (MLP/head
+forwards are seconds on CPU — no GPU need established, none
+used). Qwen and teacher weights never loaded (students only —
+teacher lesion is the next round, explicitly not this one).
