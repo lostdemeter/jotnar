@@ -2286,3 +2286,95 @@ fixed after a bash `$b_` interpolation ate the basin letter
 files — FileNotFoundError, rc=1 — then ran clean; the battery
 script now banks only on rc=0). CPU training per frozen rule
 (~10 min/arm; GPU never justified, never used).
+
+## Phase 30 — basin-C replication + specificity (constitution, FROZEN pre-run)
+
+Two questions on the Phase-29 directional-move (lm-C: 6
+geo_webcam_1 cells beat all prior bests, bit-reproduced once),
+both frozen with exact success rules.
+(1) Replication: basin-C damage-matching rerun END-TO-END —
+fresh lesioned maps regenerated via the committed generator
+path (`--save-maps`, same 5-basin subsets incl. C) + fresh
+training on the fresh C maps (same flags). Success = the same
+6 geo_webcam_1 cells beat priors again (retrain-identical
+already shown once for stored maps; this tests
+PIPELINE-reproducibility: map regen + training, not weight
+identity). Map regen verified first (fresh C maps byte-identical
+to banked C maps — else stop, the generator drifted).
+(2) Specificity: same architecture trained on basin-A/B/D/E
+damage + clean control, all else equal — REUSED from banked
+Phase-29 arms (bit-determinism proven 0.00e+00: fresh reruns
+would be identical numbers, so rerunning adds zero
+information; stated openly, not cut silently). Success for
+"C is special" = C alone moves those cells (A/B/D/E stay
+flat-or-worse vs control); if every damage variant moves
+them, the finding is "damage beats clean" (still a finding,
+different mechanism — report which, don't prefer).
+Winner rule: most held-out cells under Phase-1 bars across
+all arms (C-rep included); empty (nothing replicates, nothing
+specific) is complete and kills the lead honestly.
+Schedule + budget frozen: CPU (mscale pace ~10 min/arm; ONE
+fresh training (C-rep) + map regen (~3 min GPU) + rerun-digest
+compare; GPU solo for regen (idle + VRAM stated); Qwen-7B
+never co-loaded; no downloads. Wall cap 1h total.
+Banking: per-arm `student_run_lm-C-rep.json` + `lmrep`
+battery key (configs ["lm-C-rep"], reference lm-clean
+(via lesionmatch — cross-key reference, stated), cells mirror
+hyper shape; banked Phase-29 arms referenced, never
+duplicated); primaries untouched; weights out-of-tree per tag;
+production weights untouched.
+Gate: extend the strata gate surface in place (lmrep key:
+schema + replication legs (C-rep vs banked C cells) +
+specificity legs (per-basin deltas vs control incl. banked
+arms, printed with the frozen rule) + winner tripwire).
+Neighbors: teacher, strata, lesion-basin legs green
+(read-only reuse — nothing moves underneath).
+Determinism: single-seed throughout (hyper precedent).
+
+### Battery results (TBD — regenerate, retrain, compare)
+
+Replication (fresh maps via the committed `--save-maps` path +
+fresh training, same flags): 20/20 regenerated maps
+byte-identical to banked; C-rep training table BIT-IDENTICAL to
+banked C (max abs diff 0.00e+00); same 6 geo_webcam_1 cells
+beat prior bests by >0.05 (far −0.138, near −0.104,
+nonplanar −0.127, planar −0.128, smooth −0.121, tex −0.109).
+Pipeline-reproducibility proven (maps + training, not weight
+identity — weights were never compared and needn't be).
+
+```text
+arm        heldout mean  vs clean   6-cell wins  bars
+lm-clean   0.3017        —          —            0/12
+lm-A       0.3562        +0.0545    0            0/12
+lm-B       0.3605        +0.0588    0            0/12
+lm-C       0.2555        -0.0462    6            0/12
+lm-C-rep   0.2555        -0.0462    6            0/12
+lm-D       0.3583        +0.0566    0            0/12
+lm-E       0.3671        +0.0654    0            0/12
+```
+(wins = cells beating all prior bests by >0.05; all 6 on
+geo_webcam_1, all strata; webcam_0 worsens throughout.)
+Specificity verdict: **C-specific mechanism** — A/B/D/E move
+nothing (0 improved cells each, mean deltas +0.05..+0.07 =
+worse-or-flat); C alone moves those cells twice independently.
+NOT damage-general (that hypothesis needed every damage
+variant to move them; four counterexamples banked).
+Winner by bars: none (0/12 everywhere — no retrain by bars).
+Overall verdict: **directional-move, C-specific** (not winner —
+no bars cleared; not dead-lead — replicated bit-exactly with
+mechanism isolated to one basin). The frame-specificity
+(webcam_1 only) remains unexplained and stated as such —
+uniform −0.10..−0.14 across all 6 strata of one frame smells
+global rather than structural (reported, not resolved).
+Diagnosis, two parts. (1) Damage-matching separates where
+coordinates could not: 5 lesioned-target arms + control fan
+out (−0.046..+0.065) while 3 loss geometries sat within noise
+— targets carry the signal. (2) Only the most-structured
+basin helps (C: corr_ref +0.39; A/B/D/E basins: weaker
+remnants): fit the degenerate map with the most surviving
+structure, gain where structure transfers; fit flatter
+attractors, lose everywhere. Retrain-match treatment
+completed pre-claim (bit-identical table + same 6 cells).
+Executed notes: map regen 20/20 identical (~3 min GPU);
+training ~10 min/arm CPU; primaries guarded+restored
+byte-verified around every run; weights out-of-tree per tag.

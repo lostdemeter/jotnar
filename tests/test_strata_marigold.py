@@ -834,6 +834,59 @@ def main():
           and len(mat.get("map_sha256", {})) == 20,
           "rerun byte-identical (pasted) + 20 map shas recomputed")
 
+    # -- Phase-30 basin-C replication + specificity -------------------------
+    # Frozen two questions: (1) replication — fresh maps (regenerated
+    # via the committed path, 20/20 byte-identical) + fresh training
+    # reproduces the banked C cells; (2) specificity — banked A/B/D/E
+    # + clean arms reused verbatim (bit-determinism proven: fresh
+    # reruns would be identical, stated openly). Winner tripwire:
+    # winner None ⟺ no bars anywhere (directional-move ≠ winner).
+    lr = ab.get("lmrep", {})
+    lrconfigs = ["lm-C-rep"]
+    check("lmrep-configs", lr.get("configs") == lrconfigs
+          and lr.get("reference") == "lm-clean", lr.get("configs"))
+    lrcells = lr.get("cells", {})
+    check("lmrep-complete",
+          set(lrcells) == set(lrconfigs)
+          and len(lrcells["lm-C-rep"].get("frames", {})) == 6 and all(
+              sorted(fr.get("strata", {})) == STRATA
+              and all(np.isfinite(v) and v >= 0
+                      for v in fr["strata"].values())
+              for fr in lrcells["lm-C-rep"]["frames"].values()),
+          "C-rep 6x6 finite")
+    bankedC = lmcells["lm-C"]["frames"] if "lm-C" in lmcells else {}
+    repC = lrcells["lm-C-rep"]["frames"]
+    check("lmrep-replication",
+          bool(bankedC) and max(
+              abs(bankedC[n]["strata"][k] - repC[n]["strata"][k])
+              for n in bankedC for k in STRATA) <= 1e-9,
+          "C-rep == banked C end-to-end (maps + training)")
+    reffr = lmcells["lm-clean"]["frames"]
+    for t, label in (("lm-C", "banked"), ("lm-C-rep", "fresh")):
+        fr = lmcells[t]["frames"] if t in lmcells else repC
+        ds = [fr[n]["strata"][k] - reffr[n]["strata"][k]
+              for n in fr if fr[n].get("split") == "heldout"
+              for k in STRATA]
+        ups = sum(1 for d in ds if d < -0.05)
+        print(f"lmrep {label} C vs clean: mean {sum(ds) / len(ds):+.4f}, "
+              f"{ups}/12 cells >0.05 better", flush=True)
+    other = {}
+    for t in ("lm-A", "lm-B", "lm-D", "lm-E"):
+        fr = lmcells[t]["frames"]
+        ds = [fr[n]["strata"][k] - reffr[n]["strata"][k]
+              for n in fr if fr[n].get("split") == "heldout"
+              for k in STRATA]
+        other[t] = (sum(ds) / len(ds),
+                    sum(1 for d in ds if d < -0.05))
+    check("lmrep-specificity",
+          all(v[1] == 0 for v in other.values())
+          and all(v[0] >= -0.05 for v in other.values()),
+          f"A/B/D/E move nothing: { {t: (round(m, 4), u) for t, (m, u) in other.items()} } "
+          f"(C alone moves — C-specific, not damage-general)")
+    check("lmrep-winner-none",
+          lr.get("winner") is None,
+          "no bars cleared anywhere (directional-move ≠ winner)")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 
