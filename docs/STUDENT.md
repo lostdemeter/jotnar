@@ -2006,3 +2006,146 @@ log invert (eval-only; train path untouched), rerun rc=0. The
 overflow is itself a datum (z-preds drift unbounded — aligned
 z-MAE doesn't pin scale either). CPU device per frozen rule
 (measured 33s/50-step probe; GPU never justified, never used).
+
+## Phase 28 — temporal student, parallax as information (constitution, FROZEN pre-run)
+
+First of the two unclimbed trees (option-scan rank 1): every
+student so far saw single frames; consecutive Hypersim frames
+carry 0.4–1.0m inter-frame depth motion (measured ai_001_010
+fr0000→0002, option-scan probe) with GT depth per frame —
+//parallax, the one cue class never given to any student.
+Data frozen (Hypersim-consecutive declared with reason — vKITTI
+NOT fetched): same shard, same 12+6 scenes as Phases 22–26,
+pairs = consecutive AVAILABLE frame ids per scene (9/scene —
+ai_011_007's even-only ids pair wider, deterministic), reference
+= first frame of pair (GT + strata + valid from the reference).
+Reasons over vKITTI: verified in-hand (motion + GT, no
+downloads); SAME distribution → Phase-22 bars inherit
+legitimately (vKITTI would need re-derived bars + new audit);
+SAME scenes/splits as hyper/dithyp → the control comparison is
+airtight (same frames, pairs vs singles). vKITTI's marginal
+value (outdoor driving distribution) confounds parallax with
+distribution — a later round, not mid-round scope growth.
+Architecture frozen: mscale64-EXACT front end per frame (177-d
+field-33/densewin-3) + CONCAT[feat_t, feat_t+1] (354-d) + the
+same MLP mixer (W64/d2/SiLU, input layer widened only) —
+REPLACED cost-volume/flow-warp with reason: shard has no poses
+(cost-volume needs them) and no flow GT (flow needs supervision
+or heavy unsupervised machinery — new scope either way);
+concat lets the mixer learn correspondence implicitly with
+minimal arch delta (input layer only), all ops stay tabled
+(MATMUL/ADD/SILU/CONCAT/GATHER). Limitation stated openly:
+per-pixel concat sees same-pixel + context-window neighborhoods
+only — large-displacement correspondence is NOT explicitly
+modeled (cost-volume follow-up named, not run).
+Single-frame ablation runs alongside (UNMODIFIED
+train_student.py mscale64-EXACT recipe, fresh seed-7 run) — the
+control that proves parallax adds information; without it any
+win is uninterpretable. Confound named: control is full-batch
+(4 frames) while pairs minibatch (mb=4 pairs/step deterministic
+rotation — 12M rows don't batch; hyper/dit-hypersim precedent).
+Recipe frozen both arms: aligned-MAE stride-7 (same doctrine),
+const lr 0.02, 2000 steps, seed 7, cadence prints; eval frozen
+(linear align_mae per stratum on reference frames, masks &
+valid intersect, full-frame at end). No transfer arm (MLP has no
+grid to lock; fixtures have no video to transfer to — stated,
+not omitted by accident).
+Bars = Phase-22 fresh (same Hypersim distribution — legitimate
+inheritance, stated). Winner: most held-out cells (54 pairs ×
+6 = 324) under bars; directionals vs control reported
+(>0.05 Phase-19 rule for interpretation); empty is complete.
+Retrain-match before ANY claim (first genuinely new
+information in the arc gets the full treatment).
+Budget frozen: CPU (precedent: Phase-27 mscale pace ~0.4s/step;
+pairs ≈ 2× → ~15 min/arm, ~30 min both; GPU unjustified, not
+assumed), wall cap 60 min both arms. GPU solo NOT required
+(CPU round — box stays free); Qwen-7B never co-loaded; no
+downloads.
+Banking: per-arm `temporal_run_<tag>.json` (pair/control banked
+alongside — the control numbers live in the battery, not in a
+footnote) + `temporal` battery key (configs temp-pair +
+temp-single, reference temp-single, cells mirror hyper shape);
+primaries untouched; weights out-of-tree per tag; production
+weights untouched.
+Gate: `tests/test_hypersim_feas.py` extended in place
+(temporal key: schema + winner/bars verdicts +
+control-comparison legs — control cells banked, parallax delta
+computed, never asserted directionally beyond it). Neighbors:
+teacher + strata legs green (nothing moves underneath).
+Determinism: single-seed (hyper precedent).
+Implementation: new `scripts/train_temporal_student.py`
+(assembles train_student multiscale/load fns + own pair loop);
+train_student.py itself UNTOUCHED (the control must be pristine).
+
+### Battery results (2 arms, 2000 steps each, ~7/~4 min train CPU wall)
+
+Both rc=0, finite everywhere (0 nulls — continuous Hypersim
+stats). Held-out align-MAE vs fresh bars — 0/324 under on both
+arms (54 pairs × 6):
+
+```text
+arm     split    far      near     nonplanar planar   smooth   tex
+pair    train    2.98     2.37     2.90      2.38     2.63     2.86
+pair    heldout  1.78     1.57     1.51      1.93     1.57     1.74
+single  train    3.38     2.77     3.35      2.66     3.11     3.21
+single  heldout  1.78     1.55     1.52      1.88     1.56     1.74
+```
+(pair means/bests: heldout 1.51–1.93 / 0.46–0.57; single:
+1.52–1.88 / 0.45–0.55.)
+Parallax delta (pair−single heldout mean): +0.0110 (58 improved
+/ 78 worsened of 324 — coin flip). Winner: none — 0 cells under
+bars both arms, no directional move (needs < −0.05);
+no retrain-match (nothing to claim; single-seed, determinism
+NOT re-verified — hyper precedent).
+Transfer: none (no grid to lock, no fixture video — as frozen).
+Verdict: **empty** — parallax adds no measured information at
+this rung (concat-fusion, mscale-class, 2000 steps, Hypersim
+pairs). The second frame moves heldout by +0.01 against a
+±0.05 directional bar.
+Diagnosis, three parts. (1) Same pin, both arms: train fits
+partway (~2.4–3.4), heldout flat (~1.5–1.9), far/tex worst —
+the wall reproduces with identical shape whether the mixer sees
+one frame or two. The extra frame is not extra signal here.
+(2) Capacity confound named and closed: the pair net carries
++11k params (27k vs 16k) and fits train BETTER (2.4–3.0 vs
+2.8–3.4) yet heldout is identical to 2 decimals — more
+capacity, same wall; the pin is not a capacity wall at this
+rung either. (3) Common-mode transients: BOTH arms spiked
+(~6–7 at it500/1500) and recovered (~0.95) — aligned-MAE lstsq
+instability on rotating minibatches, parallax-independent
+(same signature both arms; the pin, not the spike, is the
+verdict). The named limitation stands and sharpens: per-pixel
+concat sees same-pixel + context-window neighborhoods only —
+whether EXPLICIT correspondence (cost-volume) would differ is
+still untested (follow-up named, not run).
+Executed notes: 50-step smokes both modes (finite, sane);
+preload 180 unique frames ~3 min/arm; control is the
+post-correction Hypersim single-frame mode (banked mscale64
+fixtures ride as secondary context only — 0.32 heldout means
+there vs 1.7 here are different distributions AND different
+judges... note: fixture eval is align_mae in teacher units,
+Hypersim in meters — cross-table comparison refused, stated).
+CAUGHT BUGS (mine, recovered openly): (1) preload stored FULL
+557MB/frame features (120GB trajectory — would OOM silently);
+fixed to sample-immediately (17GB→ in-RAM sampled) pre-run.
+(2) preload shape check compared full rows to the SAMPLED
+count (always fires) — fixed to full-vs-full pre-run. (3) My
+battery assembler asserted 108 frames/arm instead of 162
+(108+54) — assertion fired on correct data, fixed, nothing
+written under it (verified).
+
+### Phase-28 correction (pre-run, nothing executed yet — Phase-19 precedent)
+
+The frozen control clause ("UNMODIFIED train_student.py ... fresh
+run") is distribution-confounded as written: train_student.py loads
+FIXTURES, so that control would compare temporal-Hypersim against
+single-frame-fixtures — parallax and distribution moving together,
+uninterpretable EITHER way (a win OR a loss proves nothing about
+parallax). Corrected control (intent preserved, mechanism fixed):
+single-frame mode INSIDE the new script — same Hypersim scenes/
+splits/seed/schedule/steps, same MLP math (177-d input, W64/d2),
+same aligned-MAE doctrine, reference frames only. The ONLY delta
+between arms is the second frame's features. Banked mscale64
+(fixtures) rides as secondary context (same recipe, different
+data — reported, never ruling). Gate battery key holds both arms
+(configs temp-pair + temp-single) as frozen.

@@ -328,6 +328,55 @@ def main():
               f"it0 match diff={sk.get('it0_diff'):.2e} (tol 1e-4; "
               f"prefix-past-it0 invalid across schedules, stated)")
 
+    # -- Phase-28 temporal legs (banked integrity + control verdicts) --
+    # Same integrity shape (not a fork): 108+54 pair-frames x 6 strata
+    # finite-or-null per arm, winner tripwire vs Phase-22 fresh bars,
+    # transfer N/A (no grid to lock, no fixture video — stated).
+    # Control-comparison: single-frame control banked alongside;
+    # parallax delta computed, never asserted directionally beyond it
+    # (winner None ⟺ no cells and no directional move — tripwire).
+    if "temporal" not in ab:
+        print("SKIP temporal legs (no banked temporal battery yet)")
+    else:
+        tm, tmc = ab["temporal"], ab["temporal"]["cells"]
+        check("temporal-configs",
+              tm.get("configs") == ["temp-pair", "temp-single"]
+              and tm.get("reference") == "temp-single",
+              "pair + control banked, no new shapes")
+        BARS_FRESH = {"near": 0.068, "far": 0.019, "planar": 0.046,
+                      "nonplanar": 0.123, "tex": 0.132, "smooth": 0.117}
+        tcomplete, tcounts = True, {}
+        for t in tm["configs"]:
+            fr = {n: f for n, f in tmc[t]["frames"].items()
+                  if f.get("split") == "heldout"}
+            tcomplete &= (len(fr) == 54 and all(
+                len(fr[n].get("strata", {})) == 6
+                and all(v is None or (np.isfinite(v) and v >= 0)
+                        for v in fr[n]["strata"].values())
+                for n in fr))
+            tcounts[t] = sum(
+                1 for n in fr for k in BARS_FRESH
+                if fr[n]["strata"][k] is not None
+                and fr[n]["strata"][k] <= BARS_FRESH[k])
+        check("temporal-complete", bool(tcomplete),
+              "2 arms x 54 heldout x6 finite-or-null")
+        base = {n: f["strata"] for n, f in tmc["temp-single"]["frames"].items()
+                if f.get("split") == "heldout"}
+        frp = {n: f["strata"] for n, f in tmc["temp-pair"]["frames"].items()
+               if f.get("split") == "heldout"}
+        ds = [frp[n][k] - base[n][k] for n in frp for k in BARS_FRESH]
+        delta = sum(ds) / len(ds)
+        ups = sum(1 for d in ds if d < -0.05)
+        print(f"temporal parallax delta (pair-single heldout mean): "
+              f"{delta:+.4f} ({ups}/324 cells >0.05 better)", flush=True)
+        check("temporal-winner-none",
+              all(v == 0 for v in tcounts.values())
+              and not (delta < -0.05)
+              and tm.get("winner") is None,
+              f"under-bars {tcounts}, delta {delta:+.4f}")
+        check("temporal-determinism-note", True,
+              "single-seed, retrain NOT verified (stated, not green-washed)")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 
