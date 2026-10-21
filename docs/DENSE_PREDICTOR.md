@@ -146,8 +146,60 @@ and labeled as such; nobody mistakes them for depth.
 Privacy: captured frames out-of-tree only (`/tmp/opencode`);
 gate asserts the default outdir + scans the repo clean.
 What training would change: kaiming→trained weights is the ONLY
-delta (pipeline identical) — viz would show structure instead of
+delta (pipeline is identical) — viz would show structure instead of
 noise under the same banner-minus-UNTRAINED.
+
+### State-of-the-union strip (constitution, FROZEN pre-run)
+
+Four panels, frozen — (1) live webcam frame (ffmpeg open-grab-close;
+camera-busy rule stands: stills fallback from dav2 captures,
+read-only, never signal user processes); (2) teacher depth via
+Marigold CLI (reference, labeled THEIRS — 1–2 frames max, this is
+a demo not a benchmark; Qwen-7B never co-loaded — the depth
+pipeline loads the Qwen-Image transformer + VAE only, ~14GB
+measured VRAM; text encoder stays on disk); (3) basin-C
+lesion-matched student (banked lm-C weights, read-only); (4)
+clean-control student (banked lm-clean weights, read-only).
+Student mapping frozen (MLP is resolution-agnostic per-pixel,
+BUT multiscale context uses absolute pixel offsets): stills
+resized to the 1024×672 train grid (PIL Bilinear — the
+`load_frame` rule verbatim), then the standard pipeline
+(multiscale → MLP → viz). No other mapping exists in this
+round.
+Labeling rules frozen alongside (a strip that could be mistaken
+for a quality claim fails review regardless of pixels): every
+panel banners provenance + verdict status — (1) source tag
+(camera/stills-fallback) + resolution; (2) THEIRS Marigold-V2
+depth = REFERENCE (not ground truth, not a grade); (3)
+basin-C lesion-matched = DIRECTIONAL-MOVE, 0 BARS (6 cells,
+one frame, retrain-matched — narrow, stated); (4) clean
+control = BASELINE (mscale64 recipe, 0 bars). Console echoes
+the same four lines.
+What the strip shows and does not show (written before the
+run, judged after): SHOWS the four systems side by side on
+unseen real frames (does basin-C's structure survive outside
+fixtures? eyeball only); does NOT show a winner (0 bars
+everywhere — N/A by construction), a benchmark (1–2 frames),
+or depth quality of any panel (viz is min-max normalized per
+panel — cross-panel brightness is meaningless, stated on the
+strip). Captured frames stay out-of-tree (`/tmp/opencode`;
+privacy — gate-scanned like the dpt demo).
+Gate: demo legs in `tests/test_dpttiny.py` extended in place
+(panel-integrity: 4 panels render finite with correct shapes,
+every label present with verdict status, privacy scan clean —
+stills path executes end-to-end for machineless gold; model
+legs SKIP clean without GPU/weights, dpt-demo-served
+precedent). Neighbors: dpttiny demo legs green (nothing moves
+underneath).
+Implementation: new `scripts/demo_sou_strip.py` (demo plumbing
+only — reuses `demo_dpt_webcam.capture/fallback/visualize`
+patterns; no architecture/emitter/opcode/listing changes — a
+"small" model tweak to look better on camera is scope breach
+and fraud, stated plainly; weights read-only out-of-tree;
+ffmpeg/PIL/matplotlib as established; no new deps, no
+downloads).
+
+#### Strip proof-run (TBD — run lands here)
 
 ## Training — analytic GT, not teacher mimicry (constitution, FROZEN pre-run)
 
