@@ -339,18 +339,20 @@ def main():
         return per
 
     def run_eval(hooks=()):
-        per_frame, walls = {}, []
+        from collections import Counter
+        per_frame, walls, fall = {}, [], Counter()
         for i, (s, fr) in enumerate(frames):
             p = os.path.join(SHARD, s, f"rgb_cam_00_fr{fr}.png")
             pred, wall, fires = infer_one(transformer, vae, pe, pm, p,
                                           SEED + i, hooks)
             walls.append(wall)
+            fall.update(fires)
             per_frame[f"{s}_fr{fr}"] = judge(pred, s, fr)
             print(f"eval {s}/fr{fr}: wall {wall:.0f}s "
                   f"meanAbsRel "
                   f"{np.mean([v for v in per_frame[f'{s}_fr{fr}'].values() if v is not None]):.4f}",
                   flush=True)
-        return per_frame, walls, fires
+        return per_frame, walls, dict(fall)
 
     if args.mode == "baseline":
         per_frame, walls, _ = run_eval()
