@@ -334,7 +334,11 @@ class TorchSession:
         return self._ref
 
     def lesion(self, path):
-        """Zero the module's outputs (hook) and diff final outputs."""
+        """Zero the module's outputs (hook) and diff final outputs.
+        Rows carry the hook fire count -- zero fires means the module
+        was never called on this path (bypassed/dead weight), NOT a
+        measured zero: the overrides-analogue tripwire (a lesion that
+        never bites is green wallpaper, refused as a finding)."""
         import numpy as np
         import torch
         if path not in self.leaves:
@@ -342,8 +346,13 @@ class TorchSession:
                 f"bad lesion module {path!r} (want one of {self.leaves})")
         ref = self.reference()
         mod = self.net.get_submodule(path)
-        handle = mod.register_forward_hook(
-            lambda m, i, o: _torch_zeros(o))
+        fires = [0]
+
+        def _hook(m, i, o):
+            fires[0] += 1
+            return _torch_zeros(o)
+
+        handle = mod.register_forward_hook(_hook)
         try:
             with torch.no_grad():
                 got = {k: v.detach().clone() for k, v in
@@ -357,7 +366,8 @@ class TorchSession:
             deltas[s] = {"maxabs": float(np.abs(d).max()),
                          "mean": float(np.abs(d).mean())}
         worst = max(v["maxabs"] for v in deltas.values())
-        return {"module": path, "deltas": deltas, "worst": worst}
+        return {"module": path, "fires": fires[0], "deltas": deltas,
+                "worst": worst}
 
     def control(self):
         """Zero-module control: no hooks must read exactly zero."""
@@ -382,9 +392,10 @@ class TorchSession:
 
 def format_torch_table(rows):
     """Human-readable torch lesion rows (spec evidence paste)."""
-    L = ["module          worst_maxabs out:maxabs,mean..."]
+    L = ["module          fires worst_maxabs out:maxabs,mean..."]
     for r in rows:
         det = " ".join(f"{s}:{v['maxabs']:.4g},{v['mean']:.4g}"
                        for s, v in r["deltas"].items())
-        L.append(f"{r['module']:<15} {r['worst']:<12.4g} {det}")
+        L.append(f"{r['module']:<15} {r.get('fires', '?'):>5} "
+                 f"{r['worst']:<12.4g} {det}")
     return L
