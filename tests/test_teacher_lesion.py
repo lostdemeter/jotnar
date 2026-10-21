@@ -160,6 +160,80 @@ def main():
               f"banked={hrep.get('verdict', {}).get('name')} "
               f"recomputed={rv}")
 
+    # -- Attractor-basin legs (banked census + comparison) ---------------
+    # Same integrity shape (not a fork): partition recomputed from
+    # banked digests (every subset in exactly one basin, basins
+    # pairwise distinct), per-frame consistency re-derived, banked
+    # stability + characterization checked, yarnball numbers read
+    # from both sides (teacher snap vs substrate profiles).
+    BP = os.path.join(FIXDIR, "teacher_basins_H.json")
+    if not os.path.isfile(BP):
+        print("SKIP basin legs (no banked attractor census yet)")
+    else:
+        brep = json.load(open(BP))
+        brows = {r["target"]: r for r in brep.get("rows", [])}
+        bbas = brep.get("basins", {})
+        check("basin-schema",
+              len(brows) == 15
+              and all(set(r) >= {"subset", "mapstats", "frames"}
+                      for r in brows.values())
+              and all(len(r["mapstats"]) == 8 for r in brows.values())
+              and len(brep.get("baseline", {}).get("mapstats", {})) == 8,
+              "15 subset rows + baseline, 8 mapstats each")
+        full = {}
+        for t, r in brows.items():
+            full[t] = "|".join(r["mapstats"][n]["sha"][:12]
+                               for n in sorted(r["mapstats"]))
+        reclass = {}
+        for t, f in full.items():
+            reclass.setdefault(f, []).append(t)
+        check("basin-partition",
+              sorted(map(sorted, reclass.values()))
+              == sorted(map(sorted, bbas.values()))
+              and sorted(sum(bbas.values(), [])) == sorted(brows),
+              f"{len(reclass)} classes recomputed == banked "
+              f"{ {b: len(v) for b, v in bbas.items()} }")
+        check("basin-distinct",
+              len(set(full.values())) == len(bbas),
+              "basin digests pairwise distinct")
+        pf_ok = True
+        for members in bbas.values():
+            frs = sorted(brows[members[0]]["mapstats"])
+            for n in frs:
+                if len({brows[t]["mapstats"][n]["sha"]
+                        for t in members}) != 1:
+                    pf_ok = False
+        check("basin-per-frame", pf_ok,
+              "tied-overall ⟹ tied on every frame")
+        stb = brep.get("stability", {})
+        check("basin-stability",
+              set(stb) == {"subset_5_0", "subset_20_2", "subset_40_1"}
+              and all(v.get("match") for v in stb.values()),
+              "3/3 reruns land in banked basins")
+        ch = brep.get("characterization", {})
+        check("basin-characterized",
+              set(ch) == set(bbas)
+              and all(v.get("kind") == "structured-remnant"
+                      for v in ch.values()),
+              "all basins structured-remnant (none constant)")
+        # yarnball comparison, banked numbers both sides
+        hmod = json.load(open(os.path.join(
+            FIXDIR, "teacher_lesion_H.json")))
+        msc = json.load(open(os.path.join(
+            FIXDIR, "lesion_mscale64.json")))
+        jat = json.load(open(os.path.join(
+            FIXDIR, "lesion_jattn64b2.json")))
+        tw = [r["worst"] for r in msc["rows"]]
+        jw = [r["worst"] for r in jat["rows"] if r["fires"] > 0]
+        check("basin-yarnball",
+              hmod.get("verdict", {}).get("name") == "modular"
+              and hmod["linear"]["r2"] < 0.8
+              and max(tw) / min(tw) < 1.1
+              and max(jw) / min(jw) > 10,
+              f"teacher snap (R2 {hmod['linear']['r2']:.3f}) vs "
+              f"mscale-uniform ({max(tw) / min(tw):.4f}) vs "
+              f"jattn-graded ({max(jw) / min(jw):.1f}x)")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 
