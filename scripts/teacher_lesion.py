@@ -220,7 +220,12 @@ def infer_one(transformer, vae, pe, pm, rgb_path, seed, hooks=()):
 
     t0 = _t.time()
     try:
-        with torch.no_grad():
+        # eval context mirrors their validation EXACTLY (validate_steps:
+        # no_grad + autocast bf16 — without it, prepare()'s fp32-kept
+        # modules (e.g. skipped blocks.0.img_mod) hard-error on bf16
+        # inputs; autocast runs them in bf16 like production).
+        import torch.amp as _amp
+        with torch.no_grad(), _amp.autocast("cuda", dtype=torch.bfloat16):
             enc = vae.encode(x.unsqueeze(2)).latent_dist.sample()
             m = torch.tensor(vae.config.latents_mean, device=dev, dtype=dt)
             s = torch.tensor(vae.config.latents_std, device=dev, dtype=dt)
