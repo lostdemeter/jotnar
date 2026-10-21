@@ -2172,7 +2172,7 @@ full — training reads maps from disk, never runs the teacher.
 Target construction frozen (the "which lesion levels"
 question): FIVE variants, one per attractor basin (basins are
 this arc's own finding — training on basin outputs directly):
-lm-A..lm-E ← teacher maps under subset_40_0 (A), subset_10_1
+lm-A..lm-E ← teacher maps under subset_20_0 (A), subset_10_1
 (B), subset_10_0 (C), subset_30_1 (D), subset_5_0 (E), all
 banked Phase-H subsets (first-listed member per basin —
 deterministic pick, no cherry-picking), computed on the 4
