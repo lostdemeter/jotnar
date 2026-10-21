@@ -69,14 +69,15 @@ def main():
             if k not in uniq:
                 uniq.append(k)
     Fs, Ts, Vs = {}, {}, {}
-    sidx = None
+    sidx, npx0 = None, None
     t0 = time.time()
     for k in uniq:
         im, depth, valid = TH.load_pair(*k)
         f = T.multiscale_features(im, 33, 3, False)
         if sidx is None:
-            sidx = torch.arange(0, depth.size, 7)
-        if f.reshape(-1, 177).shape[0] != sidx.numel():
+            npx0 = depth.size
+            sidx = torch.arange(0, npx0, 7)
+        if f.reshape(-1, 177).shape[0] != npx0 or depth.size != npx0:
             raise RuntimeError(f"frame {k} shape varies (stop: grid math)")
         Fs[k] = torch.tensor(f.reshape(-1, 177)[sidx.numpy()], dtype=torch.float32)
         Ts[k] = torch.tensor(depth.reshape(-1)[sidx.numpy()].astype(np.float64))
