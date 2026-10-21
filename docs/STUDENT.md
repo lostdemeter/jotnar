@@ -2332,3 +2332,49 @@ Neighbors: teacher, strata, lesion-basin legs green
 Determinism: single-seed throughout (hyper precedent).
 
 ### Battery results (TBD — regenerate, retrain, compare)
+
+Replication (fresh maps via the committed `--save-maps` path +
+fresh training, same flags): 20/20 regenerated maps
+byte-identical to banked; C-rep training table BIT-IDENTICAL to
+banked C (max abs diff 0.00e+00); same 6 geo_webcam_1 cells
+beat prior bests by >0.05 (far −0.138, near −0.104,
+nonplanar −0.127, planar −0.128, smooth −0.121, tex −0.109).
+Pipeline-reproducibility proven (maps + training, not weight
+identity — weights were never compared and needn't be).
+
+```text
+arm        heldout mean  vs clean   6-cell wins  bars
+lm-clean   0.3017        —          —            0/12
+lm-A       0.3562        +0.0545    0            0/12
+lm-B       0.3605        +0.0588    0            0/12
+lm-C       0.2555        -0.0462    6            0/12
+lm-C-rep   0.2555        -0.0462    6            0/12
+lm-D       0.3583        +0.0566    0            0/12
+lm-E       0.3671        +0.0654    0            0/12
+```
+(wins = cells beating all prior bests by >0.05; all 6 on
+geo_webcam_1, all strata; webcam_0 worsens throughout.)
+Specificity verdict: **C-specific mechanism** — A/B/D/E move
+nothing (0 improved cells each, mean deltas +0.05..+0.07 =
+worse-or-flat); C alone moves those cells twice independently.
+NOT damage-general (that hypothesis needed every damage
+variant to move them; four counterexamples banked).
+Winner by bars: none (0/12 everywhere — no retrain by bars).
+Overall verdict: **directional-move, C-specific** (not winner —
+no bars cleared; not dead-lead — replicated bit-exactly with
+mechanism isolated to one basin). The frame-specificity
+(webcam_1 only) remains unexplained and stated as such —
+uniform −0.10..−0.14 across all 6 strata of one frame smells
+global rather than structural (reported, not resolved).
+Diagnosis, two parts. (1) Damage-matching separates where
+coordinates could not: 5 lesioned-target arms + control fan
+out (−0.046..+0.065) while 3 loss geometries sat within noise
+— targets carry the signal. (2) Only the most-structured
+basin helps (C: corr_ref +0.39; A/B/D/E basins: weaker
+remnants): fit the degenerate map with the most surviving
+structure, gain where structure transfers; fit flatter
+attractors, lose everywhere. Retrain-match treatment
+completed pre-claim (bit-identical table + same 6 cells).
+Executed notes: map regen 20/20 identical (~3 min GPU);
+training ~10 min/arm CPU; primaries guarded+restored
+byte-verified around every run; weights out-of-tree per tag.
