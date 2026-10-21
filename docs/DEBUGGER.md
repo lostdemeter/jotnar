@@ -494,3 +494,121 @@ Bugs caught while building (mechanisms): (1) gate `_cm`
 assumed wrapped strata-dicts; banked frames are flat (fixed).
 (2) Step loop off-by-one (6 points → 5 steps, not 6).
 Gaps named: none new — the round is self-closing by design.
+
+## Attractor census — map the basins, compare against graceful (constitution, FROZEN pre-run)
+
+Basin census over the 15 holography subsets (+ unlesioned
+reference): which subsets fall into which basins, where basin =
+identical-output equivalence class (sha256 of model-res float32
+pred bytes, concatenated over the 8 eval frames — counted
+exactly like the 8-way tie, no thresholds). Reruns bank map
+digests + per-frame stats (mean/std at model res; corr vs GT
+and vs unlesioned at native res, computed in-run) into NEW
+`teacher_basins_H.json` (banked lesion files NEVER overwritten).
+New lesion runs needed (maps weren't banked): 15 subsets +
+baseline rerun + 3 same-seed stability reruns (subsets 5_0,
+20_2, 40_1 — spread across the curve), ~19 evals ≈ 4 min GPU
+solo (known 1s/frame; cap 60 min). GPU need stated pre-run
+here: 20B 4-bit DiT + VAE (same ~14GB footprint as Phase A;
+CPU cannot serve it — no CPU path exists, stated not assumed).
+Characterize each basin (frozen rules): constant map?
+(model-res std ≈ 0, tolerance 1e-6); scene mean? (|basin mean
+− GT mean| < 5% of GT mean); else structured remnant (report
+corr-vs-unlesioned, no threshold asserted). Stability frozen
+(two legs): (i) per-frame partition consistency — subsets tied
+overall must tie on EVERY frame (else the basin is an
+averaging artifact, reported as such); (ii) rerun determinism —
+3 stability reruns land in their banked basins exactly.
+Yarnball comparison (frozen sources, stated deviation from the
+letter): NO single banked "ball degradation curve" exists on
+`research` (verified by grep: only passing "graceful" mentions
+in retrieval-store notes + an lm_dualhead comment — pasted in
+build notes; the diagonals branches hold seam-exactness proofs,
+not damage curves). The comparison therefore reads the nearest
+banked graceful-degradation evidence, named here so the gap is
+checkable: flagship listing lesion profile (debugger round —
+graded shares 255/83/47/26, every op a continuous share),
+mscale64 student lesions (uniform total-kill 3.65e5 — brittle),
+jattn64b2 lesions (70× differentiated). Numbers cited, never
+adjectives. Dedup/search claims untouched (out of scope).
+Winner rule: N/A (characterization — completeness = every
+banked subset in exactly one basin + stability green; empty
+basins reported, not hidden).
+Ruling: hooks only (`--mapstats` additive flag on the existing
+harness — same tool); no training/emitter/opcode/assembly/deps;
+weights read-only out-of-tree (checksums discipline as
+established — sha re-verified post-run, any drift voids);
+production weights untouched (teacher AND Qwen-7B never
+co-loaded); no downloads; `research` read-only via git show
+(never checkout/merge/push — verified above without touching).
+Gate: extend tests/test_teacher_lesion.py in place
+(basin-census legs: partition integrity — every subset in
+exactly one basin, basins pairwise distinct; stability legs;
+yarnball-comparison legs reading banked numbers from both
+sides). Neighbors: lesion + anatomy + teacher gates green
+(read-only reuse).
+Spec: this section + basin catalog with characterization +
+graceful-vs-snap comparison table + what the architecture
+implies for distillation (stated as implication, not plan).
+
+### Attractor results (TBD — reruns land here)
+
+### Attractor results (1 baseline rerun + 15 subset reruns + 3 stability reruns, ~7 min GPU solo)
+
+Basin partition (exact concatenated-8-frame digests — 5 classes,
+every subset in exactly one; per-frame consistency holds: tied
+overall ⟹ tied on every frame):
+
+```text
+basin  n  members                                            AbsRel
+A      8  5_1 5_2 20_0 20_1 30_0 40_0 40_1 40_2               0.6902
+B      3  10_1 10_2 30_2                                     0.7458
+C      2  10_0 20_2                                           0.9813
+D      1  30_1                                               0.7103
+E      1  5_0                                                0.7241
+```
+
+Characterization (frozen rules + one open correction): NO basin
+is constant (model-res std 0.06–0.31, all ≫ 1e-6 floor) — all
+five are structured remnants (corr vs unlesioned +0.23–0.39,
+corr vs GT +0.15–0.30; basin C most remnant, consistent with
+block-57 dominance). Correction recorded openly: the scene-mean
+rule as frozen (<5% cross-unit) cannot fire — basin means live
+in model units (+0.25–0.69), GT means in meters (3.5–7.5) — a
+design bug in my rule, not in the data; characterization rests
+on the constant rule (fired negative everywhere) plus remnant
+corrs. Stability green: 3/3 same-seed reruns bit-identical
+digests; baseline rerun AbsRel identical to holography
+baseline (determinism corroborated a third time).
+Graceful-vs-snap comparison (banked numbers, both sides):
+teacher subsets snap to 5 discrete attractors (non-graded
+curve R² 0.186, cliff ×2.39) | flagship listing lesions grade
+continuously (255/83/47/26 — every op a share) | mscale64
+lesions uniform total-kill (spread 1.0000 — brittle) |
+jattn64b2 lesions differentiated 71.2× (graded distribution).
+The teacher snaps like mscale, not like the listing: discrete
+degenerate states, not continuous shares.
+Implication for distillation (stated as implication, not
+plan): a student fitting these maps with smooth MLPs chases a
+target landscape that is itself discontinuous under damage —
+the pin may live in fitting attractor-jumps with graded
+machinery. What would test it (not run): lesion-matched
+training (train with random blocks zeroed and see if the pin
+moves) — a new round with its own constitution, named here
+only.
+Gate `tests/test_teacher_lesion.py` extended in place (CPU,
+0.08s): schema (15 rows + baseline, 8 mapstats each),
+partition recomputed == banked {8,3,2,1,1}, pairwise
+distinct, per-frame consistency, 3/3 stability, all
+structured-remnant, yarnball numbers both sides. Neighbors
+green: lesion (Phase-A + holography legs), anatomy, teacher —
+read-only reuse, nothing moves underneath.
+Bugs caught while building (mechanisms): (1) corr_ref
+computed native-vs-model-res (786432 vs 442368 broadcast
+crash on the first frame) — corr_ref lives at model res by
+construction, corr_gt at native; shapes now asserted by use.
+(2) Scene-mean characterization rule frozen cross-unit
+(model outputs vs meters) — cannot fire as written; recorded
+above instead of silently dropped. Gaps named: none new —
+self-closing round; sub-block basins and VAE/family basins
+unmapped (priced, not run).
