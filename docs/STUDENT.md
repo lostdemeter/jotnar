@@ -2078,3 +2078,19 @@ Implementation: new `scripts/train_temporal_student.py`
 train_student.py itself UNTOUCHED (the control must be pristine).
 
 ### Battery results (TBD — runs land here)
+
+### Phase-28 correction (pre-run, nothing executed yet — Phase-19 precedent)
+
+The frozen control clause ("UNMODIFIED train_student.py ... fresh
+run") is distribution-confounded as written: train_student.py loads
+FIXTURES, so that control would compare temporal-Hypersim against
+single-frame-fixtures — parallax and distribution moving together,
+uninterpretable EITHER way (a win OR a loss proves nothing about
+parallax). Corrected control (intent preserved, mechanism fixed):
+single-frame mode INSIDE the new script — same Hypersim scenes/
+splits/seed/schedule/steps, same MLP math (177-d input, W64/d2),
+same aligned-MAE doctrine, reference frames only. The ONLY delta
+between arms is the second frame's features. Banked mscale64
+(fixtures) rides as secondary context (same recipe, different
+data — reported, never ruling). Gate battery key holds both arms
+(configs temp-pair + temp-single) as frozen.
