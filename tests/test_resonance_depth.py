@@ -11,6 +11,8 @@ Legs:
   4032 tokens, 8.1M pairs) + lift vs the frozen 0.10 bar, reported
   against it, never asserted beyond it (verdict must read
   dead-for-depth with all lifts < bar).
+- discord legs (same shape, separate bank): schema, lifts vs bar,
+  verdict dead-pair-complete, null rarity, V1 structural zero.
 Usage: python3 tests/test_resonance_depth.py
 """
 import json
@@ -24,6 +26,7 @@ sys.path.insert(0, ROOT)
 FAIL = []
 SIBLING = "/home/balrog/Documents/OpenCode/resonant_array"
 BANK = os.path.join(ROOT, "samples", "marigold", "resonance_depth.json")
+DBANK = os.path.join(ROOT, "samples", "marigold", "resonance_discord.json")
 BAR = 0.10
 
 
@@ -105,6 +108,33 @@ def main():
           all(0.30 < v["rate_null"] < 0.40 for v in res.values()),
           "empirical nulls ~0.35 (independence formula void — heads "
           "share the key; seeded null rules)")
+
+    # -- discord legs (complement test, separate bank, same shape) ---------
+    assert os.path.isfile(DBANK), "banked discord missing — run --discord"
+    drep = json.load(open(DBANK))
+    dres = drep.get("results", {})
+    check("discord-schema",
+          set(dres) == {"V1_luma", "V2_lumapos", "V3_rgbpack"}
+          and all(set(v) >= {"n_rel", "n_rel_same", "rate_same",
+                             "rate_null", "lift", "pass"}
+                  for v in dres.values())
+          and drep.get("bar") == BAR
+          and "discord" in drep.get("mode", ""),
+          "3 frozen variants + counts + bar intact")
+    dlifts = {k: v["lift"] for k, v in dres.items()}
+    check("discord-lifts",
+          all(v < BAR for v in dlifts.values()),
+          f"lifts { {k: round(v, 4) for k, v in dlifts.items()} } "
+          f"all < bar {BAR}")
+    check("discord-verdict", drep.get("verdict") == "dead-pair-complete",
+          "banked verdict matches frozen rule")
+    check("discord-null-rare",
+          all(v["rate_null"] < 0.01 for v in dres.values()),
+          "anti-phase rare under null too (seeded shuffle)")
+    check("discord-v1-zero",
+          dres["V1_luma"]["n_rel"] == 0,
+          "V1: zero anti-phase pairs in 8.1M (luma keys cluster — "
+          "never far in all 4 heads; structural, deterministic)")
 
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)

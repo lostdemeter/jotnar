@@ -6,12 +6,16 @@ samples/marigold/resonance_depth.json (the gate reads it; this script
 does the numpy, the test only verifies). Sibling
 resonant_array imported read-only (dont_write_bytecode: not even
 __pycache__ lands in their tree). See docs/RESONANCE.md (frozen).
-Usage: python3 scripts/analyze_resonance_depth.py
+Usage: python3 scripts/analyze_resonance_depth.py [--discord]
+  --discord runs the complement test (anti-phase pairs: min_h d_h >
+  1-tau, far in EVERY head) and banks resonance_discord.json.
+  Default banks resonance_depth.json. See docs/RESONANCE.md (frozen).
 """
 import sys
 
 sys.dont_write_bytecode = True
 
+import argparse
 import glob
 import json
 import os
@@ -22,7 +26,6 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 sys.path.insert(0, "/home/balrog/Documents/OpenCode/resonant_array")
 
 FIXDIR = os.path.join(ROOT, "samples", "marigold")
-OUTP = os.path.join(FIXDIR, "resonance_depth.json")
 
 CELL = 32
 EPS = 0.1
@@ -45,6 +48,12 @@ def load_pair(name):
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--discord", action="store_true",
+                    help="complement test: anti-phase (far in every head)")
+    ns = ap.parse_args()
+    outp = os.path.join(FIXDIR, "resonance_discord.json" if ns.discord
+                        else "resonance_depth.json")
     import resonant_array as RA
     assert RA.GAMMAS[:4] == [14.134725, 21.02204, 25.010858, 30.424876], \
         "sibling GAMMAS drifted — stop, do not silently re-derive"
@@ -109,15 +118,18 @@ def main():
     results = {}
     for vname, key in keys.items():
         dmin = dmin_all(phases(key))
-        res = dmin < TAU
-        rate_same = float(res[same].mean())
-        rate_same_cross = float(res[same & cross].mean())
+        rel = dmin > (1 - TAU) if ns.discord else dmin < TAU
+        rate_same = float(rel[same].mean())
+        rate_same_cross = float(rel[same & cross].mean())
         rho = spearman(dmin, dlt)
         # null: shuffled keys (seeded), same pipeline
         dnull = dmin_all(phases(rng.permutation(key)))
-        rate_null = float((dnull < TAU)[same].mean())
+        rel_null = dnull > (1 - TAU) if ns.discord else dnull < TAU
+        rate_null = float(rel_null[same].mean())
         lift = rate_same - rate_null
         results[vname] = {"n_tokens": n,
+                          "n_rel": int(rel.sum()),
+                          "n_rel_same": int((rel & same).sum()),
                           "rate_same": rate_same,
                           "rate_same_cross": rate_same_cross,
                           "rate_null": rate_null,
@@ -126,19 +138,24 @@ def main():
                           "pass": bool(lift >= BAR)}
         print(f"{vname}: same={rate_same:.4f} cross={rate_same_cross:.4f} "
               f"null={rate_null:.4f} lift={lift:+.4f} rho={rho:+.4f} "
+              f"n_rel={int(rel.sum())} "
               f"{'PASS' if lift >= BAR else 'fail'}", flush=True)
 
-    rep = {"variants": {k: "frozen docs/RESONANCE.md" for k in keys},
+    dead_word = "dead-pair-complete" if ns.discord else "dead-for-depth"
+    verdict = ("signal-with-nomination"
+               if any(r["pass"] for r in results.values()) else dead_word)
+    rep = {"mode": "discord (anti-phase, far in every head)"
+           if ns.discord else "resonance (near-phase, close in any head)",
+           "variants": {k: "frozen docs/RESONANCE.md" for k in keys},
            "key_spec": {"V1_luma": "round(mean_luma*1000)",
                         "V2_lumapos": "luma_q*4096+cell_index",
                         "V3_rgbpack": "R*65536+G*256+B of quantized mean"},
            "frames": REAL, "cell": CELL, "eps": EPS, "tau": TAU,
            "heads": HEADS, "null": "seeded shuffle (seed 0)", "bar": BAR,
            "results": results,
-           "verdict": ("signal" if any(r["pass"] for r in results.values())
-                       else "dead-for-depth")}
-    json.dump(rep, open(OUTP, "w"), indent=1)
-    print(f"wrote {OUTP} verdict={rep['verdict']}", flush=True)
+           "verdict": verdict}
+    json.dump(rep, open(outp, "w"), indent=1)
+    print(f"wrote {outp} verdict={rep['verdict']}", flush=True)
 
 
 if __name__ == "__main__":
