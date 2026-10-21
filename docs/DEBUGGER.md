@@ -42,7 +42,43 @@ Deltas in float64 (maxabs for the worst pixel, mean for the mass).
 Zero-op control (empty overrides) must read all-zero deltas —
 the tripwire that the rig measures the lesion, not itself.
 
-## Example table (TBD — flagship run lands here)
+## Example table (flagship 24x32 synthetic rgb — `lesion_table()`)
+
+```text
+op_idx op           outs            worst_maxabs sink:maxabs,mean...
+     0 SRGB_DECODE  LIN             255          OUT:255,128.9
+     1 LUMA         Y               83           OUT:83,36.36
+     2 SQRT         A               83           OUT:83,36.36
+     3 SPLAT_BLUR   AS,COH          47           OUT:47,23.05
+     4 SUB          D               26           OUT:26,11.06
+     5 BETA_V5      BEFF            26           OUT:26,11.06
+     6 MUL          BD              26           OUT:26,11.06
+     7 ADD          AE              83           OUT:83,36.36
+     8 SQUARE       YENH            83           OUT:83,36.36
+     9 GAIN         G               255          OUT:255,128.9
+    10 SRGB_ENCODE  OUT             255          OUT:255,128.9
+control: OUT maxabs 0.0 mean 0.0 (zero-op tripwire)
+self-diff: identical (first None)
+```
+
+Read: the output owes 255 to the format edges (decode/encode,
+gain), 83 to the luma trunk, 47 to the splat field, 26 to the
+detail chain — every op's causal share, measured not asserted.
+Gate `tests/test_debugger.py` (CPU, ~1s): step-values byte-equal
+to direct `run()` at every stop, 11/11 lesionable with finite
+positive deltas, control exactly zero, self-diff identical,
+perturbed-IN first-divergence at op 0, session-twice identical
+tables, 7 fail-loud legs. Neighbors green: `test_asm.py`,
+`test_census.py` (shared read paths, untouched).
+Bugs caught while building (mechanisms): (1) hook-env snapshots
+miss IN streams on paused runs (inputs live in run()'s internal
+feeds, stranded by the pause exception) — pre-seed env from the
+payload rule, shadowed streams still read latest via write
+order. (2) Test compared intermediate-stop watches against
+FINAL ref values — watches must expect MISSING for unproduced
+streams (prefix-correct expectation, sources from census).
+Gap named: O(n²) stepping (fresh bounded run per step) + no
+served/CUDA stepping — fine for small lattice listings, stated.
 
 ## Teacher-side hooks (named, not built)
 
