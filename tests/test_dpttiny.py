@@ -411,6 +411,61 @@ def main():
     check("dpt-demo-privacy", repo_leak == [], "no webcam frames in-repo")
     shutil.rmtree(dtmp, ignore_errors=True)
 
+    # -- state-of-the-union strip integrity (panels, labels, privacy) -----
+    # Model legs SKIP clean without their stacks (proof-run pastes the
+    # real thing); layout/labels/privacy always execute (machineless).
+    import demo_sou_strip as SOU
+    check("sou-outdir", SOU.OUTDIR.startswith("/tmp"),
+          f"default out-of-tree: {SOU.OUTDIR}")
+    check("sou-labels",
+          all(v in SOU.LABELS.values() for v in
+              ("RGB input (not depth)",
+               "THEIRS Marigold-V2 depth = REFERENCE (not GT, not a grade)",
+               "basin-C lesion-matched = DIRECTIONAL-MOVE, 0 BARS (6 cells, 1 frame)",
+               "clean control = BASELINE (mscale64 recipe, 0 bars)")),
+          "4 frozen labels with verdict status")
+    import numpy as _np2
+    synth = (_np2.arange(96 * 128 * 3).reshape(96, 128, 3) % 256
+             ).astype(_np2.float64) / 255.0
+    panels = [(SOU.viz_panel(synth[:, :, 0] * (i + 1),
+                               [n, SOU.LABELS[k]]),
+                 [n, SOU.LABELS[k]])
+              for i, (n, k) in enumerate(
+                  [("rgb", "rgb"), ("THEIRS", "teacher"),
+                   ("basin-C", "basinc"), ("control", "control")])]
+    strip = SOU.render_strip(panels)
+    check("sou-panels-synthetic",
+          strip.size == (panels[0][0].size[0], 4 * (panels[0][0].size[1] + 22))
+          and all(p.size == panels[0][0].size for p, _ in panels),
+          f"4 panels render, strip {strip.size}")
+    pool = sorted(glob.glob(
+        "/home/balrog/Documents/OpenCode/dav2_revisited/dav2_reverse/captures/*.png"))
+    if not pool:
+        print("SKIP sou-capture (no stills pool on this box)")
+    else:
+        stmp = "/tmp/sou_demo_leg"
+        shutil.rmtree(stmp, ignore_errors=True)
+        spaths, sorigin = DEMO.capture("stills", 1, stmp)
+        check("sou-capture",
+              len(spaths) == 1 and sorigin.startswith("stills"),
+              f"stills fallback: {sorigin}")
+        shutil.rmtree(stmp, ignore_errors=True)
+    wts = [os.path.expanduser(f"~/student_runs/{t}/weights.pt")
+           for t in ("lm-C", "lm-clean")]
+    archs = [os.path.join(ROOT, "samples", "marigold",
+                          f"student_run_{t}.json") for t in ("lm-C", "lm-clean")]
+    if not (all(os.path.isfile(w) for w in wts)
+            and all(os.path.isfile(a) for a in archs)):
+        print("SKIP sou-student (needs banked student weights)")
+    else:
+        d0 = SOU.student_panel(synth, "lm-clean", archs[1])
+        check("sou-student",
+              d0.shape == (672, 1024) and bool(np.isfinite(d0).all()),
+              "control student renders finite (train grid)")
+    print("SKIP sou-teacher (needs GPU + sibling stack; proof-run pastes it)")
+    check("sou-privacy", SOU.OUTDIR.startswith("/tmp")
+          and not SOU.OUTDIR.startswith(ROOT), "strip out-of-tree default")
+
     # -- analytic-training legs (banked metrics integrity + verdict) -----
     # No retraining here: weights live out-of-tree, metrics banked.
     tr_path = os.path.join(ROOT, "samples", "marigold", "dpt_run_dpt-gt.json")
