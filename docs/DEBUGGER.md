@@ -326,3 +326,20 @@ deltas are computed WITHIN one harness (lesioned vs unlesioned,
 same RNG handling), so parity only guards systematic offset.
 Frozen bar: custom-unlesioned vs sibling-CLI .npy ≥ 40dB on 2
 frames, else stop.
+
+### Phase-A correction (pre-lesion: baseline ran, zero lesions run)
+
+Judge fixed with visualization proof: lstsq-align + AbsRel in
+METRIC space scores ~1.0 on a near-perfect map (pasted trio:
+pred structure matches GT wall-for-wall) because the
+relative→metric relation isn't affine (disparity-like
+compression) — the judge was broken, not the teacher. Fixed
+judge mirrors THEIR protocol exactly: GT percentile-affine
+normalized per image (p2/p98 → [-1,1] on valid pixels, their
+NormalizeDepthPercentileAffine), PLAIN AbsRel per stratum
+(their metric has no alignment — `_abs_relative_difference`),
+masks & valid. Old baseline numbers discarded (same run,
+re-judged? NO — re-run baseline under the fixed judge; nothing
+downstream exists yet, so nothing is contaminated). Removal
+criterion unchanged (5% relative — same family, healthier
+scale). Everything else in the constitution stands.
