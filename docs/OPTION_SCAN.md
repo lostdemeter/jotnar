@@ -66,4 +66,32 @@ carry a discount, stated.
    proposal on record — cannot score). Ranked last with this
    reason stated.
 
-## Ranked backlog (TBD — applied below)
+## Ranked backlog (applied from the frozen rule above)
+
+| rank | candidate | status | information/cost | falsifier |
+|------|-----------|--------|------------------|-----------|
+| 1 | temporal-video | unrun | new cue (parallax) / tiny | pairs-trained vs single-frame cells under same bars; null delta kills parallax-as-savior |
+| 2 | textured-real | run-with-signal (remainder unrun) | sole positive cue → real distribution / small | mscale-textured on Hypersim texture vs fixture-textured; empty = texture was synthetic-only |
+| 3 | ordinal-currency | unrun | mechanism attack, post-26-discounted / tiniest | rank-loss vs value-MAE directionals (>0.05 rule); pin-alike = coordinates+currency innocent |
+| 4 | btrack-adaptivity | priced-unbuilt | capability w/ measured demand, signal unknown / S+2M | needs own constitution post-landing; reopens empirically per its verdict |
+| 5 | faithful-ladder-hypersim | partial (B2 empty ×2) | weak (rung-independence precedent) / medium | B4/B6 cells ≡ B2 = independence transfers (close it); divergence reopens |
+| 6 | scale-10M | unswept | scale alone (denied) / prohibitive | unfalsifiable at reasonable cost — ranked, not pursued |
+| 7 | a5a6-perf | priced-unbuilt | none for students / M+L | A6 falsifier already holds (single-device fits); A5 perf-only |
+| 8 | arrangement-battery | never-run verified | none constructible (no proposal) / N/A | unscored until a frozen proposal exists — the never-run verification IS the finding |
+
+Rank notes (mechanical applications of the rule, stated not
+smuggled): temporal > textured because a new cue class outranks
+extending the known one; textured > ordinal because the SOLE
+positive signal outranks a mechanism bet the Phase-26 dent
+weakened (scale-visibility removed blowup yet re-pinned —
+order-only goes further but lives in the same exhausted
+family); ordinal > btrack because tiniest cost beats S+2M
+machinery-first; ladder > scale because a 45-min GPU question
+beats an unfalsifiable one; a5a6/perf > arrangement only in
+that priced cards exist to score.
+
+What runs first on electricity: **temporal-video student**
+(mscale-class, Hypersim consecutive-frame pairs, same bars +
+single-frame control, CPU-first per Phase-27 precedent).
+Runner-up (independent, parallelizable): textured-real
+(mscale-textured on Hypersim textured scenes).
