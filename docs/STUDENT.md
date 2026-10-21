@@ -1915,3 +1915,94 @@ was affected (battery key and gate legs read the files directly
 and verify consistent); table corrected cell-by-cell against
 md5-pinned banked data. Mechanism conclusions never touched
 (telemetry analysis was always on the new-run file).
+
+## Phase 27 — loss coordinates, same student different downhill (constitution, FROZEN pre-run)
+
+Question: does the pin live in the loss's coordinate system? Same
+student, three downhill geometries; everything else frozen.
+Coordinates frozen (exact forms, ≤3 — the spaces ARE the round):
+- C1 `value`: aligned-MAE on the stride-7 sample (lstsq no-grad +
+  MAE) — current practice, the baseline. Command mirrors banked
+  mscale64 flags exactly.
+- C2 `log`: shifted-log targets zt=log(t−lo+1), lo=train-split min
+  (banked; signed teacher depths make plain log unimplementable —
+  Phase-19 correction precedent), net predicts in z-space,
+  aligned-MAE in z-space. Eval inverts (exp−1+lo) then harness
+  align_mae (dit precedent). One variable: the space (both sides
+  live in it).
+- C3 `quantum`: U8-quantum MAE — q=(train max−min)/255, round BOTH
+  sides to the q grid, aligned-MAE. Names what it drops (sub-U8
+  detail — the serving-visibility floor); full-precision rule
+  honored (declared variant, never silent default).
+No-term-dropping rule honored: the recipe is single-term MAE in
+all three (perc=sink=0, banked present-off in every config —
+Navier-Stokes-f discipline: no floor/tail/aux exists to drop).
+Eval frozen for all coordinates (linear align_mae per stratum —
+same judge, different downhill).
+Architecture frozen: mscale64-EXACT (W64, multi, field 33,
+densewin 3, depth 2, patch 1 — cheapest that trains; full
+177-dim front end, no toy substitute). Data/splits/schedule/seed
+frozen to banked mscale64 (4 train + 2 heldout fixtures, const
+lr 0.02, 2000 steps, seed 7). Only the loss coordinates vary —
+anything else moving confounds the question.
+Device stated pre-run with reason: CPU. Pace probe (50 steps +
+full eval, scratch tag, primary guarded+restored): 33s wall →
+~14 min per 2000-step coordinate, ~45 min battery. GPU need is
+therefore NOT established (rule: justified, not assumed) — CPU
+keeps the GPU box free; wall is background-cheap. Qwen-7B never
+co-loaded (nothing here needs it).
+Winner: directional held-out moves vs the C1 value baseline
+(same >0.05 frozen threshold, Phase-19 precedent); harness bars
+(0.09/0.09/0.09/0.08/0.07/0.09) ride as secondary context.
+Empty (all coordinates pin alike) is complete and means
+coordinates are innocent. Retrain-match before ANY claim.
+Banking: per-coordinate `student_run_lc-<coord>.json` (primaries
+untouched — fixed-name outputs guarded+restored around runs) +
+`losscoord` battery key (configs lc-value/lc-log/lc-quantum,
+reference lc-value, cells mirror hyper shape); weights
+out-of-tree per tag; production weights untouched.
+Gate: `tests/test_strata_marigold.py` extended in place
+(losscoord key: schema + winner/bars verdicts + term-inventory
+legs — loss_space ∈ {value,log,quantum} + align + perc/sink==0,
+programmatic). Neighbors: teacher + strata legs green (nothing
+moves underneath).
+Implementation: `--loss-space` flag + transform branch in
+`scripts/train_student.py` loss + eval-invert (loss-geometry
+only; the round's declared surface).
+
+### Battery results (3 runs, 2000 steps each, ~9 min/coord CPU wall)
+
+All rc=0, finite everywhere. Held-out align-MAE (linear judge for
+all three) vs harness bars — 0/12 under on every coordinate:
+
+```text
+coord    split    far      near     nonplanar planar   smooth   tex
+value    train    0.3432   0.3091   0.3255    0.3400   0.3469   0.2952
+value    heldout  0.3602   0.2367   0.3682    0.2472   0.2254   0.3723
+log      train    0.5325   0.5065   0.4977    0.5421   0.5859   0.4552
+log      heldout  0.3542   0.3081   0.3837    0.3088   0.2788   0.3751
+quantum  train    0.3097   0.3002   0.3084    0.3157   0.3109   0.2882
+quantum  heldout  0.3693   0.2607   0.3792    0.2717   0.2524   0.3776
+```
+Directionals vs value (heldout mean delta): log +0.0331 (0
+improved / 3 worsened of 12), quantum +0.0168 (0/0). Winner:
+none — no coordinate clears bars or the >0.05 directional bar;
+no retrain-match (nothing to claim; single-seed).
+Verdict: **coordinates-innocent**. All three pin alike (heldout
+means 0.30/0.33/0.31 — within noise; bests 0.18–0.33 across the
+board). Readings: (1) log-space trains a WORSE linear model
+(train 0.45–0.59 vs 0.29–0.34) yet lands the same heldout —
+compression mildly regularizes, never wins. (2) quantum ==
+value to 2 decimals on train (0.29–0.32 vs 0.29–0.34) and
+heldout (delta +0.017, zero cells either way) — sub-U8 detail
+is inert; the pin does not live below the visibility floor.
+(3) The pin reproduces in three geometries with the same shape
+(train fits partway ~0.3, heldout flat ~0.3, far/tex worst) —
+downhill geometry moves nothing past the wall.
+Executed notes: C2's first attempt died in EVAL (unclipped exp
+overflowed → inf → lstsq SVD no-convergence; training itself
+finished 1999 iters) — fixed with dit-precedented z-clip on the
+log invert (eval-only; train path untouched), rerun rc=0. The
+overflow is itself a datum (z-preds drift unbounded — aligned
+z-MAE doesn't pin scale either). CPU device per frozen rule
+(measured 33s/50-step probe; GPU never justified, never used).

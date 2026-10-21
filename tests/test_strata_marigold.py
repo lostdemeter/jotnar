@@ -715,6 +715,58 @@ def main():
                   f"{ups} improved / {dns} worsened / {n} cells", flush=True)
         check("ablation-reported", True, ab.get("verdict", "")[:80])
 
+    # -- Phase-27 loss coordinates (same student, different downhill) -----
+    # Frozen 3 coordinate systems (see docs/STUDENT.md Phase 27); the gate
+    # asserts table integrity + term inventory (programmatic: every loss
+    # term present-or-gated-absent) + the winner-consistency tripwire
+    # (winner None ⟺ no coordinate clears bars or directionals; a
+    # qualifying coordinate with winner None fails loud demanding the
+    # retrain-match claim). Directionals print (reported, like ablation).
+    lc = ab.get("losscoord", {})
+    lcfrozen = ["lc-value", "lc-log", "lc-quantum"]
+    check("losscoord-configs", lc.get("configs") == lcfrozen
+          and lc.get("reference") == "lc-value", lc.get("configs"))
+    lccells = lc.get("cells", {})
+    lccomplete = all(
+        t in lccells and len(lccells[t].get("frames", {})) == 6 and all(
+            sorted(fr.get("strata", {})) == STRATA
+            and all(np.isfinite(v) and v >= 0
+                    for v in fr["strata"].values())
+            for fr in lccells[t]["frames"].values())
+        for t in lcfrozen)
+    check("losscoord-complete", bool(lccomplete), "3 coords x 6x6 finite")
+    flags = {t: lccells.get(t, {}).get("flags", {}) for t in lcfrozen}
+    check("losscoord-terms",
+          sorted(f.get("loss_space") for f in flags.values())
+          == ["log", "quantum", "value"]
+          and all(f.get("perc") == 0.0 and f.get("sink") == 0.0
+                  for f in flags.values())
+          and abs(flags["lc-log"].get("loss_lo", 0) - -1.0) < 1e-9
+          and flags["lc-quantum"].get("loss_q", 0) > 0,
+          "3 spaces inventoried, aux absent (perc=sink=0), lo/q banked")
+    lccounts, lcdelta = {}, {}
+    for t in lcfrozen:
+        n = 0
+        for _n, fr in lccells[t]["frames"].items():
+            if fr.get("split") != "heldout":
+                continue
+            n += sum(1 for k in STRATA if fr["strata"][k] <= BARS[k])
+        lccounts[t] = n
+        ds = [lccells[t]["frames"][_n]["strata"][k]
+              - lccells["lc-value"]["frames"][_n]["strata"][k]
+              for _n, fr in lccells[t]["frames"].items()
+              if fr.get("split") == "heldout" for k in STRATA]
+        lcdelta[t] = sum(ds) / len(ds)
+    for t in ("lc-log", "lc-quantum"):
+        print(f"losscoord {t} vs lc-value (held-out mean delta): "
+              f"{lcdelta[t]:+.4f}", flush=True)
+    check("losscoord-winner-none",
+          all(v == 0 for v in lccounts.values())
+          and all(lcdelta[t] >= -0.05 for t in ("lc-log", "lc-quantum"))
+          and lc.get("winner") is None,
+          f"under-bars {lccounts}, deltas "
+          f"{ {t: round(lcdelta[t], 4) for t in lcfrozen} }")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

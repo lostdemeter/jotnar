@@ -1,0 +1,102 @@
+{
+ "tag": "lc-quantum",
+ "width": 64,
+ "steps": 2000,
+ "lr": 0.02,
+ "schedule": "const",
+ "seed": 7,
+ "patch": 1,
+ "multi": true,
+ "field": 33,
+ "densewin": 3,
+ "depth": 2,
+ "globsum": false,
+ "loss_space": "quantum",
+ "loss_lo": -1.0,
+ "loss_q": 0.00784313725490196,
+ "perc": 0.0,
+ "sink": 0.0,
+ "aux_every": 50,
+ "dinov2": null,
+ "train": [
+  "church",
+  "dogs",
+  "squirrel",
+  "train"
+ ],
+ "heldout": [
+  "geo_webcam_0_combined",
+  "geo_webcam_1_combined"
+ ],
+ "torch": "2.14.1+cu130",
+ "device": "cpu",
+ "weights": "/home/balrog/student_runs/lc-quantum/weights.pt",
+ "frames": {
+  "church": {
+   "split": "train",
+   "strata": {
+    "far": 0.4433419221804202,
+    "near": 0.4504133005966882,
+    "nonplanar": 0.4531299685723796,
+    "planar": 0.4845794123753196,
+    "smooth": 0.4551806683513086,
+    "tex": 0.43304831410563394
+   }
+  },
+  "dogs": {
+   "split": "train",
+   "strata": {
+    "far": 0.2965685331051511,
+    "near": 0.25032034202058245,
+    "nonplanar": 0.28079279356868064,
+    "planar": 0.2669657526768254,
+    "smooth": 0.29227508628474624,
+    "tex": 0.2579901803658148
+   }
+  },
+  "squirrel": {
+   "split": "train",
+   "strata": {
+    "far": 0.1923369830205848,
+    "near": 0.1877015715779406,
+    "nonplanar": 0.20780145907326042,
+    "planar": 0.16455105043182888,
+    "smooth": 0.18689589988762412,
+    "tex": 0.1597978382302401
+   }
+  },
+  "train": {
+   "split": "train",
+   "strata": {
+    "far": 0.3065112676360331,
+    "near": 0.3124295019903462,
+    "nonplanar": 0.29204501992606585,
+    "planar": 0.3468162431550374,
+    "smooth": 0.30944514635878034,
+    "tex": 0.30213739451161464
+   }
+  },
+  "geo_webcam_0_combined": {
+   "split": "heldout",
+   "strata": {
+    "far": 0.2650201510290106,
+    "near": 0.25435137229068805,
+    "nonplanar": 0.3276110363469825,
+    "planar": 0.21170503734643198,
+    "smooth": 0.18827557511033446,
+    "tex": 0.33315369753086255
+   }
+  },
+  "geo_webcam_1_combined": {
+   "split": "heldout",
+   "strata": {
+    "far": 0.4735364071423306,
+    "near": 0.26695409523809993,
+    "nonplanar": 0.43086626622989677,
+    "planar": 0.3317084448323123,
+    "smooth": 0.31658774797380806,
+    "tex": 0.4220314613435497
+   }
+  }
+ }
+}
