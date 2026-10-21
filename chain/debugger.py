@@ -282,3 +282,120 @@ def format_lesion_table(rows):
         L.append(f"{r['op_idx']:>6d} {r['op']:<12} {r['line']:<5} "
                  f"{','.join(r['outs']):<15} {r['worst']:<12.4g} {det}")
     return L
+
+
+# -- torch lesions ----------------------------------------------------
+# Same semantics as listing lesions: zero module outputs (forward
+# hooks, zeros_like — shapes/dtypes preserved, only values change),
+# rerun, diff final outputs vs the reference run. CPU, no_grad,
+# eval mode throughout: no training, no weight writes, ever.
+
+
+def _torch_zeros(out):
+    import torch
+    if isinstance(out, tuple):
+        return tuple(_torch_zeros(x) for x in out)
+    if isinstance(out, torch.Tensor):
+        return torch.zeros_like(out)
+    raise DebuggerError(f"cannot zero exotic module output {type(out)}")
+
+
+class TorchSession:
+    """Lesions over a fixed torch net + reference run().
+
+    net: torch.nn.Module (set to eval here; weights never written).
+    run: () -> {name: Tensor}, deterministic, side-effect free.
+    leaves: lesionable module paths (default: all LEAF modules =
+    no children, root excluded).
+    """
+
+    def __init__(self, net, run, leaves=None):
+        import torch
+        self.net = net
+        self.net.eval()
+        self._run = run
+        if leaves is None:
+            leaves = sorted(n for n, m in net.named_modules()
+                            if n and not list(m.children()))
+        self.leaves = list(leaves)
+        for p in self.leaves:
+            try:
+                self.net.get_submodule(p)
+            except AttributeError:
+                raise DebuggerError(f"bad lesion module {p!r}")
+        self._ref = None
+
+    def reference(self):
+        import torch
+        if self._ref is None:
+            with torch.no_grad():
+                self._ref = {k: v.detach().clone() for k, v in
+                             self._run().items()}
+        return self._ref
+
+    def lesion(self, path):
+        """Zero the module's outputs (hook) and diff final outputs.
+        Rows carry the hook fire count -- zero fires means the module
+        was never called on this path (bypassed/dead weight), NOT a
+        measured zero: the overrides-analogue tripwire (a lesion that
+        never bites is green wallpaper, refused as a finding)."""
+        import numpy as np
+        import torch
+        if path not in self.leaves:
+            raise DebuggerError(
+                f"bad lesion module {path!r} (want one of {self.leaves})")
+        ref = self.reference()
+        mod = self.net.get_submodule(path)
+        fires = [0]
+
+        def _hook(m, i, o):
+            fires[0] += 1
+            return _torch_zeros(o)
+
+        handle = mod.register_forward_hook(_hook)
+        try:
+            with torch.no_grad():
+                got = {k: v.detach().clone() for k, v in
+                       self._run().items()}
+        finally:
+            handle.remove()
+        deltas = {}
+        for s, rv in ref.items():
+            d = (got[s].double().reshape(-1)
+                 - rv.double().reshape(-1)).numpy()
+            deltas[s] = {"maxabs": float(np.abs(d).max()),
+                         "mean": float(np.abs(d).mean())}
+        worst = max(v["maxabs"] for v in deltas.values())
+        return {"module": path, "fires": fires[0], "deltas": deltas,
+                "worst": worst}
+
+    def control(self):
+        """Zero-module control: no hooks must read exactly zero."""
+        import numpy as np
+        import torch
+        ref = self.reference()
+        with torch.no_grad():
+            got = {k: v.detach().clone() for k, v in
+                   self._run().items()}
+        deltas = {}
+        for s, rv in ref.items():
+            d = (got[s].double().reshape(-1)
+                 - rv.double().reshape(-1)).numpy()
+            deltas[s] = {"maxabs": float(np.abs(d).max()),
+                         "mean": float(np.abs(d).mean())}
+        return {"module": None, "deltas": deltas}
+
+    def lesion_table(self):
+        """One lesion row per leaf module, leaves order."""
+        return [self.lesion(p) for p in self.leaves]
+
+
+def format_torch_table(rows):
+    """Human-readable torch lesion rows (spec evidence paste)."""
+    L = ["module          fires worst_maxabs out:maxabs,mean..."]
+    for r in rows:
+        det = " ".join(f"{s}:{v['maxabs']:.4g},{v['mean']:.4g}"
+                       for s, v in r["deltas"].items())
+        L.append(f"{r['module']:<15} {r.get('fires', '?'):>5} "
+                 f"{r['worst']:<12.4g} {det}")
+    return L

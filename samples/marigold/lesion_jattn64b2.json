@@ -1,0 +1,286 @@
+{
+ "tag": "jattn64b2",
+ "input": "church rgb-path encode+head (Phase-8 shape)",
+ "outputs": [
+  "depth"
+ ],
+ "leaves": [
+  "blocks.0.k",
+  "blocks.0.m1",
+  "blocks.0.m2",
+  "blocks.0.n1",
+  "blocks.0.n2",
+  "blocks.0.o",
+  "blocks.0.q",
+  "blocks.0.v",
+  "blocks.1.k",
+  "blocks.1.m1",
+  "blocks.1.m2",
+  "blocks.1.n1",
+  "blocks.1.n2",
+  "blocks.1.o",
+  "blocks.1.q",
+  "blocks.1.v",
+  "col",
+  "dino_proj",
+  "h1",
+  "h2",
+  "row",
+  "tok"
+ ],
+ "rows": [
+  {
+   "module": "blocks.0.k",
+   "fires": 1,
+   "deltas": {
+    "depth": {
+     "maxabs": 4342432.3359375,
+     "mean": 994672.8753313316
+    }
+   },
+   "worst": 4342432.3359375
+  },
+  {
+   "module": "blocks.0.m1",
+   "fires": 1,
+   "deltas": {
+    "depth": {
+     "maxabs": 2305624.0,
+     "mean": 495339.276880312
+    }
+   },
+   "worst": 2305624.0
+  },
+  {
+   "module": "blocks.0.m2",
+   "fires": 1,
+   "deltas": {
+    "depth": {
+     "maxabs": 2305722.125,
+     "mean": 495425.09929325554
+    }
+   },
+   "worst": 2305722.125
+  },
+  {
+   "module": "blocks.0.n1",
+   "fires": 1,
+   "deltas": {
+    "depth": {
+     "maxabs": 3307871.125,
+     "mean": 1805605.9857412158
+    }
+   },
+   "worst": 3307871.125
+  },
+  {
+   "module": "blocks.0.n2",
+   "fires": 1,
+   "deltas": {
+    "depth": {
+     "maxabs": 2236446.125,
+     "mean": 483662.2797449168
+    }
+   },
+   "worst": 2236446.125
+  },
+  {
+   "module": "blocks.0.o",
+   "fires": 1,
+   "deltas": {
+    "depth": {
+     "maxabs": 4426826.5966796875,
+     "mean": 2280356.125265738
+    }
+   },
+   "worst": 4426826.5966796875
+  },
+  {
+   "module": "blocks.0.q",
+   "fires": 1,
+   "deltas": {
+    "depth": {
+     "maxabs": 4342432.3359375,
+     "mean": 994672.8753313316
+    }
+   },
+   "worst": 4342432.3359375
+  },
+  {
+   "module": "blocks.0.v",
+   "fires": 1,
+   "deltas": {
+    "depth": {
+     "maxabs": 4426707.3291015625,
+     "mean": 2364973.794562967
+    }
+   },
+   "worst": 4426707.3291015625
+  },
+  {
+   "module": "blocks.1.k",
+   "fires": 1,
+   "deltas": {
+    "depth": {
+     "maxabs": 73868.5,
+     "mean": 16908.785917945737
+    }
+   },
+   "worst": 73868.5
+  },
+  {
+   "module": "blocks.1.m1",
+   "fires": 1,
+   "deltas": {
+    "depth": {
+     "maxabs": 2626923.875,
+     "mean": 564396.720301685
+    }
+   },
+   "worst": 2626923.875
+  },
+  {
+   "module": "blocks.1.m2",
+   "fires": 1,
+   "deltas": {
+    "depth": {
+     "maxabs": 2627266.625,
+     "mean": 564473.8616488489
+    }
+   },
+   "worst": 2627266.625
+  },
+  {
+   "module": "blocks.1.n1",
+   "fires": 1,
+   "deltas": {
+    "depth": {
+     "maxabs": 62262.5,
+     "mean": 15880.06506964928
+    }
+   },
+   "worst": 62262.5
+  },
+  {
+   "module": "blocks.1.n2",
+   "fires": 1,
+   "deltas": {
+    "depth": {
+     "maxabs": 2615835.875,
+     "mean": 562015.5341440536
+    }
+   },
+   "worst": 2615835.875
+  },
+  {
+   "module": "blocks.1.o",
+   "fires": 1,
+   "deltas": {
+    "depth": {
+     "maxabs": 65106.5,
+     "mean": 15760.699658192028
+    }
+   },
+   "worst": 65106.5
+  },
+  {
+   "module": "blocks.1.q",
+   "fires": 1,
+   "deltas": {
+    "depth": {
+     "maxabs": 73868.5,
+     "mean": 16908.785917945737
+    }
+   },
+   "worst": 73868.5
+  },
+  {
+   "module": "blocks.1.v",
+   "fires": 1,
+   "deltas": {
+    "depth": {
+     "maxabs": 64955.5,
+     "mean": 15773.746482268818
+    }
+   },
+   "worst": 64955.5
+  },
+  {
+   "module": "col",
+   "fires": 0,
+   "deltas": {
+    "depth": {
+     "maxabs": 0.0,
+     "mean": 0.0
+    }
+   },
+   "worst": 0.0
+  },
+  {
+   "module": "dino_proj",
+   "fires": 0,
+   "deltas": {
+    "depth": {
+     "maxabs": 0.0,
+     "mean": 0.0
+    }
+   },
+   "worst": 0.0
+  },
+  {
+   "module": "h1",
+   "fires": 1,
+   "deltas": {
+    "depth": {
+     "maxabs": 4415794.602445856,
+     "mean": 953195.6375455813
+    }
+   },
+   "worst": 4415794.602445856
+  },
+  {
+   "module": "h2",
+   "fires": 1,
+   "deltas": {
+    "depth": {
+     "maxabs": 4415794.5,
+     "mean": 953195.695781172
+    }
+   },
+   "worst": 4415794.5
+  },
+  {
+   "module": "row",
+   "fires": 0,
+   "deltas": {
+    "depth": {
+     "maxabs": 0.0,
+     "mean": 0.0
+    }
+   },
+   "worst": 0.0
+  },
+  {
+   "module": "tok",
+   "fires": 1,
+   "deltas": {
+    "depth": {
+     "maxabs": 4432275.2421875,
+     "mean": 887573.9211220836
+    }
+   },
+   "worst": 4432275.2421875
+  }
+ ],
+ "control": {
+  "module": null,
+  "deltas": {
+   "depth": {
+    "maxabs": 0.0,
+    "mean": 0.0
+   }
+  }
+ },
+ "torch": "2.14.1+cu130",
+ "finite": true
+}
