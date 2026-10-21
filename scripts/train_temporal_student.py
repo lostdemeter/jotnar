@@ -60,30 +60,28 @@ def main():
           flush=True)
 
     # preload stride-sampled single-frame features for every unique
-    # frame (values identical to per-step compute, order fixed).
+    # frame (SAMPLED immediately — full-frame feats are 557MB/frame and
+    # OOM the box across 216 frames; values identical to per-step
+    # compute, order fixed).
     uniq = []
     for pr in train_pairs + held_pairs:
         for k in pr:
             if k not in uniq:
                 uniq.append(k)
-    F, TT, VV = {}, {}, {}
-    shapes = set()
+    Fs, Ts, Vs = {}, {}, {}
+    sidx = None
     t0 = time.time()
     for k in uniq:
         im, depth, valid = TH.load_pair(*k)
-        shapes.add(depth.shape)
         f = T.multiscale_features(im, 33, 3, False)
-        F[k] = torch.tensor(f.reshape(-1, 177), dtype=torch.float32)
-        TT[k] = torch.tensor(depth.reshape(-1).astype(np.float64))
-        VV[k] = torch.tensor(valid.reshape(-1))
-    assert len(shapes) == 1, f"frame shapes vary: {shapes} (stop: grid math)"
-    npx = next(iter(TT.values())).numel()
-    sidx = torch.arange(0, npx, 7)
+        if sidx is None:
+            sidx = torch.arange(0, depth.size, 7)
+        if f.reshape(-1, 177).shape[0] != sidx.numel():
+            raise RuntimeError(f"frame {k} shape varies (stop: grid math)")
+        Fs[k] = torch.tensor(f.reshape(-1, 177)[sidx.numpy()], dtype=torch.float32)
+        Ts[k] = torch.tensor(depth.reshape(-1)[sidx.numpy()].astype(np.float64))
+        Vs[k] = torch.tensor(valid.reshape(-1)[sidx.numpy()])
     print(f"preload: {len(uniq)} frames in {time.time() - t0:.0f}s", flush=True)
-    Fs = {k: v[sidx] for k, v in F.items()}
-    Ts = {k: v[sidx] for k, v in TT.items()}
-    Vs = {k: v[sidx] for k, v in VV.items()}
-    del F, TT, VV
 
     Din = 177 if args.mode == "single" else 354
     layers = [torch.nn.Linear(Din, args.width), torch.nn.SiLU()]
