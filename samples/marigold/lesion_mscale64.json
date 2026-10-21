@@ -1,0 +1,82 @@
+{
+ "tag": "mscale64",
+ "input": "church full-frame multiscale-177",
+ "outputs": [
+  "depth"
+ ],
+ "leaves": [
+  "0",
+  "1",
+  "2",
+  "3",
+  "4"
+ ],
+ "rows": [
+  {
+   "module": "0",
+   "fires": 1,
+   "deltas": {
+    "depth": {
+     "maxabs": 365151.4793405533,
+     "mean": 210882.63688635826
+    }
+   },
+   "worst": 365151.4793405533
+  },
+  {
+   "module": "1",
+   "fires": 1,
+   "deltas": {
+    "depth": {
+     "maxabs": 365151.4793405533,
+     "mean": 210882.63688635826
+    }
+   },
+   "worst": 365151.4793405533
+  },
+  {
+   "module": "2",
+   "fires": 1,
+   "deltas": {
+    "depth": {
+     "maxabs": 365156.1213605851,
+     "mean": 210887.27890639007
+    }
+   },
+   "worst": 365156.1213605851
+  },
+  {
+   "module": "3",
+   "fires": 1,
+   "deltas": {
+    "depth": {
+     "maxabs": 365156.1213605851,
+     "mean": 210887.27890639007
+    }
+   },
+   "worst": 365156.1213605851
+  },
+  {
+   "module": "4",
+   "fires": 1,
+   "deltas": {
+    "depth": {
+     "maxabs": 365156.03125,
+     "mean": 210887.18879580498
+    }
+   },
+   "worst": 365156.03125
+  }
+ ],
+ "control": {
+  "module": null,
+  "deltas": {
+   "depth": {
+    "maxabs": 0.0,
+    "mean": 0.0
+   }
+  }
+ },
+ "torch": "2.14.1+cu130",
+ "finite": true
+}
