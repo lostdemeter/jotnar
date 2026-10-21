@@ -276,7 +276,7 @@ def main():
         dbs = []
         for (s, fr) in frames[:2]:
             cand = sorted(_g.glob(os.path.join(
-                args.cli_dir, f"*{fr}*.npy")))
+                args.cli_dir, f"{s}_fr{fr}.npy")))
             assert len(cand) == 1, f"CLI file for {s}/{fr}: {cand}"
             ref = np.load(cand[0]).astype(np.float64)
             p = os.path.join(SHARD, s, f"rgb_cam_00_fr{fr}.png")
