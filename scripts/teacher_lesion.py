@@ -269,6 +269,9 @@ def main():
     ap.add_argument("--tag", default="teacher-base-A")
     ap.add_argument("--targets", default="",
                     help="comma-separated module paths/patterns (lesion)")
+    ap.add_argument("--subset-file", default="",
+                    help="JSON {rowname: [paths]} for subset-curve rows "
+                    "(one row per group, hooks = group paths)")
     ap.add_argument("--dry-run", action="store_true",
                     help="load + verify all targets match + VRAM, no eval")
     ap.add_argument("--cli-dir", default="",
@@ -396,6 +399,12 @@ def main():
         return
 
     targets = [t for t in args.targets.split(",") if t]
+    groups = [(t, [t], None) for t in targets]
+    if args.subset_file:
+        subs = json.load(open(args.subset_file))
+        groups = [(f"subset_{k}",
+                   [f"transformer_blocks.{i}" for i in v], list(v))
+                  for k, v in sorted(subs.items())]
     outp = args.out or os.path.join(
         ROOT, "samples", "marigold", "teacher_lesion_A.json")
     rows = []
@@ -403,16 +412,18 @@ def main():
         rows = json.load(open(outp)).get("rows", [])
         print(f"resuming {outp} ({len(rows)} rows banked)", flush=True)
     done = {r["target"] for r in rows}
-    for t in targets:
-        if t in done:
-            print(f"skip {t} (banked)", flush=True)
+    for name, hooks, idx in groups:
+        if name in done:
+            print(f"skip {name} (banked)", flush=True)
             continue
-        per_frame, walls, fires = run_eval(hooks=[t])
-        row = {"target": t, "fires": fires, "walls": walls,
+        per_frame, walls, fires = run_eval(hooks=hooks)
+        row = {"target": name, "fires": fires, "walls": walls,
                "frames": per_frame}
+        if idx is not None:
+            row["subset"] = idx
         rows.append(row)
         json.dump({"rows": rows}, open(outp, "w"), indent=1)
-        print(f"banked {t} -> {outp}", flush=True)
+        print(f"banked {name} -> {outp}", flush=True)
 
 
 if __name__ == "__main__":
