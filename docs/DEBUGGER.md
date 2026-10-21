@@ -343,3 +343,65 @@ re-judged? NO — re-run baseline under the fixed judge; nothing
 downstream exists yet, so nothing is contaminated). Removal
 criterion unchanged (5% relative — same family, healthier
 scale). Everything else in the constitution stands.
+
+### Phase-A results (1 baseline + 74 lesion evals, ~15 min wall, GPU solo)
+
+Baseline banked first: mean AbsRel 0.2936 over 8 frames (per-frame
+0.20–0.40). Per-eval wall ~10s (8×1s frames + overhead); total ≈
+15 min — inside the 12h ceiling with two orders of magnitude to
+spare, no subset shrink needed. VRAM 13.7GB/24GB (4-bit DiT +
+bf16 VAE, text encoder + Qwen-7B never loaded).
+Parity (custom vs sibling CLI, 2 frames): 46.7dB / 45.3dB ≥ 40dB
+bar — harness validated, then trusted for deltas.
+Per-block deltas, relative % (baseline 0.2936):
+
+```text
+ 0:+153  1:+129  2:+197  3:+175  4:+140  5:+168  6:+92  7:+147  8:+166  9:+132
+10:+106 11:+127 12:+123 13:+180 14:+152 15:+133 16:+154 17:+154 18:+166 19:+158
+20:+118 21:+125 22:+160 23:+167 24:+159 25:+189 26:+126 27:+129 28:+123 29:+172
+30:+141 31:+138 32:+140 33:+123 34:+160 35:+146 36:+141 37:+142 38:+180 39:+143
+40:+150 41:+144 42:+141 43:+173 44:+154 45:+154 46:+149 47:+147 48:+156 49:+157
+50:+189 51:+154 52:+156 53:+160 54:+140 55:+127 56:+142 57:+234 58:+139 59:+135
+VAE: conv_in +84.7, up.0 +91.7, up.1 +132.3, up.2 +91.8, up.3 +94.9,
+mid +98.2, norm_out +94.9, conv_out +95.2, post_quant +86.1
+families: txt_mlp.net.0.proj +11.7, add_q +24.5, add_v +59.1,
+add_k +102.2, to_add_out +110.6
+```
+
+Removable nominations per the frozen <5% criterion: NONE (min
++11.7% — txt_mlp family closest, still 2× over bar). Phase C
+has nothing to validate (stated outcome, not an omission).
+Verdict: the teacher is DENSE — every one of 60 blocks moves
+AbsRel +92% to +234%; all VAE stages +84–132%; all 5 families
++12–111%. Structure inside the density: late blocks worst
+(57: +234%, 50: +189%), block 6 least (+92%); attention-add
+families cheaper than to_add_out; txt_mlp family cheapest of
+all. Nothing here resembles the students' differentiated
+pins — the teacher has no dead weight at block granularity.
+Gate `tests/test_teacher_lesion.py` (CPU, 0.02s — heavy reruns
+NOT routine): schema 60+9+5, fires (blocks 8/8, families
+60×8), baseline recompute, nominations re-derived (0), sha256
+pre==post over 7 files. Neighbors green: anatomy
+(`test_teacher_anatomy.py`) + teacher (`test_teacher_marigold.py`)
+— read-only reuse, nothing moves underneath.
+Bugs caught while building (mechanisms): (1) timestep/dtype
+break at the first block — `prepare_model_for_kbit_training`
+upcasts non-quantized params to fp32 while their validation
+runs under autocast-bf16; mirrored the eval context (no_grad +
+autocast bf16) and the break vanished — the loader was right,
+my eval context was wrong. (2) Prompt batch mismatch (their
+node truncates embeds to batch, mine didn't) — mirrored
+`_match_batch` verbatim including the truncate. (3) My judge
+(lstsq-align + AbsRel in meters) scored ~1.0 on a
+wall-for-wall-correct map (pasted trio) — the relative→metric
+relation isn't affine; fixed to their protocol (GT
+percentile-affine + plain AbsRel), old baseline discarded
+pre-lesion, rerun banked. (4) VAE targets needed the VAE.
+namespace prefix in matching (exact paths matched nothing) —
+caught by --dry-run validation before the full run (74/74
+resolve). (5) Fires banked per-frame-last instead of summed —
+accumulated across the eval. (6) Smoke-test glob collided
+across scenes (fr0000 × 4) — scene-qualified.
+Gaps named: sub-block granularity (qkv vs MLP inside a block)
+is Phase B; per-instance (not family) LoRA-target lesions
+would be 300 runs — priced, not run.
