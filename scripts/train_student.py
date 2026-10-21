@@ -121,6 +121,10 @@ def main():
                     "const keeps --lr; cosine anneals lr_max->0 over --steps.")
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--tag", default="w16")
+    ap.add_argument("--target-maps", default="",
+                    help="Phase-29 lesion-matched targets: JSON "
+                    "{framename: .npy path} overriding teacher depths "
+                    "(inputs/features unchanged; eval path untouched).")
     ap.add_argument("--loss-space", choices=["value", "log", "quantum"],
                     default="value",
                     help="Phase-27 loss-geometry surface (ONLY variable this "
@@ -184,9 +188,16 @@ def main():
     print(f"device={device} torch={torch.__version__}", flush=True)
 
     Xtr, Ttr = [], []
+    tmap = {}
+    if args.target_maps:
+        tmap = json.load(open(os.path.expanduser(args.target_maps)))
+        print(f"lesion-matched targets: {sorted(tmap)}", flush=True)
     for n in args.train:
         x, _, t = load_frame(n, args.patch, args.multi, args.field, args.densewin, args.globsum)
         Xtr.append(x)
+        if n in tmap:
+            t = np.load(os.path.expanduser(tmap[n])).astype(np.float64).reshape(-1)
+            assert t.size == x.shape[0], (n, t.shape, x.shape)  # fail loud on shape drift
         Ttr.append(t)
     Xtr = torch.tensor(np.concatenate(Xtr), dtype=torch.float32, device=device)
     Ttr = torch.tensor(np.concatenate(Ttr), dtype=torch.float64, device=device)
@@ -405,6 +416,8 @@ def main():
            "depth": args.depth,
            "globsum": args.globsum,
            "loss_space": args.loss_space, "loss_lo": LO, "loss_q": QQ,
+           "target_maps": os.path.expanduser(args.target_maps)
+           if args.target_maps else None,
            "perc": args.perc, "sink": args.sink, "aux_every": args.aux_every,
            "dinov2": os.path.expanduser(args.dinov2) if args.perc > 0 else None,
            "train": args.train, "heldout": args.heldout,

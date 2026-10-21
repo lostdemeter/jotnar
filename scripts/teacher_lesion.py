@@ -171,9 +171,11 @@ def load_embeds():
     return pe, pm
 
 
-def infer_one(transformer, vae, pe, pm, rgb_path, seed, hooks=()):
-    """One frame -> (pred_768x576 float64, per-stage seconds). Hooks:
-    [(module_path_or_fnmatch, )] zero outputs (fire-counted)."""
+def infer_one(transformer, vae, pe, pm, rgb_path, seed, hooks=(),
+              rgb_array=None):
+    """One frame -> (pred_768x576 float32, wall_s, fires). Hooks:
+    [(module_path_or_fnmatch, )] zero outputs (fire-counted).
+    rgb_array (H,W,3 float in [0,1]) bypasses PNG read when given."""
     import time as _t
     import numpy as np
     import torch
@@ -181,7 +183,11 @@ def infer_one(transformer, vae, pe, pm, rgb_path, seed, hooks=()):
     import cv2
     from diffusers import QwenImageEditPipeline
     torch.manual_seed(seed)
-    im = np.asarray(Image.open(rgb_path).convert("RGB"))
+    if rgb_array is not None:
+        im = (np.clip(np.asarray(rgb_array, dtype=np.float64), 0, 1)
+              * 255.0 + 0.5).astype(np.uint8)
+    else:
+        im = np.asarray(Image.open(rgb_path).convert("RGB"))
     chw = np.transpose(im, (2, 0, 1))
     rs = cv2.resize(np.transpose(chw, (1, 2, 0)).astype(np.float32),
                     (MW, MH), interpolation=cv2.INTER_LANCZOS4)
@@ -283,6 +289,11 @@ def main():
                     "model-res float32 bytes; mean/std; corr vs GT and "
                     "vs unlesioned ref at native res; null corr when "
                     "either side has zero variance)")
+    ap.add_argument("--save-maps", default="",
+                    help="materialize lesioned-teacher maps: model-res "
+                    "float32 .npy per (lesion-target-set, fixture frame) "
+                    "into DIR (Phase-29 targets; fixture RGB in, "
+                    "BILINEAR-upsampled native maps banked)")
     args = ap.parse_args()
     need = ["diffusers", "peft", "bitsandbytes", "cv2"]
     try:
@@ -324,6 +335,48 @@ def main():
 
     transformer, vae = load_all()
     pe, pm = load_embeds()
+
+    if args.save_maps:
+        import train_student as T
+        outdir = args.save_maps
+        os.makedirs(outdir, exist_ok=True)
+        basins = json.load(open(os.path.join(
+            ROOT, "samples", "marigold",
+            "teacher_basins_H.json")))["basins"]
+        order = ["A", "B", "C", "D", "E"]
+        hrows = {r["target"]: r for r in json.load(open(
+            os.path.join(ROOT, "samples", "marigold",
+                         "teacher_lesion_H.json")))["rows"]}
+        man = json.load(open(os.path.join(
+            FIXDIR, "teacher_manifest.json")))
+        names = ["church", "dogs", "squirrel", "train"]
+        manifest = {}
+        for bi, b in enumerate(order):
+            tgt = basins[b][0]
+            idx = hrows[tgt]["subset"]
+            hooks = [f"transformer_blocks.{i}" for i in idx]
+            manifest[tgt] = {"basin": b, "subset": idx, "files": {}}
+            for j, n in enumerate(names):
+                row = next(r for r in man["fixtures"] if r["name"] == n)
+                Hh, Ww = row["shape"]
+                _, im3, _ = T.load_frame(n)
+                pred, wall, fires = infer_one(
+                    transformer, vae, pe, pm, None, SEED + j,
+                    hooks, rgb_array=im3)
+                assert sum(fires.values()) == len(hooks), fires
+                up = np.asarray(Image.fromarray(
+                    pred.astype(np.float32)).resize(
+                        (Ww, Hh), Image.BILINEAR), dtype=np.float32)
+                fn = f"lm-{b}_{n}.npy"
+                np.save(os.path.join(outdir, fn),
+                        np.ascontiguousarray(up))
+                manifest[tgt]["files"][n] = fn
+                print(f"materialize {tgt}/{n}: wall {wall:.0f}s -> {fn}",
+                      flush=True)
+        json.dump(manifest, open(os.path.join(outdir, "manifest.json"),
+                                 "w"), indent=1)
+        print(f"materialized {outdir}", flush=True)
+        return
 
     if args.dry_run:
         targets = [t for t in args.targets.split(",") if t]
