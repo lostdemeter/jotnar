@@ -44,6 +44,15 @@ On any error: stop and report. No `reset --hard`, no force-push, no
 rebasing pushed branches. If the user pastes the actual error, sharpen
 from it.
 
+## Prompt-drafting rule (two premise-voids earned it: RMSNorm confusion,
+lesioned-map absence)
+
+Before writing any data-dependent worker prompt, verify mechanically:
+banked-artifact schemas (keys/shapes present, not assumed), every cited
+file:line exists at the cited base, and the branch base equals the
+current `main` tip. A prompt built on unverified premises gets stopped
+by the worker — correctly — and the rework costs a round-trip.
+
 ## House facts (do not rediscover)
 
 - One GPU session at a time; content cache `~/.cache/jotnar/cu`.
