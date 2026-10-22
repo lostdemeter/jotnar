@@ -2378,3 +2378,68 @@ completed pre-claim (bit-identical table + same 6 cells).
 Executed notes: map regen 20/20 identical (~3 min GPU);
 training ~10 min/arm CPU; primaries guarded+restored
 byte-verified around every run; weights out-of-tree per tag.
+
+## Basin ground truth + basin supervision (constitution, FROZEN pre-computation)
+
+Two phases, frozen. Schema pre-verified on this checkout (not assumed):
+`teacher_lesion_H.json` = 15 rows × 8 frames × 6-strata AbsRel dicts;
+`teacher_lesion.py` modes baseline/lesion/parity/pilot + --subset-file
++ --save-maps (all present). Any deviation found later = stop, no
+silent workarounds.
+Phase A (ground truth, NO training): cluster the 8 Hypersim eval
+frames by lesion-response vectors = 15 lesion targets × 6 strata
+AbsRel = 90 dims, raw values, NO baseline appended (lesion response
+only — stated), NO feature standardization (raw + cosine, continuity
+with assoc-memory strata means; standardization on n=8 amplifies
+noise — reason stated). Distance + algorithm frozen EXACTLY: cosine
+distance (1−cos) + EXHAUSTIVE k-medoids (global optimum over all C(8,k)
+medoid sets, min total distance; ties → lexicographically first set;
+deterministic, seed-free — seed 7 banked for provenance only).
+k rule: fit k ∈ {3,4,5,6,7}; winner = max mean silhouette (cosine);
+k=5-to-match-teacher-basins is a HYPOTHESIS, not a given (if winner≠5,
+continuity unforced — reported). Winner reported, NOT asserted as truth
+(n=8 clustering is fragile — the full k-table with silhouettes +
+assignments IS the honesty; stability read off it).
+Bank `samples/marigold/basin_ground_truth.json`: method, distance,
+k-fit table, winner k, per-image labels, provenance.
+Phase B (supervision — the previously-void round, now with targets):
+basin-supervised encoder training. Variable = basin supervision ONLY:
+same tiny mixer (96×72 thumbs, patches 12, hidden 96, code 128,
+decoder — NO upgrades smuggled in; capacity questions explicitly NOT
+this round), same 11 images (8 Hypersim + 3 fixtures; fixtures = triplet
+negatives + recon only, NO CE term — no labels exist for them, stated),
+same triplet (m=0.5) + λ=0.1 recon, same lr/steps/seed/clip
+(0.01/2000/7/1.0 — untuned, comparability), PLUS head linear 128→K*
+(+bias, like all encoder linears) with μ·CE, μ=1.0 frozen (equal
+footing with triplet, both O(1) — supervision leads by design, not by
+tuning). ONE loss: L = trip + 0.1·recon + 1.0·CE (single formula —
+no objective-shopping). NaN/divergence = complete-empty (stated).
+Winner rule: basin-assignment accuracy (argmax head vs banked labels,
+8 Hypersim train images — NO held-out exists at n=8, overfit caveat
+from the contrastive round applies, stated pre-run) ≥ 2/K* (2× chance
+1/K*, assoc precedent — rule frozen, numbers instantiate at K*) AND
+retrieval battery ≥ 0.25 on basin-structured codes (dead-round battery
+verbatim: 200 trials, corrupt(code), frame identity, chance 0.125).
+Battery earned iff assignment clears bar (cheap CPU; both stated).
+BOTH must hold (assignment without retrieval repeats the split;
+retrieval without assignment is uninterpretable). Empty (neither holds)
+is complete.
+Ruling: clustering + training only as constituted (no emitter/opcode/
+assembly changes — gap hit = stop-finding); weights out-of-tree,
+metrics + ground-truth + configs banked separately (primaries
+untouched); production weights untouched (teacher AND Qwen-7B never
+loaded — banked lesion data + banked images suffice, no new teacher
+runs); CPU-first (numpy clustering seconds; Phase-B same size as the
+60s encoder precedent — no GPU need exists, stated); no downloads;
+no new dependencies (system numpy+PIL).
+Gate: EXTEND `tests/test_teacher_lesion.py` in place (ground-truth
+legs: determinism — same data twice identical labels; stability legs
+across k — full k-table recomputed == banked; coverage — 8 images,
+each exactly once, all K* labels used) + Phase-B legs in
+`tests/test_strata_marigold.py` IF reached (schema + separability
+recompute + battery recompute + determinism + none-earned-asserted;
+heavy retrain NOWHERE in gate by design; same integrity shape as
+established; existing legs untouched). Neighbors: lesion + anatomy +
+strata green (read-only reuse — nothing moves underneath).
+
+### Basin results (TBD — computation lands here)
