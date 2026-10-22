@@ -121,3 +121,109 @@ wrong geometry for this stack), and (ii) it restores a
 graduated table (small at 64, astronomical at 1024) that can
 actually discriminate. Carried through consistently (M² in
 the separation condition too). Everything else frozen stands.
+
+## Associative memory from basin prototypes (constitution, FROZEN pre-run)
+
+Prescription, not training: outer-product storage, ZERO gradient
+steps (a training loop anywhere in this round is scope breach).
+Prototypes from banked data ONLY (no teacher runs — the maps were
+never stored, so prototypes live in lesion-response space):
+per-(basin, frame) MEAN over member subsets of 6-stratum AbsRel
+vectors → 40 prototypes × 6 dims (mean frozen: symmetry-respecting,
+no cherry-picking; medoid/exemplar rejected — privileging single
+members without principled basis. Frame-indexed (not grand-mean):
+frame effects are large in this data; grand-mean would wash out).
+Capacity reality stated pre-run (not discovered mid-round): max
+honest dimensionality is 48 (full profile) or 6 (per-frame);
+capacity math gives N_exp(6)=0.21, N_exp(48)=1.76 — both far below
+K=20 (and below K=5). The dim≥512 requirement is UNMEETABLE from
+banked data. This round therefore tests whether the construction
+beats its own capacity obituary empirically — verdict "dies"
+is the predicted outcome, not a failure mode.
+Storage: Hopfield outer product W = Σ_p x_p x_p^T over L2-
+normalized prototypes (standard, stated). Retrieval dynamics
+frozen: Ramsauer continuous update ξ ← X·softmax(βX^T ξ),
+β=1 (capacity-math default), ≤100 iterations, Δ<1e-6
+convergence (non-convergence reported, not hidden).
+Queries frozen: corrupted versions of banked frame profiles —
+keep {6(full),5,4,3} of 6 strata (partial-distance on observed
+entries), 5 seeded masks per (prototype, level) (seeds
+0–4 — 40×(1+3)×5 = 800 trials; binomial se at chance ≈1.4%).
+(a) Retrieval correctness: retrieved prototype's BASIN ==
+query's basin (chance 1/5). Bar frozen: accuracy ≥ 40% (2×
+chance, ~14σ above noise with N=600 corrupted trials).
+(b) Depth tier: retrieved basin's AbsRel mean vs strata bars
+(all basins ~0.69–0.98 ≫ bars — expected lags) AND vs the
+uniform-prior baseline (random-basin expectation — the only
+uniform baseline constructible without new runs; "uniform-kill"
+operationalized thus, stated). Retrieval can succeed while
+depth lags — reported both, conflated never. Full-profile
+queries (uncorrupted) ride as diagnostic (basin separability
+floor), not bar.
+Winner rule: retrieval ≥ bar AND retrieved-depth
+directionally better (>0.05) than uniform-prior expectation =
+mechanism alive; retrieval at chance = the associative
+hypothesis dies for this construction (complete, not a
+failure to tune). Retrain-match N/A (nothing trains —
+determinism reruns serve instead: same query twice
+bit-identical, gated).
+Determinism: same query → same basin, bit-identical (numpy
+deterministic; asserted exactly in-gate). Fail-loud: wrong-dim
+/ NaN / empty queries refuse (never silent nearest).
+Ruling: prescription only; no emitter/opcode/assembly changes
+(MATMUL/SOFTMAX cited from the table — the update is literally
+those two ops; gap hit = stop-finding); weights = prescribed
+patterns banked in-repo (40×6 floats — centroids, not
+checkpoints); production weights untouched (teacher AND
+Qwen-7B never loaded — banked JSONs only); CPU-first (numpy
+dynamics; no GPU need exists); no new deps; no downloads.
+Gate: new tests/test_assoc_memory.py (CPU-only, seconds):
+prototype integrity (recomputed from banked census), retrieval
+legs recomputed in-gate (accuracy + depth tier), determinism
+(same query twice bit-identical), fail-loud legs. Neighbors:
+lesion-basin + anatomy legs green (read-only reuse — nothing
+moves underneath).
+
+### Prescription results (800 trials, CPU seconds, no runs)
+
+40 prototypes (5 basins × 8 frames, plain means, L2-normalized)
++ outer-product W (6×6, exact) + Ramsauer retrieval (β=1,
+≤100 iters, Δ<1e-6; converged 100%):
+
+```text
+keep=5: 0/200 = 0.000   keep=4: 0/200 = 0.000   keep=3: 0/200 = 0.000
+accuracy = 0.2000 (bar 0.40, chance 0.20)   LOO = 0.125
+verdict = dead
+```
+
+Mechanism, measured not asserted: ALL 600 corrupted trials
+retrieve ONE prototype (C, ai_021_001_fr0001) — total dynamic
+collapse. Prototypes are near-collinear clumps (max off-diag
+cosine 0.999999+ with no exact duplicates — one flat
+landscape, not 40 attractors); the softmax has nowhere to go
+but the top. LOO control at 0.125 (BELOW chance) confirms the
+basins overlap even uncorrupted — separability fails before
+corruption starts. Uniform-prior depth mean 0.7703: retrieved
+depth cannot beat it when retrieval is chance (tier reported,
+moot by the accuracy).
+Verdict: **the associative hypothesis dies for this
+construction** — retrieval at chance (0.2000 == 0.20 exactly),
+below the 0.40 bar by 20σ of trial noise. The capacity obituary
+holds empirically: 6 dims cannot hold 40 patterns (nor 5), and
+no dynamics rescues an inseparable code.
+Gate `tests/test_assoc_memory.py` (CPU, 0.1s): prototype
+integrity (bit-identical recompute), weights exact, accuracy
++ depth recomputed, determinism (same query twice), 4
+fail-loud legs. Neighbors: lesion-basin + anatomy green
+(pasted below; read-only reuse, nothing moves underneath).
+Bugs caught while building (mechanisms): (1) leftover draft
+scaffolding inside the trial loop (placeholder tensors that
+evaluated then got overwritten — dead code that RAN; removed
+pre-run, never banked under it). (2) A tautological no-peek
+leg + walrus one-liner in the gate draft (proved nothing,
+read poorly — deleted/rewritten). (3) `%.4f`-rounded max
+cosine displayed 1.0000 with no exact duplicates underneath
+(verified pairwise — near-collinear, not bit-equal). Gaps
+named: higher-dim prototype spaces (unbankable — maps were
+never stored, by design); β-sweep (frozen at 1, capacity-math
+default).
