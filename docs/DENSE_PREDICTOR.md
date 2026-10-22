@@ -199,7 +199,29 @@ and fraud, stated plainly; weights read-only out-of-tree;
 ffmpeg/PIL/matplotlib as established; no new deps, no
 downloads).
 
-#### Strip proof-run (TBD — run lands here)
+#### Strip proof-run (2 live frames, camera free, GPU solo)
+
+```text
+source: camera (2 frames)
+teacher: 2 frames (26s incl. load)
+student ms/frame: ['1596', '1206']
+panels: {rgb, THEIRS referee, basin-C directional, control baseline}
+wrote /tmp/opencode/sou_strip/sou_strip.png (4096x1444)
+```
+Fallback path taken: none needed (camera grabbed clean twice;
+stills path gate-covered for held-desktop days). Panel verdicts
+as labeled. What the strip shows: teacher panel resolves clean
+structure (silhouette/monitor/wall gradient — reference
+behaving); basin-C + control both show structure (monitor glow,
+keyboard, edges) but washed out vs teacher — viz is per-panel
+min-max normalized so cross-panel brightness is meaningless
+(as frozen). No quality claim is made or implied by any panel
+(0 bars everywhere). Privacy: captures + strip in
+`/tmp/opencode` only; repo scan clean (gated).
+Gate `tests/test_dpttiny.py` sou legs (machineless-safe):
+outdir/labels/synthetic-panels/stills-capture/synthetic-
+student/teacher-SKIP/privacy. Full gate green with dpt build +
+demo + training legs (pasted in report).
 
 ## Training — analytic GT, not teacher mimicry (constitution, FROZEN pre-run)
 
