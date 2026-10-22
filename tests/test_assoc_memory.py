@@ -289,6 +289,48 @@ def main():
     check("assoc-diff-battery", dok,
           "none earned asserted explicitly (unearned rerun would FAIL)")
 
+    # -- encoder key (encoder-separated round; legs above untouched;
+    #    heavy retrain NOWHERE in gate by design) ------------------------------
+    import hashlib as _hl
+    import hopfield_retrieval as R
+    erep = json.load(open(os.path.join(
+        ROOT, "samples", "marigold", "encoder_separation.json")))
+    ecodes = np.load(os.path.join(ROOT, "samples", "marigold",
+                                  "encoder_codes.npy")).astype(np.float64)
+    check("assoc-enc-schema",
+          erep["dims"] == {"thumb": [96, 72], "patch": 12,
+                           "hidden": 96, "code": 128}
+          and len(erep["images"]) == 11 and len(erep["scenes"]) == 11
+          and ecodes.shape == (11, 128) and str(ecodes.dtype) == "float64"
+          and bool(np.isfinite(ecodes).all()),
+          "11 codes x128 finite (8 Hypersim + 3 fixtures)")
+    eH8 = ecodes[:8] / np.linalg.norm(ecodes[:8], axis=1, keepdims=True)
+    eG = eH8 @ eH8.T
+    eiu = np.triu_indices(8, 1)
+    emx, emn = float(eG[eiu].max()), float(eG[eiu].mean())
+    es = erep["separability"]
+    check("assoc-enc-separability",
+          abs(emx - es["maxcos"]) < 1e-6 and abs(emn - es["meancos"]) < 1e-6
+          and es["clears"] is True,
+          f"recomputed maxcos={emx:.4f} meancos={emn:+.4f} CLEARS")
+    ehit = sum(
+        R.retrieve(eH8, R.corrupt(eH8[fi], f, s, li))[0] == fi
+        for li, f in enumerate(R.LEVELS)
+        for fi in range(8) for s in R.SEEDS)
+    eb = erep["battery"]
+    check("assoc-enc-battery",
+          eb["trials"] == 200 and eb["accuracy"] == ehit / 200 == 0.125
+          and eb["verdict"] == "dead",
+          f"recomputed {ehit}/200=0.125 < 0.25 -> dead (split finding)")
+    check("assoc-enc-determinism",
+          erep["determinism_maxabs"] == 0.0,
+          "same image -> same code, bit-identical")
+    wsha = _hl.sha256(open(erep["W_path"], "rb").read()).hexdigest()
+    check("assoc-enc-weights",
+          erep["W_path"].endswith("student_runs/encoder/enc.npz")
+          and wsha == erep["W_sha256"],
+          "weights out-of-tree, sha matches (primaries untouched)")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 
