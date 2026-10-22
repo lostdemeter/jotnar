@@ -104,6 +104,39 @@ def main():
         except ValueError:
             check(f"assoc-loud-{tag}", True, "ValueError")
 
+    # -- separability key (hopfield-separable round; existing legs above
+    #    untouched) ---------------------------------------------------------------
+    import hopfield_separable as S
+    sep = json.load(open(os.path.join(
+        ROOT, "samples", "marigold", "hopfield_separable.json")))
+    sids, sX = S.load_normed()
+    sall = np.array([sX[p] for p in S.POINTS]).reshape(-1, 3072)
+    sW = S.fit_zca(sall)
+    sM = S.construct(sids, sX, sW)
+    seq = True
+    for key, Mp in sM.items():
+        mx, mn = S.sepscore(Mp)
+        b = sep["separability"][key]
+        seq &= (abs(mx - b["maxcos"]) < 1e-9
+                and abs(mn - b["meancos"]) < 1e-9
+                and b["clears"] == (mx < 0.9 and mn < 0.5))
+    check("assoc-sep-integrity", seq,
+          "C1/C2/C3 recomputed from banked harvests == banked table")
+    check("assoc-sep-bar",
+          sep["full_clear"] == []
+          and sorted(sep["separability"]) == sorted(sM)
+          and [k for k, v in sep["separability"].items() if v["clears"]]
+          == ["transformer_blocks.59:c2", "transformer_blocks.29:c3",
+              "transformer_blocks.59:c3"],
+          "no construction clears all 3 points (nearest miss C3 2/3)")
+    rok = sep["reruns"] == {}
+    if sep["reruns"]:
+        import hopfield_retrieval as _R
+        for key, rr in sep["reruns"].items():
+            rok &= rr["accuracy"] >= rr["bar"]
+    check("assoc-sep-reruns", rok,
+          "none earned (vacuous); any clearing construction must beat 0.25")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

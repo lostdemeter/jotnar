@@ -1,0 +1,71 @@
+{
+ "eps": 0.0001,
+ "bar": [
+  0.9,
+  0.5
+ ],
+ "separability": {
+  "transformer_blocks.29:raw": {
+   "maxcos": 0.9974423926481526,
+   "meancos": 0.9650556749699414,
+   "clears": false
+  },
+  "transformer_blocks.59:raw": {
+   "maxcos": 0.9999880185882069,
+   "meancos": 0.9999380413002408,
+   "clears": false
+  },
+  "norm_out:raw": {
+   "maxcos": 0.9985080926093319,
+   "meancos": 0.9831022082886546,
+   "clears": false
+  },
+  "transformer_blocks.29:c1": {
+   "maxcos": 0.9976776272162419,
+   "meancos": 0.9963580983454844,
+   "clears": false
+  },
+  "transformer_blocks.59:c1": {
+   "maxcos": 0.9999797531347917,
+   "meancos": 0.9998917979462995,
+   "clears": false
+  },
+  "norm_out:c1": {
+   "maxcos": 0.9990101641174016,
+   "meancos": 0.9975788764729561,
+   "clears": false
+  },
+  "transformer_blocks.29:c2": {
+   "maxcos": 0.9150512526636394,
+   "meancos": -0.13319567418349038,
+   "clears": false
+  },
+  "transformer_blocks.59:c2": {
+   "maxcos": 0.7833290378294681,
+   "meancos": -0.13768464453731713,
+   "clears": true
+  },
+  "norm_out:c2": {
+   "maxcos": 0.9315531338653008,
+   "meancos": -0.13636103884962153,
+   "clears": false
+  },
+  "transformer_blocks.29:c3": {
+   "maxcos": 0.4324583707373808,
+   "meancos": -0.14285714285714288,
+   "clears": true
+  },
+  "transformer_blocks.59:c3": {
+   "maxcos": 0.7297588002722362,
+   "meancos": -0.14285714285714285,
+   "clears": true
+  },
+  "norm_out:c3": {
+   "maxcos": 0.9315211998716709,
+   "meancos": -0.14285714285714285,
+   "clears": false
+  }
+ },
+ "full_clear": [],
+ "reruns": {}
+}
