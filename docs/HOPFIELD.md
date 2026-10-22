@@ -585,3 +585,46 @@ read 1/7 — corrected to 1/23 before any computation; the per-point
 post-run ones bounce.)
 
 ### Follow-up results (TBD — computation lands here)
+
+### Follow-up results (CPU 0.7s, banked data only)
+
+`python3 scripts/hopfield_followups.py` — empty on both, which is
+complete (the arc closes with the hierarchy intact):
+
+β-sweep (15 cells, frozen battery per point = 200 trials, bar 0.25):
+
+| β | b29 | b59 | norm_out | conv | maxit |
+|---|---|---|---|---|---|
+| 0.1 | 25/200 | 25/200 | 25/200 | 1.000 | 2–3 |
+| 0.5 | 25/200 | 25/200 | 25/200 | 1.000 | 2–4 |
+| 2 | 25/200 | 25/200 | 25/200 | 1.000 | 2–5 |
+| 5 | 25/200 | 25/200 | 25/200 | 1.000 | 2–6 |
+| 10 | 25/200 | 25/200 | 25/200 | 1.000 | 2–7 |
+
+Every cell 0.1250 = chance exactly — β moves NOTHING (soft-averaging
+and near-argmax land on the same single winner, ai_021_001_fr0000 at
+every β — verified; the landscape has one basin, so sharpness is
+irrelevant). Iters grow slightly with β (2→7) but all converge within
+cap — dynamics healthy, separability absent. Winner: none.
+Joint-24 (600 trials, 3 origins × 200): acc = 75/600 = 0.1250 (chance
+3/24 = 0.1250, bar 0.25) — below; LOO same-scene 1.000 (chance 1/23 ≈
+0.043, diagnostic); conv 1.000, maxit 14. Winner frame again
+ai_021_001_fr0000, specifically its b59 copy all 600 times (the
+tightest clump member, cosine 1.0000 — more copies of the same clump
+don't help). Winner: none.
+Verdicts: **β-sweep empty, joint-24 empty — both inheritors complete.**
+The Hopfield arc closes: 6-dim died of capacity → 3072-dim of
+separability → separability survives whitening/centering/contrast →
+sharpness and pooling-scale change nothing. Remaining holder, named
+explicitly: token-level (needs re-harvest + GPU teacher runs — its own
+round, its own constitution).
+Gate: `tests/test_assoc_memory.py` extended in place (assoc-fol-*
+key: 15 sweep cells recomputed == banked, joint recomputed == banked,
+joint determinism; all 13 pre-existing legs untouched and green).
+Neighbors: assoc + prototypes + lesion-basin green (read-only reuse).
+Bugs caught: one MINE in the gate draft (asserted sweep hits == 75/600
+— the frozen battery is 200/point, 600 only across points/origins;
+banked accuracies were correct throughout, 25/200 = 75/600 = 0.125 —
+caught by the gate failing LOUD, fixed, rerun green). Gaps named:
+token-level (explicit next holder); joint-24 LOO depth tier (moot at
+chance, reported not run up).
