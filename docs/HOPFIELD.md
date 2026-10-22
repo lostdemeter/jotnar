@@ -227,3 +227,57 @@ cosine displayed 1.0000 with no exact duplicates underneath
 named: higher-dim prototype spaces (unbankable — maps were
 never stored, by design); β-sweep (frozen at 1, capacity-math
 default).
+
+## Hopfield prototypes — harvest real-dim patterns, no training (constitution, FROZEN pre-run)
+
+Harvest, not training: forward capture hooks ONLY (zero zeroing/
+lesioning — `requires_grad_(False)`, `no_grad` + bf16 autocast exactly
+like `infer_one`; a loss/backward/optimizer anywhere is scope breach).
+Harvest layers frozen pre-run (≤3, exact module paths in the banked
+anatomy suffix convention after "Diffuser." per
+`teacher_anatomy.json:99`; no exploring mid-round — a path matching
+nothing is a stop-finding, fail loud like the lesion typo-guard):
+(1) `transformer_blocks.29` — mid-stack DiT block output, image-stream
+hidden_states (output tuple index 1), dim 3072;
+(2) `transformer_blocks.59` — final DiT block output, image-stream
+hidden_states, dim 3072;
+(3) `norm_out` — final AdaLayerNormContinuous head output (pre-proj_out
+tensor), dim 3072.
+Images frozen: the 8-frame Hypersim eval set (first 2 frames of
+ai_018_001, ai_021_001, ai_022_001, ai_023_005) — identical inputs to the
+lesion/basin evidence the prototypes must explain, so no new-image
+confound (one-line justification as required; banked church/dogs/
+squirrel fixtures NOT used — stated).
+Prototype construction frozen: per-image exemplars — mean-pool over the
+image-token sequence of each capture → 8 prototypes × 3072 per harvest
+point (24 total). Per-basin means REJECTED (banked basins partition
+lesion subsets, not images — no basin→image map exists without inventing
+one = peeking-class violation). Medoids REJECTED (privileging single
+members without principled basis — assoc-memory precedent). Pooling fixed
+before the first run — no peeking at which separates best.
+Capacity check against the banked math: harvested dim 3072 vs the d≥512
+robust-sufficient row (N_exp(512)=6.55e+14 ≫ K=20) — stated as PASS/FAIL
+per harvest point, not argued (expected PASS ×3: 3072 > 512 and N_exp
+grows in d).
+Determinism: same image twice → bit-identical prototypes; harvest runs
+ai_018_001 frame 0 twice and banks per-point max-abs-diff (bar exactly
+0.0); the gate reads banked evidence — heavy reruns are NOT routine.
+Ruling: hooks only; weights read-only out-of-tree (sha256 of the
+established 7 files — 5 transformer shards + trainables + VAE — pre AND
+post, banked; a single modified byte voids the round); no training; no
+emitter/opcode/assembly changes; no new dependencies (marigold-env stack
+already used by `teacher_lesion.py`: torch/diffusers/peft/bitsandbytes/
+cv2/numpy); production weights untouched; teacher AND Qwen-7B never
+co-loaded (text encoder never loaded — precomputed embeds feed all
+blocks; VRAM math: 4-bit NF4 20B ≈10GB + LoRA trainables 1.85GB + bf16
+VAE ≈0.2GB + embeds 19MB + single-frame activations ≈ 13GB total < 24GB
+3090Ti — stated pre-run); GPU solo for hook sessions (nvidia-smi pre-run:
+zero compute processes, 451MiB display-only, 23.6GB free — stated);
+no downloads; MUST run under `~/marigold-env/bin/python` with a CLEAN
+env (`cuda_env.sh` poisons it — established, never re-proven).
+Gate: new `tests/test_hopfield_prototypes.py` (fast legs: determinism
+evidence + schema + capacity-check legs reading banked prototypes +
+banked math; heavy reruns are NOT routine). Neighbors: anatomy +
+assoc-memory legs green (read-only reuse — nothing moves underneath).
+
+### Harvest results (TBD — harvest lands here)
