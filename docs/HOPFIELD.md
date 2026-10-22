@@ -727,3 +727,116 @@ bit-identical audit numbers. Gaps named: encoder-level separation
 (contrastive/whitened TRAINING — outside the prescription arc, stated
 not run); cross-point joint-token memory (untested — same clump,
 stated).
+
+## Contrastive separation — learn what whitening couldn't (constitution, FROZEN pre-run)
+
+Separation training only (banked 24 harvest patterns in, geometry out;
+no architecture/emitter/opcode/assembly changes beyond the declared
+projector — a "small" extra layer to help it converge is scope breach).
+Projector declared EXACTLY: ONE shared linear map P: 3072→512, NO bias,
+NO hidden layer, NO activation (pure MATMUL artifact), outputs
+L2-normalized. Dim 512 with reason: the d≥512 capacity row is where the
+bound robustly holds (projected codes live there by construction).
+Per-op pattern citations (in-table law holds even for analysis-adjacent
+training — gap hit = stop-finding, none hit): project MATMUL
+(`README.md:183`); cosine MUL (`:185`) + ADD (`:159`) for dots, SQUARE
+(`:202`) + ADD + SQRT (`:201`) + DIV (`:174`, template op) for norms —
+all real rows, none parked; SGD update SUB (`:205`) + MUL lr-scale;
+hinge max(), hardest-DAQ mining (NONE — mean over all negatives, mining
+is a tuning knob, stated), triplet enumeration, loop control: host-side
+Python scalars (sampling-on-host-boundary precedent, README contracts —
+not emitted ops, stated explicitly).
+Objective frozen: triplet margin on cosines, L = mean max(0, m + s_an −
+s_ap), triplets = anchor (point,frame) × positive same-frame-other-point
+(2 per anchor) × negatives ALL different-frame patterns (mean, no
+mining). Same-image pulled (cross-point same frame), different-image
+pushed — on the 24 banked harvests, nothing else.
+Frozen with reason (sane-defaults, UNTUNED — tuning mid-round is
+peeking-class; non-convergence is a complete outcome): margin m=0.5
+(half the cosine range; starting sims ~0.99 must open a 0.5 pos−neg
+gap); temperature N/A (margin loss, no exp anywhere — stated); lr=0.1
+(cosine-scale gradients O(1), conservative); steps=5000 full-batch
+(tiny problem, seconds); seed=7; init seeded Gaussian/√fan-in
+(host-side RNG). Budget: wall cap 10 min CPU (expected seconds); GPU:
+NONE (CPU numpy — no GPU need exists, stated pre-run).
+Winner rule (continuity, not reinvention): max off-diag cosine + mean
+pairwise per point's 8 projected patterns vs frozen 0.9/0.5; clearing
+ALL 3 points earns the retrieval rerun (200 trials/point: queries =
+corrupt(PROJECTED pattern), f ∈ {0,0.01,0.05,0.1,0.2} × seeds 0–4 —
+dead-round battery verbatim, continuity; correct = frame identity,
+chance 0.125, bar 0.25 frozen). Empty (nothing clears) is complete.
+Overfit caveat stated pre-run (not discovered): 1.5M params vs 24
+patterns WILL memorize — the bar judges output geometry and the battery
+judges noise-robustness (f=0.05/0.2 queries land off-code if codes are
+memorized spikes); memorization-with-collapse is a dead verdict, not a
+loophole.
+Ruling: weights out-of-tree (P + optimizer state under
+~/student_runs/, NEVER in-repo; metrics banked separately in
+samples/marigold/, primaries untouched); production weights untouched
+(teacher AND Qwen-7B never loaded — banked harvests suffice);
+no downloads.
+Gate: EXTEND `tests/test_assoc_memory.py` in place (retrain-from-banked
+with frozen seed → reprojected == banked codes [fp16 tolerance];
+separability legs recomputed from banked codes; retrieval rerun legs IF
+earned — unearned reruns FAIL the gate (assert none-earned explicitly,
+not just absent); existing legs untouched). Neighbors: assoc +
+prototypes green (nothing moves underneath).
+
+### Contrastive results (TBD — training lands here)
+
+### Contrastive results (CPU 40s, banked harvests only)
+
+`python3 scripts/train_contrastive.py` — loss 0.7586 → 0.3320 by step
+500, then PLATEAU (0.315–0.340, viol stuck 0.69–0.71 through step 5000;
+frozen lr/steps, untuned by design — tuning would be peeking):
+
+```text
+step 1: loss=0.7586 viol=1.000
+step 500: loss=0.3320 viol=0.713
+step 1000: loss=0.3154 viol=0.690
+step 2000: loss=0.3295 viol=0.708
+step 3000: loss=0.3209 viol=0.710
+step 4000: loss=0.3398 viol=0.705
+step 5000: loss=0.3252 viol=0.694
+```
+
+Separability table, learned 512-dim codes vs analytic baselines
+(bar 0.9/0.5; pooled 0.99999 in parens):
+
+| point | maxcos (was) | meancos (was) | clears |
+|---|---|---|---|
+| b29 | 0.9840 (0.9974) | +0.18 (+0.97) | fails |
+| b59 | 1.0000 (1.0000) | +1.00 (+1.00) | fails |
+| norm_out | 0.9846 (0.9985) | +0.26 (+0.98) | fails |
+
+NO battery runs (stated — nothing cleared). P (3072×512, fp64 12.6MB)
+out-of-tree at ~/student_runs/contrastive/P.npy; codes (24×512 fp16)
++ metrics banked in-repo; primaries untouched.
+Verdict: **empty — contrastive learning moves means, not maxes.**
+Mechanisms: the loss halves by dispersing the clump whole (means
++0.97→+0.18/+0.26) while the closest pair per point barely budges
+(0.9974→0.9840, 0.99999→1.0000, 0.9985→0.9846) — the stubborn-pair
+phenomenon in its fourth round (whitening, centering, sibling-sub,
+now learned). Closest pairs are same-scene siblings (b29/b59:
+ai_022 pair, L2 7.2e−2/4.9e−3; norm_out: ai_018 pair, 5.5e−2) — NOT
+bit-identical, so linear separation isn't provably impossible; it is
+unachieved under the frozen budget (69% triplets still violated at
+step 5000 — optimization shortfall under deliberately untuned
+hyperparameters, stated as such, not a geometry proof). b59 is
+untouched to 4 decimals: the deepest clump doesn't even notice.
+The memorization caveat from the constitution did not trigger (no
+collapse-to-codes: means dispersed genuinely) — but neither did
+separation. Learning what whitening couldn't: whitening failed from
+constraint (closest-to-original), learning failed from budget
+(frozen lr/steps vs 1.5M params) — different mechanisms, same wall.
+Gate: `tests/test_assoc_memory.py` extended in place (assoc-cont-*
+key: full retrain reproduces banked codes at 5.72e−05, Gram recompute
+(fp16 tolerance, reason stated), none-earned asserted explicitly;
+all 19 pre-existing legs green). Neighbors: assoc + prototypes green.
+Bugs caught: one MINE in the gate draft (1e−9 tolerance on fp16-banked
+codes — diffs ~3e−5 are bank precision, not nondeterminism; retrain
+leg already proves determinism — tolerance set to 1e−3 with reason).
+Gaps named: tuned-optimizer separation (peeking-class under this
+constitution — a new round could freeze a tuned schedule, stated not
+run); nonlinear projectors (scope breach here by design); encoder-level
+contrastive training (outside the prescription arc).

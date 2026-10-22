@@ -1,0 +1,41 @@
+{
+ "seed": 7,
+ "dim_out": 512,
+ "margin": 0.5,
+ "lr": 0.1,
+ "steps": 5000,
+ "wall_s": 40.0,
+ "loss_curve": {
+  "1": 0.7586017361383369,
+  "500": 0.3320111282568788,
+  "1000": 0.3153907252546668,
+  "2000": 0.3294617288512506,
+  "3000": 0.3209187902887901,
+  "4000": 0.3397543451685528,
+  "5000": 0.3251792645627086
+ },
+ "P_path": "/home/balrog/student_runs/contrastive/P.npy",
+ "P_sha256": "aa0a1b9cda87c7ece26cb59a5dd0ca280db3b99bab6634b7fee57d1e480052cd",
+ "P_shape": [
+  3072,
+  512
+ ],
+ "separability": {
+  "transformer_blocks.29": {
+   "maxcos": 0.9840322797654657,
+   "meancos": 0.18329968491543955,
+   "clears": false
+  },
+  "transformer_blocks.59": {
+   "maxcos": 0.9999898249038985,
+   "meancos": 0.999771218113923,
+   "clears": false
+  },
+  "norm_out": {
+   "maxcos": 0.9846332560487548,
+   "meancos": 0.25934342289983975,
+   "clears": false
+  }
+ },
+ "battery": {}
+}

@@ -221,6 +221,41 @@ def main():
           and len(trep["sha256"]["pre"]) == 7,
           "7 weight files, pre==post")
 
+    # -- contrastive key (contrastive-separation round; legs above untouched)
+    import train_contrastive as C
+    crep = json.load(open(os.path.join(
+        ROOT, "samples", "marigold", "contrastive_separation.json")))
+    cids, cX, corder = C.load24()
+    cT = C.triplets(corder)
+    cP, _ = C.train(cX, cT)
+    Cb = np.load(os.path.join(ROOT, "samples", "marigold",
+                              "contrastive_codes.npy")).astype(np.float64)
+    Clive = (cX @ cP)
+    Clive = Clive / np.linalg.norm(Clive, axis=1, keepdims=True)
+    check("assoc-cont-retrain",
+          Clive.shape == Cb.shape == (24, 512)
+          and bool(np.abs(Clive - Cb).max() < 1e-3),
+          f"retrain(seed 7, 5000) reprojected == banked codes "
+          f"(maxabs {float(np.abs(Clive - Cb).max()):.2e})")
+    csep_ok = True
+    for pi, p in enumerate(C.POINTS):
+        M8 = Cb[pi * 8:(pi + 1) * 8]
+        G = M8 @ M8.T
+        iu = np.triu_indices(8, 1)
+        mx, mn = float(G[iu].max()), float(G[iu].mean())
+        b = crep["separability"][p]
+        csep_ok &= (abs(mx - b["maxcos"]) < 1e-3
+                    and abs(mn - b["meancos"]) < 1e-3
+                    and b["clears"] is False)
+    check("assoc-cont-separability", csep_ok,
+          "Gram recomputed from banked codes; clears False x3")
+    cok = crep["battery"] == {}
+    if crep["battery"]:
+        cok &= all(v["accuracy"] >= v["bar"]
+                   for v in crep["battery"].values())
+    check("assoc-cont-battery", cok,
+          "none earned asserted explicitly (unearned rerun would FAIL)")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 
