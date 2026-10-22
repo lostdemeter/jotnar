@@ -628,3 +628,102 @@ banked accuracies were correct throughout, 25/200 = 75/600 = 0.125 —
 caught by the gate failing LOUD, fixed, rerun green). Gaps named:
 token-level (explicit next holder); joint-24 LOO depth tier (moot at
 chance, reported not run up).
+
+## Token-level Hopfield patterns — through the open door (constitution, FROZEN pre-harvest)
+
+Token selection frozen (count + dtype + budget FIRST — 41,472×3072×fp32
+≈ 509MB is unbannkable, so): stride-96 subsample of the 1728-token
+sequence (indices 0,96,…,1632 → 18 tokens) per (frame, point) → 8
+frames × 3 points × 18 = 432 patterns, banked fp16 .npy ≈ 2.5MB —
+within the 2.75MB/file repo precedent (church/dogs/etc. .npy), stated.
+Capacity check: 432 (joint) / 144 (per-point) ≪ N_exp(3072) = 1.3e97 →
+PASS by ~95 orders (stated, verified in-analysis; else void pre-run).
+Full-token separability audit happens IN-HARVEST on GPU over ALL 13,824
+tokens/point (cross-frame pairs); the banked 432-subset serves
+retrieval + gate recompute (subset stats cross-checked vs full).
+Harvest points: the SAME three banked points (b29/b59/norm_out) —
+comparability with the pooled 0.99999 baseline per point, stated reason
+(no subsetting: VRAM fits, see math).
+Separability bar frozen (same SHAPE as the pooled round): cross-frame
+max off-diag cosine < 0.9 AND cross-frame mean < 0.5 — within-frame
+pairs EXCLUDED with reason (adjacent patches share receptive fields;
+retrieval judges frame identity, so cross-frame separation is the
+load-bearing quantity; within-frame stats ride as diagnostic, not bar).
+Token-level must beat the pooled 0.99999 baseline by this construction
+audit, not by hope.
+Winner rule: separability clears (both clauses, all 3 points) → full
+retrieval battery rerun: per-point 144-pattern memories, queries =
+corrupted variants of the point's banked tokens (f ∈ {0, 0.05, 0.2},
+seeds {0,1,2}; f=0 exact once → 144×7 = 1,008 trials/point), correct =
+winner's frame == query frame (chance 1/8 = 0.125 — derived; bar 0.25
+frozen); same-scene LOO diagnostic if earned. Separability fails → dead,
+NO retrieval runs (don't spend battery on indistinguishable patterns —
+stated; the session runs audit-first, battery conditional in-code).
+Empty is complete.
+Ruling: hooks to harvest (capture only, mirror infer_one exactly);
+weights read-only out-of-tree (sha256 established 7 files pre/post,
+banked — a byte voids the round); no training, no emitter/opcode/
+assembly changes, no new dependencies (marigold-env stack);
+production weights untouched; teacher AND Qwen-7B never co-loaded
+(text encoder never loaded — precomputed embeds; VRAM math: ≈13.7GB
+established load + ~0.8GB transient full-Gram workspace ≈ 15GB <
+24GB 3090Ti — stated pre-run); GPU solo for harvest sessions (nvidia-smi
+pre-run: zero compute procs — stated); no downloads (Hypersim frames +
+fixtures on disk suffice).
+Determinism: frame0 harvested twice, per-point max-abs-diff over FULL
+token captures banked (bar exactly 0.0).
+Gate: EXTEND `tests/test_assoc_memory.py` in place (token-bank
+integrity — .npy loads with exact shape/dtype/finite/index-map —
++ separability legs: subset Gram recomputed in-gate vs banked subset
+stats, full-token stats vs frozen bar + retrieval legs if earned
+(full recompute — cheap at 144/point) + determinism evidence +
+checksums; same shape as established; existing legs untouched). Neighbors: assoc +
+prototypes + lesion-basin green (read-only reuse).
+
+### Token results (TBD — harvest lands here)
+
+### Token results (GPU harvest + audit, CPU battery-gate, banked)
+
+`~/marigold-env/bin/python scripts/harvest_hopfield_tokens.py` (clean
+env, GPU solo — zero compute procs both sessions, VRAM 13.7/14.9GB as
+mathed). Determinism 0.00e+00 all points (full captures, both runs —
+the rerun audit is bit-identical too). sha post == pre (7 files, both
+sessions). Audit-first held: separability failed → NO battery runs.
+
+Separability table, FULL tokens (13,824/point, GPU blocked-Gram) vs the
+pooled 0.99999 baseline (bar: cross max<0.9 AND cross mean<0.5):
+
+| point | cross max | cross mean | within max/mean (diagnostic) | clears |
+|---|---|---|---|---|
+| b29 | 0.9891 | +0.6030 | 0.9902/+0.6253 | fails |
+| b59 | 1.0000 | +0.9988 | 1.0000/+0.9988 | fails |
+| norm_out | 0.9994 | +0.7641 | 1.0000/+0.7765 | fails |
+
+Banked subset: (432, 3072) fp16, 2.65MB (unit rows —
+normalize-before-store; finite; index point-major/stride-96 exact).
+Capacity: 432/144 ≪ 1.3e97 PASS (stated + verified shape).
+Verdict: **token-level dead — no battery earned, none run.**
+Mechanisms: unpooling helps exactly once (b29 mean +0.97→+0.60) and
+nowhere near enough (bar <0.5; max 0.9891 vs 0.9). b59 tokens are as
+clumped as its means (0.99999→1.0000/0.9988) — depth doesn't separate.
+Within ≈ cross at every point (adjacent-patch-duplication hypothesis
+REFUTED as the driver — everything is one clump at every scale; the
+1.0000 within-pairs are exact duplicate tokens, reported not chased).
+The open door led to the same room: the encoder never pulls scenes
+apart at any depth, any head output, pooled or not.
+Gate: `tests/test_assoc_memory.py` extended in place (assoc-tok-*
+key: bank integrity, subset-Gram recompute vs full stats, vacuous
+battery, determinism, checksums; all 16 pre-existing legs green).
+Neighbors: assoc + prototypes + lesion-basin green (read-only reuse).
+Bugs caught (both mine, both pre-bank): (1) harvest copied a hand-made
+_embed-expand_ shortcut instead of the exact `_match_batch` (truncate
+direction) — died on the 8-row embeds before first capture, fixed by
+mirroring infer_one verbatim, nothing banked under it. (2) fp16 subset
+banked from RAW magnitudes first run (b29/b59 RMS 1e6–1e8 → inf soup
+in 2/3 of the bank) — caught by the overflow warning + finite audit,
+fixed by unit-row banking per the normalize-before-store invariant
+(retrieval-identical), stale bank deleted, session re-run clean with
+bit-identical audit numbers. Gaps named: encoder-level separation
+(contrastive/whitened TRAINING — outside the prescription arc, stated
+not run); cross-point joint-token memory (untested — same clump,
+stated).
