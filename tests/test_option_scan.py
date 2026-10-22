@@ -21,6 +21,7 @@ Usage: python3 tests/test_option_scan.py
 import glob
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -57,16 +58,32 @@ def main():
                      for p in glob.glob(os.path.join(ROOT, "samples",
                                                      "marigold", "*.json")))
 
-    # -- temporal-video: unrun, apparatus present ---------------------------
-    check("scan-temporal-unrun",
-          "temporal" not in branches and "video-student" not in branches
-          and "temporal" not in tests and "temporal" not in trains,
-          "no branch/gate/trainer")
-    import re
-    temporal_tables = [m for m in marig.split()
-                       if "temporal" in m or "video" in m]
-    check("scan-temporal-untabled", temporal_tables == [],
-          "no banked temporal table")
+    # -- temporal-video: RAN empty since the scan (update, not rewrite) -----
+    # The scan correctly reported unrun at its base; the temporal round
+    # has since run to an empty verdict (+0.0110 coin-flip, control-compared).
+    # Temporal extended the hypersim gate in place (no dedicated gate file
+    # by design) — so "ran" here means branch + trainer + banked cells.
+    import json as _js
+    _tab = {}
+    try:
+        _ab = _js.load(open(os.path.join(
+            ROOT, "samples", "marigold", "student_ablation.json")))
+        _tt = _ab.get("temporal", {})
+        for _k in ("cells", "winner"):
+            if _k in _tt:
+                _tab[_k] = _tt[_k]
+    except (OSError, ValueError):
+        pass
+    _tcells = _tab.get("cells", {})
+    check("scan-temporal-ran",
+          "temporal" in branches
+          and "temporal" in trains
+          and set(_tcells) >= {"temp-pair", "temp-single"},
+          "branch + trainer + banked cells exist (ran since scan)")
+    check("scan-temporal-verdict-empty",
+          _tab.get("winner") is None
+          and len(_tcells) == 2,
+          "banked winner None (empty verdict, coin-flip delta in spec)")
     check("scan-temporal-apparatus",
           os.path.isfile(os.path.join(ROOT, "chain", "temporal.py"))
           and len(glob.glob(os.path.join(
@@ -126,8 +143,10 @@ def main():
           f"unranked stragglers: {missing}")
 
     # -- no-implementation tripwire ----------------------------------------------
-    absent = ["scripts/train_temporal_student.py",
-              "scripts/train_video_student.py",
+    # NOTE (post-main-merge update): scripts/train_temporal_student.py
+    # exists via the merged temporal round (legitimate main-side work,
+    # not this branch) — removed from this list with reason recorded.
+    absent = ["scripts/train_video_student.py",
               "scripts/train_ordinal_student.py",
               "scripts/train_arrange_student.py",
               "tests/test_temporal_student.py",
