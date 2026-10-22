@@ -184,4 +184,46 @@ legs recomputed in-gate (accuracy + depth tier), determinism
 lesion-basin + anatomy legs green (read-only reuse — nothing
 moves underneath).
 
-### Prescription results (TBD — computation lands here)
+### Prescription results (800 trials, CPU seconds, no runs)
+
+40 prototypes (5 basins × 8 frames, plain means, L2-normalized)
++ outer-product W (6×6, exact) + Ramsauer retrieval (β=1,
+≤100 iters, Δ<1e-6; converged 100%):
+
+```text
+keep=5: 0/200 = 0.000   keep=4: 0/200 = 0.000   keep=3: 0/200 = 0.000
+accuracy = 0.2000 (bar 0.40, chance 0.20)   LOO = 0.125
+verdict = dead
+```
+
+Mechanism, measured not asserted: ALL 600 corrupted trials
+retrieve ONE prototype (C, ai_021_001_fr0001) — total dynamic
+collapse. Prototypes are near-collinear clumps (max off-diag
+cosine 0.999999+ with no exact duplicates — one flat
+landscape, not 40 attractors); the softmax has nowhere to go
+but the top. LOO control at 0.125 (BELOW chance) confirms the
+basins overlap even uncorrupted — separability fails before
+corruption starts. Uniform-prior depth mean 0.7703: retrieved
+depth cannot beat it when retrieval is chance (tier reported,
+moot by the accuracy).
+Verdict: **the associative hypothesis dies for this
+construction** — retrieval at chance (0.2000 == 0.20 exactly),
+below the 0.40 bar by 20σ of trial noise. The capacity obituary
+holds empirically: 6 dims cannot hold 40 patterns (nor 5), and
+no dynamics rescues an inseparable code.
+Gate `tests/test_assoc_memory.py` (CPU, 0.1s): prototype
+integrity (bit-identical recompute), weights exact, accuracy
++ depth recomputed, determinism (same query twice), 4
+fail-loud legs. Neighbors: lesion-basin + anatomy green
+(pasted below; read-only reuse, nothing moves underneath).
+Bugs caught while building (mechanisms): (1) leftover draft
+scaffolding inside the trial loop (placeholder tensors that
+evaluated then got overwritten — dead code that RAN; removed
+pre-run, never banked under it). (2) A tautological no-peek
+leg + walrus one-liner in the gate draft (proved nothing,
+read poorly — deleted/rewritten). (3) `%.4f`-rounded max
+cosine displayed 1.0000 with no exact duplicates underneath
+(verified pairwise — near-collinear, not bit-equal). Gaps
+named: higher-dim prototype spaces (unbankable — maps were
+never stored, by design); β-sweep (frozen at 1, capacity-math
+default).
