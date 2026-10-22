@@ -51,7 +51,60 @@ C < 20 → INSUFFICIENT (explains Phase-8/10 flatness
 structurally — stated as such). The 64-dim question
 (capacity-starved all along?) is answered by the d=64 row.
 
-## Results (TBD — computation lands here)
+## Results (computation lands here — 1.4s CPU, no runs)
+
+```text
+ dim        N_exp        N_sep  classical     capacity verdict (robust-20)
+  64         5.16          651       8.83         5.16 insufficient (insufficient)
+ 128          457          inf       17.7          457 sufficient (FRAGILE)
+ 256     4.71e+06          inf       35.3     4.71e+06 sufficient (FRAGILE)
+ 512     6.55e+14          inf       70.7     6.55e+14 sufficient (sufficient)
+1024     1.66e+31          inf        141     1.66e+31 sufficient (sufficient)
+```
+
+Constants: c = 1.343–1.382 across dims (stable, well above 1 —
+the exponential is genuine, not a boundary artifact).
+Separation floor Δ_req(N=20): 10.9–13.7 dot units against
+M² = 63–1023, i.e. 17% relative at d=64 shrinking to 1.3% at
+d=1024 — same order as the 0.1 tolerance at d=64, easier above
+(the tolerance bridge holds at one digit, as promised, and
+relaxes with dimension — the geometry gets friendlier, not
+tighter). N_sep never binds above d=64 (reported `inf` —
+random separation at √d-radius is plentiful; the exponential
+bound governs everywhere that matters).
+Crossover pinned: modern bound BELOW classical at d=64
+(5.16 < 8.83) but 26× above it at d=128 (457 > 17.7) — the
+crossover lives in (64, 128), exactly astride our operating
+point. K-sensitivity clean (K=10/40: identical verdicts);
+p=0.01 note: same verdicts (6.72 / 596).
+Verdict: **d=64 INSUFFICIENT, robustly** (survives −20%
+constant error; needs ≥20, guarantees 5.16) — the Phase-8/10
+flatness (jattn W64, dit W64, all pinned at 0/36-style empties)
+is explained STRUCTURALLY: a 64-dim associative memory cannot
+hold the 20-pattern working set, whatever the schedule, loss,
+or data. **d≥128 SUFFICIENT** — failures there would be
+dynamics, not capacity (stated as such); d=128/256 carry
+FRAGILE flags (flip at −5%/−16% constant error — rule-verdicts
+kept per freeze, caution stated, not rounded up).
+Answer to the round's question: YES — our 64-dim failures were
+capacity-starved all along (at K=20; the bound bites 4× below
+need). A depth associative memory needs d ≥ 128 for this
+working set, d ≥ 512 for comfortable margin.
+Gate `tests/test_hopfield_capacity.py` (CPU, 1.4s): Lambert
+constants, classical definitional, shape legs (monotone, c>1,
+crossover pinned), banked-table recompute, verdicts +
+robustness flags. Neighbors: none touched (`test_asm.py`
+green, pasted below).
+Bugs caught while building (mechanisms): (1) log(0) at N=1
+(no pairs — vacuously storable, guarded to 0). (2) Unit-norm
+z-scaling sent the union tail to the wrong regime (N_sep=1
+everywhere, masking N_exp) — radius-M scaling fixed it.
+(3) Gaussian tails underflow to exactly 0.0 at high z, which
+spun the N scan to 1e9 (5-min hang, killed by timeout) — scan
+caps at 1e6 with unbounded reported past it (verdicts live at
+20/80, stated). Gaps named: β-sweep (frozen at 1); tolerance
+bridge stays one-digit by design; equation-number pinning
+unverified (flagged, not faked).
 
 ### Pre-computation correction (nothing computed yet — Phase-19 precedent)
 
