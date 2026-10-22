@@ -36,6 +36,7 @@ def cell_mean(frames):
 
 
 def main():
+    _basin_ground_truth_legs()
     base = json.load(open(os.path.join(FIXDIR, "teacher_baseline_A.json")))
     rep = json.load(open(os.path.join(FIXDIR, "teacher_lesion_A.json")))
     rows = rep.get("rows", [])
@@ -236,6 +237,40 @@ def main():
 
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
+
+
+def _basin_ground_truth_legs():
+    import numpy as _np
+    sys.path.insert(0, os.path.join(ROOT, "scripts"))
+    import cluster_basins as _C
+    frames, V = _C.load_vectors()
+    D = _C.cosdist(V)
+    gt = json.load(open(os.path.join(
+        FIXDIR, "basin_ground_truth.json")))
+    det_ok = True
+    for k in (3, 4, 5, 6, 7):
+        m1, l1, _ = _C.medoids_exhaustive(D, k)
+        m2, l2, _ = _C.medoids_exhaustive(D, k)
+        det_ok &= (m1 == m2 and bool((l1 == l2).all()))
+    check("gt-determinism", det_ok,
+          "exhaustive medoids twice: identical labels all k")
+    stab_ok = True
+    for k in (3, 4, 5, 6, 7):
+        med, labels, cost = _C.medoids_exhaustive(D, k)
+        sil = _C.silhouette(D, labels)
+        b = gt["k_fit"][str(k)]
+        stab_ok &= (abs(sil - b["silhouette"]) < 1e-12
+                    and {f: int(l) for f, l in zip(frames, labels)}
+                    == b["labels"])
+    check("gt-stability", stab_ok and gt["winner_k"] == 4,
+          "k=3..7 recomputed == banked "
+          f"({ {k: round(gt['k_fit'][str(k)]['silhouette'], 4) for k in (3, 4, 5, 6, 7)} } "
+          "winner k=4, k=5 hypothesis rejected)")
+    lab = gt["labels"]
+    check("gt-coverage",
+          sorted(lab) == sorted(frames) and len(lab) == 8
+          and sorted(lab.values()) == [0, 0, 1, 1, 2, 2, 3, 3],
+          "8 images exactly once, all 4 labels used (1 basin/scene)")
 
 
 if __name__ == "__main__":

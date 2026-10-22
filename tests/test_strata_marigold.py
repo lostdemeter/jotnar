@@ -887,6 +887,52 @@ def main():
           lr.get("winner") is None,
           "no bars cleared anywhere (directional-move ≠ winner)")
 
+    # -- basin-supervision key (basin-ground-truth round; legs above
+    #    untouched; heavy retrain NOWHERE in gate by design) ------------------
+    sys.path.insert(0, os.path.join(ROOT, "scripts"))
+    import hashlib as _hl
+    import hopfield_retrieval as _R
+    _bs = json.load(open(os.path.join(
+        FIXDIR, "basin_supervision.json")))
+    _bc = np.load(os.path.join(FIXDIR, "basin_codes.npy")).astype(np.float64)
+    check("pb-schema",
+          _bs["Kstar"] == 4 and _bc.shape == (11, 128)
+          and bool(np.isfinite(_bc).all()),
+          "K*=4, 11 codes x128 finite")
+    _wh = np.load(_bs["W_path"])
+    check("pb-weights",
+          _hl.sha256(open(_bs["W_path"], "rb").read()).hexdigest()
+          == _bs["W_sha256"],
+          "out-of-tree weights sha matches")
+    _pred = np.argmax(_bc[:8] @ _wh["bh"] + _wh["bbh"], axis=1)
+    _true = np.array(_bs["assignment"]["true"])
+    check("pb-assignment",
+          bool((_pred == _true).all())
+          and _bs["assignment"]["accuracy"] == 1.0
+          and _bs["bar"] == 0.5,
+          f"head recomputed from codes: 8/8 = 1.0 >= bar 0.5 (K*=4)")
+    _H8 = _bc[:8] / np.linalg.norm(_bc[:8], axis=1, keepdims=True)
+    _G = _H8 @ _H8.T
+    _iu = np.triu_indices(8, 1)
+    _mx, _mn = float(_G[_iu].max()), float(_G[_iu].mean())
+    _ss = _bs["separability"]
+    check("pb-separability",
+          abs(_mx - _ss["maxcos"]) < 1e-6 and abs(_mn - _ss["meancos"]) < 1e-6
+          and _mx < 0.9 and _mn < 0.5,
+          f"no regression vs cleared round (max {_mx:.4f} < 0.9, "
+          f"mean {_mn:+.4f} < 0.5)")
+    _hit = sum(
+        _R.retrieve(_H8, _R.corrupt(_H8[fi], f, s, li))[0] == fi
+        for li, f in enumerate(_R.LEVELS)
+        for fi in range(8) for s in _R.SEEDS)
+    _bb = _bs["battery"]
+    check("pb-battery",
+          _bb["trials"] == 200 and _bb["accuracy"] == _hit / 200
+          and _bb["accuracy"] >= _bb["bar"] == 0.25,
+          f"recomputed {_hit}/200 >= 0.25 -> { _bb['verdict']}")
+    check("pb-determinism", _bs["determinism_maxabs"] == 0.0,
+          "same image -> same code, bit-identical")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 
