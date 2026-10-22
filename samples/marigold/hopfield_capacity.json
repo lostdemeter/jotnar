@@ -1,0 +1,70 @@
+{
+ "dims": [
+  64,
+  128,
+  256,
+  512,
+  1024
+ ],
+ "K": 20,
+ "p": 0.001,
+ "beta": 1.0,
+ "K_radius": 1.0,
+ "rows": {
+  "64": {
+   "N_exp": 5.159070716087552,
+   "c": 1.3819130845671113,
+   "N_sep": 651.0,
+   "N_sep_unbounded": false,
+   "delta_req": 17.794836108670314,
+   "classical": 8.832,
+   "capacity": 5.159070716087552,
+   "verdict": "insufficient",
+   "robust_minus20": "insufficient"
+  },
+  "128": {
+   "N_exp": 456.7118411248078,
+   "c": 1.3521110281357036,
+   "N_sep": null,
+   "N_sep_unbounded": true,
+   "delta_req": 33.16835838294458,
+   "classical": 17.664,
+   "capacity": 456.7118411248078,
+   "verdict": "sufficient",
+   "robust_minus20": "insufficient"
+  },
+  "256": {
+   "N_exp": 4707577.161001908,
+   "c": 1.343385771877732,
+   "N_sep": null,
+   "N_sep_unbounded": true,
+   "delta_req": 33.865434841644415,
+   "classical": 35.328,
+   "capacity": 4707577.161001908,
+   "verdict": "sufficient",
+   "robust_minus20": "insufficient"
+  },
+  "512": {
+   "N_exp": 654962039924672.5,
+   "c": 1.3418991921199517,
+   "N_sep": null,
+   "N_sep_unbounded": true,
+   "delta_req": 34.560540886689694,
+   "classical": 70.656,
+   "capacity": 654962039924672.5,
+   "verdict": "sufficient",
+   "robust_minus20": "sufficient"
+  },
+  "1024": {
+   "N_exp": 1.6577069992039342e+31,
+   "c": 1.3425655969462735,
+   "N_sep": null,
+   "N_sep_unbounded": true,
+   "delta_req": 35.25466606243762,
+   "classical": 141.312,
+   "capacity": 1.6577069992039342e+31,
+   "verdict": "sufficient",
+   "robust_minus20": "sufficient"
+  }
+ }
+}
