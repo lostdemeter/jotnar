@@ -1,0 +1,1098 @@
+# Hopfield capacity math — size the associative memory before building one
+
+## Constitution (FROZEN pre-computation — violations bounce)
+
+Formulas from Ramsauer et al., "Hopfield Networks is All You
+Need" (arXiv:2008.02282, ICLR 2021 — via existing knowledge,
+nothing fetched; theorem numbers as-recalled and FLAGGED where
+uncertain, never faked — see honesty note):
+- (R1) Single-update retrieval theorem (§ Retrieval): pattern
+  x_i is stored and retrieved with one update if its separation
+  Δ_i := x_i^T x_i − max_{j≠i} x_i^T x_j satisfies
+  Δ_i ≥ 2/(βN) + (1/β)·ln(2(N−1)NβM²), with retrieval error
+  exponentially small in βΔ_i. Frozen with β=1 (paper default;
+  β-sensitivity noted as gap, not swept).
+- (R2) Storage-capacity theorem (§ Storage Capacity): N random
+  patterns on the sphere of radius M=K√(d−1) are stored with
+  probability ≥ 1−p for N ≥ √p·c^((d−1)/4), where with
+  a := (2/(d−1))·(1 + ln(2βK²p(d−1))), b := 2K²β/5:
+  c := b / W_0(exp(a + ln b)) (W_0 = principal Lambert W).
+  Frozen with unit-norm patterns (M=1 ⇒ K=1/√(d−1)) and
+  failure prob p=0.001.
+- (R0, context only) Classical Hopfield C ≈ 0.138N
+  (Amit–Gutfreund–Sompolinsky 1985) — the comparison baseline,
+  labeled as such, not a Ramsauer claim.
+Honesty note (part of the freeze): equation-level pinning is
+UNVERIFIED against the text — the load-bearing claims of this
+round (exponential-in-d shape, c>1, modern-beats-classical
+crossover, verdicts) depend on the bound's SHAPE, the paper's
+least disputable headline, not on constant-exactness. A
+±20% constant-robustness check rides in analysis (verdicts must
+survive it). Lambert W implemented by hand (Newton iteration —
+scipy NOT installed here and installing is forbidden);
+checked against W(e)=1, W(1)=Ω, W(0)=0.
+Pattern count frozen: K = 20 (5 observed attractor basins ×
+safety factor 4 — covers basin splitting under new data/seeds;
+verdicts verified log-insensitive to K=10/40 in analysis).
+Error tolerance frozen: successful retrieval = error within
+strata-bar scale (AbsRel ≤ 0.1). Bridge (APPROXIMATE, stated):
+for unit patterns, dot-separation Δ ↔ L2 ball; the tolerance
+enters via (R1): required separation Δ_req(N=K) is computed
+and held against the 0.1-scale tolerance for order-of-magnitude
+consistency — no precision claimed past one digit.
+Capacity table frozen: dims {64, 128, 256, 512, 1024} × max
+patterns = min(N_R(d) [exponential bound], N_S(d) [separation-
+limited from (R1) + random-pattern geometry: dot∼N(0,1/d),
+union bound over pairs at Δ_req, prob ≥ 1−p]). Tighter governs.
+Verdict rule frozen: capacity C(d) ≥ 4K=80 → SUFFICIENT
+(current failures are then dynamics, not capacity — stated as
+such); 20 ≤ C < 80 → MARGINAL (named, not rounded up);
+C < 20 → INSUFFICIENT (explains Phase-8/10 flatness
+structurally — stated as such). The 64-dim question
+(capacity-starved all along?) is answered by the d=64 row.
+
+## Results (computation lands here — 1.4s CPU, no runs)
+
+```text
+ dim        N_exp        N_sep  classical     capacity verdict (robust-20)
+  64         5.16          651       8.83         5.16 insufficient (insufficient)
+ 128          457          inf       17.7          457 sufficient (FRAGILE)
+ 256     4.71e+06          inf       35.3     4.71e+06 sufficient (FRAGILE)
+ 512     6.55e+14          inf       70.7     6.55e+14 sufficient (sufficient)
+1024     1.66e+31          inf        141     1.66e+31 sufficient (sufficient)
+```
+
+Constants: c = 1.343–1.382 across dims (stable, well above 1 —
+the exponential is genuine, not a boundary artifact).
+Separation floor Δ_req(N=20): 10.9–13.7 dot units against
+M² = 63–1023, i.e. 17% relative at d=64 shrinking to 1.3% at
+d=1024 — same order as the 0.1 tolerance at d=64, easier above
+(the tolerance bridge holds at one digit, as promised, and
+relaxes with dimension — the geometry gets friendlier, not
+tighter). N_sep never binds above d=64 (reported `inf` —
+random separation at √d-radius is plentiful; the exponential
+bound governs everywhere that matters).
+Crossover pinned: modern bound BELOW classical at d=64
+(5.16 < 8.83) but 26× above it at d=128 (457 > 17.7) — the
+crossover lives in (64, 128), exactly astride our operating
+point. K-sensitivity clean (K=10/40: identical verdicts);
+p=0.01 note: same verdicts (6.72 / 596).
+Verdict: **d=64 INSUFFICIENT, robustly** (survives −20%
+constant error; needs ≥20, guarantees 5.16) — the Phase-8/10
+flatness (jattn W64, dit W64, all pinned at 0/36-style empties)
+is explained STRUCTURALLY: a 64-dim associative memory cannot
+hold the 20-pattern working set, whatever the schedule, loss,
+or data. **d≥128 SUFFICIENT** — failures there would be
+dynamics, not capacity (stated as such); d=128/256 carry
+FRAGILE flags (flip at −5%/−16% constant error — rule-verdicts
+kept per freeze, caution stated, not rounded up).
+Answer to the round's question: YES — our 64-dim failures were
+capacity-starved all along (at K=20; the bound bites 4× below
+need). A depth associative memory needs d ≥ 128 for this
+working set, d ≥ 512 for comfortable margin.
+Gate `tests/test_hopfield_capacity.py` (CPU, 1.4s): Lambert
+constants, classical definitional, shape legs (monotone, c>1,
+crossover pinned), banked-table recompute, verdicts +
+robustness flags. Neighbors: none touched (`test_asm.py`
+green, pasted below).
+Bugs caught while building (mechanisms): (1) log(0) at N=1
+(no pairs — vacuously storable, guarded to 0). (2) Unit-norm
+z-scaling sent the union tail to the wrong regime (N_sep=1
+everywhere, masking N_exp) — radius-M scaling fixed it.
+(3) Gaussian tails underflow to exactly 0.0 at high z, which
+spun the N scan to 1e9 (5-min hang, killed by timeout) — scan
+caps at 1e6 with unbounded reported past it (verdicts live at
+20/80, stated). Gaps named: β-sweep (frozen at 1); tolerance
+bridge stays one-digit by design; equation-number pinning
+unverified (flagged, not faked).
+
+### Pre-computation correction (nothing computed yet — Phase-19 precedent)
+
+The frozen K-choice (unit-norm patterns, M=1) makes the
+exponential bound VACUOUS at every table dim (checked
+algebraically: with K=1/√(d−1) the d-terms cancel to
+2βK²p(d−1)=0.002, c≈1.02–1.18, and the √p=0.0316 prefactor
+holds N below 3.0 from d=64 to d=1024 — a bound that proves
+nothing judges nothing; adopting it would indict the formula
+choice, not the students). Corrected: radius M=√(d−1) (K=1),
+because (i) our normalized representations live at RMS scale
+~√d (RMSNorm outputs, attention residuals — unit-norm is the
+wrong geometry for this stack), and (ii) it restores a
+graduated table (small at 64, astronomical at 1024) that can
+actually discriminate. Carried through consistently (M² in
+the separation condition too). Everything else frozen stands.
+
+## Associative memory from basin prototypes (constitution, FROZEN pre-run)
+
+Prescription, not training: outer-product storage, ZERO gradient
+steps (a training loop anywhere in this round is scope breach).
+Prototypes from banked data ONLY (no teacher runs — the maps were
+never stored, so prototypes live in lesion-response space):
+per-(basin, frame) MEAN over member subsets of 6-stratum AbsRel
+vectors → 40 prototypes × 6 dims (mean frozen: symmetry-respecting,
+no cherry-picking; medoid/exemplar rejected — privileging single
+members without principled basis. Frame-indexed (not grand-mean):
+frame effects are large in this data; grand-mean would wash out).
+Capacity reality stated pre-run (not discovered mid-round): max
+honest dimensionality is 48 (full profile) or 6 (per-frame);
+capacity math gives N_exp(6)=0.21, N_exp(48)=1.76 — both far below
+K=20 (and below K=5). The dim≥512 requirement is UNMEETABLE from
+banked data. This round therefore tests whether the construction
+beats its own capacity obituary empirically — verdict "dies"
+is the predicted outcome, not a failure mode.
+Storage: Hopfield outer product W = Σ_p x_p x_p^T over L2-
+normalized prototypes (standard, stated). Retrieval dynamics
+frozen: Ramsauer continuous update ξ ← X·softmax(βX^T ξ),
+β=1 (capacity-math default), ≤100 iterations, Δ<1e-6
+convergence (non-convergence reported, not hidden).
+Queries frozen: corrupted versions of banked frame profiles —
+keep {6(full),5,4,3} of 6 strata (partial-distance on observed
+entries), 5 seeded masks per (prototype, level) (seeds
+0–4 — 40×(1+3)×5 = 800 trials; binomial se at chance ≈1.4%).
+(a) Retrieval correctness: retrieved prototype's BASIN ==
+query's basin (chance 1/5). Bar frozen: accuracy ≥ 40% (2×
+chance, ~14σ above noise with N=600 corrupted trials).
+(b) Depth tier: retrieved basin's AbsRel mean vs strata bars
+(all basins ~0.69–0.98 ≫ bars — expected lags) AND vs the
+uniform-prior baseline (random-basin expectation — the only
+uniform baseline constructible without new runs; "uniform-kill"
+operationalized thus, stated). Retrieval can succeed while
+depth lags — reported both, conflated never. Full-profile
+queries (uncorrupted) ride as diagnostic (basin separability
+floor), not bar.
+Winner rule: retrieval ≥ bar AND retrieved-depth
+directionally better (>0.05) than uniform-prior expectation =
+mechanism alive; retrieval at chance = the associative
+hypothesis dies for this construction (complete, not a
+failure to tune). Retrain-match N/A (nothing trains —
+determinism reruns serve instead: same query twice
+bit-identical, gated).
+Determinism: same query → same basin, bit-identical (numpy
+deterministic; asserted exactly in-gate). Fail-loud: wrong-dim
+/ NaN / empty queries refuse (never silent nearest).
+Ruling: prescription only; no emitter/opcode/assembly changes
+(MATMUL/SOFTMAX cited from the table — the update is literally
+those two ops; gap hit = stop-finding); weights = prescribed
+patterns banked in-repo (40×6 floats — centroids, not
+checkpoints); production weights untouched (teacher AND
+Qwen-7B never loaded — banked JSONs only); CPU-first (numpy
+dynamics; no GPU need exists); no new deps; no downloads.
+Gate: new tests/test_assoc_memory.py (CPU-only, seconds):
+prototype integrity (recomputed from banked census), retrieval
+legs recomputed in-gate (accuracy + depth tier), determinism
+(same query twice bit-identical), fail-loud legs. Neighbors:
+lesion-basin + anatomy legs green (read-only reuse — nothing
+moves underneath).
+
+### Prescription results (800 trials, CPU seconds, no runs)
+
+40 prototypes (5 basins × 8 frames, plain means, L2-normalized)
++ outer-product W (6×6, exact) + Ramsauer retrieval (β=1,
+≤100 iters, Δ<1e-6; converged 100%):
+
+```text
+keep=5: 0/200 = 0.000   keep=4: 0/200 = 0.000   keep=3: 0/200 = 0.000
+accuracy = 0.2000 (bar 0.40, chance 0.20)   LOO = 0.125
+verdict = dead
+```
+
+Mechanism, measured not asserted: ALL 600 corrupted trials
+retrieve ONE prototype (C, ai_021_001_fr0001) — total dynamic
+collapse. Prototypes are near-collinear clumps (max off-diag
+cosine 0.999999+ with no exact duplicates — one flat
+landscape, not 40 attractors); the softmax has nowhere to go
+but the top. LOO control at 0.125 (BELOW chance) confirms the
+basins overlap even uncorrupted — separability fails before
+corruption starts. Uniform-prior depth mean 0.7703: retrieved
+depth cannot beat it when retrieval is chance (tier reported,
+moot by the accuracy).
+Verdict: **the associative hypothesis dies for this
+construction** — retrieval at chance (0.2000 == 0.20 exactly),
+below the 0.40 bar by 20σ of trial noise. The capacity obituary
+holds empirically: 6 dims cannot hold 40 patterns (nor 5), and
+no dynamics rescues an inseparable code.
+Gate `tests/test_assoc_memory.py` (CPU, 0.1s): prototype
+integrity (bit-identical recompute), weights exact, accuracy
++ depth recomputed, determinism (same query twice), 4
+fail-loud legs. Neighbors: lesion-basin + anatomy green
+(pasted below; read-only reuse, nothing moves underneath).
+Bugs caught while building (mechanisms): (1) leftover draft
+scaffolding inside the trial loop (placeholder tensors that
+evaluated then got overwritten — dead code that RAN; removed
+pre-run, never banked under it). (2) A tautological no-peek
+leg + walrus one-liner in the gate draft (proved nothing,
+read poorly — deleted/rewritten). (3) `%.4f`-rounded max
+cosine displayed 1.0000 with no exact duplicates underneath
+(verified pairwise — near-collinear, not bit-equal). Gaps
+named: higher-dim prototype spaces (unbankable — maps were
+never stored, by design); β-sweep (frozen at 1, capacity-math
+default).
+
+## Hopfield prototypes — harvest real-dim patterns, no training (constitution, FROZEN pre-run)
+
+Harvest, not training: forward capture hooks ONLY (zero zeroing/
+lesioning — `requires_grad_(False)`, `no_grad` + bf16 autocast exactly
+like `infer_one`; a loss/backward/optimizer anywhere is scope breach).
+Harvest layers frozen pre-run (≤3, exact module paths in the banked
+anatomy suffix convention after "Diffuser." per
+`teacher_anatomy.json:99`; no exploring mid-round — a path matching
+nothing is a stop-finding, fail loud like the lesion typo-guard):
+(1) `transformer_blocks.29` — mid-stack DiT block output, image-stream
+hidden_states (output tuple index 1), dim 3072;
+(2) `transformer_blocks.59` — final DiT block output, image-stream
+hidden_states, dim 3072;
+(3) `norm_out` — final AdaLayerNormContinuous head output (pre-proj_out
+tensor), dim 3072.
+Images frozen: the 8-frame Hypersim eval set (first 2 frames of
+ai_018_001, ai_021_001, ai_022_001, ai_023_005) — identical inputs to the
+lesion/basin evidence the prototypes must explain, so no new-image
+confound (one-line justification as required; banked church/dogs/
+squirrel fixtures NOT used — stated).
+Prototype construction frozen: per-image exemplars — mean-pool over the
+image-token sequence of each capture → 8 prototypes × 3072 per harvest
+point (24 total). Per-basin means REJECTED (banked basins partition
+lesion subsets, not images — no basin→image map exists without inventing
+one = peeking-class violation). Medoids REJECTED (privileging single
+members without principled basis — assoc-memory precedent). Pooling fixed
+before the first run — no peeking at which separates best.
+Capacity check against the banked math: harvested dim 3072 vs the d≥512
+robust-sufficient row (N_exp(512)=6.55e+14 ≫ K=20) — stated as PASS/FAIL
+per harvest point, not argued (expected PASS ×3: 3072 > 512 and N_exp
+grows in d).
+Determinism: same image twice → bit-identical prototypes; harvest runs
+ai_018_001 frame 0 twice and banks per-point max-abs-diff (bar exactly
+0.0); the gate reads banked evidence — heavy reruns are NOT routine.
+Ruling: hooks only; weights read-only out-of-tree (sha256 of the
+established 7 files — 5 transformer shards + trainables + VAE — pre AND
+post, banked; a single modified byte voids the round); no training; no
+emitter/opcode/assembly changes; no new dependencies (marigold-env stack
+already used by `teacher_lesion.py`: torch/diffusers/peft/bitsandbytes/
+cv2/numpy); production weights untouched; teacher AND Qwen-7B never
+co-loaded (text encoder never loaded — precomputed embeds feed all
+blocks; VRAM math: 4-bit NF4 20B ≈10GB + LoRA trainables 1.85GB + bf16
+VAE ≈0.2GB + embeds 19MB + single-frame activations ≈ 13GB total < 24GB
+3090Ti — stated pre-run); GPU solo for hook sessions (nvidia-smi pre-run:
+zero compute processes, 451MiB display-only, 23.6GB free — stated);
+no downloads; MUST run under `~/marigold-env/bin/python` with a CLEAN
+env (`cuda_env.sh` poisons it — established, never re-proven).
+Gate: new `tests/test_hopfield_prototypes.py` (fast legs: determinism
+evidence + schema + capacity-check legs reading banked prototypes +
+banked math; heavy reruns are NOT routine). Neighbors: anatomy +
+assoc-memory legs green (read-only reuse — nothing moves underneath).
+
+### Harvest results (GPU solo, hooks only, no training)
+
+Run: `~/marigold-env/bin/python scripts/harvest_hopfield_prototypes.py`
+(clean env, GPU solo — zero compute procs pre-run, 451MiB
+display-only, 23.6GB free). VRAM measured alloc=13.7GB reserved=14.9GB
+(< 24GB 3090Ti — matches the ≈13GB pre-run math; text encoder never
+loaded, teacher+Qwen-7B co-load impossible by construction).
+Eval context mirrors `infer_one` exactly (no_grad + bf16 autocast,
+LANCZOS4 768x576, t=0.499, precomputed embeds).
+
+```text
+harvest points matched 1:1: ['transformer_blocks.29', 'transformer_blocks.59', 'norm_out']
+determinism ai_018_001/fr0000 x2: transformer_blocks.29=0.00e+00 transformer_blocks.59=0.00e+00 norm_out=0.00e+00
+harvested ai_018_001_fr0000..ai_023_005_fr0001 (8 frames, ~1s each)
+sha post == pre (7 files, nothing written)
+POINT dim=3072 K=20 requirement=d>=512: transformer_blocks.29=PASS transformer_blocks.59=PASS norm_out=PASS
+```
+
+Harvest table (per-point dims + capacity verdicts):
+
+| harvest point | capture | dim | N_exp(dim) | verdict |
+|---|---|---|---|---|
+| transformer_blocks.29 (block out[1], image stream) | [1,1728,3072] → mean-pool | 3072 | 1.3e+97 | PASS (3072≥512) |
+| transformer_blocks.59 (block out[1], image stream) | [1,1728,3072] → mean-pool | 3072 | 1.3e+97 | PASS (3072≥512) |
+| norm_out (head output, pre-proj_out) | [1,1728,3072] → mean-pool | 3072 | 1.3e+97 | PASS (3072≥512) |
+
+24 prototypes banked (`samples/marigold/hopfield_prototypes.json`,
+1.15MB): 8 frames × 3 points × 3072, all finite + nonzero.
+Determinism bar met exactly (0.00e+00 all points — same image twice
+bit-identical). Checksums pre==post (7 files).
+What the listing port inherits: (1) dims PASS with astronomic margin
+— capacity can never explain a future retrieval miss at these points
+(failures would be dynamics, stated as such); (2) L2-NORMALIZE before
+outer-product storage — banked pooled norms are raw residual-stream
+magnitudes (b29 ≈1.5e8, b59 ≈1.3e10, norm_out ≈148; no inf, but 8 orders
+apart across points), while Ramsauer patterns live on the sphere and the
+capacity math assumes radius-M geometry — storing raw would let b59
+swallow everything (assoc-memory collapse precedent: one flat winner);
+(3) point choice is a dynamics question now, not capacity — b29 (mid)
+vs b59/norm_out (late) differ in abstraction, identically in verdict.
+Gate `tests/test_hopfield_prototypes.py` (CPU, 0.03s): schema, values,
+shapes, determinism evidence, capacity recompute, checksums. Neighbors:
+anatomy + assoc-memory green (read-only reuse, nothing moves underneath).
+Bugs caught: none in-harvest (paths matched 1:1 first try, recipe mirror
+exact). Gaps named: basin→image map still absent (per-basin means remain
+unconstructible without invention); retrieval dynamics over these 24
+patterns untested (next round's question, not this one's).
+
+## Hopfield retrieval dynamics — prove the product retrieves (constitution, FROZEN pre-run)
+
+Dynamics only: Ramsauer update on L2-normalized banked prototypes
+(normalize-before-store invariant from the harvest round), β=1
+(capacity-math default), ≤100 iterations, Δ<1e-6 convergence
+(non-convergence reported, not hidden). Three independent 8-pattern
+memories (one per harvest point: transformer_blocks.29/.59, norm_out);
+per-point tables; the listing port inherits the winning point(s).
+Queries frozen (exact construction, no peeking at which retrieves well):
+(a) corrupted variants — additive zero-mean Gaussian, σ = f×RMS of the
+query prototype, f ∈ {0, 0.01, 0.05, 0.1, 0.2} (f=0 = exact-query sanity,
+must self-retrieve), numpy RandomState(1000+10·seed+level_idx), seeds
+0–4 per (frame, level, point) → 8×5×5 = 200 trials/point, 600 total;
+(b) held-out LOO — each frame's exact harvested pattern queried against
+the other 7 of the same point; correct = same-scene sibling frame;
+chance 1/7 (7 stored, 1 sibling — derived); DIAGNOSTIC (no bar — stated,
+assoc-memory LOO precedent).
+Correctness (family a): retrieved frame == query frame. Chance 1/8 =
+0.125 (8 stored patterns, uniform random guess — derived). Bar 0.25 =
+2× chance (assoc-memory precedent: 2× chance at 1/5→0.40 — derived, not
+just stated).
+Depth tier, secondary and explicit: retrieved prototype's frame →
+banked baseline mean AbsRel (`teacher_baseline_H.json`) vs strata bars
+(`test_strata_marigold.py:34-35`: near/far/planar/smooth 0.09,
+nonplanar 0.08, tex 0.07 — every frame mean 0.20–0.40 misses them all,
+expected, teacher misses its own bars) AND vs the uniform-kill baseline
+operationalized as the random-frame expectation (uniform mean 0.2936 over
+the 8 frames — assoc-memory precedent). Reported alongside retrieval,
+never conflated — retrieval can succeed while depth lags, and that split
+is itself a finding.
+Winner rule: accuracy ≥ bar AND retrieved-depth directionally better
+(>0.05 lower mean AbsRel) than the uniform mean = product alive;
+accuracy at chance = dynamics dead for these prototypes (complete, not a
+failure to tune).
+Ruling: dynamics only (no training, no emitter/opcode/assembly changes,
+no new dependencies — numpy only); banked prototypes read-only
+(recompute-integrity leg, never re-harvest); production weights untouched
+(teacher AND Qwen-7B never loaded — banked data only); CPU-first
+(microsecond dynamics: 600 trials × ≤100 iters × 8×3072 MATMUL ≈
+milliseconds numpy — no GPU need exists, stated pre-run); no downloads.
+Gate: new `tests/test_hopfield_retrieval.py` (CPU-only, seconds):
+prototype-integrity (recomputed from banked harvests), correctness legs
+(per corruption level vs frozen bar), determinism (same query twice
+bit-identical), convergence legs (iters ≤ cap honored), fail-loud legs
+(malformed queries refuse). Neighbors: assoc-memory + prototypes +
+lesion-basin green (read-only reuse — nothing moves underneath).
+
+### Retrieval results (TBD — dynamics land here)
+
+### Retrieval results (600 trials + 24 LOO, CPU 0.2s, banked data only)
+
+`python3 scripts/hopfield_retrieval.py` — three independent 8-pattern
+Ramsauer memories (L2-normalized banked prototypes, β=1, ≤100 iters,
+Δ<1e-6; converged 100%, max 2–4 iters — the dynamics converge fine,
+separability is what fails):
+
+```text
+transformer_blocks.29: f=0.0:5/40 f=0.01:5/40 f=0.05:5/40 f=0.1:5/40 f=0.2:5/40
+  acc=0.1250 (bar 0.25, chance 0.125) loo=1.000 (chance 0.143) conv=1.000 maxit=4 rdepth=0.3334 uniform=0.2936 delta=-0.0397 verdict=dead
+transformer_blocks.59: (identical rows) acc=0.1250 loo=1.000 conv=1.000 maxit=2 rdepth=0.3334 delta=-0.0397 verdict=dead
+norm_out: (identical rows) acc=0.1250 loo=1.000 conv=1.000 maxit=4 rdepth=0.3334 delta=-0.0397 verdict=dead
+```
+
+Retrieval table per corruption level (all three points identical —
+every cell 5/40 = 0.125 = chance exactly):
+
+| level f | b29 | b59 | norm_out | bar |
+|---|---|---|---|---|
+| 0.0 (exact) | 5/40 | 5/40 | 5/40 | 10/40 |
+| 0.01 | 5/40 | 5/40 | 5/40 | 10/40 |
+| 0.05 | 5/40 | 5/40 | 5/40 | 10/40 |
+| 0.1 | 5/40 | 5/40 | 5/40 | 10/40 |
+| 0.2 | 5/40 | 5/40 | 5/40 | 10/40 |
+
+Mechanism, measured not asserted: ALL 200 trials/point retrieve ONE
+frame (ai_021_001_fr0000) — total dynamic collapse at every point,
+including exact queries (f=0 winners: all 8 → frame 2, never self).
+Normalized prototypes are near-collinear clumps (max off-diag cosine
+0.9974 b29 / 0.99999 b59 / 0.9985 norm_out) — one dominant attractor,
+not 8; the softmax has nowhere to go but the top (assoc-memory collapse
+precedent, now at real dims: capacity PASSed, separability failed).
+The 0.125 is structural, not sampling: the single winner contributes
+exactly its own 25/200 queries. LOO same-scene 1.000 (diagnostic):
+scenes cluster locally, but globally one attractor wins — separability
+fails across scenes, not within. Depth tier: retrieved 0.3334 =
+winner-frame mean (vs uniform 0.2936, delta −0.0397 — worse, not >0.05
+better; vs strata bars 0.07–0.09 — every frame misses, as expected).
+The split finding (retrieval-at-chance WITH perfect convergence) is the
+point: dynamics dead, optimizer-of-dynamics cannot help — there is
+nothing to tune toward, only codes to separate.
+Verdict: **dynamics dead for these prototypes** — 0.1250 < 0.25 at all
+points and levels, depth delta −0.04. Complete per the frozen winner
+rule, not a failure to tune. Capacity obituary hierarchy stands:
+6-dim died of capacity (N_exp=0.21), 3072-dim dies of separability
+(N_exp=1.3e+97, cosine 0.99999) — the bound was necessary, never
+sufficient.
+Gate `tests/test_hopfield_retrieval.py` (CPU, 0.3s): prototype
+integrity (unit rows), per-level recompute, determinism (same query
+twice), convergence (cap honored), 4 fail-loud legs, frozen-rule
+verdicts. Neighbors: assoc-memory + prototypes + lesion-basin green
+(pasted below; read-only reuse, nothing moves underneath).
+Bugs caught: none (exact-query collapse first looked like a corrupt()
+bug — f=0 returns the untouched copy, verified; the collapse is the
+dynamics, confirmed by the cosine audit). Gaps named: code separation
+(contrastive/whitened prototypes untested — next construction's
+question); β-sweep (frozen at 1); per-point memories only (joint
+24-pattern memory untested — capacity covers it, separability
+wouldn't improve, stated not run).
+
+## Separable prototypes — whitening, token-level, or bust (constitution, FROZEN pre-computation)
+
+Analysis + prescription only (numpy/stdlib — scipy absent on this box,
+stated; no training, no emitter/opcode/assembly changes; banked
+prototypes read-only, never re-harvested; teacher AND Qwen-7B never
+loaded; CPU-first — microsecond dynamics plus one 3072² eigh, GPU need
+none exists, stated pre-run; no downloads).
+Prototype constructions frozen pre-run (≤3). Pool adjudicated first,
+then frozen — mid-round constructions void the round:
+(C1) ridge-ZCA-whitened mean-pooled — ADOPTED: symmetric whitener
+W=(C+εI)^{−1/2} via eigh, C = covariance of all 24 L2-normalized banked
+patterns (shared fit across points — frozen), ε=1e−4 (order of the mean
+eigenvalue ≈3e−4: stabilizes the ~3049 empty directions without erasing
+the whitening), applied per point to its 8 patterns, re-normalized.
+Dim stays 3072 → capacity N_exp=1.3e97 ≫ 24 PASS (stated, verified
+in-analysis).
+(C2) point-mean-centered — ADOPTED: subtract the point's own 8-pattern
+mean (removes the dominant shared direction — the poor man's whitener),
+re-normalize. Dim 3072 → PASS.
+(C3) scene-contrastive (SIBLING-subtracted) — contrastive-separated
+means ADOPTED in this exact form with reason: LOO showed scenes cluster
+(1.000 same-scene), so remove the scene direction — per frame subtract
+its same-scene sibling pattern, re-normalize (α=1 exact, no tuned
+knob). Dim 3072 → PASS.
+TOKEN-LEVEL — VOID pre-run with reason: token tensors were never banked
+(harvest banked mean-pooled prototypes only) and re-harvest is forbidden
+— unconstructible from banked data, stated not attempted (no silent
+substitution).
+Separability bar frozen alongside (adopted with reason): max off-diag
+cosine < 0.9 AND mean pairwise cosine < 0.5. Reason: 0.9 restores
+1−0.9=0.1 of separation margin — 10⁴× the dead baseline's 1−0.99999=1e−5
+(where β=1 weight ratios sit at e^{1e−5}≈1, pure collapse); mean<0.5
+ensures the clump disperses as a whole, not one outlier patched. The
+0.99999 baseline is what must move — per construction, per point.
+Winner rule: a construction clearing the bar (both clauses, all 3
+points) earns the full retrieval battery rerun (same frozen 600-trial
+construction + LOO diagnostic, same judge bar 0.25); retrieval above bar
+= product alive; separability fails everywhere = prototypes unfixable
+this way (complete — and the joint-24-pattern + β-sweep gaps inherit the
+question EXPLICITLY, not hopefully: stated as the named next holders).
+Gate: EXTEND `tests/test_assoc_memory.py` in place (new separability
+key — construction integrity recomputed from banked harvests +
+separability legs reading banked tables + retrieval-rerun legs for any
+construction clearing the bar; existing legs untouched and green).
+Neighbors: assoc + prototypes + lesion-basin green (read-only reuse).
+
+### Separability results (TBD — computation lands here)
+
+### Separability results (CPU seconds, banked data only)
+
+`python3 scripts/hopfield_separable.py` — raw baselines reproduce the
+dead round (0.9974/1.0000/0.9985), then the three frozen constructions:
+
+```text
+transformer_blocks.29:raw: maxcos=0.9974 meancos=+0.9651 fails
+transformer_blocks.59:raw: maxcos=1.0000 meancos=+0.9999 fails
+norm_out:raw:            maxcos=0.9985 meancos=+0.9831 fails
+transformer_blocks.29:c1: maxcos=0.9977 meancos=+0.9964 fails
+transformer_blocks.59:c1: maxcos=1.0000 meancos=+0.9999 fails
+norm_out:c1:            maxcos=0.9990 meancos=+0.9976 fails
+transformer_blocks.29:c2: maxcos=0.9151 meancos=-0.1332 fails
+transformer_blocks.59:c2: maxcos=0.7833 meancos=-0.1377 CLEARS
+norm_out:c2:            maxcos=0.9316 meancos=-0.1364 fails
+transformer_blocks.29:c3: maxcos=0.4325 meancos=-0.1429 CLEARS
+transformer_blocks.59:c3: maxcos=0.7298 meancos=-0.1429 CLEARS
+norm_out:c3:            maxcos=0.9315 meancos=-0.1429 fails
+constructions clearing all 3 points: []
+```
+
+Separability table (bar: maxcos<0.9 AND meancos<0.5):
+
+| construction | b29 (max/mean) | b59 (max/mean) | norm_out (max/mean) | clears |
+|---|---|---|---|---|
+| raw | 0.9974/+0.97 | 1.0000/+1.00 | 0.9985/+0.98 | 0/3 |
+| C1 ridge-ZCA | 0.9977/+1.00 | 1.0000/+1.00 | 0.9990/+1.00 | 0/3 |
+| C2 centered | 0.9151/−0.13 | **0.7833**/−0.14 | 0.9316/−0.14 | 1/3 |
+| C3 sibling-sub | **0.4325**/−0.14 | **0.7298**/−0.14 | 0.9315/−0.14 | 2/3 |
+
+Mechanisms: (C1) ZCA-whitening barely moves anything — verified
+mechanism, not a bug (W symmetric to 9e−15; the whitener is CORRECT):
+ZCA is the whitening rotation CLOSEST to the originals, so
+near-collinear inputs stay near-collinear; with 24 samples spanning ≤23
+dims, equalizing variance cannot invent directions that aren't there.
+Robustness note (analysis, NOT a new construction): even mean-centered
+application reaches only 0.96 maxcos — still fails the bar, so the
+verdict doesn't hinge on the centering choice. (C2/C3) removing the
+shared direction disperses the clump whole (mean −0.13/−0.14 — the mean
+clause passes everywhere) but one stubborn pair survives per failing
+point (0.9151/0.9316/0.9315 — all norm_out-adjacent misses by a hair;
+nearest miss overall C3 2/3).
+No construction clears all 3 points → NO reruns earned per the frozen
+winner rule (retrieval battery stays unrunned — stated, not skipped).
+Verdict: **prototypes unfixable this way — construction-dead.**
+Complete: the joint-24-pattern + β-sweep gaps inherit the question
+EXPLICITLY (named next holders — hopefully nothing).
+Hierarchy closed: 6-dim died of capacity, 3072-dim of separability,
+separability survives whitening/centering/scene-contrast. The code is
+entangled at the representation level (cosine 0.99999 across scenes at
+every depth and every head output) — no post-hoc prototype surgery
+separates what the encoder never pulled apart.
+Gate: `tests/test_assoc_memory.py` extended in place (assoc-sep-*
+key: constructions recomputed from banked harvests, bar legs, vacuous
+rerun legs; all 10 pre-existing legs untouched and green). Neighbors:
+assoc + prototypes + lesion-basin green (read-only reuse).
+Bugs caught: none (C1's non-movement first looked like a transposed-W
+bug — symmetry + covariance diagnostics clear it; the failure is the
+geometry). Gaps named: joint-24 memory, β-sweep (explicit inheritors);
+PCA-whitening (rotation-arbitrary — NOT a loophole, it scrambles the
+frame identity the queries rely on, stated not run).
+
+## Hopfield follow-ups — β-sweep + joint-24 memory, CPU-only (constitution, FROZEN pre-run)
+
+Two inheritors from the separable round, both frozen pre-run. Analysis
+only (numpy; no training, no emitter/opcode/assembly changes, no new
+dependencies; banked prototypes read-only, never re-harvested;
+teacher AND Qwen-7B never loaded — banked data only; CPU-only —
+microsecond dynamics, no GPU need exists, stated pre-run; no downloads).
+(1) β-sweep: grid ADOPTED as {0.1, 0.5, 2, 5, 10} with reason —
+decade-span both sides of the frozen β=1 (0.1 soft-averaging → 10
+near-argmax dynamics; 0.5/2/5 fill the shoulders) — then frozen.
+Rerun the frozen 600-trial battery per β on the three per-point
+8-pattern memories (same queries/seeds/levels, same cap 100 + Δ<1e-6;
+non-convergence reported per β, not hidden). Winner = any (β, point)
+cell with accuracy above the frozen 0.25 bar (chance 0.125 unchanged).
+(2) Joint-24 memory: all 24 banked patterns in ONE store (3 points × 8
+frames — the untested construction vs per-point memories), retrieval
+battery rerun as-is with one frozen adaptation: queries per
+(frame, level, seed) from EACH point's pattern (3 origins × 8 × 5 × 5 =
+600 trials); correct = winner's FRAME == query frame regardless of
+point (any of the frame's 3 copies counts). Chance 3/24 = 1/8 = 0.125
+(24 stored, 3 correct-copies — derived); bar stays 0.25; LOO
+diagnostic same-scene (chance 1/23 ≈ 0.043 — 23 stored others, 1
+sibling... wait: 24-store LOO excludes the query copy, 23 remain, 1
+same-scene sibling → 1/23 — derived, diagnostic, no bar).
+Token-level EXPLICITLY excluded (needs re-harvest with GPU teacher runs
+— separate round with its own constitution, not smuggled in here).
+Empty on both (neither clears 0.25) is complete — the Hopfield arc
+closes with the hierarchy intact.
+Gate: EXTEND `tests/test_assoc_memory.py` in place (β-sweep legs:
+per-β accuracy table vs frozen bar; joint-24 legs: schema + accuracy vs
+bar + determinism; same integrity shape as established; existing legs
+untouched). Neighbors: assoc + prototypes + lesion-basin green.
+(NOTE, caught pre-run while writing this: the LOO chance above first
+read 1/7 — corrected to 1/23 before any computation; the per-point
+1/7 stands in its own round. Pre-run corrections are legal;
+post-run ones bounce.)
+
+### Follow-up results (TBD — computation lands here)
+
+### Follow-up results (CPU 0.7s, banked data only)
+
+`python3 scripts/hopfield_followups.py` — empty on both, which is
+complete (the arc closes with the hierarchy intact):
+
+β-sweep (15 cells, frozen battery per point = 200 trials, bar 0.25):
+
+| β | b29 | b59 | norm_out | conv | maxit |
+|---|---|---|---|---|---|
+| 0.1 | 25/200 | 25/200 | 25/200 | 1.000 | 2–3 |
+| 0.5 | 25/200 | 25/200 | 25/200 | 1.000 | 2–4 |
+| 2 | 25/200 | 25/200 | 25/200 | 1.000 | 2–5 |
+| 5 | 25/200 | 25/200 | 25/200 | 1.000 | 2–6 |
+| 10 | 25/200 | 25/200 | 25/200 | 1.000 | 2–7 |
+
+Every cell 0.1250 = chance exactly — β moves NOTHING (soft-averaging
+and near-argmax land on the same single winner, ai_021_001_fr0000 at
+every β — verified; the landscape has one basin, so sharpness is
+irrelevant). Iters grow slightly with β (2→7) but all converge within
+cap — dynamics healthy, separability absent. Winner: none.
+Joint-24 (600 trials, 3 origins × 200): acc = 75/600 = 0.1250 (chance
+3/24 = 0.1250, bar 0.25) — below; LOO same-scene 1.000 (chance 1/23 ≈
+0.043, diagnostic); conv 1.000, maxit 14. Winner frame again
+ai_021_001_fr0000, specifically its b59 copy all 600 times (the
+tightest clump member, cosine 1.0000 — more copies of the same clump
+don't help). Winner: none.
+Verdicts: **β-sweep empty, joint-24 empty — both inheritors complete.**
+The Hopfield arc closes: 6-dim died of capacity → 3072-dim of
+separability → separability survives whitening/centering/contrast →
+sharpness and pooling-scale change nothing. Remaining holder, named
+explicitly: token-level (needs re-harvest + GPU teacher runs — its own
+round, its own constitution).
+Gate: `tests/test_assoc_memory.py` extended in place (assoc-fol-*
+key: 15 sweep cells recomputed == banked, joint recomputed == banked,
+joint determinism; all 13 pre-existing legs untouched and green).
+Neighbors: assoc + prototypes + lesion-basin green (read-only reuse).
+Bugs caught: one MINE in the gate draft (asserted sweep hits == 75/600
+— the frozen battery is 200/point, 600 only across points/origins;
+banked accuracies were correct throughout, 25/200 = 75/600 = 0.125 —
+caught by the gate failing LOUD, fixed, rerun green). Gaps named:
+token-level (explicit next holder); joint-24 LOO depth tier (moot at
+chance, reported not run up).
+
+## Token-level Hopfield patterns — through the open door (constitution, FROZEN pre-harvest)
+
+Token selection frozen (count + dtype + budget FIRST — 41,472×3072×fp32
+≈ 509MB is unbannkable, so): stride-96 subsample of the 1728-token
+sequence (indices 0,96,…,1632 → 18 tokens) per (frame, point) → 8
+frames × 3 points × 18 = 432 patterns, banked fp16 .npy ≈ 2.5MB —
+within the 2.75MB/file repo precedent (church/dogs/etc. .npy), stated.
+Capacity check: 432 (joint) / 144 (per-point) ≪ N_exp(3072) = 1.3e97 →
+PASS by ~95 orders (stated, verified in-analysis; else void pre-run).
+Full-token separability audit happens IN-HARVEST on GPU over ALL 13,824
+tokens/point (cross-frame pairs); the banked 432-subset serves
+retrieval + gate recompute (subset stats cross-checked vs full).
+Harvest points: the SAME three banked points (b29/b59/norm_out) —
+comparability with the pooled 0.99999 baseline per point, stated reason
+(no subsetting: VRAM fits, see math).
+Separability bar frozen (same SHAPE as the pooled round): cross-frame
+max off-diag cosine < 0.9 AND cross-frame mean < 0.5 — within-frame
+pairs EXCLUDED with reason (adjacent patches share receptive fields;
+retrieval judges frame identity, so cross-frame separation is the
+load-bearing quantity; within-frame stats ride as diagnostic, not bar).
+Token-level must beat the pooled 0.99999 baseline by this construction
+audit, not by hope.
+Winner rule: separability clears (both clauses, all 3 points) → full
+retrieval battery rerun: per-point 144-pattern memories, queries =
+corrupted variants of the point's banked tokens (f ∈ {0, 0.05, 0.2},
+seeds {0,1,2}; f=0 exact once → 144×7 = 1,008 trials/point), correct =
+winner's frame == query frame (chance 1/8 = 0.125 — derived; bar 0.25
+frozen); same-scene LOO diagnostic if earned. Separability fails → dead,
+NO retrieval runs (don't spend battery on indistinguishable patterns —
+stated; the session runs audit-first, battery conditional in-code).
+Empty is complete.
+Ruling: hooks to harvest (capture only, mirror infer_one exactly);
+weights read-only out-of-tree (sha256 established 7 files pre/post,
+banked — a byte voids the round); no training, no emitter/opcode/
+assembly changes, no new dependencies (marigold-env stack);
+production weights untouched; teacher AND Qwen-7B never co-loaded
+(text encoder never loaded — precomputed embeds; VRAM math: ≈13.7GB
+established load + ~0.8GB transient full-Gram workspace ≈ 15GB <
+24GB 3090Ti — stated pre-run); GPU solo for harvest sessions (nvidia-smi
+pre-run: zero compute procs — stated); no downloads (Hypersim frames +
+fixtures on disk suffice).
+Determinism: frame0 harvested twice, per-point max-abs-diff over FULL
+token captures banked (bar exactly 0.0).
+Gate: EXTEND `tests/test_assoc_memory.py` in place (token-bank
+integrity — .npy loads with exact shape/dtype/finite/index-map —
++ separability legs: subset Gram recomputed in-gate vs banked subset
+stats, full-token stats vs frozen bar + retrieval legs if earned
+(full recompute — cheap at 144/point) + determinism evidence +
+checksums; same shape as established; existing legs untouched). Neighbors: assoc +
+prototypes + lesion-basin green (read-only reuse).
+
+### Token results (TBD — harvest lands here)
+
+### Token results (GPU harvest + audit, CPU battery-gate, banked)
+
+`~/marigold-env/bin/python scripts/harvest_hopfield_tokens.py` (clean
+env, GPU solo — zero compute procs both sessions, VRAM 13.7/14.9GB as
+mathed). Determinism 0.00e+00 all points (full captures, both runs —
+the rerun audit is bit-identical too). sha post == pre (7 files, both
+sessions). Audit-first held: separability failed → NO battery runs.
+
+Separability table, FULL tokens (13,824/point, GPU blocked-Gram) vs the
+pooled 0.99999 baseline (bar: cross max<0.9 AND cross mean<0.5):
+
+| point | cross max | cross mean | within max/mean (diagnostic) | clears |
+|---|---|---|---|---|
+| b29 | 0.9891 | +0.6030 | 0.9902/+0.6253 | fails |
+| b59 | 1.0000 | +0.9988 | 1.0000/+0.9988 | fails |
+| norm_out | 0.9994 | +0.7641 | 1.0000/+0.7765 | fails |
+
+Banked subset: (432, 3072) fp16, 2.65MB (unit rows —
+normalize-before-store; finite; index point-major/stride-96 exact).
+Capacity: 432/144 ≪ 1.3e97 PASS (stated + verified shape).
+Verdict: **token-level dead — no battery earned, none run.**
+Mechanisms: unpooling helps exactly once (b29 mean +0.97→+0.60) and
+nowhere near enough (bar <0.5; max 0.9891 vs 0.9). b59 tokens are as
+clumped as its means (0.99999→1.0000/0.9988) — depth doesn't separate.
+Within ≈ cross at every point (adjacent-patch-duplication hypothesis
+REFUTED as the driver — everything is one clump at every scale; the
+1.0000 within-pairs are exact duplicate tokens, reported not chased).
+The open door led to the same room: the encoder never pulls scenes
+apart at any depth, any head output, pooled or not.
+Gate: `tests/test_assoc_memory.py` extended in place (assoc-tok-*
+key: bank integrity, subset-Gram recompute vs full stats, vacuous
+battery, determinism, checksums; all 16 pre-existing legs green).
+Neighbors: assoc + prototypes + lesion-basin green (read-only reuse).
+Bugs caught (both mine, both pre-bank): (1) harvest copied a hand-made
+_embed-expand_ shortcut instead of the exact `_match_batch` (truncate
+direction) — died on the 8-row embeds before first capture, fixed by
+mirroring infer_one verbatim, nothing banked under it. (2) fp16 subset
+banked from RAW magnitudes first run (b29/b59 RMS 1e6–1e8 → inf soup
+in 2/3 of the bank) — caught by the overflow warning + finite audit,
+fixed by unit-row banking per the normalize-before-store invariant
+(retrieval-identical), stale bank deleted, session re-run clean with
+bit-identical audit numbers. Gaps named: encoder-level separation
+(contrastive/whitened TRAINING — outside the prescription arc, stated
+not run); cross-point joint-token memory (untested — same clump,
+stated).
+
+## Contrastive separation — learn what whitening couldn't (constitution, FROZEN pre-run)
+
+Separation training only (banked 24 harvest patterns in, geometry out;
+no architecture/emitter/opcode/assembly changes beyond the declared
+projector — a "small" extra layer to help it converge is scope breach).
+Projector declared EXACTLY: ONE shared linear map P: 3072→512, NO bias,
+NO hidden layer, NO activation (pure MATMUL artifact), outputs
+L2-normalized. Dim 512 with reason: the d≥512 capacity row is where the
+bound robustly holds (projected codes live there by construction).
+Per-op pattern citations (in-table law holds even for analysis-adjacent
+training — gap hit = stop-finding, none hit): project MATMUL
+(`README.md:183`); cosine MUL (`:185`) + ADD (`:159`) for dots, SQUARE
+(`:202`) + ADD + SQRT (`:201`) + DIV (`:174`, template op) for norms —
+all real rows, none parked; SGD update SUB (`:205`) + MUL lr-scale;
+hinge max(), hardest-DAQ mining (NONE — mean over all negatives, mining
+is a tuning knob, stated), triplet enumeration, loop control: host-side
+Python scalars (sampling-on-host-boundary precedent, README contracts —
+not emitted ops, stated explicitly).
+Objective frozen: triplet margin on cosines, L = mean max(0, m + s_an −
+s_ap), triplets = anchor (point,frame) × positive same-frame-other-point
+(2 per anchor) × negatives ALL different-frame patterns (mean, no
+mining). Same-image pulled (cross-point same frame), different-image
+pushed — on the 24 banked harvests, nothing else.
+Frozen with reason (sane-defaults, UNTUNED — tuning mid-round is
+peeking-class; non-convergence is a complete outcome): margin m=0.5
+(half the cosine range; starting sims ~0.99 must open a 0.5 pos−neg
+gap); temperature N/A (margin loss, no exp anywhere — stated); lr=0.1
+(cosine-scale gradients O(1), conservative); steps=5000 full-batch
+(tiny problem, seconds); seed=7; init seeded Gaussian/√fan-in
+(host-side RNG). Budget: wall cap 10 min CPU (expected seconds); GPU:
+NONE (CPU numpy — no GPU need exists, stated pre-run).
+Winner rule (continuity, not reinvention): max off-diag cosine + mean
+pairwise per point's 8 projected patterns vs frozen 0.9/0.5; clearing
+ALL 3 points earns the retrieval rerun (200 trials/point: queries =
+corrupt(PROJECTED pattern), f ∈ {0,0.01,0.05,0.1,0.2} × seeds 0–4 —
+dead-round battery verbatim, continuity; correct = frame identity,
+chance 0.125, bar 0.25 frozen). Empty (nothing clears) is complete.
+Overfit caveat stated pre-run (not discovered): 1.5M params vs 24
+patterns WILL memorize — the bar judges output geometry and the battery
+judges noise-robustness (f=0.05/0.2 queries land off-code if codes are
+memorized spikes); memorization-with-collapse is a dead verdict, not a
+loophole.
+Ruling: weights out-of-tree (P + optimizer state under
+~/student_runs/, NEVER in-repo; metrics banked separately in
+samples/marigold/, primaries untouched); production weights untouched
+(teacher AND Qwen-7B never loaded — banked harvests suffice);
+no downloads.
+Gate: EXTEND `tests/test_assoc_memory.py` in place (retrain-from-banked
+with frozen seed → reprojected == banked codes [fp16 tolerance];
+separability legs recomputed from banked codes; retrieval rerun legs IF
+earned — unearned reruns FAIL the gate (assert none-earned explicitly,
+not just absent); existing legs untouched). Neighbors: assoc +
+prototypes green (nothing moves underneath).
+
+### Contrastive results (TBD — training lands here)
+
+### Contrastive results (CPU 40s, banked harvests only)
+
+`python3 scripts/train_contrastive.py` — loss 0.7586 → 0.3320 by step
+500, then PLATEAU (0.315–0.340, viol stuck 0.69–0.71 through step 5000;
+frozen lr/steps, untuned by design — tuning would be peeking):
+
+```text
+step 1: loss=0.7586 viol=1.000
+step 500: loss=0.3320 viol=0.713
+step 1000: loss=0.3154 viol=0.690
+step 2000: loss=0.3295 viol=0.708
+step 3000: loss=0.3209 viol=0.710
+step 4000: loss=0.3398 viol=0.705
+step 5000: loss=0.3252 viol=0.694
+```
+
+Separability table, learned 512-dim codes vs analytic baselines
+(bar 0.9/0.5; pooled 0.99999 in parens):
+
+| point | maxcos (was) | meancos (was) | clears |
+|---|---|---|---|
+| b29 | 0.9840 (0.9974) | +0.18 (+0.97) | fails |
+| b59 | 1.0000 (1.0000) | +1.00 (+1.00) | fails |
+| norm_out | 0.9846 (0.9985) | +0.26 (+0.98) | fails |
+
+NO battery runs (stated — nothing cleared). P (3072×512, fp64 12.6MB)
+out-of-tree at ~/student_runs/contrastive/P.npy; codes (24×512 fp16)
++ metrics banked in-repo; primaries untouched.
+Verdict: **empty — contrastive learning moves means, not maxes.**
+Mechanisms: the loss halves by dispersing the clump whole (means
++0.97→+0.18/+0.26) while the closest pair per point barely budges
+(0.9974→0.9840, 0.99999→1.0000, 0.9985→0.9846) — the stubborn-pair
+phenomenon in its fourth round (whitening, centering, sibling-sub,
+now learned). Closest pairs are same-scene siblings (b29/b59:
+ai_022 pair, L2 7.2e−2/4.9e−3; norm_out: ai_018 pair, 5.5e−2) — NOT
+bit-identical, so linear separation isn't provably impossible; it is
+unachieved under the frozen budget (69% triplets still violated at
+step 5000 — optimization shortfall under deliberately untuned
+hyperparameters, stated as such, not a geometry proof). b59 is
+untouched to 4 decimals: the deepest clump doesn't even notice.
+The memorization caveat from the constitution did not trigger (no
+collapse-to-codes: means dispersed genuinely) — but neither did
+separation. Learning what whitening couldn't: whitening failed from
+constraint (closest-to-original), learning failed from budget
+(frozen lr/steps vs 1.5M params) — different mechanisms, same wall.
+Gate: `tests/test_assoc_memory.py` extended in place (assoc-cont-*
+key: full retrain reproduces banked codes at 5.72e−05, Gram recompute
+(fp16 tolerance, reason stated), none-earned asserted explicitly;
+all 19 pre-existing legs green). Neighbors: assoc + prototypes green.
+Bugs caught: one MINE in the gate draft (1e−9 tolerance on fp16-banked
+codes — diffs ~3e−5 are bank precision, not nondeterminism; retrain
+leg already proves determinism — tolerance set to 1e−3 with reason).
+Gaps named: tuned-optimizer separation (peeking-class under this
+constitution — a new round could freeze a tuned schedule, stated not
+run); nonlinear projectors (scope breach here by design); encoder-level
+contrastive training (outside the prescription arc).
+
+## Difference-preserving prototypes + manifold diagnostics (constitution, FROZEN pre-computation)
+
+Analysis + prescription only (numpy; no training, no emitter/opcode/
+assembly changes, no new dependencies; banked harvests read-only —
+pooled 24 + token subset 432 — never re-harvested (full token captures
+are gone; everything builds from banked means/subset — stated);
+production weights untouched (teacher AND Qwen-7B never loaded —
+banked data only); CPU-first (largest op: 432² Gram — no GPU need
+exists, stated pre-run); no downloads).
+Constructions frozen pre-run (≤3 — exact rules + counts; medoids stay
+REJECTED on assoc precedent — all three differ mechanically, stated per
+rule: D1 is the ANTI-medoid (max, not min, distance); D2 is a weighted
+mean (not a member at all); D3 is a covering set (dispersion, not
+centrality)):
+(D1) max-deviation exemplars — per (frame, point), the one of its 18
+banked subset tokens with MAX L2 distance from the frame's banked pooled
+mean (unit space); 8 exemplars/point, labeled by frame. No peeking:
+deviation-from-mean is fixed before separability is seen.
+(D2) variance-weighted pooling — per (frame, point), weighted mean of
+its 18 subset tokens, weights = squared deviation from the plain mean,
+re-normalized; 8 patterns/point. Upweights difference-carrying tokens
+by rule, not by inspection.
+(D3) farthest-point sets — greedy FPS over the point's 144 subset
+tokens to 8 exemplars (seed = farthest from point-token-mean, then 7×
+farthest-from-selected; ties → first index; deterministic); labeled by
+source frame.
+Counts: 8 patterns/point/construction — capacity 8 ≪ N_exp(3072) PASS
+all (stated, verified in-analysis; else void).
+Diagnostics frozen alongside (characterize, NOT gate): (i) NN distance
+distribution on the 24 pooled harvests — per-pattern nearest-neighbor
+cosine distance (1−cos): min/median/max reported; (ii) intrinsic
+dimension — participation ratio PR=(Σλ)²/Σλ² of the pooled-24
+covariance + eigenvalues >1%-of-max count, per-point too.
+Bars: frozen 0.9 max / 0.5 mean (continuity, not reinvention).
+Winner rule: a construction clearing ALL 3 points earns the retrieval
+rerun (dead-round battery verbatim per construction: 200 trials =
+8 patterns × 5 levels × 5 seeds, correct = frame identity, chance
+1/8 = 0.125, bar 0.25). Empty (nothing clears) is complete AND triggers
+the manifold verdict, decided by diagnostics with numbers frozen here:
+thin-manifold CONFIRMED iff PR_24 ≤ 5 (24 patterns in ≤5 effective dims
+of 3072 = 0.16% — the clump is a sliver) AND median NN cosine-distance
+< 0.05 (typical nearest pair 2× tighter than the 0.1 bar margin) —
+else UNCONFIRMED (stated outcome, not a failure).
+Gate: EXTEND `tests/test_assoc_memory.py` in place (construction
+integrity — D1/D2/D3 recomputed from banked harvests+subset;
+separability legs; manifold-diagnostic legs REPORTED-not-asserted
+(numbers printed + finite, thresholds never asserted); retrieval rerun
+legs IF earned — unearned reruns FAIL the gate, assert none-earned
+explicitly; existing legs untouched). Neighbors: assoc + prototypes +
+lesion-basin green (read-only reuse — nothing moves underneath).
+
+### Difference results (TBD — computation lands here)
+
+### Difference results (CPU seconds, banked means + subset only)
+
+`python3 scripts/hopfield_difference.py` — empty on constructions,
+CONFIRMED on substrate (both — the verdict the constitution allowed):
+
+Separability table (bar max<0.9 AND mean<0.5):
+
+| construction | b29 (max/mean) | b59 (max/mean) | norm_out (max/mean) | clears |
+|---|---|---|---|---|
+| D1 max-deviation | 0.8035/+0.55 | 0.9995/+1.00 | 0.9908/+0.52 | 0/3 |
+| D2 var-weighted | 0.9785/+0.89 | 0.9998/+1.00 | 0.9956/+0.70 | 0/3 |
+| D3 farthest-point | 0.6024/+0.53 | 0.9985/+1.00 | 0.8664/+0.59 | 0/3 |
+
+NO battery runs (stated — nothing cleared all 3).
+Mechanisms: difference-preserving moves the MAX clause (3 cells clear
+it: b29:D1 0.8035, b29:D3 0.6024, norm_out:D3 0.8664) but NEVER the mean
+clause (0.52–1.00 everywhere) — extremes separate, the clump doesn't.
+D2 is the weakest (reweighting 18 near-identical tokens ≈ the mean).
+b59 is immovable by every construction in the arc (0.9985–0.9998 here).
+Manifold numbers (frozen decision rule): NN cosine-distance on pooled
+24: min 1.20e−05 / median 2.99e−03 / max 5.47e−03; PR_24 = 2.12 ≤ 5 ✓;
+median 0.003 < 0.05 ✓ → **thin-manifold CONFIRMED**: 24 patterns live
+in ~2 effective dims of 3072 (0.07%), typical nearest pair 30× tighter
+than the 0.1 bar margin. Per-point PR: the sliver is thinnest late
+(banked per-point in diagnostics). THIS is the substrate explanation,
+stated with numbers: the encoder maps 8 distinct scenes into a
+2-dimensional sliver — no post-hoc prototype surgery (centering,
+whitening, contrast, triplets, extremes, covering sets) can separate
+what was never pulled apart, because separation would have to invent
+dimensions the data doesn't occupy.
+Verdict: **constructions dead AND substrate confirmed — both.**
+The Hopfield arc terminates here: capacity → separability → surgery
+(analytic + learned + difference-preserving) → sharpness/scale →
+substrate. Remaining work is encoder-side (training), outside the
+prescription arc by design.
+Gate: `tests/test_assoc_memory.py` extended in place (assoc-diff-*
+key: constructions recomputed == banked incl. exact d3 indices,
+manifold legs reported-not-asserted, none-earned asserted explicitly;
+all 22 pre-existing legs green). Neighbors: assoc + prototypes +
+lesion-basin green (read-only reuse).
+Bugs caught: one MINE pre-run in the analysis draft (D2 accumulated
+one GLOBAL weighted mean then repeated it 8× — 8 identical patterns,
+maxcos=1.0 by construction bug; caught on code read before first run,
+fixed to per-frame means, never banked under it). Gaps named: none
+open in-arc (encoder-side training is out-of-arc, stated not run).
+
+## Encoder-side separation — learn codes worth storing (constitution, FROZEN pre-run)
+
+Encoder training only (first and only training in the arc; no
+emitter/opcode/assembly changes — a "small" pattern addition to suit
+the encoder is scope breach).
+Objective — exactly ONE, loss formula frozen (objective-shopping
+mid-round is the failure mode being avoided):
+L = (1/|T|)·Σ max(0, m + s_an − s_ap) + λ·(1/12)·Σ||dec(enc(x)) − x||²,
+triplet margin on code cosines (positives = same-scene sibling frames;
+negatives = all other images) + reconstruction anchor (MSE to the
+input thumbnail). m = 0.5 (continuity with the contrastive round),
+λ = 0.1 (anchor-not-driver: grounding, not leading — reason stated).
+The anchor is load-bearing for honesty: it forbids collapse-to-arbitrary
+codes, so the retrieval clause judges grounded codes, not spikes.
+Architecture frozen (minimal first, capacity second — exact dims):
+96×72 RGB thumbnails (÷8 LANCZOS from the 768×576 recipe, /255·2−1 —
+infer_one continuity) → 12×12 patches (48 × 432) → linear 432→96 →
+2× mixer blocks (token-MLP 48→24→48 + channel-MLP 96→192→96, SILU,
+residuals) → flatten (4608, NO pooling — pooling avoided by construction,
+stated) → linear 4608→128 → L2-normalize = code; decoder single linear
+128→20736 → reshape thumbnail (minimal anchor). ~3.3M params total.
+Per-op citations (deployability judged, not assumed): MATMUL (:183),
+ADD (:159), SUB (:205), MUL (:185), SILU (:196), SQUARE (:202), SQRT
+(:201), DIV (:174) — ALL real rows, none parked; reshape = parked-meta
+zero-code (cited, no behavior); hinge/max/loop-control host-side Python
+(sampling-on-host precedent). Gaps: NONE in the artifact — op-clean by
+construction (flagged in verdict either way: verdict states this).
+Data frozen (comparability stated): train = 8 Hypersim eval frames
+(same set every round) + 3 fixtures (church/dogs/squirrel from
+samples/marigold/inputs/ — train-only negatives + recon; fixtures have
+no sibling so anchor no triplets — stated); evaluate separability +
+retrieval on the 8 Hypersim codes ONLY (every prior number compares).
+Budget: wall cap 30 min CPU (expected minutes); steps = 2000 full-batch;
+lr = 0.01 + global grad-clip norm 1.0 (both frozen; conservative +
+stabilized — untuned, peeking-class); seed = 7; init Gaussian/√fan-in.
+NaN/divergence = complete-empty (not a rerun license — stated).
+Winner rule: 8-code separability clears 0.9/0.5 (continuity) AND
+retrieval battery ≥ 0.25 on learned codes (dead-round battery verbatim:
+200 trials, corrupt(code), frame identity, chance 0.125) — BOTH must
+hold (separability without retrieval repeats the prescription round).
+Empty (neither holds) is complete.
+Ruling: weights out-of-tree (~/student_runs/encoder/, metrics + configs
++ 12 codes banked separately in samples/marigold/, primaries untouched);
+production weights untouched (teacher AND Qwen-7B never loaded —
+banked images suffice, no new teacher runs); no downloads (fixtures +
+shard on disk); no new dependencies (system numpy+PIL — cv2 absent,
+unneeded); CPU-only (no GPU need exists — stated pre-run; GPU solo N/A,
+no harvest sessions this round).
+Gate: EXTEND `tests/test_assoc_memory.py` in place (encoder legs:
+schema + separability recomputed from banked codes + retrieval rerun
+legs IF earned — unearned reruns FAIL the gate (assert none-earned
+explicitly); determinism evidence (same image → same code); same
+discipline as established; heavy retrain NOWHERE in gate by design).
+Neighbors: assoc + prototypes green (nothing moves underneath).
+
+### Encoder results (TBD — training lands here)
+
+### Encoder results (CPU 60s training, banked images only)
+
+`python3 scripts/train_encoder.py` — erratum FIRST (bugs-caught,
+pre-training, disclosed): the frozen constitution wrote N=12 in five
+places (loss denominator, triplet negatives "10", reshapes) but the
+frozen DATA is 8 Hypersim + 3 named fixtures = 11 images. Corrected
+12→11 before the first gradient step (72 triplets = 8×1×9, recon mean
+/11; run died on the inconsistency pre-update, nothing trained under
+the slip). Frozen data/objective/architecture/rules all unchanged —
+only N corrected to match frozen data. Backprop verified pre-run by
+float64 finite differences (worst 3e−4 on O(1e−8) elements =
+resolution floor, proven by e-scaling to 3e−15; all structural params
+1e−6..1e−8).
+
+```text
+images=11 thumbs (11, 72, 96, 3)
+triplets=72 (8 anchors x 1 pos x 9 neg)
+step 1: trip=0.1353 recon=0.2183 gnorm=3.230
+step 200: trip=0.0000 recon=0.2183 gnorm=0.002
+step 500: trip=0.0000 recon=0.2182 gnorm=0.002
+step 1000: trip=0.0000 recon=0.2181 gnorm=0.002
+step 1500: trip=0.0000 recon=0.2180 gnorm=0.002
+step 2000: trip=0.0000 recon=0.2179 gnorm=0.002
+8-code separability: maxcos=0.7438 meancos=+0.1171 CLEARS
+battery: acc=0.1250 verdict=dead
+```
+
+Separability table (8 Hypersim codes vs every prior construction):
+
+| construction | maxcos | meancos | bar |
+|---|---|---|---|
+| pooled means (b29, best prior) | 0.9974 | +0.97 | fail |
+| C3 sibling-sub (best prescription) | 0.4325* (2/3 pts) | −0.14 | fail-all-3 |
+| contrastive linear (best learned) | 0.9840 | +0.18 | fail |
+| **encoder codes** | **0.7438** | **+0.12** | **CLEARS** |
+
+Retrieval battery on learned codes: 5/40 at EVERY level incl. f=0
+exact (25/200 = 0.1250 = chance exactly, bar 0.25) → dead. Winner map:
+(query→winner) = (any→frame 0) × 200 — total collapse to
+ai_018_001_fr0000 (a NEW winner, not the teacher rounds' frame 2 —
+this attractor lives in code space).
+Verdict: **the encoder door closes too — SPLIT: separability achieved,
+retrieval dead.** The exact failure the BOTH-clause was built to catch
+(separability without retrieval repeats the prescription round).
+Mechanisms, both measured: (1) triplet 0.0000 by step 200 — margin
+satisfied, codes placed; but Ramsauer flows to one attractor anyway
+(max 0.74 gives self-weight ratio only e^0.26 ≈ 1.3 — not enough
+basin). Separation of PAIRS ≠ separation of BASINS — the arc's deepest
+lesson, stated plainly. (2) recon 0.2183→0.2179 vs mean-predictor floor
+0.2103 — the decoder predicts the dataset mean; the anchor held NOTHING
+(triplet term drove all learning under frozen lr/λ). Codes are
+ungrounded memorized spikes: separable by construction, meaningless
+under noise. The anchor design was right; its frozen strength (λ=0.1)
+was homeopathic — tuning it would be peeking, so it stands as the
+documented cause of death.
+Deployability (flagged either way per freeze): op-CLEAN (all artifact
+ops tabled rows; reshape meta; hinge host-side) — the verdict would be
+dead on dynamics even with a deployment path.
+Weights out-of-tree (~/student_runs/encoder/enc.npz, sha-banked);
+codes (11×128) + metrics + configs banked in-repo.
+Gate: `tests/test_assoc_memory.py` extended in place (assoc-enc-*
+key: schema, separability recompute, battery recompute, determinism,
+out-of-tree weight sha; heavy retrain NOWHERE in gate by design; all
+25 pre-existing legs green). Neighbors: assoc + prototypes green.
+Bugs caught: N=12-vs-11 slip (above, pre-training); einsum subscript
+typo caught by shape error (pre-run); float32 finite-diff floor
+misread as grad bug (resolved by float64 + e-scaling, pre-run).
+Gaps named: tuned-λ/lr schedules (peeking-class here); bigger/spatial
+decoders (scope — minimal-first was frozen); basin-aware losses
+(separation of basins, not pairs — the actual next question, stated).
+
+## Basin-structured codes — STOP, premise void (no constitution enacted, no runs)
+
+Premise check (frozen FIRST, before any constitution could bind): basin
+supervision needs banked basin ground truth PER IMAGE. Verification
+against banked data:
+- `teacher_basins_H.json basins`: A–E members are `subset_*` lesion
+  targets, e.g. C = [subset_10_0, subset_20_2]; `teacher_lesion_H.json`
+  row subset_10_0 = block indices [2, 27, 30, 35, 36, 38, 39, 40].
+  Basins partition lesion-target BLOCK sets, not images.
+- Basin characterization members are the same block subsets
+  (C: members [subset_10_0, subset_20_2], structured-remnant) —
+  lesion-effect profiles, not image assignments.
+- No banked file maps any image → basin (grepped all banked JSONs;
+  frame mentions are evaluation rows, never membership).
+Conclusion: NO image has a banked basin label. "Encoder predicts basin
+assignment per image" has no targets. Deriving labels (nearest
+lesion-profile centroid, etc.) would be circular — training an encoder
+to predict our own prescription's outputs, peeking-class fabrication
+stated plainly. Per the train-ditnorm STOP and lesion-matched-original
+STOP precedents: STOP, premise void. Nothing ran (nothing CAN run —
+no targets exist); no gate legs added (vacuous legs would be theater —
+stated, not skipped); no weights touched; no downloads.
+Verdict: **basin-supervision dead on arrival — premise void, not
+empirically refuted.** The basin question stays open ONLY for a round
+that first banks per-image basin ground truth (e.g. per-image lesion
+behavior clustering with its own constitution — named, not run).
+The encoder arc stands as closed by the encoder-separated split
+finding (separability without retrieval).

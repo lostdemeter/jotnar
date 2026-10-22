@@ -767,6 +767,126 @@ def main():
           f"under-bars {lccounts}, deltas "
           f"{ {t: round(lcdelta[t], 4) for t in lcfrozen} }")
 
+    # -- Phase-29 lesion-matched training (damage profile, not outputs) --
+    # Frozen 6 configs (lm-clean control + lm-A..E basin targets);
+    # term-inventory covers the target source (target_maps present
+    # exactly on lesioned arms, None on control; loss_space value
+    # everywhere — coordinates frozen); materialization integrity
+    # (banked map sha + determinism-rerun flag); winner tripwire
+    # (winner None ⟺ no cells and no directional move).
+    lm = ab.get("lesionmatch", {})
+    lmfrozen = ["lm-clean", "lm-A", "lm-B", "lm-C", "lm-D", "lm-E"]
+    check("lesionmatch-configs", lm.get("configs") == lmfrozen
+          and lm.get("reference") == "lm-clean", lm.get("configs"))
+    lmcells = lm.get("cells", {})
+    lmcomplete = all(
+        t in lmcells and len(lmcells[t].get("frames", {})) == 6 and all(
+            sorted(fr.get("strata", {})) == STRATA
+            and all(np.isfinite(v) and v >= 0
+                    for v in fr["strata"].values())
+            for fr in lmcells[t]["frames"].values())
+        for t in lmfrozen)
+    check("lesionmatch-complete", bool(lmcomplete), "6 configs x 6x6 finite")
+    lmflags = {t: lmcells.get(t, {}).get("flags", {}) for t in lmfrozen}
+    check("lesionmatch-terms",
+          all(f.get("loss_space") == "value" for f in lmflags.values())
+          and lmflags["lm-clean"].get("target_maps") is None
+          and all(lmflags[t].get("target_files", {}).keys()
+                  == {"church", "dogs", "squirrel", "train"}
+                  and all(v.endswith(f"lm-{t.split('-')[1]}_{k}.npy")
+                          for k, v in lmflags[t]["target_files"].items())
+                  for t in lmfrozen[1:])
+          and all(f.get("perc") == 0.0 and f.get("sink") == 0.0
+                  for f in lmflags.values()),
+          "per-frame lesioned maps inventoried, value-space, aux absent")
+    lmcounts, lmdelta = {}, {}
+    for t in lmfrozen:
+        n = 0
+        for _n, fr in lmcells[t]["frames"].items():
+            if fr.get("split") != "heldout":
+                continue
+            n += sum(1 for k in STRATA if fr["strata"][k] <= BARS[k])
+        lmcounts[t] = n
+        ds = [lmcells[t]["frames"][_n]["strata"][k]
+              - lmcells["lm-clean"]["frames"][_n]["strata"][k]
+              for _n, fr in lmcells[t]["frames"].items()
+              if fr.get("split") == "heldout" for k in STRATA]
+        lmdelta[t] = sum(ds) / len(ds)
+    for t in lmfrozen[1:]:
+        print(f"lesionmatch {t} vs lm-clean (held-out mean delta): "
+              f"{lmdelta[t]:+.4f}", flush=True)
+    check("lesionmatch-winner-none",
+          all(v == 0 for v in lmcounts.values())
+          and all(lmdelta[t] >= -0.05 for t in lmfrozen[1:])
+          and lm.get("winner") is None,
+          f"under-bars {lmcounts}, deltas "
+          f"{ {t: round(lmdelta[t], 4) for t in lmfrozen} }")
+    mat = lm.get("materialization", {})
+    import hashlib as _hl
+    sha_ok = True
+    for fn, h in mat.get("map_sha256", {}).items():
+        p = os.path.join(ROOT, "samples", "marigold", "inputs_lesioned", fn)
+        if not os.path.isfile(p) or \
+                _hl.sha256(open(p, "rb").read()).hexdigest()[:16] != h:
+            sha_ok = False
+    check("lesionmatch-materialization",
+          bool(mat.get("determinism_rerun_match")) and sha_ok
+          and len(mat.get("map_sha256", {})) == 20,
+          "rerun byte-identical (pasted) + 20 map shas recomputed")
+
+    # -- Phase-30 basin-C replication + specificity -------------------------
+    # Frozen two questions: (1) replication — fresh maps (regenerated
+    # via the committed path, 20/20 byte-identical) + fresh training
+    # reproduces the banked C cells; (2) specificity — banked A/B/D/E
+    # + clean arms reused verbatim (bit-determinism proven: fresh
+    # reruns would be identical, stated openly). Winner tripwire:
+    # winner None ⟺ no bars anywhere (directional-move ≠ winner).
+    lr = ab.get("lmrep", {})
+    lrconfigs = ["lm-C-rep"]
+    check("lmrep-configs", lr.get("configs") == lrconfigs
+          and lr.get("reference") == "lm-clean", lr.get("configs"))
+    lrcells = lr.get("cells", {})
+    check("lmrep-complete",
+          set(lrcells) == set(lrconfigs)
+          and len(lrcells["lm-C-rep"].get("frames", {})) == 6 and all(
+              sorted(fr.get("strata", {})) == STRATA
+              and all(np.isfinite(v) and v >= 0
+                      for v in fr["strata"].values())
+              for fr in lrcells["lm-C-rep"]["frames"].values()),
+          "C-rep 6x6 finite")
+    bankedC = lmcells["lm-C"]["frames"] if "lm-C" in lmcells else {}
+    repC = lrcells["lm-C-rep"]["frames"]
+    check("lmrep-replication",
+          bool(bankedC) and max(
+              abs(bankedC[n]["strata"][k] - repC[n]["strata"][k])
+              for n in bankedC for k in STRATA) <= 1e-9,
+          "C-rep == banked C end-to-end (maps + training)")
+    reffr = lmcells["lm-clean"]["frames"]
+    for t, label in (("lm-C", "banked"), ("lm-C-rep", "fresh")):
+        fr = lmcells[t]["frames"] if t in lmcells else repC
+        ds = [fr[n]["strata"][k] - reffr[n]["strata"][k]
+              for n in fr if fr[n].get("split") == "heldout"
+              for k in STRATA]
+        ups = sum(1 for d in ds if d < -0.05)
+        print(f"lmrep {label} C vs clean: mean {sum(ds) / len(ds):+.4f}, "
+              f"{ups}/12 cells >0.05 better", flush=True)
+    other = {}
+    for t in ("lm-A", "lm-B", "lm-D", "lm-E"):
+        fr = lmcells[t]["frames"]
+        ds = [fr[n]["strata"][k] - reffr[n]["strata"][k]
+              for n in fr if fr[n].get("split") == "heldout"
+              for k in STRATA]
+        other[t] = (sum(ds) / len(ds),
+                    sum(1 for d in ds if d < -0.05))
+    check("lmrep-specificity",
+          all(v[1] == 0 for v in other.values())
+          and all(v[0] >= -0.05 for v in other.values()),
+          f"A/B/D/E move nothing: { {t: (round(m, 4), u) for t, (m, u) in other.items()} } "
+          f"(C alone moves — C-specific, not damage-general)")
+    check("lmrep-winner-none",
+          lr.get("winner") is None,
+          "no bars cleared anywhere (directional-move ≠ winner)")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

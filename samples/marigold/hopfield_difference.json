@@ -1,0 +1,122 @@
+{
+ "constructions": [
+  "d1",
+  "d2",
+  "d3"
+ ],
+ "separability": {
+  "transformer_blocks.29:d1": {
+   "maxcos": 0.8035052267931406,
+   "meancos": 0.5529260821997227,
+   "clears": false
+  },
+  "transformer_blocks.29:d2": {
+   "maxcos": 0.9785296524006692,
+   "meancos": 0.8921327509416443,
+   "clears": false
+  },
+  "transformer_blocks.29:d3": {
+   "maxcos": 0.602445954439213,
+   "meancos": 0.5270139823512885,
+   "clears": false
+  },
+  "transformer_blocks.59:d1": {
+   "maxcos": 0.9994854587274945,
+   "meancos": 0.9971806175182258,
+   "clears": false
+  },
+  "transformer_blocks.59:d2": {
+   "maxcos": 0.999848511276433,
+   "meancos": 0.9990051337273439,
+   "clears": false
+  },
+  "transformer_blocks.59:d3": {
+   "maxcos": 0.998519370970562,
+   "meancos": 0.997301959663181,
+   "clears": false
+  },
+  "norm_out:d1": {
+   "maxcos": 0.9908124279008269,
+   "meancos": 0.5164219231067142,
+   "clears": false
+  },
+  "norm_out:d2": {
+   "maxcos": 0.9955530230198767,
+   "meancos": 0.6955634599875068,
+   "clears": false
+  },
+  "norm_out:d3": {
+   "maxcos": 0.8663922085677741,
+   "meancos": 0.5875470690803463,
+   "clears": false
+  }
+ },
+ "full_clear": [],
+ "diagnostics": {
+  "nn_min": 1.1981411793149377e-05,
+  "nn_median": 0.0029865904791112063,
+  "nn_max": 0.005469286494445225,
+  "PR_24": 2.1159791091587117,
+  "eigfrac_24": [
+   4.0,
+   1547
+  ],
+  "per_point": {
+   "transformer_blocks.29": {
+    "PR": 2.7615879349989596,
+    "eigfrac": [
+     7.0,
+     1540
+    ]
+   },
+   "transformer_blocks.59": {
+    "PR": 3.1000419452360513,
+    "eigfrac": [
+     7.0,
+     1541
+    ]
+   },
+   "norm_out": {
+    "PR": 2.360716121201546,
+    "eigfrac": [
+     4.0,
+     1540
+    ]
+   }
+  },
+  "thin_confirmed": true
+ },
+ "battery": {},
+ "d3_idx": {
+  "transformer_blocks.29": [
+   131,
+   22,
+   122,
+   115,
+   50,
+   72,
+   120,
+   132
+  ],
+  "transformer_blocks.59": [
+   142,
+   102,
+   87,
+   121,
+   106,
+   86,
+   89,
+   103
+  ],
+  "norm_out": [
+   7,
+   140,
+   115,
+   104,
+   121,
+   23,
+   89,
+   103
+  ]
+ }
+}
