@@ -939,3 +939,131 @@ one GLOBAL weighted mean then repeated it 8× — 8 identical patterns,
 maxcos=1.0 by construction bug; caught on code read before first run,
 fixed to per-frame means, never banked under it). Gaps named: none
 open in-arc (encoder-side training is out-of-arc, stated not run).
+
+## Encoder-side separation — learn codes worth storing (constitution, FROZEN pre-run)
+
+Encoder training only (first and only training in the arc; no
+emitter/opcode/assembly changes — a "small" pattern addition to suit
+the encoder is scope breach).
+Objective — exactly ONE, loss formula frozen (objective-shopping
+mid-round is the failure mode being avoided):
+L = (1/|T|)·Σ max(0, m + s_an − s_ap) + λ·(1/12)·Σ||dec(enc(x)) − x||²,
+triplet margin on code cosines (positives = same-scene sibling frames;
+negatives = all other images) + reconstruction anchor (MSE to the
+input thumbnail). m = 0.5 (continuity with the contrastive round),
+λ = 0.1 (anchor-not-driver: grounding, not leading — reason stated).
+The anchor is load-bearing for honesty: it forbids collapse-to-arbitrary
+codes, so the retrieval clause judges grounded codes, not spikes.
+Architecture frozen (minimal first, capacity second — exact dims):
+96×72 RGB thumbnails (÷8 LANCZOS from the 768×576 recipe, /255·2−1 —
+infer_one continuity) → 12×12 patches (48 × 432) → linear 432→96 →
+2× mixer blocks (token-MLP 48→24→48 + channel-MLP 96→192→96, SILU,
+residuals) → flatten (4608, NO pooling — pooling avoided by construction,
+stated) → linear 4608→128 → L2-normalize = code; decoder single linear
+128→20736 → reshape thumbnail (minimal anchor). ~3.3M params total.
+Per-op citations (deployability judged, not assumed): MATMUL (:183),
+ADD (:159), SUB (:205), MUL (:185), SILU (:196), SQUARE (:202), SQRT
+(:201), DIV (:174) — ALL real rows, none parked; reshape = parked-meta
+zero-code (cited, no behavior); hinge/max/loop-control host-side Python
+(sampling-on-host precedent). Gaps: NONE in the artifact — op-clean by
+construction (flagged in verdict either way: verdict states this).
+Data frozen (comparability stated): train = 8 Hypersim eval frames
+(same set every round) + 3 fixtures (church/dogs/squirrel from
+samples/marigold/inputs/ — train-only negatives + recon; fixtures have
+no sibling so anchor no triplets — stated); evaluate separability +
+retrieval on the 8 Hypersim codes ONLY (every prior number compares).
+Budget: wall cap 30 min CPU (expected minutes); steps = 2000 full-batch;
+lr = 0.01 + global grad-clip norm 1.0 (both frozen; conservative +
+stabilized — untuned, peeking-class); seed = 7; init Gaussian/√fan-in.
+NaN/divergence = complete-empty (not a rerun license — stated).
+Winner rule: 8-code separability clears 0.9/0.5 (continuity) AND
+retrieval battery ≥ 0.25 on learned codes (dead-round battery verbatim:
+200 trials, corrupt(code), frame identity, chance 0.125) — BOTH must
+hold (separability without retrieval repeats the prescription round).
+Empty (neither holds) is complete.
+Ruling: weights out-of-tree (~/student_runs/encoder/, metrics + configs
++ 12 codes banked separately in samples/marigold/, primaries untouched);
+production weights untouched (teacher AND Qwen-7B never loaded —
+banked images suffice, no new teacher runs); no downloads (fixtures +
+shard on disk); no new dependencies (system numpy+PIL — cv2 absent,
+unneeded); CPU-only (no GPU need exists — stated pre-run; GPU solo N/A,
+no harvest sessions this round).
+Gate: EXTEND `tests/test_assoc_memory.py` in place (encoder legs:
+schema + separability recomputed from banked codes + retrieval rerun
+legs IF earned — unearned reruns FAIL the gate (assert none-earned
+explicitly); determinism evidence (same image → same code); same
+discipline as established; heavy retrain NOWHERE in gate by design).
+Neighbors: assoc + prototypes green (nothing moves underneath).
+
+### Encoder results (TBD — training lands here)
+
+### Encoder results (CPU 60s training, banked images only)
+
+`python3 scripts/train_encoder.py` — erratum FIRST (bugs-caught,
+pre-training, disclosed): the frozen constitution wrote N=12 in five
+places (loss denominator, triplet negatives "10", reshapes) but the
+frozen DATA is 8 Hypersim + 3 named fixtures = 11 images. Corrected
+12→11 before the first gradient step (72 triplets = 8×1×9, recon mean
+/11; run died on the inconsistency pre-update, nothing trained under
+the slip). Frozen data/objective/architecture/rules all unchanged —
+only N corrected to match frozen data. Backprop verified pre-run by
+float64 finite differences (worst 3e−4 on O(1e−8) elements =
+resolution floor, proven by e-scaling to 3e−15; all structural params
+1e−6..1e−8).
+
+```text
+images=11 thumbs (11, 72, 96, 3)
+triplets=72 (8 anchors x 1 pos x 9 neg)
+step 1: trip=0.1353 recon=0.2183 gnorm=3.230
+step 200: trip=0.0000 recon=0.2183 gnorm=0.002
+step 500: trip=0.0000 recon=0.2182 gnorm=0.002
+step 1000: trip=0.0000 recon=0.2181 gnorm=0.002
+step 1500: trip=0.0000 recon=0.2180 gnorm=0.002
+step 2000: trip=0.0000 recon=0.2179 gnorm=0.002
+8-code separability: maxcos=0.7438 meancos=+0.1171 CLEARS
+battery: acc=0.1250 verdict=dead
+```
+
+Separability table (8 Hypersim codes vs every prior construction):
+
+| construction | maxcos | meancos | bar |
+|---|---|---|---|
+| pooled means (b29, best prior) | 0.9974 | +0.97 | fail |
+| C3 sibling-sub (best prescription) | 0.4325* (2/3 pts) | −0.14 | fail-all-3 |
+| contrastive linear (best learned) | 0.9840 | +0.18 | fail |
+| **encoder codes** | **0.7438** | **+0.12** | **CLEARS** |
+
+Retrieval battery on learned codes: 5/40 at EVERY level incl. f=0
+exact (25/200 = 0.1250 = chance exactly, bar 0.25) → dead. Winner map:
+(query→winner) = (any→frame 0) × 200 — total collapse to
+ai_018_001_fr0000 (a NEW winner, not the teacher rounds' frame 2 —
+this attractor lives in code space).
+Verdict: **the encoder door closes too — SPLIT: separability achieved,
+retrieval dead.** The exact failure the BOTH-clause was built to catch
+(separability without retrieval repeats the prescription round).
+Mechanisms, both measured: (1) triplet 0.0000 by step 200 — margin
+satisfied, codes placed; but Ramsauer flows to one attractor anyway
+(max 0.74 gives self-weight ratio only e^0.26 ≈ 1.3 — not enough
+basin). Separation of PAIRS ≠ separation of BASINS — the arc's deepest
+lesson, stated plainly. (2) recon 0.2183→0.2179 vs mean-predictor floor
+0.2103 — the decoder predicts the dataset mean; the anchor held NOTHING
+(triplet term drove all learning under frozen lr/λ). Codes are
+ungrounded memorized spikes: separable by construction, meaningless
+under noise. The anchor design was right; its frozen strength (λ=0.1)
+was homeopathic — tuning it would be peeking, so it stands as the
+documented cause of death.
+Deployability (flagged either way per freeze): op-CLEAN (all artifact
+ops tabled rows; reshape meta; hinge host-side) — the verdict would be
+dead on dynamics even with a deployment path.
+Weights out-of-tree (~/student_runs/encoder/enc.npz, sha-banked);
+codes (11×128) + metrics + configs banked in-repo.
+Gate: `tests/test_assoc_memory.py` extended in place (assoc-enc-*
+key: schema, separability recompute, battery recompute, determinism,
+out-of-tree weight sha; heavy retrain NOWHERE in gate by design; all
+25 pre-existing legs green). Neighbors: assoc + prototypes green.
+Bugs caught: N=12-vs-11 slip (above, pre-training); einsum subscript
+typo caught by shape error (pre-run); float32 finite-diff floor
+misread as grad bug (resolved by float64 + e-scaling, pre-run).
+Gaps named: tuned-λ/lr schedules (peeking-class here); bigger/spatial
+decoders (scope — minimal-first was frozen); basin-aware losses
+(separation of basins, not pairs — the actual next question, stated).
