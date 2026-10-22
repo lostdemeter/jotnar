@@ -484,3 +484,65 @@ construction clearing the bar; existing legs untouched and green).
 Neighbors: assoc + prototypes + lesion-basin green (read-only reuse).
 
 ### Separability results (TBD — computation lands here)
+
+### Separability results (CPU seconds, banked data only)
+
+`python3 scripts/hopfield_separable.py` — raw baselines reproduce the
+dead round (0.9974/1.0000/0.9985), then the three frozen constructions:
+
+```text
+transformer_blocks.29:raw: maxcos=0.9974 meancos=+0.9651 fails
+transformer_blocks.59:raw: maxcos=1.0000 meancos=+0.9999 fails
+norm_out:raw:            maxcos=0.9985 meancos=+0.9831 fails
+transformer_blocks.29:c1: maxcos=0.9977 meancos=+0.9964 fails
+transformer_blocks.59:c1: maxcos=1.0000 meancos=+0.9999 fails
+norm_out:c1:            maxcos=0.9990 meancos=+0.9976 fails
+transformer_blocks.29:c2: maxcos=0.9151 meancos=-0.1332 fails
+transformer_blocks.59:c2: maxcos=0.7833 meancos=-0.1377 CLEARS
+norm_out:c2:            maxcos=0.9316 meancos=-0.1364 fails
+transformer_blocks.29:c3: maxcos=0.4325 meancos=-0.1429 CLEARS
+transformer_blocks.59:c3: maxcos=0.7298 meancos=-0.1429 CLEARS
+norm_out:c3:            maxcos=0.9315 meancos=-0.1429 fails
+constructions clearing all 3 points: []
+```
+
+Separability table (bar: maxcos<0.9 AND meancos<0.5):
+
+| construction | b29 (max/mean) | b59 (max/mean) | norm_out (max/mean) | clears |
+|---|---|---|---|---|
+| raw | 0.9974/+0.97 | 1.0000/+1.00 | 0.9985/+0.98 | 0/3 |
+| C1 ridge-ZCA | 0.9977/+1.00 | 1.0000/+1.00 | 0.9990/+1.00 | 0/3 |
+| C2 centered | 0.9151/−0.13 | **0.7833**/−0.14 | 0.9316/−0.14 | 1/3 |
+| C3 sibling-sub | **0.4325**/−0.14 | **0.7298**/−0.14 | 0.9315/−0.14 | 2/3 |
+
+Mechanisms: (C1) ZCA-whitening barely moves anything — verified
+mechanism, not a bug (W symmetric to 9e−15; the whitener is CORRECT):
+ZCA is the whitening rotation CLOSEST to the originals, so
+near-collinear inputs stay near-collinear; with 24 samples spanning ≤23
+dims, equalizing variance cannot invent directions that aren't there.
+Robustness note (analysis, NOT a new construction): even mean-centered
+application reaches only 0.96 maxcos — still fails the bar, so the
+verdict doesn't hinge on the centering choice. (C2/C3) removing the
+shared direction disperses the clump whole (mean −0.13/−0.14 — the mean
+clause passes everywhere) but one stubborn pair survives per failing
+point (0.9151/0.9316/0.9315 — all norm_out-adjacent misses by a hair;
+nearest miss overall C3 2/3).
+No construction clears all 3 points → NO reruns earned per the frozen
+winner rule (retrieval battery stays unrunned — stated, not skipped).
+Verdict: **prototypes unfixable this way — construction-dead.**
+Complete: the joint-24-pattern + β-sweep gaps inherit the question
+EXPLICITLY (named next holders — hopefully nothing).
+Hierarchy closed: 6-dim died of capacity, 3072-dim of separability,
+separability survives whitening/centering/scene-contrast. The code is
+entangled at the representation level (cosine 0.99999 across scenes at
+every depth and every head output) — no post-hoc prototype surgery
+separates what the encoder never pulled apart.
+Gate: `tests/test_assoc_memory.py` extended in place (assoc-sep-*
+key: constructions recomputed from banked harvests, bar legs, vacuous
+rerun legs; all 10 pre-existing legs untouched and green). Neighbors:
+assoc + prototypes + lesion-basin green (read-only reuse).
+Bugs caught: none (C1's non-movement first looked like a transposed-W
+bug — symmetry + covariance diagnostics clear it; the failure is the
+geometry). Gaps named: joint-24 memory, β-sweep (explicit inheritors);
+PCA-whitening (rotation-arbitrary — NOT a loophole, it scrambles the
+frame identity the queries rely on, stated not run).
