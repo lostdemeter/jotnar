@@ -2442,3 +2442,55 @@ untouched). Neighbors: teacher, strata, shuffle green (nothing moves
 underneath).
 
 ### Ordered-readout results (TBD — training lands here)
+
+### Ordered-readout results (3× ~8.5min GPU trains — VOID, degenerate arms)
+
+Arms trained (frozen recipe verbatim; init-identity verified pre-run:
+all 36 shared params bit-identical to the control build; traversal
+maps verified: raster shared, near self-first [0,1,32,33,2], perms
+valid): raster / near / far, walls ~506/523/526s (cap 30 min held).
+Smoke (20 steps) passed end-to-end first; one env bug caught there
+(torch 2.14 routes `einsum(k,qkd->qd)` through a triton JIT that cannot
+compile here — no Python.h; replaced with broadcast-mul + sum, same
+math, still in-table MUL/ADD — pre-training, nothing banked under it).
+
+Degeneracy table (church intact preds; train cells are affine-masked
+illusions — read as such):
+
+| arm | alpha | mixW norm | pred mean/std/min/max | status |
+|---|---|---|---|---|
+| raster | 1.0000 | 688.0 | −4.3e18 / 2.7e11 / min==max | constant map |
+| near | 0.9997 | 295.3 | −3.7e16 / 1.3e10 / min==max | constant map |
+| far | 0.9974 | 485.0 | −4.3e20 / 3.4e11 / min==max | constant map |
+
+min==max over whole maps (variation = fp32 rounding of a constant).
+Shuffle artifacts (NOT verdicts): raster/far p16 ≈ 0.0 (constant maps
+are trivially shuffle-invariant); near p16 = 2.44 / p64 = 96.5
+(garbage ratios of roundoff quantities — dissected, not trusted).
+Heldout means ~0.376 all arms ≈ teacher-std floor (constant-prediction
+signature, cf. mean-predictor floor 0.2103 scale — same null family).
+NO battery runs (stated — degenerate arms unjudgeable; near's 2.44
+does NOT clear anything: the UP bar requires functioning arms first).
+Verdict: **VOID — degenerate training; the traversal variable was
+never tested.** Not empty (empty judges functioning arms); void (no
+judgeable arms exist). Mechanism hypothesis, stated not asserted:
+affine-invariant loss is scale-blind → the fresh summary path
+(uniform weights + big mixer) offers a zero-structure shortcut
+(predict dataset mean; lstsq a≈0 then kills gradients) → all arms
+take it and die there. Alpha saturated to ≈1 in every arm on the way
+down (uniform pooling = the numbness direction, learned). The fix
+(grad clipping, scale penalties, alpha regularization, warm-started
+mixer) is NEW machinery = a new round with a new constitution,
+named explicitly here, not smuggled into this one.
+Gate: strata surface extended (ordered-schema/degeneracy/maps —
+traversal maps recomputed torch-free); shuffle surface extended
+(ordered-schema/robustness-as-void/spot reload alpha+mixW exact);
+all pre-existing legs green both files. Neighbors: teacher, strata,
+shuffle green (nothing moves underneath).
+Bugs caught (mine, all pre-bank): triton-einsum env failure (above);
+mask-shape bug in eval draft (ran over foreign-shape synth .npys —
+frozen-6 fix); int-vs-string JSON keys in gate (failed loud);
+convoluted ternary scaffolding in gate draft (rewritten plain);
+stray typo before spec commit. Gaps named: stabilized-readout
+training (new round); loss-trajectory banking (trainer prints only —
+provenance gap for future rounds); winner retrain-match (moot, void).
