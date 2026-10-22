@@ -887,6 +887,33 @@ def main():
           lr.get("winner") is None,
           "no bars cleared anywhere (directional-move ≠ winner)")
 
+    # -- ordered-readout key (void round; legs above untouched) ---------------
+    sys.path.insert(0, os.path.join(ROOT, "scripts"))
+    import train_ordered_readout as _OR
+    _ob = json.load(open(os.path.join(FIXDIR, "ordered_readout.json")))
+    check("ordered-schema",
+          set(_ob["arms"]) == {"raster", "near", "far"}
+          and _ob["recipe"]["steps"] == 8000
+          and _ob["recipe"]["seed"] == 7
+          and _ob["verdict"] == "void:degenerate-training"
+          and "battery" not in _ob,
+          "3 arms x frozen recipe; void recorded; no battery banked")
+    _void_ok = all(_ob["arms"][t]["status"].startswith("degenerate")
+                   and _ob["arms"][t]["pred_church"]["std"] > 0
+                   and _ob["arms"][t]["alpha"] > 0.99
+                   for t in ("raster", "near", "far"))
+    check("ordered-degeneracy", bool(_void_ok),
+          "all arms alpha-saturated + exploded (evidence, not verdicts)")
+    _maps_ok = True
+    _or = _OR.build_order(21, 32, "raster")
+    _maps_ok &= _or.shape == (672, 672) and bool((_or == _or[0]).all())
+    for _t in ("near", "far"):
+        _o = _OR.build_order(21, 32, _t)
+        _maps_ok &= _o.shape == (672, 672) and all(
+            sorted(_o[i]) == list(range(672)) for i in (0, 100, 671))
+    check("ordered-maps", bool(_maps_ok),
+          "traversal maps recomputed from dims (raster shared, near/far perms)")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 

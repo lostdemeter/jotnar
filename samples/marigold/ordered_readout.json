@@ -1,0 +1,362 @@
+{
+ "recipe": {
+  "width": 64,
+  "blocks": 2,
+  "heads": 1,
+  "stride": 32,
+  "nctx": 0,
+  "steps": 8000,
+  "lr": 0.01,
+  "schedule": "cosine",
+  "seed": 7,
+  "train": [
+   "church",
+   "dogs",
+   "squirrel",
+   "train"
+  ],
+  "heldout": [
+   "geo_webcam_0_combined",
+   "geo_webcam_1_combined"
+  ],
+  "tags": {
+   "raster": "ordered-raster",
+   "near": "ordered-near",
+   "far": "ordered-far"
+  },
+  "traversals": {
+   "raster": "shared row-major",
+   "near": "nearest-first per anchor, ties raster",
+   "far": "farthest-first per anchor, ties raster"
+  }
+ },
+ "control_ref": {
+  "p16": 1.3382,
+  "heldout_mean": 0.4042,
+  "source": "registers_shuffle.json arms.noreg"
+ },
+ "arms": {
+  "raster": {
+   "alpha": 0.9999754428863525,
+   "mixW_norm": 688.0250244140625,
+   "pred_church": {
+    "mean": -4.291168208448127e+18,
+    "std": 274877906944.0,
+    "min": -4.29116793357022e+18,
+    "max": -4.29116793357022e+18
+   },
+   "train_cells": {
+    "church": {
+     "split": "train",
+     "strata": {
+      "far": 0.4810364042634754,
+      "near": 0.4832391216862548,
+      "nonplanar": 0.5200061478465959,
+      "planar": 0.507239292899483,
+      "smooth": 0.4826117465894727,
+      "tex": 0.4752456317180646
+     }
+    },
+    "dogs": {
+     "split": "train",
+     "strata": {
+      "far": 0.48072107320239604,
+      "near": 0.4571863673590366,
+      "nonplanar": 0.4032361867117528,
+      "planar": 0.5284920672370934,
+      "smooth": 0.5702395584389368,
+      "tex": 0.37739437597197034
+     }
+    },
+    "squirrel": {
+     "split": "train",
+     "strata": {
+      "far": 0.639952760438656,
+      "near": 0.5729030080473414,
+      "nonplanar": 0.5147993301000622,
+      "planar": 0.65330873144695,
+      "smooth": 0.7123421974740382,
+      "tex": 0.4878917596143215
+     }
+    },
+    "train": {
+     "split": "train",
+     "strata": {
+      "far": 0.5302494249035128,
+      "near": 0.5151338713769834,
+      "nonplanar": 0.5537725509416755,
+      "planar": 0.483947865340648,
+      "smooth": 0.583716396790794,
+      "tex": 0.4807561263243022
+     }
+    },
+    "geo_webcam_0_combined": {
+     "split": "heldout",
+     "strata": {
+      "far": 0.2776609235869555,
+      "near": 0.27715843073645124,
+      "nonplanar": 0.3456420400915281,
+      "planar": 0.24086914555293584,
+      "smooth": 0.1934001924352762,
+      "tex": 0.3729185191072789
+     }
+    },
+    "geo_webcam_1_combined": {
+     "split": "heldout",
+     "strata": {
+      "far": 0.4818152914699015,
+      "near": 0.4516827943898244,
+      "nonplanar": 0.4999982870211899,
+      "planar": 0.47593706418591497,
+      "smooth": 0.4803773977621084,
+      "tex": 0.4314337593956287
+     }
+    }
+   },
+   "heldout_cells": {
+    "geo_webcam_0_combined": {
+     "split": "heldout",
+     "strata": {
+      "far": 0.2776609235869555,
+      "near": 0.27715843073645124,
+      "nonplanar": 0.3456420400915281,
+      "planar": 0.24086914555293584,
+      "smooth": 0.1934001924352762,
+      "tex": 0.3729185191072789
+     }
+    },
+    "geo_webcam_1_combined": {
+     "split": "heldout",
+     "strata": {
+      "far": 0.4818152914699015,
+      "near": 0.4516827943898244,
+      "nonplanar": 0.4999982870211899,
+      "planar": 0.47593706418591497,
+      "smooth": 0.4803773977621084,
+      "tex": 0.4314337593956287
+     }
+    }
+   },
+   "shuffle_mean": {
+    "p16": 4.396698940759418e-08,
+    "p64": 4.588101787128668e-08
+   },
+   "status": "degenerate: constant maps (pred std ~1e10 abs on ~1e18 scale = fp32 rounding of a constant)"
+  },
+  "near": {
+   "alpha": 0.9996763467788696,
+   "mixW_norm": 295.2909240722656,
+   "pred_church": {
+    "mean": -3.660201194422272e+16,
+    "std": 12884901888.0,
+    "min": -3.660202482912461e+16,
+    "max": -3.660202482912461e+16
+   },
+   "train_cells": {
+    "church": {
+     "split": "train",
+     "strata": {
+      "far": 0.49696995703795566,
+      "near": 0.4744849575067697,
+      "nonplanar": 0.5186624626667496,
+      "planar": 0.5170422350885656,
+      "smooth": 0.48640096801912364,
+      "tex": 0.47911492131766326
+     }
+    },
+    "dogs": {
+     "split": "train",
+     "strata": {
+      "far": 0.4807299908616882,
+      "near": 0.4571647952967182,
+      "nonplanar": 0.40323171700509897,
+      "planar": 0.5284848657542146,
+      "smooth": 0.5702376671358501,
+      "tex": 0.3773828511789283
+     }
+    },
+    "squirrel": {
+     "split": "train",
+     "strata": {
+      "far": 0.6399688768186239,
+      "near": 0.5728902099086188,
+      "nonplanar": 0.5147966905381698,
+      "planar": 0.6533119585645266,
+      "smooth": 0.712360052975468,
+      "tex": 0.487879800626143
+     }
+    },
+    "train": {
+     "split": "train",
+     "strata": {
+      "far": 0.5302502854350162,
+      "near": 0.5151327936115669,
+      "nonplanar": 0.5537731679166633,
+      "planar": 0.4839468911716976,
+      "smooth": 0.5837162400742715,
+      "tex": 0.48075613918351634
+     }
+    },
+    "geo_webcam_0_combined": {
+     "split": "heldout",
+     "strata": {
+      "far": 0.27663472686195745,
+      "near": 0.2800663052297068,
+      "nonplanar": 0.34600398120166215,
+      "planar": 0.24229500312877206,
+      "smooth": 0.1939948648572768,
+      "tex": 0.37438583889056704
+     }
+    },
+    "geo_webcam_1_combined": {
+     "split": "heldout",
+     "strata": {
+      "far": 0.48282700800753275,
+      "near": 0.4461987016810466,
+      "nonplanar": 0.4998004496846394,
+      "planar": 0.4713511052084784,
+      "smooth": 0.4770235078231461,
+      "tex": 0.4308116787159141
+     }
+    }
+   },
+   "heldout_cells": {
+    "geo_webcam_0_combined": {
+     "split": "heldout",
+     "strata": {
+      "far": 0.27663472686195745,
+      "near": 0.2800663052297068,
+      "nonplanar": 0.34600398120166215,
+      "planar": 0.24229500312877206,
+      "smooth": 0.1939948648572768,
+      "tex": 0.37438583889056704
+     }
+    },
+    "geo_webcam_1_combined": {
+     "split": "heldout",
+     "strata": {
+      "far": 0.48282700800753275,
+      "near": 0.4461987016810466,
+      "nonplanar": 0.4998004496846394,
+      "planar": 0.4713511052084784,
+      "smooth": 0.4770235078231461,
+      "tex": 0.4308116787159141
+     }
+    }
+   },
+   "shuffle_mean": {
+    "p16": 2.441924272948072,
+    "p64": 96.51212070165225
+   },
+   "status": "degenerate: constant maps (pred std ~1e10 abs on ~1e18 scale = fp32 rounding of a constant)"
+  },
+  "far": {
+   "alpha": 0.9974033236503601,
+   "mixW_norm": 485.0499267578125,
+   "pred_church": {
+    "mean": -4.348639612512502e+17,
+    "std": 343597383680.0,
+    "min": -4.3486430484863386e+17,
+    "max": -4.3486430484863386e+17
+   },
+   "train_cells": {
+    "church": {
+     "split": "train",
+     "strata": {
+      "far": 0.3796413346571191,
+      "near": 0.521200075317685,
+      "nonplanar": 0.5152446286130105,
+      "planar": 0.4383685562347815,
+      "smooth": 0.45125571910378276,
+      "tex": 0.44034638542540094
+     }
+    },
+    "dogs": {
+     "split": "train",
+     "strata": {
+      "far": 0.4538739340412021,
+      "near": 0.5079158681894169,
+      "nonplanar": 0.41650917266956555,
+      "planar": 0.5363058620084976,
+      "smooth": 0.5675592179888472,
+      "tex": 0.4065354173198139
+     }
+    },
+    "squirrel": {
+     "split": "train",
+     "strata": {
+      "far": 0.5723717958023972,
+      "near": 0.6141229654712529,
+      "nonplanar": 0.5273597688951008,
+      "planar": 0.6286885037270964,
+      "smooth": 0.6331447346880119,
+      "tex": 0.5317082802288907
+     }
+    },
+    "train": {
+     "split": "train",
+     "strata": {
+      "far": 0.44844321549767313,
+      "near": 0.5892335881489994,
+      "nonplanar": 0.5040582215421174,
+      "planar": 0.5194182446090685,
+      "smooth": 0.5715761999604514,
+      "tex": 0.4743578075125707
+     }
+    },
+    "geo_webcam_0_combined": {
+     "split": "heldout",
+     "strata": {
+      "far": 0.27871311440410873,
+      "near": 0.26173377781247253,
+      "nonplanar": 0.3421104743683884,
+      "planar": 0.23069380854860813,
+      "smooth": 0.18874918203079416,
+      "tex": 0.36215184861584776
+     }
+    },
+    "geo_webcam_1_combined": {
+     "split": "heldout",
+     "strata": {
+      "far": 0.47476458888150375,
+      "near": 0.4682317094989073,
+      "nonplanar": 0.49652423575752946,
+      "planar": 0.4896694861562782,
+      "smooth": 0.4872085610229803,
+      "tex": 0.43202529685873925
+     }
+    }
+   },
+   "heldout_cells": {
+    "geo_webcam_0_combined": {
+     "split": "heldout",
+     "strata": {
+      "far": 0.27871311440410873,
+      "near": 0.26173377781247253,
+      "nonplanar": 0.3421104743683884,
+      "planar": 0.23069380854860813,
+      "smooth": 0.18874918203079416,
+      "tex": 0.36215184861584776
+     }
+    },
+    "geo_webcam_1_combined": {
+     "split": "heldout",
+     "strata": {
+      "far": 0.47476458888150375,
+      "near": 0.4682317094989073,
+      "nonplanar": 0.49652423575752946,
+      "planar": 0.4896694861562782,
+      "smooth": 0.4872085610229803,
+      "tex": 0.43202529685873925
+     }
+    }
+   },
+   "shuffle_mean": {
+    "p16": 0.0,
+    "p64": 0.0
+   },
+   "status": "degenerate: constant maps (pred std ~1e10 abs on ~1e18 scale = fp32 rounding of a constant)"
+  }
+ },
+ "verdict": "void:degenerate-training"
+}
