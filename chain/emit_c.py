@@ -18,13 +18,19 @@ F -> double. Data-prep (Python side) decodes T inputs to F64 doubles;
 the emitted binary links libc+libm only.
 
 v0.2 patterns: GATHER (T->T exact + F->F rows), GATHER3 (T/F
-two-index rows), ARGMAX (T rows + F), IADD/ISUB/IMUL/IMAD (I exact,
-64-bit wrap), RMSNORM, MATMUL, BATCH_MATMUL (2D/3D), SLICE (2D ax0/1),
-ROTARY, TRANSPOSE (2D), TBETA/BETA, MUL/ADD (same-shape F), SELECT (F),
+two-index rows), ARGMAX (T rows + F), TOPK (F scores -> F values + I
+indices, ties-first), IADD/ISUB/IMUL/IMAD (I exact, 64-bit wrap),
+RMSNORM, MATMUL, BATCH_MATMUL (2D/3D), SLICE (2D ax0/1), ROTARY,
+TRANSPOSE (2D), TBETA/BETA, MUL/ADD (same-shape F), SELECT (F),
 TSHIFT, SOFTMAX_WIDE, CONCAT (2D). Speed hooks (backend owns them):
 ikj matmul + restrict + calloc-zeroed outputs, zero-copy gathers,
 baked frozen dims, -O2 -march=native default; arena/BLAS are listed
 finishing touches, not this cut.
+
+Resident C mode: compile_program(..., target="c", live=[...]) emits
+the same READY/step loop as CUDA (frozen inputs load once, live inputs
+re-read in place, fixed geometry). pack_outputs=True writes all output
+streams into one file per step; the host slices by output order.
 """
 import math
 import os
@@ -897,6 +903,38 @@ class CBackend(Backend):
                     f"}}",
                     None)
             raise NoPattern(f"ARGMAX needs T/F input, got {sk} (v0.2)")
+        if mn == "TOPK":
+            x = args[0]
+            vo, io = outs[0], outs[1]
+            if S[x][0] != "F" or len(S[x][2]) != 2:
+                raise NoPattern("C TOPK needs 2D F scores")
+            w = S[x][2][1]
+            k = _int_lit(args[1], "TOPK k")
+            if w is None or not (1 <= k <= w):
+                raise NoPattern(
+                    f"C TOPK needs static width S>=k (k={k}, S={w})")
+            # Stable descending selection, ties first: scan the row for
+            # the best not-yet-taken index each slot. O(rows*k*S*k) but
+            # scores are tiny (256) and this is the exact lattice rule.
+            return (
+                f"/* {vo},{io} = TOPK({x},{k}) stable ties-first */\n"
+                f"for (int64_t t_i = 0; t_i < {vo}_N; ++t_i) {{\n"
+                f"  for (int64_t t_j = 0; t_j < {k}; ++t_j) {{\n"
+                f"    int64_t best = -1;\n"
+                f"    for (int64_t t_c = 0; t_c < {w}; ++t_c) {{\n"
+                f"      int _used = 0;\n"
+                f"      for (int64_t t_p = 0; t_p < t_j; ++t_p)\n"
+                f"        if ({io}[t_i * {k} + t_p] == t_c) {{"
+                f" _used = 1; break; }}\n"
+                f"      if (_used) continue;\n"
+                f"      if (best < 0 || {x}[t_i * {w} + t_c] > "
+                f"{x}[t_i * {w} + best]) best = t_c;\n"
+                f"    }}\n"
+                f"    {vo}[t_i * {k} + t_j] = {x}[t_i * {w} + best];\n"
+                f"    {io}[t_i * {k} + t_j] = best;\n"
+                f"  }}\n"
+                f"}}",
+                None)
         # -- F64 patterns (double *X streams, malloc'd per op) -------
         if mn == "RMSNORM":
             x, w = args
@@ -1440,31 +1478,48 @@ def sanitize_cnames(inp, bound, sample, outputs, live=None):
 def compile_program(text, target="c", sample=None, outputs=None,
                     registry=None, sigs=None, basedir=".", origin=None,
                     use_blas=False, time_ops=False, use_fp16=False,
-                    live=None, sync_each=True, graph=False):
+                    live=None, sync_each=True, graph=False,
+                    pack_outputs=False):
     """Frontend entry: asm text -> target source. Returns dict with
     source/backend/streams/dims/config. Sample payload required (shapes).
-    live: persistent-loop live inputs (CUDA only; None = one-shot).
-    sync_each: per-op device-sync (False trusts same-stream ordering).
-    graph: capture the step into a CUDA graph (needs live, refuses
-    time_ops, forces sync_each=False).
+    live: persistent-loop live inputs (C/CUDA; None = one-shot). The C
+    loop mirrors chain/serve.ServedExe: frozen inputs load once, live
+    inputs re-read in place (fixed shape), outputs are rewritten, then
+    READY is printed for the host.
+    sync_each: per-op device-sync (CUDA only; False trusts same-stream
+    ordering).
+    graph: capture the step into a CUDA graph (CUDA only; needs live,
+    refuses time_ops, forces sync_each=False).
+    pack_outputs: C serve only. Write all output streams back-to-back
+    into one argv file per step instead of one file per output. The
+    host slices by output order; this removes the per-position file
+    open/read tax from chunked resident models.
     """
     from chain.asm_ops import REGISTRY as _R, SIGS as _S
     config, inp, bound, _ = assemble(text, registry or _R, sigs or _S,
                                      basedir=basedir, origin=origin)
-    inp, bound, sample, outputs, _, _alias = sanitize_cnames(
-        inp, bound, sample, outputs)
+    inp, bound, sample, outputs, live, _alias = sanitize_cnames(
+        inp, bound, sample, outputs, live)
     from chain.backends import get_backend as _gb
     _be = _gb(target)  # unknown names fail loud here
     _be.use_blas = use_blas
     _be.use_fp16 = use_fp16
-    if _be.name != "cuda" and (live is not None or graph or not sync_each):
-        # Serve/graph/stream-sync are CUDA execution modes (persistent
-        # binaries, captured graphs). Other backends are one-shot by
-        # construction: refuse loudly rather than silently dropping the
-        # request (a dropped live= would run once and look served).
+    if graph and _be.name != "cuda":
+        raise NoPattern(f"target '{target}': graph is CUDA-only")
+    if not sync_each and _be.name != "cuda":
+        raise NoPattern(f"target '{target}': sync_each=False is CUDA-only")
+    if live is not None and _be.name not in ("c", "cuda"):
+        # Serve mode is implemented by the resident C and CUDA loops.
+        # Other backends stay one-shot: refuse loudly rather than
+        # silently dropping live= (a dropped request would run once and
+        # look served).
         raise NoPattern(
-            f"target '{target}': live/graph/sync_each are CUDA-only "
-            f"(got live={live} graph={graph} sync_each={sync_each})")
+            f"target '{target}': live= serve mode is C/CUDA only "
+            f"(got live={live})")
+    if pack_outputs and (_be.name != "c" or live is None):
+        raise NoPattern(
+            f"target '{target}': pack_outputs is C serve-only "
+            f"(target='c', live=[...])")
     if _be.name == "cuda":
         from chain.emit_cuda import compile_cuda as _cc
         return _cc(text, sample=sample, outputs=outputs,
@@ -1486,6 +1541,32 @@ def compile_program(text, target="c", sample=None, outputs=None,
     streams = infer_shapes((config, inp, bound), sample)
     consts = find_consts((config, inp, bound), inp, streams, sample)
     in_names = [n for n, _ in inp]
+    if live is not None:
+        live = list(live)
+        for n in live:
+            if n not in in_names:
+                raise NoPattern(f"C serve: live input '{n}' is not an IN stream")
+            if n in consts:
+                raise NoPattern(
+                    f"C serve: live input '{n}' const-folded "
+                    f"(no argv file to re-read)")
+            if n in outputs:
+                raise NoPattern(f"C serve: live input '{n}' is an output")
+            k, _, sh = streams[n]
+            if k == "T":
+                raise NoPattern(
+                    f"C serve: live triple input '{n}' is not supported "
+                    f"(v0.1; live inputs are F/I)")
+            if sh is None or any(d is None for d in sh):
+                raise NoPattern(
+                    f"C serve: live input '{n}' needs fully static shape "
+                    f"(fixed geometry), got {sh}")
+    if pack_outputs:
+        for o in outputs:
+            if streams[o][0] == "T":
+                raise NoPattern(
+                    f"C serve pack_outputs: triple output '{o}' is not "
+                    f"supported (v0.1; packed outputs are F/I)")
     dims = {}
     for n in in_names:
         k, sub, sh = streams[n]
@@ -1623,13 +1704,16 @@ def compile_program(text, target="c", sample=None, outputs=None,
     parts.append("int main(int argc, char **argv) {")
     live_ins = [n for n in in_names if n not in consts]
     n_argv = sum(3 if streams[n][0] == "T" else 1 for n in live_ins)
-    n_argv += sum(3 if streams[o][0] == "T" else 1 for o in outputs)
+    n_argv += (1 if pack_outputs else
+               sum(3 if streams[o][0] == "T" else 1 for o in outputs))
     parts.append(f"  if (argc != {n_argv + 1}) return 9;")
     idx = 1
+    argidx = {}
     loads = []
     for n in in_names:
         if n in consts:
             continue
+        argidx[n] = idx
         k, sub, sh = streams[n]
         if k == "T":
             st, et, zt = sub
@@ -1673,7 +1757,6 @@ def compile_program(text, target="c", sample=None, outputs=None,
                 f" if (fread({n}, 8, {n}_N, f) != (size_t){n}_N) return 2;"
                 f" fclose(f); }}")
             idx += 1
-    parts.append("\n".join(loads))
     # allocate intermediates + outputs (COUNT exprs; _N vars per stream)
     allocs = []
     for x in sorted(interI):
@@ -1706,38 +1789,138 @@ def compile_program(text, target="c", sample=None, outputs=None,
         for _comp, _ct in (("s", _st), ("e", _et), ("z", _zt)):
             allocs.append(f"  {x}_{_comp} = malloc(({cnt}) * sizeof({_ct}));")
         allocs.append(f"  int64_t {x}_N = {_rows_expr(xsh, ids_n)};")
-    parts.append("\n".join(allocs))
+
+    # -- resident (serve) helpers ------------------------------------
+    # Live inputs are fixed geometry: compile-time element count, so a
+    # short/long rewrite fails loud before touching the buffer. Frozen
+    # inputs load once; live inputs are re-read in place; shadowed
+    # inputs (an IN also used as an OUT) are restored from their startup
+    # files before READY, matching the CUDA warmup contract.
+    def _live_elems(n):
+        return int(np.prod(list(streams[n][2]), dtype=np.int64))
+
+    def _live_elem_size(n):
+        return f"sizeof({_frepr})" if streams[n][0] == "F" else "sizeof(int64_t)"
+
+    def _size_check(n, ind):
+        i = argidx[n]
+        cnt = _live_elems(n)
+        el = _live_elem_size(n)
+        return "\n".join([
+            f"{ind}{{ FILE *f = fopen(argv[{i}], \"rb\"); if (!f) return 1;",
+            f"{ind}  fseek(f, 0, SEEK_END); long _B = ftell(f);"
+            f" fseek(f, 0, SEEK_SET);",
+            f"{ind}  if (_B != (long)({cnt} * {el})) return 10;",
+            f"{ind}  fclose(f); }}",
+        ])
+
+    def _reload(n, ind):
+        i = argidx[n]
+        cnt = _live_elems(n)
+        el = _live_elem_size(n)
+        return "\n".join([
+            f"{ind}{{ FILE *f = fopen(argv[{i}], \"rb\"); if (!f) return 1;",
+            f"{ind}  fseek(f, 0, SEEK_END); long _B = ftell(f);"
+            f" fseek(f, 0, SEEK_SET);",
+            f"{ind}  if (_B != (long)({cnt} * {el})) return 10;",
+            f"{ind}  if (fread({n}, 1, _B, f) != (size_t)_B) return 2;"
+            f" fclose(f); }}",
+        ])
+
+    shadowed = []
+    if live is not None:
+        _seen_out = set()
+        for _outs, _mn, _fn, _args, _ln, _sig in prog:
+            _seen_out.update(_outs)
+        for n in in_names:
+            if n in consts or n not in _seen_out:
+                continue
+            k, _, sh = streams[n]
+            if k == "T":
+                raise NoPattern(
+                    f"C serve: shadowed triple input '{n}' is not "
+                    f"supported (v0.1)")
+            if sh is None or any(d is None for d in sh):
+                raise NoPattern(
+                    f"C serve: shadowed input '{n}' needs fully static "
+                    f"shape (fixed geometry), got {sh}")
+            shadowed.append(n)
+
+    compute = []
     for outs, mn, _fn, args, ln, sig in prog:
         pat, gathered = be.pattern(mn, outs, args, sig, ctx)
         if gathered:
             ctx["gathered"][gathered[0]] = gathered[1]
-        parts.append(f"  /* L{_short_site(ln)}: {mn} */")
         body = pat.replace("\n", "\n  ")
         if time_ops:
             body = ("{ clock_t _t0 = clock();\n  " + body +
                     f"\n  fprintf(stderr, \"op {mn} %f\\n\", "
                     f"(double)(clock() - _t0) / CLOCKS_PER_SEC); }}")
-        parts.append("  " + body)
-    for o in outputs:
-        ok, osub, _osh2 = streams[o]
-        if ok == "T":
-            st, et, zt = osub
+        compute.append(f"  /* L{_short_site(ln)}: {mn} */\n  " + body)
+
+    stores = []
+    if pack_outputs:
+        pack = [f"  {{ FILE *f = fopen(argv[{idx}], \"wb\"); if (!f)"
+                f" return 3;"]
+        for o in outputs:
+            ok = streams[o][0]
+            el = "8" if ok == "I" else f"sizeof({_frepr})"
             co = ctx["count"][o]
-            for comp, ct in (("s", st), ("e", et), ("z", zt)):
-                parts.append(
-                    f"  {{ FILE *f = fopen(argv[{idx}], \"wb\"); if (!f)"
-                    f" return 3;\n"
-                    f"    fwrite({o}_{comp}, sizeof({ct}), {co}, f);"
-                    f" fclose(f); }}")
-                idx += 1
-            continue
-        el = "8" if ok == "I" else f"sizeof({_frepr})"
-        co = ctx["count"][o]
-        parts.append(f"  {{ FILE *f = fopen(argv[{idx}], \"wb\"); if (!f)"
-                     f" return 3;\n"
-                     f"    fwrite({o}, {el}, {co}, f); fclose(f); }}")
+            pack.append(f"    fwrite({o}, {el}, {co}, f);")
+        pack.append("    fclose(f); }")
+        stores.append("\n".join(pack))
         idx += 1
-    parts.append("  return 0;\n}")
+    else:
+        for o in outputs:
+            ok, osub, _osh2 = streams[o]
+            if ok == "T":
+                st, et, zt = osub
+                co = ctx["count"][o]
+                for comp, ct in (("s", st), ("e", et), ("z", zt)):
+                    stores.append(
+                        f"  {{ FILE *f = fopen(argv[{idx}], \"wb\"); if (!f)"
+                        f" return 3;\n"
+                        f"    fwrite({o}_{comp}, sizeof({ct}), {co}, f);"
+                        f" fclose(f); }}")
+                    idx += 1
+                continue
+            el = "8" if ok == "I" else f"sizeof({_frepr})"
+            co = ctx["count"][o]
+            stores.append(f"  {{ FILE *f = fopen(argv[{idx}], \"wb\"); if (!f)"
+                          f" return 3;\n"
+                          f"    fwrite({o}, {el}, {co}, f); fclose(f); }}")
+            idx += 1
+
+    if live is None:
+        # One-shot output is kept byte-identical to the pre-serve
+        # emitter: same loads, allocs, compute, stores, return.
+        parts.append("\n".join(loads))
+        parts.append("\n".join(allocs))
+        parts.extend(compute)
+        parts.extend(stores)
+        parts.append("  return 0;\n}")
+    else:
+        parts.append("\n".join(loads))
+        for n in live:
+            parts.append(_size_check(n, "  "))
+        parts.append("\n".join(allocs))
+        parts.extend(compute)
+        parts.extend(stores)
+        for n in shadowed:
+            parts.append(_reload(n, "  "))
+        parts.append('  printf("READY\\n"); fflush(stdout);')
+        parts.append("  { char line[16];")
+        parts.append("    while (fgets(line, sizeof(line), stdin)) {")
+        parts.append("      if (line[0] == 'q') break;")
+        for n in live:
+            parts.append(_reload(n, "    "))
+        for c in compute:
+            parts.append("  " + c)
+        for s in stores:
+            parts.append("  " + s)
+        parts.append('      printf("READY\\n"); fflush(stdout);')
+        parts.append("    } }")
+        parts.append("  return 0;\n}")
     parts.append(be.epilogue(ctx))
     src = "\n".join(parts)
     _libs = ["-lm"]
@@ -1746,7 +1929,9 @@ def compile_program(text, target="c", sample=None, outputs=None,
     return {"source": src, "backend": be, "streams": streams,
             "dims": dims, "config": dict(config), "inputs": in_names,
             "outputs": outputs, "n_argv": idx - 1, "libs": _libs,
-            "consts": consts, "cname": _alias}
+            "consts": consts, "cname": _alias,
+            "live": list(live) if live is not None else None,
+            "graph": False, "pack_outputs": bool(pack_outputs)}
 
 
 def build(source, workdir, name="prog", cc="cc", cflags=None, libs=None):

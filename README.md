@@ -63,7 +63,7 @@ python3 tests/test_asm.py tests/test_census.py tests/test_topk.py \
   tests/test_xf_block.py tests/test_stabilize.py tests/test_emit.py \
   tests/test_emit_cuda.py tests/test_emit_nonfpu.py tests/test_emit_headt.py \
   tests/test_emit_widths.py tests/test_builder_block.py tests/test_serve.py \
-  tests/test_img_demo.py
+  tests/test_serve_c.py tests/test_img_demo.py
 python3 tests/test_decode.py tests/test_prefill.py      # serve path, GPU + snapshot
 python3 tests/test_sparse.py tests/test_resident.py     # sparse + resident, GPU + snapshot
 python3 tests/test_qwen7b_depth.py tests/test_cross_width.py  # scale pins, slow, SKIP-gated
@@ -72,6 +72,7 @@ python3 tests/test_qwen7b_depth.py tests/test_cross_width.py  # scale pins, slow
 `tests/test_emit_c.py` fails on missing system GSL headers
 (`gsl/gsl_cblas.h`) — pre-existing, environmental, not a code failure.
 Serve tests SKIP without the snapshot/GPU; CUDA legs SKIP without nvcc.
+`tests/test_serve_c.py` is the CPU-only residency gate (no GPU needed).
 
 ## Demo 1: image pipeline (seconds, all three backends)
 
