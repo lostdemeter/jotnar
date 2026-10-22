@@ -96,6 +96,41 @@ def main():
     check("shuffle-locality-signature", True,
           f"mscale64 p16={m16a:.2f} p64={m64a:.2f} (halving = 33px field inside 64px patches)")
 
+    # -- ordered-readout legs (void round; legs above untouched) ------------
+    orb_path = os.path.join(FIXDIR, "ordered_readout.json")
+    orb = json.load(open(orb_path))
+    check("ordered-schema",
+          set(orb["arms"]) == {"raster", "near", "far"}
+          and orb["verdict"] == "void:degenerate-training"
+          and "battery" not in orb,
+          "3 arms banked; void recorded; no battery banked")
+    om = {t: orb["arms"][t]["shuffle_mean"] for t in ("raster", "near", "far")}
+    check("ordered-robustness",
+          om["raster"]["p16"] < 1e-6
+          and om["far"]["p16"] < 1e-6
+          and abs(om["near"]["p16"] - 2.4419) < 1e-3
+          and orb["verdict"] == "void:degenerate-training"
+          and "battery" not in orb,
+          "banked means as measured (0.0/2.44/0.0 — artifacts of constant "
+          "maps, dissected in spec); UP bar unjudgeable on degenerate arms; "
+          "void recorded, no battery banked")
+    try:
+        import torch
+        import train_ordered_readout as ORD
+        OMod = ORD._define_model(torch)
+        osd = torch.load(os.path.expanduser("~/student_runs/ordered-raster/weights.pt"),
+                         map_location="cpu", weights_only=True)
+        onet = OMod(64, 672 // 32, 1024 // 32, 2, 1, "raster").float().eval()
+        onet.load_state_dict(osd)
+        oal = float(torch.sigmoid(onet.alpha_logit).item())
+        omn = float(osd["mix.weight"].norm().item())
+        check("ordered-spot",
+              abs(oal - orb["arms"]["raster"]["alpha"]) < 1e-9
+              and abs(omn - 688.0) < 1.0,
+              f"weights reload: alpha {oal:.4f}, mixW {omn:.1f} (exploded, as banked)")
+    except (ImportError, OSError, FileNotFoundError) as e:
+        print(f"SKIP ordered-spot ({e})")
+
     # -- register-token legs (registers round; legs above untouched) -------
     reg_path = os.path.join(FIXDIR, "registers_shuffle.json")
     reg = json.load(open(reg_path))
