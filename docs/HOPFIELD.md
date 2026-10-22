@@ -840,3 +840,102 @@ Gaps named: tuned-optimizer separation (peeking-class under this
 constitution — a new round could freeze a tuned schedule, stated not
 run); nonlinear projectors (scope breach here by design); encoder-level
 contrastive training (outside the prescription arc).
+
+## Difference-preserving prototypes + manifold diagnostics (constitution, FROZEN pre-computation)
+
+Analysis + prescription only (numpy; no training, no emitter/opcode/
+assembly changes, no new dependencies; banked harvests read-only —
+pooled 24 + token subset 432 — never re-harvested (full token captures
+are gone; everything builds from banked means/subset — stated);
+production weights untouched (teacher AND Qwen-7B never loaded —
+banked data only); CPU-first (largest op: 432² Gram — no GPU need
+exists, stated pre-run); no downloads).
+Constructions frozen pre-run (≤3 — exact rules + counts; medoids stay
+REJECTED on assoc precedent — all three differ mechanically, stated per
+rule: D1 is the ANTI-medoid (max, not min, distance); D2 is a weighted
+mean (not a member at all); D3 is a covering set (dispersion, not
+centrality)):
+(D1) max-deviation exemplars — per (frame, point), the one of its 18
+banked subset tokens with MAX L2 distance from the frame's banked pooled
+mean (unit space); 8 exemplars/point, labeled by frame. No peeking:
+deviation-from-mean is fixed before separability is seen.
+(D2) variance-weighted pooling — per (frame, point), weighted mean of
+its 18 subset tokens, weights = squared deviation from the plain mean,
+re-normalized; 8 patterns/point. Upweights difference-carrying tokens
+by rule, not by inspection.
+(D3) farthest-point sets — greedy FPS over the point's 144 subset
+tokens to 8 exemplars (seed = farthest from point-token-mean, then 7×
+farthest-from-selected; ties → first index; deterministic); labeled by
+source frame.
+Counts: 8 patterns/point/construction — capacity 8 ≪ N_exp(3072) PASS
+all (stated, verified in-analysis; else void).
+Diagnostics frozen alongside (characterize, NOT gate): (i) NN distance
+distribution on the 24 pooled harvests — per-pattern nearest-neighbor
+cosine distance (1−cos): min/median/max reported; (ii) intrinsic
+dimension — participation ratio PR=(Σλ)²/Σλ² of the pooled-24
+covariance + eigenvalues >1%-of-max count, per-point too.
+Bars: frozen 0.9 max / 0.5 mean (continuity, not reinvention).
+Winner rule: a construction clearing ALL 3 points earns the retrieval
+rerun (dead-round battery verbatim per construction: 200 trials =
+8 patterns × 5 levels × 5 seeds, correct = frame identity, chance
+1/8 = 0.125, bar 0.25). Empty (nothing clears) is complete AND triggers
+the manifold verdict, decided by diagnostics with numbers frozen here:
+thin-manifold CONFIRMED iff PR_24 ≤ 5 (24 patterns in ≤5 effective dims
+of 3072 = 0.16% — the clump is a sliver) AND median NN cosine-distance
+< 0.05 (typical nearest pair 2× tighter than the 0.1 bar margin) —
+else UNCONFIRMED (stated outcome, not a failure).
+Gate: EXTEND `tests/test_assoc_memory.py` in place (construction
+integrity — D1/D2/D3 recomputed from banked harvests+subset;
+separability legs; manifold-diagnostic legs REPORTED-not-asserted
+(numbers printed + finite, thresholds never asserted); retrieval rerun
+legs IF earned — unearned reruns FAIL the gate, assert none-earned
+explicitly; existing legs untouched). Neighbors: assoc + prototypes +
+lesion-basin green (read-only reuse — nothing moves underneath).
+
+### Difference results (TBD — computation lands here)
+
+### Difference results (CPU seconds, banked means + subset only)
+
+`python3 scripts/hopfield_difference.py` — empty on constructions,
+CONFIRMED on substrate (both — the verdict the constitution allowed):
+
+Separability table (bar max<0.9 AND mean<0.5):
+
+| construction | b29 (max/mean) | b59 (max/mean) | norm_out (max/mean) | clears |
+|---|---|---|---|---|
+| D1 max-deviation | 0.8035/+0.55 | 0.9995/+1.00 | 0.9908/+0.52 | 0/3 |
+| D2 var-weighted | 0.9785/+0.89 | 0.9998/+1.00 | 0.9956/+0.70 | 0/3 |
+| D3 farthest-point | 0.6024/+0.53 | 0.9985/+1.00 | 0.8664/+0.59 | 0/3 |
+
+NO battery runs (stated — nothing cleared all 3).
+Mechanisms: difference-preserving moves the MAX clause (3 cells clear
+it: b29:D1 0.8035, b29:D3 0.6024, norm_out:D3 0.8664) but NEVER the mean
+clause (0.52–1.00 everywhere) — extremes separate, the clump doesn't.
+D2 is the weakest (reweighting 18 near-identical tokens ≈ the mean).
+b59 is immovable by every construction in the arc (0.9985–0.9998 here).
+Manifold numbers (frozen decision rule): NN cosine-distance on pooled
+24: min 1.20e−05 / median 2.99e−03 / max 5.47e−03; PR_24 = 2.12 ≤ 5 ✓;
+median 0.003 < 0.05 ✓ → **thin-manifold CONFIRMED**: 24 patterns live
+in ~2 effective dims of 3072 (0.07%), typical nearest pair 30× tighter
+than the 0.1 bar margin. Per-point PR: the sliver is thinnest late
+(banked per-point in diagnostics). THIS is the substrate explanation,
+stated with numbers: the encoder maps 8 distinct scenes into a
+2-dimensional sliver — no post-hoc prototype surgery (centering,
+whitening, contrast, triplets, extremes, covering sets) can separate
+what was never pulled apart, because separation would have to invent
+dimensions the data doesn't occupy.
+Verdict: **constructions dead AND substrate confirmed — both.**
+The Hopfield arc terminates here: capacity → separability → surgery
+(analytic + learned + difference-preserving) → sharpness/scale →
+substrate. Remaining work is encoder-side (training), outside the
+prescription arc by design.
+Gate: `tests/test_assoc_memory.py` extended in place (assoc-diff-*
+key: constructions recomputed == banked incl. exact d3 indices,
+manifold legs reported-not-asserted, none-earned asserted explicitly;
+all 22 pre-existing legs green). Neighbors: assoc + prototypes +
+lesion-basin green (read-only reuse).
+Bugs caught: one MINE pre-run in the analysis draft (D2 accumulated
+one GLOBAL weighted mean then repeated it 8× — 8 identical patterns,
+maxcos=1.0 by construction bug; caught on code read before first run,
+fixed to per-frame means, never banked under it). Gaps named: none
+open in-arc (encoder-side training is out-of-arc, stated not run).
