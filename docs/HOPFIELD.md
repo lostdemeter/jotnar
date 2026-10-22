@@ -227,3 +227,103 @@ cosine displayed 1.0000 with no exact duplicates underneath
 named: higher-dim prototype spaces (unbankable — maps were
 never stored, by design); β-sweep (frozen at 1, capacity-math
 default).
+
+## Hopfield prototypes — harvest real-dim patterns, no training (constitution, FROZEN pre-run)
+
+Harvest, not training: forward capture hooks ONLY (zero zeroing/
+lesioning — `requires_grad_(False)`, `no_grad` + bf16 autocast exactly
+like `infer_one`; a loss/backward/optimizer anywhere is scope breach).
+Harvest layers frozen pre-run (≤3, exact module paths in the banked
+anatomy suffix convention after "Diffuser." per
+`teacher_anatomy.json:99`; no exploring mid-round — a path matching
+nothing is a stop-finding, fail loud like the lesion typo-guard):
+(1) `transformer_blocks.29` — mid-stack DiT block output, image-stream
+hidden_states (output tuple index 1), dim 3072;
+(2) `transformer_blocks.59` — final DiT block output, image-stream
+hidden_states, dim 3072;
+(3) `norm_out` — final AdaLayerNormContinuous head output (pre-proj_out
+tensor), dim 3072.
+Images frozen: the 8-frame Hypersim eval set (first 2 frames of
+ai_018_001, ai_021_001, ai_022_001, ai_023_005) — identical inputs to the
+lesion/basin evidence the prototypes must explain, so no new-image
+confound (one-line justification as required; banked church/dogs/
+squirrel fixtures NOT used — stated).
+Prototype construction frozen: per-image exemplars — mean-pool over the
+image-token sequence of each capture → 8 prototypes × 3072 per harvest
+point (24 total). Per-basin means REJECTED (banked basins partition
+lesion subsets, not images — no basin→image map exists without inventing
+one = peeking-class violation). Medoids REJECTED (privileging single
+members without principled basis — assoc-memory precedent). Pooling fixed
+before the first run — no peeking at which separates best.
+Capacity check against the banked math: harvested dim 3072 vs the d≥512
+robust-sufficient row (N_exp(512)=6.55e+14 ≫ K=20) — stated as PASS/FAIL
+per harvest point, not argued (expected PASS ×3: 3072 > 512 and N_exp
+grows in d).
+Determinism: same image twice → bit-identical prototypes; harvest runs
+ai_018_001 frame 0 twice and banks per-point max-abs-diff (bar exactly
+0.0); the gate reads banked evidence — heavy reruns are NOT routine.
+Ruling: hooks only; weights read-only out-of-tree (sha256 of the
+established 7 files — 5 transformer shards + trainables + VAE — pre AND
+post, banked; a single modified byte voids the round); no training; no
+emitter/opcode/assembly changes; no new dependencies (marigold-env stack
+already used by `teacher_lesion.py`: torch/diffusers/peft/bitsandbytes/
+cv2/numpy); production weights untouched; teacher AND Qwen-7B never
+co-loaded (text encoder never loaded — precomputed embeds feed all
+blocks; VRAM math: 4-bit NF4 20B ≈10GB + LoRA trainables 1.85GB + bf16
+VAE ≈0.2GB + embeds 19MB + single-frame activations ≈ 13GB total < 24GB
+3090Ti — stated pre-run); GPU solo for hook sessions (nvidia-smi pre-run:
+zero compute processes, 451MiB display-only, 23.6GB free — stated);
+no downloads; MUST run under `~/marigold-env/bin/python` with a CLEAN
+env (`cuda_env.sh` poisons it — established, never re-proven).
+Gate: new `tests/test_hopfield_prototypes.py` (fast legs: determinism
+evidence + schema + capacity-check legs reading banked prototypes +
+banked math; heavy reruns are NOT routine). Neighbors: anatomy +
+assoc-memory legs green (read-only reuse — nothing moves underneath).
+
+### Harvest results (GPU solo, hooks only, no training)
+
+Run: `~/marigold-env/bin/python scripts/harvest_hopfield_prototypes.py`
+(clean env, GPU solo — zero compute procs pre-run, 451MiB
+display-only, 23.6GB free). VRAM measured alloc=13.7GB reserved=14.9GB
+(< 24GB 3090Ti — matches the ≈13GB pre-run math; text encoder never
+loaded, teacher+Qwen-7B co-load impossible by construction).
+Eval context mirrors `infer_one` exactly (no_grad + bf16 autocast,
+LANCZOS4 768x576, t=0.499, precomputed embeds).
+
+```text
+harvest points matched 1:1: ['transformer_blocks.29', 'transformer_blocks.59', 'norm_out']
+determinism ai_018_001/fr0000 x2: transformer_blocks.29=0.00e+00 transformer_blocks.59=0.00e+00 norm_out=0.00e+00
+harvested ai_018_001_fr0000..ai_023_005_fr0001 (8 frames, ~1s each)
+sha post == pre (7 files, nothing written)
+POINT dim=3072 K=20 requirement=d>=512: transformer_blocks.29=PASS transformer_blocks.59=PASS norm_out=PASS
+```
+
+Harvest table (per-point dims + capacity verdicts):
+
+| harvest point | capture | dim | N_exp(dim) | verdict |
+|---|---|---|---|---|
+| transformer_blocks.29 (block out[1], image stream) | [1,1728,3072] → mean-pool | 3072 | 1.3e+97 | PASS (3072≥512) |
+| transformer_blocks.59 (block out[1], image stream) | [1,1728,3072] → mean-pool | 3072 | 1.3e+97 | PASS (3072≥512) |
+| norm_out (head output, pre-proj_out) | [1,1728,3072] → mean-pool | 3072 | 1.3e+97 | PASS (3072≥512) |
+
+24 prototypes banked (`samples/marigold/hopfield_prototypes.json`,
+1.15MB): 8 frames × 3 points × 3072, all finite + nonzero.
+Determinism bar met exactly (0.00e+00 all points — same image twice
+bit-identical). Checksums pre==post (7 files).
+What the listing port inherits: (1) dims PASS with astronomic margin
+— capacity can never explain a future retrieval miss at these points
+(failures would be dynamics, stated as such); (2) L2-NORMALIZE before
+outer-product storage — banked pooled norms are raw residual-stream
+magnitudes (b29 ≈1.5e8, b59 ≈1.3e10, norm_out ≈148; no inf, but 8 orders
+apart across points), while Ramsauer patterns live on the sphere and the
+capacity math assumes radius-M geometry — storing raw would let b59
+swallow everything (assoc-memory collapse precedent: one flat winner);
+(3) point choice is a dynamics question now, not capacity — b29 (mid)
+vs b59/norm_out (late) differ in abstraction, identically in verdict.
+Gate `tests/test_hopfield_prototypes.py` (CPU, 0.03s): schema, values,
+shapes, determinism evidence, capacity recompute, checksums. Neighbors:
+anatomy + assoc-memory green (read-only reuse, nothing moves underneath).
+Bugs caught: none in-harvest (paths matched 1:1 first try, recipe mirror
+exact). Gaps named: basin→image map still absent (per-basin means remain
+unconstructible without invention); retrieval dynamics over these 24
+patterns untested (next round's question, not this one's).
