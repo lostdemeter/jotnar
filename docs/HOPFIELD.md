@@ -727,3 +727,59 @@ bit-identical audit numbers. Gaps named: encoder-level separation
 (contrastive/whitened TRAINING — outside the prescription arc, stated
 not run); cross-point joint-token memory (untested — same clump,
 stated).
+
+## Contrastive separation — learn what whitening couldn't (constitution, FROZEN pre-run)
+
+Separation training only (banked 24 harvest patterns in, geometry out;
+no architecture/emitter/opcode/assembly changes beyond the declared
+projector — a "small" extra layer to help it converge is scope breach).
+Projector declared EXACTLY: ONE shared linear map P: 3072→512, NO bias,
+NO hidden layer, NO activation (pure MATMUL artifact), outputs
+L2-normalized. Dim 512 with reason: the d≥512 capacity row is where the
+bound robustly holds (projected codes live there by construction).
+Per-op pattern citations (in-table law holds even for analysis-adjacent
+training — gap hit = stop-finding, none hit): project MATMUL
+(`README.md:183`); cosine MUL (`:185`) + ADD (`:159`) for dots, SQUARE
+(`:202`) + ADD + SQRT (`:201`) + DIV (`:174`, template op) for norms —
+all real rows, none parked; SGD update SUB (`:205`) + MUL lr-scale;
+hinge max(), hardest-DAQ mining (NONE — mean over all negatives, mining
+is a tuning knob, stated), triplet enumeration, loop control: host-side
+Python scalars (sampling-on-host-boundary precedent, README contracts —
+not emitted ops, stated explicitly).
+Objective frozen: triplet margin on cosines, L = mean max(0, m + s_an −
+s_ap), triplets = anchor (point,frame) × positive same-frame-other-point
+(2 per anchor) × negatives ALL different-frame patterns (mean, no
+mining). Same-image pulled (cross-point same frame), different-image
+pushed — on the 24 banked harvests, nothing else.
+Frozen with reason (sane-defaults, UNTUNED — tuning mid-round is
+peeking-class; non-convergence is a complete outcome): margin m=0.5
+(half the cosine range; starting sims ~0.99 must open a 0.5 pos−neg
+gap); temperature N/A (margin loss, no exp anywhere — stated); lr=0.1
+(cosine-scale gradients O(1), conservative); steps=5000 full-batch
+(tiny problem, seconds); seed=7; init seeded Gaussian/√fan-in
+(host-side RNG). Budget: wall cap 10 min CPU (expected seconds); GPU:
+NONE (CPU numpy — no GPU need exists, stated pre-run).
+Winner rule (continuity, not reinvention): max off-diag cosine + mean
+pairwise per point's 8 projected patterns vs frozen 0.9/0.5; clearing
+ALL 3 points earns the retrieval rerun (200 trials/point: queries =
+corrupt(PROJECTED pattern), f ∈ {0,0.01,0.05,0.1,0.2} × seeds 0–4 —
+dead-round battery verbatim, continuity; correct = frame identity,
+chance 0.125, bar 0.25 frozen). Empty (nothing clears) is complete.
+Overfit caveat stated pre-run (not discovered): 1.5M params vs 24
+patterns WILL memorize — the bar judges output geometry and the battery
+judges noise-robustness (f=0.05/0.2 queries land off-code if codes are
+memorized spikes); memorization-with-collapse is a dead verdict, not a
+loophole.
+Ruling: weights out-of-tree (P + optimizer state under
+~/student_runs/, NEVER in-repo; metrics banked separately in
+samples/marigold/, primaries untouched); production weights untouched
+(teacher AND Qwen-7B never loaded — banked harvests suffice);
+no downloads.
+Gate: EXTEND `tests/test_assoc_memory.py` in place (retrain-from-banked
+with frozen seed → reprojected == banked codes [fp16 tolerance];
+separability legs recomputed from banked codes; retrieval rerun legs IF
+earned — unearned reruns FAIL the gate (assert none-earned explicitly,
+not just absent); existing legs untouched). Neighbors: assoc +
+prototypes green (nothing moves underneath).
+
+### Contrastive results (TBD — training lands here)
