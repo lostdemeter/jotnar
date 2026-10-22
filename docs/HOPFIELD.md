@@ -52,3 +52,19 @@ structurally — stated as such). The 64-dim question
 (capacity-starved all along?) is answered by the d=64 row.
 
 ## Results (TBD — computation lands here)
+
+### Pre-computation correction (nothing computed yet — Phase-19 precedent)
+
+The frozen K-choice (unit-norm patterns, M=1) makes the
+exponential bound VACUOUS at every table dim (checked
+algebraically: with K=1/√(d−1) the d-terms cancel to
+2βK²p(d−1)=0.002, c≈1.02–1.18, and the √p=0.0316 prefactor
+holds N below 3.0 from d=64 to d=1024 — a bound that proves
+nothing judges nothing; adopting it would indict the formula
+choice, not the students). Corrected: radius M=√(d−1) (K=1),
+because (i) our normalized representations live at RMS scale
+~√d (RMSNorm outputs, attention residuals — unit-norm is the
+wrong geometry for this stack), and (ii) it restores a
+graduated table (small at 64, astronomical at 1024) that can
+actually discriminate. Carried through consistently (M² in
+the separation condition too). Everything else frozen stands.
