@@ -1,7 +1,10 @@
 """Non-FPU backend v0.2: integer-only emission (no float, no libm).
 
 Two subgraphs, both bit-exact vs the lattice:
-  exact moves (v0.1): T-kind GATHER/ARGMAX/TRANSPOSE/SLICE/CONCAT/SELECT.
+  exact moves (v0.1): T-kind GATHER/GATHER3/ARGMAX/TRANSPOSE/SLICE/CONCAT/
+    SELECT.
+  integer arithmetic (v0.1): I-kind IADD/ISUB/IMUL/IMAD with defined
+    64-bit wrap (unsigned intermediates, no float).
   fixed-point arithmetic (v0.2): T-kind MUL/ADD/SUB/SQUARE via a ported
     bridge (to_fixed/from_fixed + tmul + binop at m_cov). Bridge tables
     (FRAC/COARSE/FINE) bake in as static const int64 (compiler side
@@ -21,8 +24,9 @@ import numpy as np
 from chain.asm import AsmError
 from chain.emit_c import Backend, CBackend, NoPattern
 
-INTEGER_MN = {"GATHER", "ARGMAX", "TRANSPOSE", "SLICE", "CONCAT", "SELECT",
-              "GT",
+INTEGER_MN = {"GATHER", "GATHER3", "ARGMAX", "TRANSPOSE", "SLICE", "CONCAT",
+              "SELECT", "GT",
+              "IADD", "ISUB", "IMUL", "IMAD",
               "MUL", "ADD", "SUB", "SQUARE", "MATMUL", "BATCH_MATMUL",
               "RMSNORM", "TSHIFT", "SOFTMAX_WIDE", "SOFTMAX",
               "TBETA", "BETA", "ROTARY", "SILU"}

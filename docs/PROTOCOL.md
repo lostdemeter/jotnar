@@ -42,7 +42,7 @@ codes are stable strings (see § Errors).
 ### PING -> PONG
 
 `{type:"ping"}` -> `{ok:true, pong:{impl:"jotnar-node", v:1,
-backends:["lattice","served"], mnemonics:54}}`. Liveness only;
+backends:["lattice","served"], mnemonics:59}}`. Liveness only;
 `mnemonics` lets the controller refuse early instead of failing
 mid-program. (Mirrors phi_compute_protocol PING; the capability
 tail is the deviation — justified: our node admits per-kind

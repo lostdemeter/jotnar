@@ -1,6 +1,6 @@
 # LANGUAGE.md — the assembly language, single reference (v1.0 Gate 2)
 
-54 mnemonics. Every line of every program is `OUTS = MNEMONIC(args)` plus
+59 mnemonics. Every line of every program is `OUTS = MNEMONIC(args)` plus
 four declarations (`CONFIG IN STATE RANGE`) and three composition forms
 (`DEF CALL IMPORT`). This file is the whole language: the tutorial (write
 your first listing in 15 minutes), the per-mnemonic contracts with examples,
@@ -118,7 +118,7 @@ or `OUT = GELU(a)` and compare against `torch.sigmoid` / `torch.gelu`.
 You have now used the generate-your-own-gate loop: propose, run, compare.
 Next: read `programs/xf_block.asm` with §4 open beside it.
 
-## 4. Mnemonic reference (54)
+## 4. Mnemonic reference (59)
 
 Notation: `NAME(in -> out)` + layout sig + contract one-liner + example +
 loud-failure. Arithmetic core (`ADD SUB MUL DIV`) refuses float inputs
@@ -183,6 +183,9 @@ loud-failure. Arithmetic core (`ADD SUB MUL DIV`) refuses float inputs
 - `CONCAT($A,$A,F:SCALAR -> $A)` — concatenate along an axis literal; non-axis dims must match. Ex: `C = CONCAT(cache, row, 0)`.
 - `SLICE($A,s,s,s -> $A)` — `SLICE(X, AXIS, START, END)` half-open, bounds-checked (no silent clamp). Ex: `W = SLICE(X, 1, 1, 4)`.
 - `GATHER(*,I:* -> *)` — row gather by int ids (bounds-checked). Ex: `R = GATHER(table, ids)`.
+- `GATHER3(T/F (V1,V2,C), I (N,), I (N,) -> (N,C))` — two-index row gather: `R[n,:] = table[i[n], j[n], :]`, static table outer dims. C/non-FPU bounds-check ids and fail loud; CUDA F path assumes in-range ids at data-prep (same contract as GATHER). Native order-2/trigram primitive: no flattened bank, no host-side context arithmetic. Ex: `ROW = GATHER3(bank, prev, prev2)`.
+- `IADD/ISUB/IMUL(I:*, I:*|int -> I:*)` — exact I-kind elementwise arithmetic with 64-bit two's-complement wrap (unsigned intermediates; two's-complement target assumption, same as the existing int8 path); the second operand is an I stream (same shape, no broadcast) or an integral literal (broadcast). C/CUDA/non-FPU agree bit-for-bit. Ex: `D = ISUB(pos, 1)`.
+- `IMAD(I:*, I:*|int, I:*|int -> I:*)` — exact fused multiply-add `a*b+c`, same wrap/scalar contract. The n-gram context primitive: `CTX = IMAD(prev, 256, prev2)`. Ex: `CTX = IMAD(prev, 256, prev2)`, then `ROW = GATHER(bank, CTX)`. Or use `GATHER3` and skip the flattening entirely.
 - `SCATTER($A,$A,I:* -> $A)` — indexed row update: base (S,C) + row (1,C) + scalar/1-elem int idx -> copy with row idx := row (bounds-checked, fail loud). Out-of-place pure form of the KV-cache merge (same op serves device-resident Phase B later). Ex: `KF = SCATTER(KPS, KR, POS)`. Resident form writes fp16 caches directly (row rounds once, base round-trips exactly).
 - `ATTN($A,$A,$A,I:*,s,s,s,s -> $A)` — fused decode GQA attention: scores + mask + shift + wide-softmax + context in one deterministic kernel (fixed accumulation order; bit-exact across runs/binaries). Single query row; S<=512 (kernel slots). CUDA-only (C/non-FPU refuse loud). Ex: `CTX = ATTN(QR, KF, VF, AM, 28, 4, 128, 16)`.
 - `SWIGLU($A,F:SCALAR -> $A)` — SwiGLU MLP gate over (R,2I): `silu(gate)*up` with gate as second half, one pass (replaces UG-split x2 + SILU + MUL). F-only; deterministic (elementwise). CUDA-only (C/non-FPU refuse loud). Ex: `MID = SWIGLU(UG, 18944)`.

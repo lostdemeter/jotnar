@@ -723,6 +723,8 @@ def _check_shapes(mn, vals, ln):
 
     if mn in ("ADD", "SUB", "MUL", "DIV"):
         _same(*vals, what="elementwise")
+    elif mn in ("IADD", "ISUB", "IMUL", "IMAD"):
+        _same(*vals, what="integer elementwise")
     elif mn == "SELECT":
         _same(vals[1], vals[2], what="SELECT branches")
         ms = _sh(vals[0])
@@ -754,6 +756,27 @@ def _check_shapes(mn, vals, ln):
             if ids_a.size and (int(ids_a.min()) < 0 or int(ids_a.max()) >= w[0]):
                 raise AsmError(
                     f"line {ln} ({mn}): ids out of range [0,{w[0]})")
+    elif mn == "GATHER3":
+        w = _sh(vals[0])
+        ii, jj = vals[1], vals[2]
+        if w is not None:
+            if len(w) != 3:
+                raise AsmError(
+                    f"line {ln} ({mn}): table must be 3D (V1,V2,C), "
+                    f"got {w}")
+            import numpy as _nn
+            ia = _nn.ascontiguousarray(ii)
+            ja = _nn.ascontiguousarray(jj)
+            if ia.shape != ja.shape or ia.ndim != 1:
+                raise AsmError(
+                    f"line {ln} ({mn}): i/j must be 1D same length, "
+                    f"got {ia.shape} vs {ja.shape}")
+            if ia.size and (int(ia.min()) < 0 or int(ia.max()) >= w[0]):
+                raise AsmError(
+                    f"line {ln} ({mn}): i out of range [0,{w[0]})")
+            if ja.size and (int(ja.min()) < 0 or int(ja.max()) >= w[1]):
+                raise AsmError(
+                    f"line {ln} ({mn}): j out of range [0,{w[1]})")
 
 
 def repeat(text, registry, payload, n, sigs=None, grow=(), basedir=".",

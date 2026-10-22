@@ -7,8 +7,9 @@ int64_t, T -> NoPattern (decode at data-prep, same discipline as C).
 
 Kernels (correctness-first; block-reduce/streams/FP16 are listed
 finishing touches, not this cut):
-  k_gather_f32, k_argmax_f32 (ties-first), k_rmsnorm_f32,
-  k_softmax_wide_f32, k_elem (op-switched template: add/sub/mul/div).
+  k_gather_f32, k_gather3_f32, k_argmax_f32 (ties-first), k_rmsnorm_f32,
+  k_softmax_wide_f32, k_elem (op-switched template: add/sub/mul/div),
+  k_int_bin/k_int_mad (I-kind, unsigned wrap).
 MATMUL/BATCH_MATMUL go to cuBLAS Sgemm/SgemmStridedBatched with the
 row-major trick (C_row = A@B computed as C_col = B_col@A_col).
 Memory v1: cudaMallocManaged throughout (host fread straight in,
@@ -82,6 +83,44 @@ __global__ void k_gather_f16(const __half *t, const int64_t *ids, float *o,
   int64_t base = ids[i] * C;
   float *dst = o + i * C;
   for (int64_t j = 0; j < C; ++j) dst[j] = __half2float(t[base + j]);
+}
+__global__ void k_gather3_f32(const float *t, const int64_t *ii,
+                              const int64_t *jj, float *o, int64_t V2,
+                              int64_t C, int64_t N) {
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= N) return;
+  const float *row = t + (ii[i] * V2 + jj[i]) * C;
+  float *dst = o + i * C;
+  for (int64_t j = 0; j < C; ++j) dst[j] = row[j];
+}
+__global__ void k_gather3_f16(const __half *t, const int64_t *ii,
+                              const int64_t *jj, float *o, int64_t V2,
+                              int64_t C, int64_t N) {
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= N) return;
+  int64_t base = (ii[i] * V2 + jj[i]) * C;
+  float *dst = o + i * C;
+  for (int64_t j = 0; j < C; ++j) dst[j] = __half2float(t[base + j]);
+}
+/* int64 elementwise; unsigned intermediates make wrap defined. */
+__global__ void k_int_bin(const int64_t *a, const int64_t *b, int64_t sb,
+                          int64_t *o, int64_t n, int op, int use_b) {
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= n) return;
+  uint64_t x = (uint64_t)a[i];
+  uint64_t y = use_b ? (uint64_t)b[i] : (uint64_t)sb;
+  uint64_t r = (op == 0) ? (x + y) : ((op == 1) ? (x - y) : (x * y));
+  o[i] = (int64_t)r;
+}
+__global__ void k_int_mad(const int64_t *a, const int64_t *b,
+                          const int64_t *c, int64_t sb, int64_t sc,
+                          int64_t *o, int64_t n, int use_b, int use_c) {
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= n) return;
+  uint64_t x = (uint64_t)a[i];
+  uint64_t y = use_b ? (uint64_t)b[i] : (uint64_t)sb;
+  uint64_t z = use_c ? (uint64_t)c[i] : (uint64_t)sc;
+  o[i] = (int64_t)(x * y + z);
 }
 __global__ void k_rmsnorm_w16(const float *x, const __half *w, float *o,
                               int64_t D, int64_t N, float eps) {
@@ -558,6 +597,7 @@ class CUDABackend(Backend):
 
     def pattern(self, mn, outs, args, sig, ctx):
         from chain.emit_c import CBackend as _CB
+        from chain.emit_c import _int_lit
         S = ctx["streams"]
         cfg = ctx["config"]
         ids_n = ctx["ids_n"]
@@ -686,6 +726,67 @@ class CUDABackend(Backend):
                 f"k_gather_f32<<<({ids}_N + TPB - 1) / TPB, TPB{st}>>>"
                 f"({t}, {ids}, {outs[0]}, {w}, {ids}_N);\n{launch}",
                 (outs[0], w))
+        if mn == "GATHER3":
+            t, ii, jj = args
+            if S[t][0] != "F":
+                raise NoPattern("cuda GATHER3 needs F table (decode T at "
+                                "data-prep)")
+            tsh = S[t][2]
+            if len(tsh) != 3 or any(d is None for d in tsh):
+                raise NoPattern(f"cuda GATHER3 needs baked (V1,V2,C), "
+                                f"got {tsh}")
+            v2, w = int(tsh[1]), int(tsh[2])
+            o = outs[0]
+            guard = f"if ({ii}_N != {jj}_N) return 20;\n  "
+            if getattr(self, "use_fp16", False) and t in ctx.get("inputs", []):
+                return (
+                    f"/* {o} = GATHER3({t}, {ii}, {jj}) F16 table */\n  "
+                    f"{guard}"
+                    f"k_gather3_f16<<<({o}_N + TPB - 1) / TPB, TPB{st}>>>"
+                    f"({t}, {ii}, {jj}, {o}, {v2}, {w}, {o}_N);\n{launch}",
+                    None)
+            return (
+                f"/* {o} = GATHER3({t}, {ii}, {jj}) */\n  {guard}"
+                f"k_gather3_f32<<<({o}_N + TPB - 1) / TPB, TPB{st}>>>"
+                f"({t}, {ii}, {jj}, {o}, {v2}, {w}, {o}_N);\n{launch}",
+                None)
+        if mn in ("IADD", "ISUB", "IMUL", "IMAD"):
+            a = args[0]
+            o = outs[0]
+            if S[a][0] != "I":
+                raise NoPattern(f"cuda {mn} needs I first operand")
+            if o not in ctx["count"]:
+                raise NoPattern(
+                    f"cuda {mn}: dynamic intermediate '{o}' "
+                    f"(v0.1 needs a static shape)")
+            co = ctx["count"][o]
+
+            def _arg(x, pos):
+                if x in S:
+                    if S[x][0] != "I" or tuple(S[x][2]) != tuple(S[a][2]):
+                        raise NoPattern(
+                            f"cuda {mn} operand {pos} must be I with shape "
+                            f"{S[a][2]}, got {S[x][0]} {S[x][2]}")
+                    return x, "0", "1"
+                return "NULL", str(_int_lit(x, f"{mn} operand {pos}")), "0"
+
+            if mn == "IMAD":
+                bp, bs, bu = _arg(args[1], 1)
+                cp, cs, cu = _arg(args[2], 2)
+                return (
+                    f"/* {o} = IMAD({a}, {args[1]}, {args[2]}) 64-bit "
+                    f"wrap */\n"
+                    f"k_int_mad<<<(({co}) + TPB - 1) / TPB, TPB{st}>>>"
+                    f"({a}, {bp}, {cp}, {bs}, {cs}, {o}, {co}, {bu}, {cu});\n"
+                    f"{launch}",
+                    None)
+            bp, bs, bu = _arg(args[1], 1)
+            op = {"IADD": 0, "ISUB": 1, "IMUL": 2}[mn]
+            return (
+                f"/* {o} = {mn}({a}, {args[1]}) 64-bit wrap */\n"
+                f"k_int_bin<<<(({co}) + TPB - 1) / TPB, TPB{st}>>>"
+                f"({a}, {bp}, {bs}, {o}, {co}, {op}, {bu});\n{launch}",
+                None)
         if mn == "ARGMAX":
             src = args[0]
             if S[src][0] != "F" or len(S[src][2]) != 2:
@@ -1139,7 +1240,7 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
         # CONVERT refresh, so later readers see post-write state.
         # Reads before the first write use the front snapshot (same
         # values). Non-shadowed programs emit zero refresh ops.
-        CAP = {"MATMUL", "BATCH_MATMUL", "GATHER", "RMSNORM"}
+        CAP = {"MATMUL", "BATCH_MATMUL", "GATHER", "GATHER3", "RMSNORM"}
         conv = {}
         for _outs, _mn, _fn, _args, _ln, _sg in bound:
             for _pos, _a in enumerate(_args):
@@ -1215,12 +1316,13 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
     for xn, (xk, _xs, xsh) in streams.items():
         if xk == "F" and xsh:
             ctx["count"][xn] = "(%s)" % _dim_expr(xsh, ids_n)
+        elif xk == "I" and xsh and all(d is not None for d in xsh):
+            # Integer intermediates (IMAD contexts, GT masks, TOPK idx)
+            # need the same COUNT source as F/T patterns.
+            ctx["count"][xn] = "(%s)" % int(
+                np.prod(list(xsh), dtype=np.int64))
         elif xk == "I" and xn in outputs:
-            if xsh and all(d is not None for d in xsh):
-                ctx["count"][xn] = "(%s)" % int(
-                    np.prod(list(xsh), dtype=np.int64))
-            else:
-                ctx["count"][xn] = "(%s)" % ids_n
+            ctx["count"][xn] = "(%s)" % ids_n
     parts = [be.prologue(ctx)]
     _fp16 = getattr(be, "use_fp16", False)
     decls = []
@@ -1249,13 +1351,15 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
                     inter.add(x)
                 elif streams[x][0] == "I":
                     # Intermediate index streams (TOPK idx feeding
-                    # GATHER): static shape required (dynamic rows
-                    # come from input ids files, never intermediates).
-                    if (len(streams[x][2]) != 2 or
+                    # GATHER, IMAD contexts feeding GATHER/GATHER3):
+                    # static shape required (dynamic rows come from input
+                    # ids files, never intermediates). 1D and 2D both
+                    # allocate by element count; no rank restriction.
+                    if (len(streams[x][2]) not in (1, 2) or
                             any(d is None for d in streams[x][2])):
                         raise NoPattern(
                             f"cuda: intermediate I '{x}' needs static "
-                            f"2D shape, got {streams[x][2]}")
+                            f"1D/2D shape, got {streams[x][2]}")
                     interI.add(x)
     # Multi-TU split decision (needs op count only).
     chunked = (len(prog) >= CU_SPLIT_OPS

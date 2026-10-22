@@ -2,7 +2,7 @@
 
 ## What it is
 
-Jotnar is a geometric assembly language: 54 mnemonics over three data
+Jotnar is a geometric assembly language: 59 mnemonics over three data
 kinds (F float, T lattice-triples, I integer) plus a compiler
 (`chain/`: assembler, builder, census, three emitters — C,
 CUDA/cuBLAS, integer-only C) that lowers real programs to real
@@ -35,10 +35,11 @@ heterogeneous nodes (protocol M1–M6, calculator/brain split proven to
 
 ## The language is close to done
 
-The ISA has been stable at 54 mnemonics with the `asm-lang-coverage`
+The ISA has been stable at 59 mnemonics with the `asm-lang-coverage`
 gate enforcing registry/table/docs agreement. Recent additions earned
 their place by the same rule (registry row + shape rule + one pattern
-per backend + gate): TOPK, SCATTER, ATTN, ROPE, SWIGLU. Failure is
+per backend + gate): TOPK, SCATTER, ATTN, ROPE, SWIGLU, IADD/ISUB/
+IMUL/IMAD, GATHER3. Failure is
 loud everywhere (`NoPattern`, arity/shape/kind checks); determinism is
 load-bearing and holding (workspace-pinned cuBLAS, 0.0000 legs).
 

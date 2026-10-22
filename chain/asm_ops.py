@@ -89,6 +89,85 @@ def _need_triples(t, op, name):
         raise ValueError(f"{op}: stream '{name}' must be triples, got {type(t)}")
 
 
+def _int_stream(v, op, name):
+    """Exact I-kind operand: integer dtype only (a float stream must go
+    through an explicit future bridge, never a silent cast). Returns a
+    contiguous int64 array."""
+    a = np.asarray(v)
+    if not np.issubdtype(a.dtype, np.integer):
+        raise ValueError(f"{op}: stream '{name}' must be integer, got "
+                         f"dtype {a.dtype}")
+    return np.ascontiguousarray(a, dtype=np.int64)
+
+
+def _int_scalar(v, op, name):
+    """Integral literal in int64 range (the listing parser stores
+    literals as float, so accept 256.0 but refuse 256.5)."""
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        raise ValueError(f"{op}: '{name}' must be an integer literal, "
+                         f"got {v!r}")
+    if not f.is_integer():
+        raise ValueError(f"{op}: '{name}' must be an integer literal, "
+                         f"got {v!r}")
+    iv = int(f)
+    if not (-(1 << 63) <= iv < (1 << 63)):
+        raise ValueError(f"{op}: '{name}' outside int64: {iv}")
+    return iv
+
+
+def _int_operand(v, op, name, shape):
+    """I stream (same shape, no broadcast) or integral scalar (broadcast)."""
+    if hasattr(v, "shape"):
+        a = _int_stream(v, op, name)
+        if a.shape != shape:
+            raise ValueError(f"{op}: '{name}' shape {a.shape} != {shape} "
+                             f"(no broadcast)")
+        return a
+    return _int_scalar(v, op, name)
+
+
+def _iwrap(a):
+    """I arithmetic is 64-bit two's-complement wrap (defined, not UB):
+    C/CUDA use unsigned intermediates; NumPy int64 wraps identically.
+    Bounds checks at GATHER/GATHER3 turn a bad index into a loud error."""
+    return np.ascontiguousarray(a, dtype=np.int64)
+
+
+def op_iadd(vals, config, feeds):
+    """Exact I-kind add, 64-bit wrap; scalar literals broadcast."""
+    a = _int_stream(vals[0], "IADD", "a")
+    b = _int_operand(vals[1], "IADD", "b", a.shape)
+    return _iwrap(a + b)
+
+
+def op_isub(vals, config, feeds):
+    """Exact I-kind subtract, 64-bit wrap; scalar literals broadcast."""
+    a = _int_stream(vals[0], "ISUB", "a")
+    b = _int_operand(vals[1], "ISUB", "b", a.shape)
+    return _iwrap(a - b)
+
+
+def op_imul(vals, config, feeds):
+    """Exact I-kind multiply, 64-bit wrap; scalar literals broadcast."""
+    a = _int_stream(vals[0], "IMUL", "a")
+    b = _int_operand(vals[1], "IMUL", "b", a.shape)
+    return _iwrap(a * b)
+
+
+def op_imad(vals, config, feeds):
+    """Exact I-kind fused multiply-add a*b+c, 64-bit wrap.
+
+    The n-gram context primitive: IMAD(prev, V, prev2) is the flat row
+    index into a (V,V,C) bank. b and c may be I streams (same shape) or
+    integral literals (broadcast)."""
+    a = _int_stream(vals[0], "IMAD", "a")
+    b = _int_operand(vals[1], "IMAD", "b", a.shape)
+    c = _int_operand(vals[2], "IMAD", "c", a.shape)
+    return _iwrap(a * b + c)
+
+
 def op_sub(vals, config, feeds):
     a, b = vals
     _need_triples(a, "SUB", "a")
@@ -571,6 +650,15 @@ def op_argmax(vals, config, feeds):
     (deterministic, stated). Returns int64 indices (I streams)."""
     (t,) = vals[:1]
     axis = _int_arg(vals[1], "ARGMAX axis") if len(vals) > 1 else -1
+    if not isinstance(t, tuple):
+        # F path (C/CUDA already emit it): first max wins, matching the
+        # ties-first contract of the T path. This keeps GATHER3(F)+ARGMAX
+        # executable in the reference interpreter too.
+        a = np.ascontiguousarray(t, dtype=np.float64)
+        if a.ndim < 1:
+            raise ValueError(f"ARGMAX: need rank>=1, got {a.shape}")
+        ax = axis % a.ndim
+        return np.ascontiguousarray(np.argmax(a, axis=ax)).astype(np.int64)
     cls0, key20 = _ordkeys(t)
     s = np.ascontiguousarray(t[0])
     ax = axis % s.ndim
@@ -812,6 +900,44 @@ def op_gather(vals, config, feeds):
     return N.gather_int(w, np.ascontiguousarray(ids))
 
 
+def op_gather3(vals, config, feeds):
+    """Two-index exact row gather: table (V1,V2,C) + i,j (N,) -> (N,C).
+
+    The native order-2/trigram primitive: GATHER3(bank, prev, prev2)
+    reads bank[prev[n], prev2[n], :] without flattening the bank or
+    materializing the context sum on the host. T tables return aligned
+    triples; F tables return raw rows. Bounds and id-shape checks fail
+    loud (same contract as GATHER)."""
+    w, ii, jj = vals
+    if isinstance(w, tuple) and len(w) == 3:
+        planes = [np.asarray(p) for p in w]
+        base = planes[0]
+    else:
+        base = np.asarray(w)
+        planes = None
+    if base.ndim != 3:
+        raise ValueError(f"GATHER3: table must be 3D (V1,V2,C), got "
+                         f"{base.shape}")
+    i = np.asarray(ii)
+    j = np.asarray(jj)
+    if not np.issubdtype(i.dtype, np.integer) or \
+            not np.issubdtype(j.dtype, np.integer):
+        raise ValueError("GATHER3: i/j must be integer arrays")
+    i = np.ascontiguousarray(i, dtype=np.int64)
+    j = np.ascontiguousarray(j, dtype=np.int64)
+    if i.ndim != 1 or j.ndim != 1 or i.shape != j.shape:
+        raise ValueError(f"GATHER3: i/j must be 1D same length, got "
+                         f"{i.shape} vs {j.shape}")
+    v1, v2, _ = base.shape
+    if i.size and (int(i.min()) < 0 or int(i.max()) >= v1):
+        raise ValueError(f"GATHER3: i out of range [0,{v1})")
+    if j.size and (int(j.min()) < 0 or int(j.max()) >= v2):
+        raise ValueError(f"GATHER3: j out of range [0,{v2})")
+    if planes is not None:
+        return tuple(np.ascontiguousarray(p[i, j]) for p in planes)
+    return np.ascontiguousarray(base[i, j])
+
+
 def op_prelu(vals, config, feeds):
     """PReLU exact (phi-core prelu_int: sign-bit select + triple slope).
     0-diff: wrapper adds nothing."""
@@ -914,6 +1040,10 @@ REGISTRY = {
     "SQRT": (op_sqrt, 1, 1),
     "SPLAT_BLUR": (op_splat_blur, 1, 2),
     "SUB": (op_sub, 2, 1),
+    "IADD": (op_iadd, 2, 1),
+    "ISUB": (op_isub, 2, 1),
+    "IMUL": (op_imul, 2, 1),
+    "IMAD": (op_imad, 3, 1),
     "BETA_V5": (op_beta_v5, 2, 1),
     "MUL": (op_mul, 2, 1),
     "ADD": (op_add, 2, 1),
@@ -957,6 +1087,7 @@ REGISTRY = {
     "SIGMOID": (op_sigmoid, 1, 1),
     "RESCALE": (op_rescale, 2, 1),
     "GATHER": (op_gather, 2, 1),
+    "GATHER3": (op_gather3, 3, 1),
     "SCATTER": (op_scatter, 3, 1),
     "PRELU": (op_prelu, 2, 1),
     "POOLAVG": (op_poolavg, 1, 1),
@@ -977,6 +1108,10 @@ SIGS = {
     "SQRT": (["F:HW"], ["T:HW"]),
     "SPLAT_BLUR": (["T:HW"], ["T:HW", "T:HW"]),
     "SUB": (["$A", "$A"], ["$A"]),
+    "IADD": (["I:*", "*"], ["I:*"]),
+    "ISUB": (["I:*", "*"], ["I:*"]),
+    "IMUL": (["I:*", "*"], ["I:*"]),
+    "IMAD": (["I:*", "*", "*"], ["I:*"]),
     "BETA_V5": (["T:HW", "T:HW"], ["T:HW"]),
     "BETA": (["$A"], ["$A"]),
     "TBETA": (["$A"], ["$A"]),
@@ -1020,6 +1155,7 @@ SIGS = {
     "SIGMOID": (["$A"], ["$A"]),
     "RESCALE": (["$A", "F:SCALAR"], ["$A"]),
     "GATHER": (["*", "I:*"], ["*"]),
+    "GATHER3": (["*", "I:*", "I:*"], ["*"]),
     "SCATTER": (["$A", "$A", "I:*"], ["$A"]),
     "PRELU": (["$A", "$A"], ["$A"]),
     "POOLAVG": (["*"], ["*"]),

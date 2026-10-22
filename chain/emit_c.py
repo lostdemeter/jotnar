@@ -17,9 +17,10 @@ Value model (C): I -> int64_t; T triples -> parallel int arrays;
 F -> double. Data-prep (Python side) decodes T inputs to F64 doubles;
 the emitted binary links libc+libm only.
 
-v0.2 patterns: GATHER (T->T exact + F->F rows), ARGMAX (T rows + F),
-RMSNORM, MATMUL, BATCH_MATMUL (2D/3D), SLICE (2D ax0/1), ROTARY,
-TRANSPOSE (2D), TBETA/BETA, MUL/ADD (same-shape F), SELECT (F),
+v0.2 patterns: GATHER (T->T exact + F->F rows), GATHER3 (T/F
+two-index rows), ARGMAX (T rows + F), IADD/ISUB/IMUL/IMAD (I exact,
+64-bit wrap), RMSNORM, MATMUL, BATCH_MATMUL (2D/3D), SLICE (2D ax0/1),
+ROTARY, TRANSPOSE (2D), TBETA/BETA, MUL/ADD (same-shape F), SELECT (F),
 TSHIFT, SOFTMAX_WIDE, CONCAT (2D). Speed hooks (backend owns them):
 ikj matmul + restrict + calloc-zeroed outputs, zero-copy gathers,
 baked frozen dims, -O2 -march=native default; arena/BLAS are listed
@@ -117,11 +118,32 @@ class IRef:
         return f"IRef({self.shape}, {self.dtype.name})"
 
 
+class TRef:
+    """Zero-RAM triple stream reference (shape stub for large banks).
+
+    Carries the three plane dtypes + shape, no storage. Codegen only
+    needs shapes; values are still supplied at run time as s/e/z files.
+    C/non-FPU compile paths accept it; CUDA rightly refuses T inputs at
+    data-prep. This is the shape-only declaration for multi-GB trigram
+    banks: TRef((V1,V2,C)) without allocating V1*V2*C triples.
+    """
+    def __init__(self, shape, dtypes=("int8", "int32", "uint8")):
+        self.shape = tuple(int(d) for d in shape)
+        if len(dtypes) != 3:
+            raise AsmError(f"TRef needs three plane dtypes, got {dtypes}")
+        self.dtypes = tuple(np.dtype(d) for d in dtypes)
+
+    def __repr__(self):
+        return f"TRef({self.shape}, {tuple(d.name for d in self.dtypes)})"
+
+
 def _kind_of_sample(v):
     if isinstance(v, FRef):
         return "F"
     if isinstance(v, IRef):
         return "I"
+    if isinstance(v, TRef):
+        return "T"
     if isinstance(v, tuple) and len(v) == 3:
         return "T"
     v = np.asanyarray(v)
@@ -163,6 +185,11 @@ def infer_shapes(bound, sample):
             raise AsmError(f"C backend: sample missing IN stream '{n}'")
         k = _kind_of_sample(sample[n])
         if k == "T":
+            if isinstance(sample[n], TRef):
+                r = sample[n]
+                streams[n] = ("T", tuple(_c_type(d) for d in r.dtypes),
+                              tuple(r.shape))
+                continue
             s, e, z = sample[n]
             streams[n] = ("T", (_c_type(s.dtype), _c_type(e.dtype),
                                 _c_type(z.dtype)),
@@ -233,6 +260,27 @@ def infer_shapes(bound, sample):
                     streams[o] = ("F", "double", (n, tsh[1]))
                 else:
                     raise AsmError(f"{where}: GATHER table must be T/F")
+        elif mn == "GATHER3":
+            tk, tsub, tsh = streams[args[0]]
+            ik, _, ish = streams[args[1]]
+            jk, _, jsh = streams[args[2]]
+            if len(tsh) != 3 or any(d is None for d in tsh):
+                raise AsmError(f"{where}: GATHER3 v0.1 needs baked table "
+                               f"(V1,V2,C), got {tsh}")
+            if tk not in ("T", "F"):
+                raise AsmError(f"{where}: GATHER3 table must be T/F")
+            if ik != "I" or jk != "I" or len(ish) != 1 or len(jsh) != 1:
+                raise AsmError(f"{where}: GATHER3 needs 1D I i/j")
+            if ish[0] is None or jsh[0] is None:
+                raise AsmError(f"{where}: GATHER3 v0.1 needs baked i/j "
+                               f"length, got {ish}/{jsh}")
+            if ish[0] != jsh[0]:
+                raise AsmError(f"{where}: GATHER3 i/j length mismatch "
+                               f"{ish[0]} vs {jsh[0]}")
+            if tk == "T":
+                streams[o] = ("T", tsub, (ish[0], tsh[2]))
+            else:
+                streams[o] = ("F", "double", (ish[0], tsh[2]))
         elif mn == "SCATTER":
             bk, _, bsh = streams[args[0]]
             rk, _, rsh = streams[args[1]]
@@ -246,6 +294,23 @@ def infer_shapes(bound, sample):
             if len(ish) > 1 or (len(ish) == 1 and ish[0] not in (None, 1)):
                 raise AsmError(f"{where}: SCATTER idx must be scalar/1-elem")
             streams[o] = ("F", "double", (bsh[0], bsh[1]))
+        elif mn in ("IADD", "ISUB", "IMUL", "IMAD"):
+            ak, _, ash = streams[args[0]]
+            if ak != "I":
+                raise AsmError(f"{where}: {mn} needs I-kind first operand")
+            for _i, _a in enumerate(args[1:], 1):
+                if _a in streams:
+                    _k, _, _sh = streams[_a]
+                    if _k != "I" or tuple(_sh) != tuple(ash):
+                        raise AsmError(
+                            f"{where}: {mn} operand {_i} must be I with "
+                            f"shape {ash}, got {_k} {_sh}")
+                else:
+                    _lit = _int_lit(_a, f"{where} {mn} operand {_i}")
+                    if not (-(1 << 63) <= _lit < (1 << 63)):
+                        raise AsmError(f"{where}: {mn} literal outside "
+                                       f"int64: {_lit}")
+            streams[o] = ("I", "int64_t", ash)
         elif mn == "ARGMAX":
             sk, _, ssh = streams[args[0]]
             ax = _int_lit(args[1], f"{where} axis") if len(args) > 1 \
@@ -591,6 +656,7 @@ class CBackend(Backend):
             if tk == "T":
                 st, et, zt = S[t][1]
                 w = self._we(S, t, ctx, f"GATHER {o}")
+                pref = f"gr_{o}"
                 return (
                     f"/* {o} = GATHER({t}, {ids}) materialized + row views */\n"
                     f"for (int64_t g_i = 0; g_i < {ids}_N; ++g_i) {{\n"
@@ -601,15 +667,15 @@ class CBackend(Backend):
                     f"  memcpy(&{o}_z[g_i * {w}], &{t}_z[{ids}[g_i] * {w}], "
                     f"{w} * sizeof({o}_z[0]));\n"
                     f"}}\n"
-                    f"const {st} *g_rows_s[{ids}_N];\n"
-                    f"const {et} *g_rows_e[{ids}_N];\n"
-                    f"const {zt} *g_rows_z[{ids}_N];\n"
+                    f"const {st} *{pref}_rows_s[{ids}_N];\n"
+                    f"const {et} *{pref}_rows_e[{ids}_N];\n"
+                    f"const {zt} *{pref}_rows_z[{ids}_N];\n"
                     f"for (int64_t g_i = 0; g_i < {ids}_N; ++g_i) {{\n"
-                    f"  g_rows_s[g_i] = &{o}_s[g_i * {w}];\n"
-                    f"  g_rows_e[g_i] = &{o}_e[g_i * {w}];\n"
-                    f"  g_rows_z[g_i] = &{o}_z[g_i * {w}];\n"
+                    f"  {pref}_rows_s[g_i] = &{o}_s[g_i * {w}];\n"
+                    f"  {pref}_rows_e[g_i] = &{o}_e[g_i * {w}];\n"
+                    f"  {pref}_rows_z[g_i] = &{o}_z[g_i * {w}];\n"
                     f"}}",
-                    (o, w))
+                    (o, (w, pref)))
             if tk == "F":
                 w = self._we(S, t, ctx, f"GATHER {o}")
                 return (
@@ -619,6 +685,85 @@ class CBackend(Backend):
                     f"{w} * sizeof(double));",
                     (o, w))
             raise NoPattern("GATHER table must be T/F (v0.2)")
+        if mn == "GATHER3":
+            t, ii, jj = args
+            tk = S[t][0]
+            o = outs[0]
+            tsh = S[t][2]
+            if len(tsh) != 3 or any(d is None for d in tsh):
+                raise NoPattern(f"GATHER3 needs baked (V1,V2,C), got {tsh}")
+            v1, v2, w = (int(d) for d in tsh)
+            guard = (f"if ({ii}_N != {jj}_N) return 20;\n"
+                     f"for (int64_t g_i = 0; g_i < {o}_N; ++g_i) {{\n"
+                     f"  int64_t _a = {ii}[g_i], _b = {jj}[g_i];\n"
+                     f"  if (_a < 0 || _a >= {v1} || _b < 0 || _b >= {v2}) "
+                     f"return 4;\n")
+            if tk == "T":
+                st, et, zt = S[t][1]
+                pref = f"g3_{o}"
+                L = [f"/* {o} = GATHER3({t}, {ii}, {jj}) materialized + "
+                     f"row views */", guard]
+                for comp in ("s", "e", "z"):
+                    L.append(
+                        f"  memcpy(&{o}_{comp}[g_i * {w}], "
+                        f"&{t}_{comp}[(_a * {v2} + _b) * {w}], "
+                        f"{w} * sizeof({o}_{comp}[0]));")
+                L.append("}")
+                L.append(f"const {st} *{pref}_rows_s[{o}_N];")
+                L.append(f"const {et} *{pref}_rows_e[{o}_N];")
+                L.append(f"const {zt} *{pref}_rows_z[{o}_N];")
+                L.append(f"for (int64_t g_i = 0; g_i < {o}_N; ++g_i) {{")
+                for comp in ("s", "e", "z"):
+                    L.append(f"  {pref}_rows_{comp}[g_i] = "
+                             f"&{o}_{comp}[g_i * {w}];")
+                L.append("}")
+                return ("\n".join(L), (o, (str(w), pref)))
+            if tk == "F":
+                return (
+                    f"/* {o} = GATHER3({t}, {ii}, {jj}) materialized rows */\n"
+                    + guard +
+                    f"  memcpy(&{o}[g_i * {w}], "
+                    f"&{t}[(_a * {v2} + _b) * {w}], "
+                    f"{w} * sizeof(double));\n}}",
+                    (o, str(w)))
+            raise NoPattern("GATHER3 table must be T/F")
+        if mn in ("IADD", "ISUB", "IMUL", "IMAD"):
+            a = args[0]
+            o = outs[0]
+            if S[a][0] != "I":
+                raise NoPattern(f"C backend {mn} needs I first operand")
+            if o not in ctx["count"]:
+                raise NoPattern(
+                    f"C backend {mn}: dynamic intermediate '{o}' "
+                    f"(v0.1 needs a static shape)")
+            co = ctx["count"][o]
+
+            def _term(x, pos):
+                if x in S:
+                    if S[x][0] != "I" or tuple(S[x][2]) != tuple(S[a][2]):
+                        raise NoPattern(
+                            f"C backend {mn} operand {pos} must be I with "
+                            f"shape {S[a][2]}, got {S[x][0]} {S[x][2]}")
+                    return f"{x}[e_i]"
+                return str(_int_lit(x, f"{mn} operand {pos}"))
+
+            ta = f"{a}[e_i]"
+            tb = _term(args[1], 1)
+            if mn == "IADD":
+                expr = f"((uint64_t){ta} + (uint64_t)({tb}))"
+            elif mn == "ISUB":
+                expr = f"((uint64_t){ta} - (uint64_t)({tb}))"
+            elif mn == "IMUL":
+                expr = f"((uint64_t){ta} * (uint64_t)({tb}))"
+            else:
+                tc = _term(args[2], 2)
+                expr = (f"((uint64_t){ta} * (uint64_t)({tb}) + "
+                        f"(uint64_t)({tc}))")
+            return (
+                f"/* {o} = {mn}({', '.join(args)}) 64-bit wrap */\n"
+                f"for (int64_t e_i = 0; e_i < {co}; ++e_i)\n"
+                f"  {o}[e_i] = (int64_t){expr};",
+                None)
         if mn == "SCATTER":
             base, row, idx = args
             o = outs[0]
@@ -649,16 +794,16 @@ class CBackend(Backend):
                     raise AsmError(f"ARGMAX C pattern v0.2 needs a "
                                    f"gathered T row-stream, got '{src}'")
                 st, et, zt = S[src][1]
-                w = ctx["gathered"][src]
+                w, pref = ctx["gathered"][src]
                 return (
                     f"/* {o} = ARGMAX({src}, 1) -- class rank + exponent, "
                     f"ties first */\n"
                     f"for (int64_t a_i = 0; a_i < {o}_N; ++a_i) {{\n"
                     f"  int64_t best = 0; int bcls = -1; int64_t bkey = 0;\n"
                     f"  for (int64_t a_j = 0; a_j < {w}; ++a_j) {{\n"
-                    f"    {st} s = g_rows_s[a_i][a_j];\n"
-                    f"    {et} e = g_rows_e[a_i][a_j];\n"
-                    f"    {zt} z = g_rows_z[a_i][a_j];\n"
+                    f"    {st} s = {pref}_rows_s[a_i][a_j];\n"
+                    f"    {et} e = {pref}_rows_e[a_i][a_j];\n"
+                    f"    {zt} z = {pref}_rows_z[a_i][a_j];\n"
                     f"    int cls = (!z && s > 0) ? 2 : (z ? 1 : 0);\n"
                     f"    int64_t key = (!z && s > 0) ? (int64_t)e : "
                     f"(z ? 0 : -(int64_t)e);\n"
@@ -1161,7 +1306,7 @@ def find_consts(bound, inp, streams, sample):
     for _n, _ in inp:
         if _n not in sample or _n not in streams:
             continue
-        if isinstance(sample[_n], (FRef, IRef)):
+        if isinstance(sample[_n], (FRef, IRef, TRef)):
             continue  # shape stub: no values to fold (weights never fold;
             # they feed MATMUL/RMSNORM, excluded by the uses-check anyway)
         _k, _sub, _sh = streams[_n]
@@ -1315,7 +1460,7 @@ def compile_program(text, target="c", sample=None, outputs=None,
             _d = streams[_aa[0]][2][-1]
             if _d is None:
                 continue
-            if isinstance(sample[_aa[1]], (FRef, IRef)):
+            if isinstance(sample[_aa[1]], (FRef, IRef, TRef)):
                 raise AsmError(
                     f"ROTARY pos '{_aa[1]}' is a shape stub: rope tables "
                     f"need real (small) position values, not a stub")
