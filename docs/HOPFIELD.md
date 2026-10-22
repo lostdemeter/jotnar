@@ -436,3 +436,51 @@ dynamics, confirmed by the cosine audit). Gaps named: code separation
 question); β-sweep (frozen at 1); per-point memories only (joint
 24-pattern memory untested — capacity covers it, separability
 wouldn't improve, stated not run).
+
+## Separable prototypes — whitening, token-level, or bust (constitution, FROZEN pre-computation)
+
+Analysis + prescription only (numpy/stdlib — scipy absent on this box,
+stated; no training, no emitter/opcode/assembly changes; banked
+prototypes read-only, never re-harvested; teacher AND Qwen-7B never
+loaded; CPU-first — microsecond dynamics plus one 3072² eigh, GPU need
+none exists, stated pre-run; no downloads).
+Prototype constructions frozen pre-run (≤3). Pool adjudicated first,
+then frozen — mid-round constructions void the round:
+(C1) ridge-ZCA-whitened mean-pooled — ADOPTED: symmetric whitener
+W=(C+εI)^{−1/2} via eigh, C = covariance of all 24 L2-normalized banked
+patterns (shared fit across points — frozen), ε=1e−4 (order of the mean
+eigenvalue ≈3e−4: stabilizes the ~3049 empty directions without erasing
+the whitening), applied per point to its 8 patterns, re-normalized.
+Dim stays 3072 → capacity N_exp=1.3e97 ≫ 24 PASS (stated, verified
+in-analysis).
+(C2) point-mean-centered — ADOPTED: subtract the point's own 8-pattern
+mean (removes the dominant shared direction — the poor man's whitener),
+re-normalize. Dim 3072 → PASS.
+(C3) scene-contrastive (SIBLING-subtracted) — contrastive-separated
+means ADOPTED in this exact form with reason: LOO showed scenes cluster
+(1.000 same-scene), so remove the scene direction — per frame subtract
+its same-scene sibling pattern, re-normalize (α=1 exact, no tuned
+knob). Dim 3072 → PASS.
+TOKEN-LEVEL — VOID pre-run with reason: token tensors were never banked
+(harvest banked mean-pooled prototypes only) and re-harvest is forbidden
+— unconstructible from banked data, stated not attempted (no silent
+substitution).
+Separability bar frozen alongside (adopted with reason): max off-diag
+cosine < 0.9 AND mean pairwise cosine < 0.5. Reason: 0.9 restores
+1−0.9=0.1 of separation margin — 10⁴× the dead baseline's 1−0.99999=1e−5
+(where β=1 weight ratios sit at e^{1e−5}≈1, pure collapse); mean<0.5
+ensures the clump disperses as a whole, not one outlier patched. The
+0.99999 baseline is what must move — per construction, per point.
+Winner rule: a construction clearing the bar (both clauses, all 3
+points) earns the full retrieval battery rerun (same frozen 600-trial
+construction + LOO diagnostic, same judge bar 0.25); retrieval above bar
+= product alive; separability fails everywhere = prototypes unfixable
+this way (complete — and the joint-24-pattern + β-sweep gaps inherit the
+question EXPLICITLY, not hopefully: stated as the named next holders).
+Gate: EXTEND `tests/test_assoc_memory.py` in place (new separability
+key — construction integrity recomputed from banked harvests +
+separability legs reading banked tables + retrieval-rerun legs for any
+construction clearing the bar; existing legs untouched and green).
+Neighbors: assoc + prototypes + lesion-basin green (read-only reuse).
+
+### Separability results (TBD — computation lands here)
