@@ -996,3 +996,74 @@ discipline as established; heavy retrain NOWHERE in gate by design).
 Neighbors: assoc + prototypes green (nothing moves underneath).
 
 ### Encoder results (TBD — training lands here)
+
+### Encoder results (CPU 60s training, banked images only)
+
+`python3 scripts/train_encoder.py` — erratum FIRST (bugs-caught,
+pre-training, disclosed): the frozen constitution wrote N=12 in five
+places (loss denominator, triplet negatives "10", reshapes) but the
+frozen DATA is 8 Hypersim + 3 named fixtures = 11 images. Corrected
+12→11 before the first gradient step (72 triplets = 8×1×9, recon mean
+/11; run died on the inconsistency pre-update, nothing trained under
+the slip). Frozen data/objective/architecture/rules all unchanged —
+only N corrected to match frozen data. Backprop verified pre-run by
+float64 finite differences (worst 3e−4 on O(1e−8) elements =
+resolution floor, proven by e-scaling to 3e−15; all structural params
+1e−6..1e−8).
+
+```text
+images=11 thumbs (11, 72, 96, 3)
+triplets=72 (8 anchors x 1 pos x 9 neg)
+step 1: trip=0.1353 recon=0.2183 gnorm=3.230
+step 200: trip=0.0000 recon=0.2183 gnorm=0.002
+step 500: trip=0.0000 recon=0.2182 gnorm=0.002
+step 1000: trip=0.0000 recon=0.2181 gnorm=0.002
+step 1500: trip=0.0000 recon=0.2180 gnorm=0.002
+step 2000: trip=0.0000 recon=0.2179 gnorm=0.002
+8-code separability: maxcos=0.7438 meancos=+0.1171 CLEARS
+battery: acc=0.1250 verdict=dead
+```
+
+Separability table (8 Hypersim codes vs every prior construction):
+
+| construction | maxcos | meancos | bar |
+|---|---|---|---|
+| pooled means (b29, best prior) | 0.9974 | +0.97 | fail |
+| C3 sibling-sub (best prescription) | 0.4325* (2/3 pts) | −0.14 | fail-all-3 |
+| contrastive linear (best learned) | 0.9840 | +0.18 | fail |
+| **encoder codes** | **0.7438** | **+0.12** | **CLEARS** |
+
+Retrieval battery on learned codes: 5/40 at EVERY level incl. f=0
+exact (25/200 = 0.1250 = chance exactly, bar 0.25) → dead. Winner map:
+(query→winner) = (any→frame 0) × 200 — total collapse to
+ai_018_001_fr0000 (a NEW winner, not the teacher rounds' frame 2 —
+this attractor lives in code space).
+Verdict: **the encoder door closes too — SPLIT: separability achieved,
+retrieval dead.** The exact failure the BOTH-clause was built to catch
+(separability without retrieval repeats the prescription round).
+Mechanisms, both measured: (1) triplet 0.0000 by step 200 — margin
+satisfied, codes placed; but Ramsauer flows to one attractor anyway
+(max 0.74 gives self-weight ratio only e^0.26 ≈ 1.3 — not enough
+basin). Separation of PAIRS ≠ separation of BASINS — the arc's deepest
+lesson, stated plainly. (2) recon 0.2183→0.2179 vs mean-predictor floor
+0.2103 — the decoder predicts the dataset mean; the anchor held NOTHING
+(triplet term drove all learning under frozen lr/λ). Codes are
+ungrounded memorized spikes: separable by construction, meaningless
+under noise. The anchor design was right; its frozen strength (λ=0.1)
+was homeopathic — tuning it would be peeking, so it stands as the
+documented cause of death.
+Deployability (flagged either way per freeze): op-CLEAN (all artifact
+ops tabled rows; reshape meta; hinge host-side) — the verdict would be
+dead on dynamics even with a deployment path.
+Weights out-of-tree (~/student_runs/encoder/enc.npz, sha-banked);
+codes (11×128) + metrics + configs banked in-repo.
+Gate: `tests/test_assoc_memory.py` extended in place (assoc-enc-*
+key: schema, separability recompute, battery recompute, determinism,
+out-of-tree weight sha; heavy retrain NOWHERE in gate by design; all
+25 pre-existing legs green). Neighbors: assoc + prototypes green.
+Bugs caught: N=12-vs-11 slip (above, pre-training); einsum subscript
+typo caught by shape error (pre-run); float32 finite-diff floor
+misread as grad bug (resolved by float64 + e-scaling, pre-run).
+Gaps named: tuned-λ/lr schedules (peeking-class here); bigger/spatial
+decoders (scope — minimal-first was frozen); basin-aware losses
+(separation of basins, not pairs — the actual next question, stated).
