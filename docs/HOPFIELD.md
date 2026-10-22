@@ -628,3 +628,54 @@ banked accuracies were correct throughout, 25/200 = 75/600 = 0.125 —
 caught by the gate failing LOUD, fixed, rerun green). Gaps named:
 token-level (explicit next holder); joint-24 LOO depth tier (moot at
 chance, reported not run up).
+
+## Token-level Hopfield patterns — through the open door (constitution, FROZEN pre-harvest)
+
+Token selection frozen (count + dtype + budget FIRST — 41,472×3072×fp32
+≈ 509MB is unbannkable, so): stride-96 subsample of the 1728-token
+sequence (indices 0,96,…,1632 → 18 tokens) per (frame, point) → 8
+frames × 3 points × 18 = 432 patterns, banked fp16 .npy ≈ 2.5MB —
+within the 2.75MB/file repo precedent (church/dogs/etc. .npy), stated.
+Capacity check: 432 (joint) / 144 (per-point) ≪ N_exp(3072) = 1.3e97 →
+PASS by ~95 orders (stated, verified in-analysis; else void pre-run).
+Full-token separability audit happens IN-HARVEST on GPU over ALL 13,824
+tokens/point (cross-frame pairs); the banked 432-subset serves
+retrieval + gate recompute (subset stats cross-checked vs full).
+Harvest points: the SAME three banked points (b29/b59/norm_out) —
+comparability with the pooled 0.99999 baseline per point, stated reason
+(no subsetting: VRAM fits, see math).
+Separability bar frozen (same SHAPE as the pooled round): cross-frame
+max off-diag cosine < 0.9 AND cross-frame mean < 0.5 — within-frame
+pairs EXCLUDED with reason (adjacent patches share receptive fields;
+retrieval judges frame identity, so cross-frame separation is the
+load-bearing quantity; within-frame stats ride as diagnostic, not bar).
+Token-level must beat the pooled 0.99999 baseline by this construction
+audit, not by hope.
+Winner rule: separability clears (both clauses, all 3 points) → full
+retrieval battery rerun: per-point 144-pattern memories, queries =
+corrupted variants of the point's banked tokens (f ∈ {0, 0.05, 0.2},
+seeds {0,1,2}; f=0 exact once → 144×7 = 1,008 trials/point), correct =
+winner's frame == query frame (chance 1/8 = 0.125 — derived; bar 0.25
+frozen); same-scene LOO diagnostic if earned. Separability fails → dead,
+NO retrieval runs (don't spend battery on indistinguishable patterns —
+stated; the session runs audit-first, battery conditional in-code).
+Empty is complete.
+Ruling: hooks to harvest (capture only, mirror infer_one exactly);
+weights read-only out-of-tree (sha256 established 7 files pre/post,
+banked — a byte voids the round); no training, no emitter/opcode/
+assembly changes, no new dependencies (marigold-env stack);
+production weights untouched; teacher AND Qwen-7B never co-loaded
+(text encoder never loaded — precomputed embeds; VRAM math: ≈13.7GB
+established load + ~0.8GB transient full-Gram workspace ≈ 15GB <
+24GB 3090Ti — stated pre-run); GPU solo for harvest sessions (nvidia-smi
+pre-run: zero compute procs — stated); no downloads (Hypersim frames +
+fixtures on disk suffice).
+Determinism: frame0 harvested twice, per-point max-abs-diff over FULL
+token captures banked (bar exactly 0.0).
+Gate: EXTEND `tests/test_assoc_memory.py` in place (token-bank
+integrity — subset == harvest slices recomputed... from banked subset +
+stats consistency — + separability legs + retrieval legs if earned;
+same shape as established; existing legs untouched). Neighbors: assoc +
+prototypes + lesion-basin green (read-only reuse).
+
+### Token results (TBD — harvest lands here)
