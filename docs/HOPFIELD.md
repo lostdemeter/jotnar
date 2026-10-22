@@ -376,3 +376,63 @@ bit-identical), convergence legs (iters ≤ cap honored), fail-loud legs
 lesion-basin green (read-only reuse — nothing moves underneath).
 
 ### Retrieval results (TBD — dynamics land here)
+
+### Retrieval results (600 trials + 24 LOO, CPU 0.2s, banked data only)
+
+`python3 scripts/hopfield_retrieval.py` — three independent 8-pattern
+Ramsauer memories (L2-normalized banked prototypes, β=1, ≤100 iters,
+Δ<1e-6; converged 100%, max 2–4 iters — the dynamics converge fine,
+separability is what fails):
+
+```text
+transformer_blocks.29: f=0.0:5/40 f=0.01:5/40 f=0.05:5/40 f=0.1:5/40 f=0.2:5/40
+  acc=0.1250 (bar 0.25, chance 0.125) loo=1.000 (chance 0.143) conv=1.000 maxit=4 rdepth=0.3334 uniform=0.2936 delta=-0.0397 verdict=dead
+transformer_blocks.59: (identical rows) acc=0.1250 loo=1.000 conv=1.000 maxit=2 rdepth=0.3334 delta=-0.0397 verdict=dead
+norm_out: (identical rows) acc=0.1250 loo=1.000 conv=1.000 maxit=4 rdepth=0.3334 delta=-0.0397 verdict=dead
+```
+
+Retrieval table per corruption level (all three points identical —
+every cell 5/40 = 0.125 = chance exactly):
+
+| level f | b29 | b59 | norm_out | bar |
+|---|---|---|---|---|
+| 0.0 (exact) | 5/40 | 5/40 | 5/40 | 10/40 |
+| 0.01 | 5/40 | 5/40 | 5/40 | 10/40 |
+| 0.05 | 5/40 | 5/40 | 5/40 | 10/40 |
+| 0.1 | 5/40 | 5/40 | 5/40 | 10/40 |
+| 0.2 | 5/40 | 5/40 | 5/40 | 10/40 |
+
+Mechanism, measured not asserted: ALL 200 trials/point retrieve ONE
+frame (ai_021_001_fr0000) — total dynamic collapse at every point,
+including exact queries (f=0 winners: all 8 → frame 2, never self).
+Normalized prototypes are near-collinear clumps (max off-diag cosine
+0.9974 b29 / 0.99999 b59 / 0.9985 norm_out) — one dominant attractor,
+not 8; the softmax has nowhere to go but the top (assoc-memory collapse
+precedent, now at real dims: capacity PASSed, separability failed).
+The 0.125 is structural, not sampling: the single winner contributes
+exactly its own 25/200 queries. LOO same-scene 1.000 (diagnostic):
+scenes cluster locally, but globally one attractor wins — separability
+fails across scenes, not within. Depth tier: retrieved 0.3334 =
+winner-frame mean (vs uniform 0.2936, delta −0.0397 — worse, not >0.05
+better; vs strata bars 0.07–0.09 — every frame misses, as expected).
+The split finding (retrieval-at-chance WITH perfect convergence) is the
+point: dynamics dead, optimizer-of-dynamics cannot help — there is
+nothing to tune toward, only codes to separate.
+Verdict: **dynamics dead for these prototypes** — 0.1250 < 0.25 at all
+points and levels, depth delta −0.04. Complete per the frozen winner
+rule, not a failure to tune. Capacity obituary hierarchy stands:
+6-dim died of capacity (N_exp=0.21), 3072-dim dies of separability
+(N_exp=1.3e+97, cosine 0.99999) — the bound was necessary, never
+sufficient.
+Gate `tests/test_hopfield_retrieval.py` (CPU, 0.3s): prototype
+integrity (unit rows), per-level recompute, determinism (same query
+twice), convergence (cap honored), 4 fail-loud legs, frozen-rule
+verdicts. Neighbors: assoc-memory + prototypes + lesion-basin green
+(pasted below; read-only reuse, nothing moves underneath).
+Bugs caught: none (exact-query collapse first looked like a corrupt()
+bug — f=0 returns the untouched copy, verified; the collapse is the
+dynamics, confirmed by the cosine audit). Gaps named: code separation
+(contrastive/whitened prototypes untested — next construction's
+question); β-sweep (frozen at 1); per-point memories only (joint
+24-pattern memory untested — capacity covers it, separability
+wouldn't improve, stated not run).
