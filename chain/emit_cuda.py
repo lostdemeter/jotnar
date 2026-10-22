@@ -10,7 +10,7 @@ finishing touches, not this cut):
   k_gather_f32, k_gather3_f32, k_argmax_f32 (ties-first), k_rmsnorm_f32,
   k_softmax_wide_f32, k_elem (op-switched template: add/sub/mul/div),
   k_int_bin/k_int_mad (I-kind, unsigned wrap), k_int_div (checked
-  truncating div/rem), k_f2i_f32/k_i2f_f32 (checked boundaries).
+  truncating div/rem), k_f2i_f32/k_f2i_f16/k_i2f_f32 (checked boundaries).
 MATMUL/BATCH_MATMUL go to cuBLAS Sgemm/SgemmStridedBatched with the
 row-major trick (C_row = A@B computed as C_col = B_col@A_col).
 Memory v1: cudaMallocManaged throughout (host fread straight in,
@@ -145,6 +145,18 @@ __global__ void k_f2i_f32(const float *x, int64_t *o, int64_t n,
   int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
   if (i >= n) return;
   float v = x[i];
+  if (v != v || v >= 9223372036854775808.0f ||
+      v < -9223372036854775808.0f) {
+    *ierr = 1;
+    return;
+  }
+  o[i] = (int64_t)v;
+}
+__global__ void k_f2i_f16(const __half *x, int64_t *o, int64_t n,
+                          int *ierr) {
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= n) return;
+  float v = __half2float(x[i]);
   if (v != v || v >= 9223372036854775808.0f ||
       v < -9223372036854775808.0f) {
     *ierr = 1;
@@ -851,10 +863,13 @@ class CUDABackend(Backend):
             if mn == "F2I":
                 if S[x][0] != "F":
                     raise NoPattern(f"cuda F2I needs F input, got {S[x][0]}")
+                f16 = (getattr(self, "use_fp16", False)
+                       and x in ctx.get("inputs", []))
+                ker = "k_f2i_f16" if f16 else "k_f2i_f32"
                 return (
                     f"/* {o} = F2I({x}) trunc toward zero, checked */\n"
                     f"*ierr = 0;\n"
-                    f"k_f2i_f32<<<(({co}) + TPB - 1) / TPB, TPB{st}>>>"
+                    f"{ker}<<<(({co}) + TPB - 1) / TPB, TPB{st}>>>"
                     f"({x}, {o}, {co}, ierr);\n"
                     f"CE(cudaGetLastError()); "
                     f"CE(cudaDeviceSynchronize());\n"

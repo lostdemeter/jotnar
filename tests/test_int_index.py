@@ -43,7 +43,7 @@ def check(tag, cond, extra=""):
         FAIL.append(tag)
 
 
-def _write_inputs(work, art, payload, f32=False):
+def _write_inputs(work, art, payload, f32=False, f16=False):
     """Write argv files in declaration order; T streams expand to s/e/z."""
     files = []
     for n in art["inputs"]:
@@ -55,8 +55,9 @@ def _write_inputs(work, art, payload, f32=False):
                 files.append(fn)
         elif k == "F":
             fn = os.path.join(work, f"in_{n}.bin")
-            np.ascontiguousarray(payload[n],
-                                 dtype=np.float32 if f32 else np.float64).tofile(fn)
+            dtype = np.float16 if f16 else (
+                np.float32 if f32 else np.float64)
+            np.ascontiguousarray(payload[n], dtype=dtype).tofile(fn)
             files.append(fn)
         else:
             fn = os.path.join(work, f"in_{n}.bin")
@@ -377,6 +378,45 @@ def main():
     except Exception as e:  # noqa: BLE001
         check("div-conv-cuda-emits", False, str(e)[:160])
         artall = None
+    artfp = None
+    try:
+        artfp = compile_program(conv_prog, "cuda", sample=paycu,
+                                outputs=["I", "F"], use_fp16=True)
+        check("f2i-cuda-fp16-emits",
+              "k_f2i_f16" in artfp["source"]
+              and "__half *xf" in artfp["source"],
+              "half input upcast before the checked boundary")
+    except Exception as e:  # noqa: BLE001
+        check("f2i-cuda-fp16-emits", False, str(e)[:160])
+    if artfp is not None and shutil.which("nvcc"):
+        try:
+            exe = build_cu(artfp["source"], work, name="conv_cu_fp16",
+                           libs=["-lcublas"])
+            xf16 = np.asarray(xf32, dtype=np.float16)
+            payfp = {"xf": xf16, "n": n32}
+            reffp = ASM.run_text(conv_prog, REGISTRY,
+                                 {"xf": xf16.astype(np.float32), "n": n32},
+                                 sigs=SIGS)
+            files = _write_inputs(work, artfp, payfp, f16=True)
+            outs = [os.path.join(work, f"out_{o}.bin") for o in ("I", "F")]
+            r = subprocess.run([exe] + files + outs,
+                               capture_output=True, text=True)
+            if r.returncode != 0:
+                check("f2i-cuda-fp16-run", False,
+                      f"rc={r.returncode} {r.stderr[:240]}")
+            else:
+                gotI = np.fromfile(outs[0], dtype=np.int64).reshape(xf32.shape)
+                gotF = np.fromfile(outs[1], dtype=np.float32).reshape(n32.shape)
+                check("f2i-cuda-fp16-run",
+                      bool((gotI == reffp["I"]).all())
+                      and bool((gotF == np.asarray(
+                          reffp["F"], dtype=np.float32)).all()),
+                      "half input -> checked I; I2F output F32")
+        except Exception as e:  # noqa: BLE001
+            print(f"f2i-cuda-fp16-run: SKIP (build unavailable: "
+                  f"{str(e)[:160]})")
+    else:
+        print("f2i-cuda-fp16-run: SKIP (no nvcc)")
     if artall is not None and shutil.which("nvcc"):
         try:
             exe = build_cu(artall["source"], work, name="conv_cu",
