@@ -100,3 +100,65 @@ Gate: `tests/test_mmdit_theory.py` (CPU seconds): source-integrity
 mapping-completeness (M1–M12 each has a status + cite), tripwire (no
 MMDiT/register/modulation implementation files in our tree; emitter
 files untouched). Neighbors: none touched; `test_asm.py` green.
+
+## Register tokens — the top steal, built and judged (constitution, FROZEN pre-run)
+
+Build + train ONLY what is frozen here (no emitter/opcode/assembly
+changes — gap hit = stop-finding).
+Register count frozen: 4 (ONE count, no sweep — count is the variable's
+shadow). Reason, two strands: (a) the banked host recipe already runs
+nctx=4 (`attn_run_jattn64b2-8k-cos.json`: width/blocks/stride/nctx =
+64/2/32/4) and the same-recipe rule forces it; (b) DINOv2's 4-register
+precedent (single-source public knowledge, marked as such).
+Host frozen: jattn attention (registers join the joint sequence as
+attention participants — the MMDiT design: prepend, attend, strip,
+`train_attn_student.py:88-138` `ctx`/`encode`/`head`). mscale REJECTED
+with reason: token-free per-pixel MLPs reduce "registers" to per-pixel
+const appends = Phase-6 glob rerun (`STUDENT.md:307-330` globw64d2,
+0/12 banked) — a strawman that tests nothing MMDiT. The price (slower
+training) is the cost of testing the actual mechanism.
+Registers as const-fill + CONCAT (Phase-6 global-summary precedent:
+`STUDENT.md:307-330` coarse-global broadcast; `train_student.py:78`
+const-fill + CONCAT both tabled — cited; no new machinery). Learned
+`ctx` Parameter in training (= MMDiT registers, `mmdit L369-371`);
+const-fill is the DEPLOYED form (BETA `:167` + CONCAT `:171`, tabled).
+Training frozen — verbatim `jattn64b2-8k-cos` recipe: --width 64
+--blocks 2 --heads 1 --stride 32 --feat rgb --steps 8000 --lr 0.01
+--schedule cosine --seed 7 --train church dogs squirrel train
+--heldout geo_webcam_0_combined geo_webcam_1_combined. The ONLY delta:
+--nctx 4 (registers arm, tag jattn64b2-reg) vs --nctx 0 (ablation arm,
+tag jattn64b2-noreg) + tag/outdir. Retrain-match rule (frozen):
+registers arm strata cells vs banked `attn_run_jattn64b2-8k-cos.json`
+(6 frames × 6 strata) within abs 0.01/cell AND heldout mean within 5%
+of banked 0.4062 (GPU-training tolerance ceiling, stated — tighter if
+the rerun lands tighter, reported exactly; tighter never loosened).
+Winner rule — primary (shuffle-robustness, Phase-14 acceptance):
+registers-arm mean_rel@p16 (36 cells: 6 frames × 6 strata, seed 7,
+rel = raw/std(intact), `shuffle_probe.py:107-113` metric verbatim)
+> control-arm mean_rel@p16 (ablation proves the delta is the registers)
+AND ≥ 1.0 (teacher-scale unity: teacher 1.2742 banked, target ~1.2,
+locals ~0.2-0.8 — derived, not just stated). Secondary (no silent
+magnitude trade): held-out pass count ≥ banked 0/12 AND held-out mean
+≤ 0.4062 × 1.05. Empty (robustness flat, bars flat-or-worse) is
+complete. Shuffle eval mirrors the probe's student path exactly
+(CPU weights, intact + shuffled seed-7 p16/p64, unshuffle, banked
+teacher numbers reused read-only for the ~1.2 reference — no teacher
+reruns).
+Ruling: registers + training only; weights out-of-tree
+(`~/student_runs/jattn64b2-{reg,noreg}/`, metrics + configs banked
+separately in `samples/marigold/registers_shuffle.json`, primaries
+untouched); production weights untouched (teacher AND Qwen-7B never
+loaded — fixtures suffice, no new teacher runs); GPU box to itself
+for training runs (nvidia-smi pre-run: zero compute procs, 487MiB
+display-only, 23.6GB free — stated); no downloads; no new deps
+(marigold-env stack, CLEAN env — `cuda_env.sh` poisons torch runs,
+established).
+Gate: EXTEND `tests/test_shuffle_probe.py` in place (register legs:
+schema + determinism + shuffle-robustness recomputed from banked
+numbers vs frozen bar + bars legs + ablation-equality legs proving
+the no-registers control matches its banked baseline AND the
+registers arm matches banked 8k-cos per the retrain-match rule;
+existing legs untouched). Neighbors: shuffle + strata + teacher
+green (nothing moves underneath).
+
+### Register results (TBD — training lands here)
