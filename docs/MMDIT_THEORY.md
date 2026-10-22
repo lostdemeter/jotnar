@@ -162,3 +162,68 @@ existing legs untouched). Neighbors: shuffle + strata + teacher
 green (nothing moves underneath).
 
 ### Register results (TBD — training lands here)
+
+### Register results (2× ~380s GPU trains + CPU evals, fixtures only)
+
+Arms (frozen jattn64b2-8k-cos recipe verbatim; ONLY delta --nctx):
+reg = nctx 4 (tag jattn64b2-reg, weights
+`~/student_runs/jattn64b2-reg/weights.pt`, train wall 377s);
+control = nctx 0 (tag jattn64b2-noreg, wall ~392s). GPU solo both
+(zero compute procs pre-run; evals CPU, deterministic — rescue eval
+reproduced training-print cells exactly, e.g. church far 0.6588).
+
+Robustness table (mean_rel over 36 cells each, seed 7):
+
+| system | p16 | p64 | vs teacher 1.27 |
+|---|---|---|---|
+| teacher (banked ref) | 1.2742 | 1.2143 | — |
+| control nctx=0 | 1.3382 | 1.2261 | ABOVE teacher |
+| registers nctx=4 | 1.0324 | 0.9545 | below control |
+
+Bars table (held-out geo frames, Phase-1 bars):
+
+| arm | held-out pass | held-out mean | vs banked 0.4062 |
+|---|---|---|---|
+| banked 8k-cos (ref) | 0/12 | 0.4062 | — |
+| control nctx=0 | 0/12 | 0.4042 (−0.5%) | hold |
+| registers nctx=4 | 0/12 | 0.4150 (+2.2%) | hold (≤5%) |
+
+Retrain-match: VOID, not failed (model mismatch, evidence-stated):
+arm nparams 157,249 vs banked 108,033 (Δ = 49,216 = dino_proj
+768×64+64 exactly — banked run predates Phase-15; its JSON lacks
+feat/heads keys). 24/36 cells breach abs-0.01 — expected across
+different models, not a reproduction failure. Internal control
+(same code, same box) carries validity instead.
+Provenance incident (disclosed): the trainer banks fixed-name
+`attn_run.json` — it overwrote the TRACKED jattn64b2 primary twice
+mid-round. Restored byte-identical via `git checkout` (status clean
+after; arm cells live only in `registers_shuffle.json` + out-of-tree
+weights). Primaries untouched at rest.
+Verdict: **registers teach shuffle-INVARIANCE — the top steal dies,
+inverted.** Primary bar fails directionally (1.03 < 1.34; ≥1.0 alone
+holds — reported, not rounded up); bars hold both arms. Mechanism,
+stated as hypothesis (not asserted): ctx consts ride every forward
+identically under permutation — a shuffle-invariant pathway that
+DILUTES position-dependent response; removing them forces all signal
+through position-bound RGB tokens → maximal shuffle response. Against
+noise (noted, not hidden): single run per arm (frozen — no sweep);
+but strata means agree ±2–3% while shuffle differs ±30% — noise does
+not dissociate like that. Bigger finding, free: the 8k-cosine recipe
+ALREADY reaches teacher-scale shuffle dependence (1.34 > 1.27)
+WITHOUT registers — the host, not the theft, holds the structure.
+The MMDiT steal-list survives minus its king (M10 schedule, M3
+budgets, M2 audit, M8 clamp, M1/M11 trunk, M6 all unaffected —
+stated, not re-ranked here).
+Gate: `tests/test_shuffle_probe.py` extended in place (registers-*
+key: schema, determinism, robustness-vs-bar, bars, ablation-equality
+with the VOID documented, CPU spot 0.0e+00; all old legs green).
+Neighbors: shuffle + strata (84 OK, zero : FAIL) + teacher green
+(read-only reuse — nothing moves underneath).
+Bugs caught (all mine): (1) eval script ran over ALL manifest
+fixtures incl. synth .npys of foreign shape (lstsq death) — fixed
+to the frozen 6 frames, nothing banked under it. (2) int-vs-string
+JSON keys twice in the gate draft (p16/16) — failed loud, fixed.
+(3) the attn_run.json overwrite above — caught by `git status`,
+restored, disclosed. Gaps named: run-to-run variance scale (one run
+per arm, frozen); dino-feat arms (different information plumbing —
+not this round); register-count sweep (explicitly refused by freeze).
