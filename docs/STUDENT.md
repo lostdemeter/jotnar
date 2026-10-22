@@ -2443,3 +2443,48 @@ established; existing legs untouched). Neighbors: lesion + anatomy +
 strata green (read-only reuse — nothing moves underneath).
 
 ### Basin results (TBD — computation lands here)
+
+### Basin results (CPU 108s training + seconds clustering, banked data only)
+
+Phase A (exhaustive k-medoids, cosine, 90-dim lesion responses):
+k=3: 0.6941 (ai_021+ai_022 merged) / k=4: 0.7834 / k=5: 0.6474 /
+k=6: 0.4644 / k=7: 0.2392 → winner K*=4 = one basin per SCENE
+(ai_018→0, ai_021→1, ai_022→2, ai_023→3). The k=5-to-match-teacher
+hypothesis is REJECTED by the frozen rule (0.6474 < 0.7834, margin
+0.136 — same data, no new teacher runs). Lesion-response clusters ARE
+scenes — the teacher's lesion behavior is scene-identity through and
+through (consistency, not proof of anything deeper — reported).
+Phase B (basin supervision, K*=4, bar 0.5 = 2/4):
+step 1: trip=0.1353 recon=0.2183 ce=1.3793 → step 2000: trip=0.0000
+recon=0.2184 ce=0.1229. Assignment 8/8 = 1.000 ≥ 0.5 (bar cleared —
+basins LEARNABLE). Codes: cross-scene max −0.33 (all 24 pairs
+negative — scenes perfectly apart), within-scene = 1.0000 (siblings
+merged). Battery 100/200 = 0.5000 ≥ 0.25 (all levels 20/40; every
+query retrieves its scene's fr0000; NO fr0001 query ever self-retrieves).
+Separability vs cleared round: max 0.7438 → 1.0000 (REGRESSED), mean
++0.12 → −0.14 (improved).
+Gate status: `test_teacher_lesion.py` ALL OK (gt-determinism,
+gt-stability with full k-table, gt-coverage + all old legs);
+`test_strata_marigold.py` RED on exactly one leg — pb-separability
+(max 1.0000 < 0.9 fails; all 89 other legs green).
+CONFLICT ANALYSIS (the finding — read before judging the red): perfect
+scene-label supervision ENTAILS sibling merge (same label ⇒ same code
+is what 8/8 MEANS), and sibling merge FORCES maxcos≈1. The frozen
+ground truth (K*=4=scenes) and the frozen max-bar are MUTUALLY
+EXCLUSIVE — neither was violable post-freeze, so the conflict is
+reported, not resolved. The winner rule's two clauses both hold
+(1.0 ≥ 0.5, 0.5 ≥ 0.25) AND the maintenance leg is red AND retrieval
+is scene-collapse (fr0001 never self-retrieves): the battery clears
+its bar on a scoring technicality (each scene donates exactly its
+fr0000 half) while the product claim fails on mechanism.
+Verdict: **basins LEARNABLE (8/8 — supervision works), basin-structured
+PRODUCT dead (retrieval 0.5 via collapse + maintenance red by
+entailment).** "Alive" on clauses alone would be dishonest — stated
+plainly, integrator judges. The encoder arc stays closed; the basin
+door closes with it: even perfect basin labels buy scene-codes, not
+frame retrieval.
+Bugs caught: none in-round (one pre-run concern — head-init RNG stream
+position — resolved by construction: body init order identical to the
+cleared round, head after, all seeded). Gaps named: held-out
+assignment (impossible at n=8, stated); frame-level supervision
+(no per-frame labels exist — the very void that started this arc).
