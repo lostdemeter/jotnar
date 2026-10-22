@@ -96,6 +96,84 @@ def main():
     check("shuffle-locality-signature", True,
           f"mscale64 p16={m16a:.2f} p64={m64a:.2f} (halving = 33px field inside 64px patches)")
 
+    # -- register-token legs (registers round; legs above untouched) -------
+    reg_path = os.path.join(FIXDIR, "registers_shuffle.json")
+    reg = json.load(open(reg_path))
+    check("registers-schema",
+          set(reg["arms"]) == {"reg", "noreg"}
+          and reg["arms"]["reg"]["nctx"] == 4
+          and reg["arms"]["noreg"]["nctx"] == 0
+          and reg["recipe"]["seed"] == 7
+          and all(set(reg["arms"][a]["shuffle"]) == {"p16", "p64"}
+                  and len(reg["arms"][a]["shuffle"][p]) == 6
+                  for a in ("reg", "noreg") for p in ("p16", "p64")),
+          "2 arms x nctx 4/0 x 2 sizes x 6 frames")
+    def rmean(a, p):
+        return float(np.mean([c["rel"]
+                              for fr in reg["arms"][a]["shuffle"][f"p{p}"].values()
+                              for c in fr.values()]))
+    rm16, cm16 = rmean("reg", 16), rmean("noreg", 16)
+    check("registers-determinism",
+          abs(rm16 - reg["arms"]["reg"]["shuffle_mean"]["16"]) < 1e-12
+          and abs(cm16 - reg["arms"]["noreg"]["shuffle_mean"]["16"]) < 1e-12,
+          f"means recomputed == banked ({rm16:.4f} vs {cm16:.4f})")
+    check("registers-robustness",
+          abs(rm16 - 1.0324) < 1e-3 and abs(cm16 - 1.3382) < 1e-3
+          and reg["verdicts"]["overall"] == "dead"
+          and not reg["verdicts"]["reg_gt_control"],
+          f"reg {rm16:.4f} < control {cm16:.4f} (directional FAIL), "
+          f"reg >= 1.0 holds alone; verdict dead arithmetically correct")
+    bars = {"near": 0.09, "far": 0.09, "planar": 0.09,
+            "nonplanar": 0.08, "tex": 0.07, "smooth": 0.09}
+    bcheck = True
+    for a in ("reg", "noreg"):
+        cells = [(k, v) for n, d in reg["arms"][a]["strata"].items()
+                 if n.startswith("geo") for k, v in d.items()]
+        bcheck &= (sum(1 for k, v in cells if v < bars[k])
+                   == reg["arms"][a]["heldout_pass"] == 0)
+        bcheck &= (abs(float(np.mean([v for _, v in cells]))
+                       - reg["arms"][a]["heldout_mean"]) < 1e-12)
+    check("registers-bars", bool(bcheck)
+          and reg["arms"]["reg"]["heldout_mean"] <= 0.4062 * 1.05,
+          "0/12 both arms; reg mean within 5% of banked 0.4062")
+    check("registers-ablation-equality",
+          reg["model_note"]["retrain_match"].startswith("void:model-mismatch")
+          and reg["model_note"]["arm_nparams"] == 157249
+          and reg["banked_8kcos_ref"]["nparams"] == 108033,
+          "control self-consistent (recomputed above); 8k-cos equality "
+          "VOID by documented model mismatch (157249 vs 108033), "
+          "not silently worked around")
+    try:
+        import torch
+        import train_attn_student as JA
+        JAMod = JA._define_model(torch)
+        sd = torch.load(os.path.expanduser("~/student_runs/jattn64b2-reg/weights.pt"),
+                        map_location="cpu", weights_only=True)
+        rnet = JAMod(64, 672 // 32, 1024 // 32, 4, 2).float().eval()
+        rnet.load_state_dict(sd)
+        yy, xx = torch.meshgrid(torch.arange(672), torch.arange(1024), indexing="ij")
+        rpidx = ((yy // 32) * 32 + (xx // 32)).long()
+        with torch.no_grad():
+            rgbt = torch.tensor(base["dogs"].astype(np.float64) / 255.0,
+                                dtype=torch.float32)
+            to = rnet.encode(rgbt)
+            ri = rnet.head(to, rgbt, rpidx).numpy()
+            sh, sidx = shuffle_rgb(base["dogs"], 16)
+            rgbts = torch.tensor(sh.astype(np.float64) / 255.0, dtype=torch.float32)
+            back = unshuffle(rnet.head(rnet.encode(rgbts), rgbts, rpidx).numpy(),
+                             sidx)
+        import test_strata_marigold as H
+        t = np.load(os.path.join(FIXDIR, "dogs.npy")).astype(np.float64)
+        masks = H.strata_masks(t, base["dogs"].astype(np.float64) / 255.0)
+        worst = 0.0
+        for k in H.STRATA:
+            got = float(H.align_mae(back, ri, masks[k]))
+            want = reg["arms"]["reg"]["shuffle"]["p16"]["dogs"][k]["raw"]
+            worst = max(worst, abs(got - want) / max(want, 1e-300))
+        check("registers-spot", worst < 1e-9, f"dogs p16 worst rel dev {worst:.1e}")
+    except (ImportError, OSError, FileNotFoundError) as e:
+        print(f"SKIP registers-spot ({e})")
+
     # -- mscale64 live spot (CPU) -----------------------------------------
     try:
         import torch
