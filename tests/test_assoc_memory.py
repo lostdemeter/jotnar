@@ -256,6 +256,39 @@ def main():
     check("assoc-cont-battery", cok,
           "none earned asserted explicitly (unearned rerun would FAIL)")
 
+    # -- difference key (hopfield-difference round; legs above untouched) ---
+    import hopfield_difference as D
+    dids, dX, dsub = D.load_all()
+    dM = D.construct(dids, dX, dsub)
+    drep = json.load(open(os.path.join(
+        ROOT, "samples", "marigold", "hopfield_difference.json")))
+    dsep_ok = True
+    for key in [k for k in dM if not k.endswith("idx")]:
+        mx, mn = D.sepscore(dM[key])
+        b = drep["separability"][key]
+        dsep_ok &= (abs(mx - b["maxcos"]) < 1e-9
+                    and abs(mn - b["meancos"]) < 1e-9
+                    and b["clears"] is False)
+    idx_ok = all((dM[f"{p}:d3_idx"] == np.array(
+        drep["d3_idx"][p])).all() for p in D.POINTS)
+    check("assoc-diff-integrity", dsep_ok and idx_ok,
+          "D1/D2/D3 recomputed == banked (d3 indices exact)")
+    dg = drep["diagnostics"]
+    check("assoc-diff-manifold",
+          all(k in dg for k in ("nn_min", "nn_median", "nn_max",
+                                "PR_24", "thin_confirmed"))
+          and all(np.isfinite([dg["nn_min"], dg["nn_median"],
+                               dg["nn_max"], dg["PR_24"]]))
+          and dg["thin_confirmed"] is True,
+          f"reported-not-asserted: nn med {dg['nn_median']:.2e}, "
+          f"PR_24 {dg['PR_24']:.2f} (thresholds never asserted)")
+    dok = drep["battery"] == {} and drep["full_clear"] == []
+    if drep["battery"]:
+        dok &= all(v["accuracy"] >= v["bar"]
+                   for v in drep["battery"].values())
+    check("assoc-diff-battery", dok,
+          "none earned asserted explicitly (unearned rerun would FAIL)")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 
