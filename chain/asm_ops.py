@@ -168,6 +168,80 @@ def op_imad(vals, config, feeds):
     return _iwrap(a * b + c)
 
 
+_INT64_MIN = -(1 << 63)
+
+
+def _int_divmod(vals, op):
+    """Exact C-style truncating division/remainder for I streams.
+
+    Division truncates toward zero (remainder has the dividend's sign),
+    unlike Python/NumPy ``//`` (floor). Zero divisors and the single
+    overflow pair INT64_MIN / -1 fail loud: both are unrepresentable in
+    int64, so no silent sentinel is allowed.
+    """
+    a = _int_stream(vals[0], op, "a")
+    b = _int_operand(vals[1], op, "b", a.shape)
+    bb = np.asarray(b, dtype=np.int64)
+    if np.any(bb == 0):
+        raise ValueError(f"{op}: division by zero")
+    if np.any((a == _INT64_MIN) & (bb == -1)):
+        raise ValueError(f"{op}: INT64_MIN / -1 overflow")
+    q = a // bb
+    rem = a % bb
+    # NumPy floors; add one where the floor quotient stepped away from
+    # zero. The same correction keeps the remainder's sign with a.
+    q = q + ((rem != 0) & ((a < 0) != (bb < 0))).astype(np.int64)
+    if op == "IDIV":
+        return _iwrap(q)
+    return _iwrap(a - q * bb)
+
+
+def op_idiv(vals, config, feeds):
+    """Exact I-kind truncating divide; scalar literals broadcast."""
+    return _int_divmod(vals, "IDIV")
+
+
+def op_imod(vals, config, feeds):
+    """Exact I-kind C-style remainder; scalar literals broadcast."""
+    return _int_divmod(vals, "IMOD")
+
+
+def op_f2i(vals, config, feeds):
+    """F -> I bridge: truncate toward zero, range-checked.
+
+    NaN/Inf and values outside [-2^63, 2^63) fail loud. This is the
+    explicit float boundary; no silent cast happens anywhere else. The
+    non-FPU backend performs the same conversion by decoding IEEE-754
+    bits with integer operations (no FPU instruction in the target).
+    """
+    (x,) = vals
+    if isinstance(x, tuple):
+        raise ValueError("F2I: triples unbuilt (decode/quantize first)")
+    a = np.asarray(x)
+    if not np.issubdtype(a.dtype, np.floating):
+        raise ValueError(f"F2I: stream must be float, got {a.dtype}")
+    a = np.ascontiguousarray(a, dtype=np.float64)
+    if not np.all(np.isfinite(a)):
+        raise ValueError("F2I: NaN/Inf input")
+    t = np.trunc(a)
+    if np.any(t < float(_INT64_MIN)) or np.any(t >= 9223372036854775808.0):
+        raise ValueError("F2I: value outside int64 range")
+    return np.ascontiguousarray(t.astype(np.int64))
+
+
+def op_i2f(vals, config, feeds):
+    """I -> F bridge: round-to-nearest-even cast to float64.
+
+    The non-FPU backend constructs the same IEEE-754 bit pattern with
+    integer operations (no FPU instruction in the target). CUDA's F
+    storage is float32, so its result is the correctly rounded float32
+    value; values above 2^24 can differ from the C/non-FPU float64 path
+    (stated, backend width).
+    """
+    a = _int_stream(vals[0], "I2F", "x")
+    return np.ascontiguousarray(a.astype(np.float64))
+
+
 def op_sub(vals, config, feeds):
     a, b = vals
     _need_triples(a, "SUB", "a")
@@ -1044,6 +1118,10 @@ REGISTRY = {
     "ISUB": (op_isub, 2, 1),
     "IMUL": (op_imul, 2, 1),
     "IMAD": (op_imad, 3, 1),
+    "IDIV": (op_idiv, 2, 1),
+    "IMOD": (op_imod, 2, 1),
+    "F2I": (op_f2i, 1, 1),
+    "I2F": (op_i2f, 1, 1),
     "BETA_V5": (op_beta_v5, 2, 1),
     "MUL": (op_mul, 2, 1),
     "ADD": (op_add, 2, 1),
@@ -1112,6 +1190,10 @@ SIGS = {
     "ISUB": (["I:*", "*"], ["I:*"]),
     "IMUL": (["I:*", "*"], ["I:*"]),
     "IMAD": (["I:*", "*", "*"], ["I:*"]),
+    "IDIV": (["I:*", "*"], ["I:*"]),
+    "IMOD": (["I:*", "*"], ["I:*"]),
+    "F2I": (["F:*"], ["I:*"]),
+    "I2F": (["I:*"], ["F:*"]),
     "BETA_V5": (["T:HW", "T:HW"], ["T:HW"]),
     "BETA": (["$A"], ["$A"]),
     "TBETA": (["$A"], ["$A"]),

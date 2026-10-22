@@ -57,6 +57,7 @@ class Backend:
 
     name = "base"
     emits = False  # set True when pattern() covers a compilable set
+    f_repr = "double"  # backend F storage spelling (non-FPU uses raw uint64)
 
     def value_repr(self, layout):
         raise NotImplementedError
@@ -158,6 +159,15 @@ def _int_lit(a, what):
     if not f.is_integer():
         raise AsmError(f"{what}: need integral literal, got {a!r}")
     return int(f)
+
+
+def _c_i64_lit(v):
+    """C99 int64 literal, including the one value whose decimal spelling
+    would otherwise be parsed as an unsigned constant."""
+    v = int(v)
+    if v == -(1 << 63):
+        return "(-9223372036854775807LL - 1LL)"
+    return f"{v}LL"
 
 
 def _dyadic(f):
@@ -294,7 +304,7 @@ def infer_shapes(bound, sample):
             if len(ish) > 1 or (len(ish) == 1 and ish[0] not in (None, 1)):
                 raise AsmError(f"{where}: SCATTER idx must be scalar/1-elem")
             streams[o] = ("F", "double", (bsh[0], bsh[1]))
-        elif mn in ("IADD", "ISUB", "IMUL", "IMAD"):
+        elif mn in ("IADD", "ISUB", "IMUL", "IMAD", "IDIV", "IMOD"):
             ak, _, ash = streams[args[0]]
             if ak != "I":
                 raise AsmError(f"{where}: {mn} needs I-kind first operand")
@@ -311,6 +321,16 @@ def infer_shapes(bound, sample):
                         raise AsmError(f"{where}: {mn} literal outside "
                                        f"int64: {_lit}")
             streams[o] = ("I", "int64_t", ash)
+        elif mn == "F2I":
+            sk, _, ssh = streams[args[0]]
+            if sk != "F":
+                raise AsmError(f"{where}: F2I needs F input")
+            streams[o] = ("I", "int64_t", ssh)
+        elif mn == "I2F":
+            sk, _, ssh = streams[args[0]]
+            if sk != "I":
+                raise AsmError(f"{where}: I2F needs I input")
+            streams[o] = ("F", "double", ssh)
         elif mn == "ARGMAX":
             sk, _, ssh = streams[args[0]]
             ax = _int_lit(args[1], f"{where} axis") if len(args) > 1 \
@@ -727,7 +747,7 @@ class CBackend(Backend):
                     f"{w} * sizeof(double));\n}}",
                     (o, str(w)))
             raise NoPattern("GATHER3 table must be T/F")
-        if mn in ("IADD", "ISUB", "IMUL", "IMAD"):
+        if mn in ("IADD", "ISUB", "IMUL", "IMAD", "IDIV", "IMOD"):
             a = args[0]
             o = outs[0]
             if S[a][0] != "I":
@@ -745,10 +765,26 @@ class CBackend(Backend):
                             f"C backend {mn} operand {pos} must be I with "
                             f"shape {S[a][2]}, got {S[x][0]} {S[x][2]}")
                     return f"{x}[e_i]"
-                return str(_int_lit(x, f"{mn} operand {pos}"))
+                return _c_i64_lit(_int_lit(x, f"{mn} operand {pos}"))
 
             ta = f"{a}[e_i]"
             tb = _term(args[1], 1)
+            if mn in ("IDIV", "IMOD"):
+                if args[1] not in S and _int_lit(
+                        args[1], f"{mn} operand 1") == 0:
+                    raise AsmError(f"{mn}: division by zero (literal)")
+                op = "/" if mn == "IDIV" else "%"
+                return (
+                    f"/* {o} = {mn}({', '.join(args)}) truncating, "
+                    f"checked */\n"
+                    f"for (int64_t e_i = 0; e_i < {co}; ++e_i) {{\n"
+                    f"  int64_t _a = {a}[e_i];\n"
+                    f"  int64_t _b = {tb};\n"
+                    f"  if (_b == 0 || "
+                    f"(_a == INT64_MIN && _b == -1)) return 30;\n"
+                    f"  {o}[e_i] = _a {op} _b;\n"
+                    f"}}",
+                    None)
             if mn == "IADD":
                 expr = f"((uint64_t){ta} + (uint64_t)({tb}))"
             elif mn == "ISUB":
@@ -763,6 +799,36 @@ class CBackend(Backend):
                 f"/* {o} = {mn}({', '.join(args)}) 64-bit wrap */\n"
                 f"for (int64_t e_i = 0; e_i < {co}; ++e_i)\n"
                 f"  {o}[e_i] = (int64_t){expr};",
+                None)
+        if mn in ("F2I", "I2F"):
+            x = args[0]
+            o = outs[0]
+            if o not in ctx["count"]:
+                raise NoPattern(
+                    f"C backend {mn}: dynamic output '{o}' "
+                    f"(v0.1 needs a static shape)")
+            co = ctx["count"][o]
+            if mn == "F2I":
+                if S[x][0] != "F":
+                    raise NoPattern(f"C backend F2I needs F input, "
+                                    f"got {S[x][0]}")
+                return (
+                    f"/* {o} = F2I({x}) trunc toward zero, range-checked */\n"
+                    f"for (int64_t e_i = 0; e_i < {co}; ++e_i) {{\n"
+                    f"  double _v = {x}[e_i];\n"
+                    f"  if (_v != _v || "
+                    f"_v >= 9223372036854775808.0 || "
+                    f"_v < -9223372036854775808.0) return 30;\n"
+                    f"  {o}[e_i] = (int64_t)_v;\n"
+                    f"}}",
+                    None)
+            if S[x][0] != "I":
+                raise NoPattern(f"C backend I2F needs I input, "
+                                f"got {S[x][0]}")
+            return (
+                f"/* {o} = I2F({x}) round-to-nearest-even */\n"
+                f"for (int64_t e_i = 0; e_i < {co}; ++e_i)\n"
+                f"  {o}[e_i] = (double){x}[e_i];",
                 None)
         if mn == "SCATTER":
             base, row, idx = args
@@ -1416,6 +1482,7 @@ def compile_program(text, target="c", sample=None, outputs=None,
     if not outputs:
         raise AsmError("compile_program needs outputs=[...] (OUT streams)")
     be = _be
+    _frepr = getattr(be, "f_repr", "double")
     streams = infer_shapes((config, inp, bound), sample)
     consts = find_consts((config, inp, bound), inp, streams, sample)
     in_names = [n for n, _ in inp]
@@ -1505,13 +1572,13 @@ def compile_program(text, target="c", sample=None, outputs=None,
             decls.append(f"static {st} *{n}_s; static {et} *{n}_e;"
                          f" static {zt} *{n}_z; static int64_t {n}_N;")
         elif k == "F":
-            decls.append(f"static double *{n}; static int64_t {n}_N;")
+            decls.append(f"static {_frepr} *{n}; static int64_t {n}_N;")
         else:
             decls.append(f"static int64_t *{n}; static int64_t {n}_N;")
     for o in outputs:
         ok, osub, osh = streams[o]
         if ok == "F":
-            decls.append(f"static double *{o};")
+            decls.append(f"static {_frepr} *{o};")
         elif ok == "T":
             st, et, zt = osub
             decls.append(f"static {st} *{o}_s; static {et} *{o}_e;"
@@ -1536,7 +1603,7 @@ def compile_program(text, target="c", sample=None, outputs=None,
                     interI.add(x)
     if inter:
         parts.append("/* intermediates */")
-        parts.append("\n".join(f"double *{x};" for x in sorted(inter)))
+        parts.append("\n".join(f"{_frepr} *{x};" for x in sorted(inter)))
     if interT:
         parts.append("/* triple intermediates */")
         for x in sorted(interT):
@@ -1547,7 +1614,7 @@ def compile_program(text, target="c", sample=None, outputs=None,
         parts.append("\n".join(f"int64_t *{x};" for x in sorted(interI)))
     if inter:
         parts.append("/* intermediates */")
-        parts.append("\n".join(f"double *{x};" for x in sorted(inter)))
+        parts.append("\n".join(f"{_frepr} *{x};" for x in sorted(inter)))
     if interT:
         parts.append("/* triple intermediates */")
         for x in sorted(interT):
@@ -1620,7 +1687,7 @@ def compile_program(text, target="c", sample=None, outputs=None,
     for x in sorted(inter) + [o for o in outputs if streams[o][0] == "F"]:
         _k, _s, xsh = streams[x]
         cnt = _dim_expr(xsh, ids_n)
-        allocs.append(f"  {x} = malloc(({cnt}) * sizeof(double));")
+        allocs.append(f"  {x} = malloc(({cnt}) * sizeof({_frepr}));")
         # per-stream ROW-count var for patterns (<stream>_N)
         allocs.append(f"  int64_t {x}_N = {_rows_expr(xsh, ids_n)};")
     for o in outputs:
@@ -1664,7 +1731,7 @@ def compile_program(text, target="c", sample=None, outputs=None,
                     f" fclose(f); }}")
                 idx += 1
             continue
-        el = "8" if ok == "I" else "sizeof(double)"
+        el = "8" if ok == "I" else f"sizeof({_frepr})"
         co = ctx["count"][o]
         parts.append(f"  {{ FILE *f = fopen(argv[{idx}], \"wb\"); if (!f)"
                      f" return 3;\n"

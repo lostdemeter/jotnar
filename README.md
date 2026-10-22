@@ -149,7 +149,7 @@ lattice node through the same controller. Gate:
 `tests/test_protocol.py` pipe legs (per-layer KV, LOGITS, choice
 bit-exact vs single-node).
 
-## Opcode table (59 mnemonics)
+## Opcode table (63 mnemonics)
 
 Kinds: F float, T lattice-triples, I integer. Backends admit per-kind
 overloads; missing = loud `NoPattern`, never silent.
@@ -177,6 +177,9 @@ overloads; missing = loud `NoPattern`, never silent.
 | GATHER3 | 3 -> 1 | T,F | F | T | two-index row gather; static outer dims; C/non-FPU bounds loud |
 | IADD/ISUB/IMUL | 2 -> 1 | I | I | I | 64-bit wrap; scalar literal; no broadcast |
 | IMAD | 3 -> 1 | I | I | I | `a*b+c`; n-gram context primitive |
+| IDIV/IMOD | 2 -> 1 | I | I | I | truncating div/rem; zero and `INT64_MIN / -1` loud |
+| F2I | 1 -> 1 | F | F | F | explicit float->int; trunc, range-checked; non-FPU bit-decoded |
+| I2F | 1 -> 1 | I | I | I | explicit int->float; round-to-even; non-FPU bit-built |
 | GAUSS | 3 -> 1 | — | — | — | parked: drilled in test_asm, no listing/demo/builder workload |
 | GELU | 1 -> 1 | — | — | — | parked: drilled in test_asm, no workload (Qwen uses SILU/SwiGLU) |
 | INTERP | 3 -> 1 | F | F | — | bilinear half-pixel (align_corners=False, audited vs torch; nearest stays shipped degraded default); C `chain/emit_c.py` F64 loop + CUDA `k_interp_bilinear_f32` (`chain/emit_cuda.py`); dyadic-only, parity 333dB C / 156dB CUDA |
@@ -212,7 +215,7 @@ overloads; missing = loud `NoPattern`, never silent.
 | TSHIFT | 1 -> 1 | F | F | T | row-max; fuses into softmax |
 | WARP | 2 -> 1 | — | — | — | lattice-only (stabilize listing runs lattice, no emitted demand) |
 
-Coverage: C 32, CUDA 33, non-FPU 26. Refusal cells are gated
+Coverage: C 36, CUDA 37, non-FPU 30. Refusal cells are gated
 (`test_emit.py` loud-refusal row). Full per-mnemonic contracts with
 examples: `docs/LANGUAGE.md`. Extension recipe: registry row + shape
 rule + one pattern per backend (`chain/backends.py`).

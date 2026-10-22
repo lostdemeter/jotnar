@@ -4,7 +4,10 @@ Two subgraphs, both bit-exact vs the lattice:
   exact moves (v0.1): T-kind GATHER/GATHER3/ARGMAX/TRANSPOSE/SLICE/CONCAT/
     SELECT.
   integer arithmetic (v0.1): I-kind IADD/ISUB/IMUL/IMAD with defined
-    64-bit wrap (unsigned intermediates, no float).
+    64-bit wrap (unsigned intermediates, no float); IDIV/IMOD with
+    truncation and checked zero/overflow.
+  IEEE boundaries (v0.2): F2I/I2F over raw binary64 bits, decoded and
+    constructed with integer ops only (no FPU type, no libm).
   fixed-point arithmetic (v0.2): T-kind MUL/ADD/SUB/SQUARE via a ported
     bridge (to_fixed/from_fixed + tmul + binop at m_cov). Bridge tables
     (FRAC/COARSE/FINE) bake in as static const int64 (compiler side
@@ -26,7 +29,7 @@ from chain.emit_c import Backend, CBackend, NoPattern
 
 INTEGER_MN = {"GATHER", "GATHER3", "ARGMAX", "TRANSPOSE", "SLICE", "CONCAT",
               "SELECT", "GT",
-              "IADD", "ISUB", "IMUL", "IMAD",
+              "IADD", "ISUB", "IMUL", "IMAD", "IDIV", "IMOD", "F2I", "I2F",
               "MUL", "ADD", "SUB", "SQUARE", "MATMUL", "BATCH_MATMUL",
               "RMSNORM", "TSHIFT", "SOFTMAX_WIDE", "SOFTMAX",
               "TBETA", "BETA", "ROTARY", "SILU"}
@@ -40,6 +43,70 @@ TRAP_RES = (
     re.compile(r"\b(sqrt|exp|sin|cos|tan|pow|fmax|fmin|fabs|round)\s*\("),
     re.compile(r"#include\s*<math\.h>"),
 )
+
+# IEEE-754 binary64 bit bridges for the explicit F2I/I2F boundary. These
+# are integer operations only: no FPU instruction is emitted or linked.
+# F2I truncates toward zero and refuses NaN/Inf/out-of-range; I2F rounds
+# to nearest-even, matching the C backend's cast exactly for int64 inputs.
+NF_F2I_HELPER = r"""
+/* F2I: binary64 bits -> int64, truncating and range-checked. */
+static int nf_f2i_bits(uint64_t b, int64_t *out) {
+  uint64_t neg = b >> 63;
+  uint64_t ex = (b >> 52) & 0x7ffULL;
+  uint64_t frac = b & 0xfffffffffffffULL;
+  if (ex == 0x7ffULL) return 0; /* NaN or infinity */
+  if (ex == 0) { *out = 0; return 1; } /* subnormal truncates to 0 */
+  int e = (int)ex - 1023;
+  if (e < 0) { *out = 0; return 1; }
+  uint64_t m = (1ULL << 52) | frac;
+  if (e > 63) return 0;
+  if (e == 63) {
+    if (neg && frac == 0) {
+      *out = (-9223372036854775807LL - 1LL);
+      return 1;
+    }
+    return 0;
+  }
+  int sh = 52 - e;
+  uint64_t q = (sh >= 0) ? (m >> sh) : (m << (-sh));
+  *out = neg ? -(int64_t)q : (int64_t)q;
+  return 1;
+}
+"""
+
+NF_I2F_HELPER = r"""
+/* I2F: int64 -> binary64 bits, round-to-nearest-even. */
+static uint64_t nf_i2f_bits(int64_t x) {
+  uint64_t sign = 0;
+  uint64_t u;
+  if (x < 0) {
+    sign = 1ULL << 63;
+    u = 0ULL - (uint64_t)x;
+  } else {
+    u = (uint64_t)x;
+  }
+  if (u == 0) return 0;
+  int k = 63;
+  while (!(u & (1ULL << k))) --k;
+  uint64_t q;
+  int e;
+  if (k <= 52) {
+    q = u << (52 - k);
+    e = k + 1023;
+  } else {
+    int r = k - 52;
+    q = u >> r;
+    uint64_t rem = u & ((1ULL << r) - 1ULL);
+    uint64_t half = 1ULL << (r - 1);
+    if (rem > half || (rem == half && (q & 1ULL))) {
+      q += 1ULL;
+      if (q == (1ULL << 53)) { q >>= 1; ++k; }
+    }
+    e = k + 1023;
+  }
+  return sign | ((uint64_t)e << 52) | (q & 0xfffffffffffffULL);
+}
+"""
 
 
 def float_trap(source):
@@ -317,6 +384,7 @@ class NonFPUBackend(CBackend):
 
     name = "nonfpu"
     emits = True
+    f_repr = "uint64_t"  # raw IEEE-754 bits; no FPU type in emitted source
     DEFAULT_CFLAGS = ("-O2", "-std=c99", "-Wall", "-fwrapv")
     DEFAULT_LIBS: tuple = ()
 
@@ -325,6 +393,11 @@ class NonFPUBackend(CBackend):
              "#include <stdlib.h>", "#include <string.h>", ""]
         for k, v in ctx["dims"].items():
             L.append(f"#define DIM_{k} {v}L")
+        _mns = ctx.get("mns", [])
+        if "F2I" in _mns:
+            L.append(NF_F2I_HELPER)
+        if "I2F" in _mns:
+            L.append(NF_I2F_HELPER)
         rope = ctx.get("rope")
         if rope is not None and any(mn == "ROTARY" for mn in ctx.get("mns", [])):
             import phi_core.lattice as _S
@@ -371,6 +444,8 @@ class NonFPUBackend(CBackend):
                 f"covers moves + arithmetic + norms + softmax; "
                 f"layernorm/silu/gelu/convs ahead)")
         S = ctx["streams"]
+        if mn in ("F2I", "I2F"):
+            return self._ieee_pattern(mn, outs, args, sig, ctx)
         for a in args:
             if a in S and S[a][0] == "F":
                 raise NoPattern(
@@ -379,6 +454,36 @@ class NonFPUBackend(CBackend):
         if mn in FX_MN:
             return self._fx_pattern(mn, outs, args, sig, ctx)
         return super().pattern(mn, outs, args, sig, ctx)
+
+    def _ieee_pattern(self, mn, outs, args, sig, ctx):
+        """F2I/I2F over raw binary64 bits: same C/NumPy semantics without
+        any floating type or libm symbol in the target source."""
+        S = ctx["streams"]
+        x = args[0]
+        o = outs[0]
+        if o not in ctx["count"]:
+            raise NoPattern(
+                f"nonfpu {mn}: dynamic output '{o}' "
+                f"(v0.1 needs a static shape)")
+        co = ctx["count"][o]
+        if mn == "F2I":
+            if S[x][0] != "F":
+                raise NoPattern(f"nonfpu F2I needs F input, got {S[x][0]}")
+            return (
+                f"/* {o} = F2I({x}) trunc toward zero, range-checked */\n"
+                f"for (int64_t e_i = 0; e_i < {co}; ++e_i) {{\n"
+                f"  int64_t _v;\n"
+                f"  if (!nf_f2i_bits({x}[e_i], &_v)) return 30;\n"
+                f"  {o}[e_i] = _v;\n"
+                f"}}",
+                None)
+        if S[x][0] != "I":
+            raise NoPattern(f"nonfpu I2F needs I input, got {S[x][0]}")
+        return (
+            f"/* {o} = I2F({x}) round-to-nearest-even */\n"
+            f"for (int64_t e_i = 0; e_i < {co}; ++e_i)\n"
+            f"  {o}[e_i] = nf_i2f_bits({x}[e_i]);",
+            None)
 
     @staticmethod
     def _tplane(stream, comp, idx, S, ctx):

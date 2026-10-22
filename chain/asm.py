@@ -723,7 +723,7 @@ def _check_shapes(mn, vals, ln):
 
     if mn in ("ADD", "SUB", "MUL", "DIV"):
         _same(*vals, what="elementwise")
-    elif mn in ("IADD", "ISUB", "IMUL", "IMAD"):
+    elif mn in ("IADD", "ISUB", "IMUL", "IMAD", "IDIV", "IMOD"):
         _same(*vals, what="integer elementwise")
     elif mn == "SELECT":
         _same(vals[1], vals[2], what="SELECT branches")

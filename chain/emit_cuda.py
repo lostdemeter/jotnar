@@ -9,7 +9,8 @@ Kernels (correctness-first; block-reduce/streams/FP16 are listed
 finishing touches, not this cut):
   k_gather_f32, k_gather3_f32, k_argmax_f32 (ties-first), k_rmsnorm_f32,
   k_softmax_wide_f32, k_elem (op-switched template: add/sub/mul/div),
-  k_int_bin/k_int_mad (I-kind, unsigned wrap).
+  k_int_bin/k_int_mad (I-kind, unsigned wrap), k_int_div (checked
+  truncating div/rem), k_f2i_f32/k_i2f_f32 (checked boundaries).
 MATMUL/BATCH_MATMUL go to cuBLAS Sgemm/SgemmStridedBatched with the
 row-major trick (C_row = A@B computed as C_col = B_col@A_col).
 Memory v1: cudaMallocManaged throughout (host fread straight in,
@@ -121,6 +122,41 @@ __global__ void k_int_mad(const int64_t *a, const int64_t *b,
   uint64_t y = use_b ? (uint64_t)b[i] : (uint64_t)sb;
   uint64_t z = use_c ? (uint64_t)c[i] : (uint64_t)sc;
   o[i] = (int64_t)(x * y + z);
+}
+/* Checked C-style truncating division/remainder. The host resets ierr
+   before launch and reads it after the device sync, so bad input fails
+   loud instead of returning a silent sentinel. */
+__global__ void k_int_div(const int64_t *a, const int64_t *b, int64_t sb,
+                          int64_t *o, int64_t n, int op, int use_b,
+                          int *ierr) {
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= n) return;
+  int64_t x = a[i];
+  int64_t y = use_b ? b[i] : sb;
+  if (y == 0 || (x == (-9223372036854775807LL - 1LL) && y == -1)) {
+    *ierr = 1;
+    return;
+  }
+  o[i] = (op == 0) ? (x / y) : (x % y);
+}
+/* F2I: truncate toward zero; NaN/Inf/range errors fail loud. */
+__global__ void k_f2i_f32(const float *x, int64_t *o, int64_t n,
+                          int *ierr) {
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= n) return;
+  float v = x[i];
+  if (v != v || v >= 9223372036854775808.0f ||
+      v < -9223372036854775808.0f) {
+    *ierr = 1;
+    return;
+  }
+  o[i] = (int64_t)v;
+}
+/* I2F: round-to-nearest-even cast to device F32. */
+__global__ void k_i2f_f32(const int64_t *x, float *o, int64_t n) {
+  int64_t i = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= n) return;
+  o[i] = (float)x[i];
 }
 __global__ void k_rmsnorm_w16(const float *x, const __half *w, float *o,
                               int64_t D, int64_t N, float eps) {
@@ -597,7 +633,7 @@ class CUDABackend(Backend):
 
     def pattern(self, mn, outs, args, sig, ctx):
         from chain.emit_c import CBackend as _CB
-        from chain.emit_c import _int_lit
+        from chain.emit_c import _int_lit, _c_i64_lit
         S = ctx["streams"]
         cfg = ctx["config"]
         ids_n = ctx["ids_n"]
@@ -750,7 +786,7 @@ class CUDABackend(Backend):
                 f"k_gather3_f32<<<({o}_N + TPB - 1) / TPB, TPB{st}>>>"
                 f"({t}, {ii}, {jj}, {o}, {v2}, {w}, {o}_N);\n{launch}",
                 None)
-        if mn in ("IADD", "ISUB", "IMUL", "IMAD"):
+        if mn in ("IADD", "ISUB", "IMUL", "IMAD", "IDIV", "IMOD"):
             a = args[0]
             o = outs[0]
             if S[a][0] != "I":
@@ -768,8 +804,25 @@ class CUDABackend(Backend):
                             f"cuda {mn} operand {pos} must be I with shape "
                             f"{S[a][2]}, got {S[x][0]} {S[x][2]}")
                     return x, "0", "1"
-                return "NULL", str(_int_lit(x, f"{mn} operand {pos}")), "0"
+                return ("NULL", _c_i64_lit(_int_lit(
+                    x, f"{mn} operand {pos}")), "0")
 
+            if mn in ("IDIV", "IMOD"):
+                if args[1] not in S and _int_lit(
+                        args[1], f"{mn} operand 1") == 0:
+                    raise AsmError(f"cuda {mn}: division by zero (literal)")
+                bp, bs, bu = _arg(args[1], 1)
+                op = 0 if mn == "IDIV" else 1
+                return (
+                    f"/* {o} = {mn}({a}, {args[1]}) truncating, "
+                    f"checked */\n"
+                    f"*ierr = 0;\n"
+                    f"k_int_div<<<(({co}) + TPB - 1) / TPB, TPB{st}>>>"
+                    f"({a}, {bp}, {bs}, {o}, {co}, {op}, {bu}, ierr);\n"
+                    f"CE(cudaGetLastError()); "
+                    f"CE(cudaDeviceSynchronize());\n"
+                    f"if (*ierr) return 30;",
+                    None)
             if mn == "IMAD":
                 bp, bs, bu = _arg(args[1], 1)
                 cp, cs, cu = _arg(args[2], 2)
@@ -786,6 +839,33 @@ class CUDABackend(Backend):
                 f"/* {o} = {mn}({a}, {args[1]}) 64-bit wrap */\n"
                 f"k_int_bin<<<(({co}) + TPB - 1) / TPB, TPB{st}>>>"
                 f"({a}, {bp}, {bs}, {o}, {co}, {op}, {bu});\n{launch}",
+                None)
+        if mn in ("F2I", "I2F"):
+            x = args[0]
+            o = outs[0]
+            if o not in ctx["count"]:
+                raise NoPattern(
+                    f"cuda {mn}: dynamic output '{o}' "
+                    f"(v0.1 needs a static shape)")
+            co = ctx["count"][o]
+            if mn == "F2I":
+                if S[x][0] != "F":
+                    raise NoPattern(f"cuda F2I needs F input, got {S[x][0]}")
+                return (
+                    f"/* {o} = F2I({x}) trunc toward zero, checked */\n"
+                    f"*ierr = 0;\n"
+                    f"k_f2i_f32<<<(({co}) + TPB - 1) / TPB, TPB{st}>>>"
+                    f"({x}, {o}, {co}, ierr);\n"
+                    f"CE(cudaGetLastError()); "
+                    f"CE(cudaDeviceSynchronize());\n"
+                    f"if (*ierr) return 30;",
+                    None)
+            if S[x][0] != "I":
+                raise NoPattern(f"cuda I2F needs I input, got {S[x][0]}")
+            return (
+                f"/* {o} = I2F({x}) round-to-nearest-even F32 */\n"
+                f"k_i2f_f32<<<(({co}) + TPB - 1) / TPB, TPB{st}>>>"
+                f"({x}, {o}, {co});\n{launch}",
                 None)
         if mn == "ARGMAX":
             src = args[0]
@@ -1227,6 +1307,13 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
     from chain.emit_c import sanitize_cnames as _san
     inp, bound, sample, outputs, live, _alias = _san(
         inp, bound, sample, outputs, live)
+    if graph:
+        _checked = sorted({_mn for _outs, _mn, _fn, _aa, _ln, _sg in bound
+                           if _mn in ("IDIV", "IMOD", "F2I")})
+        if _checked:
+            raise NoPattern(
+                f"cuda: graph refuses host-checked ops {_checked} "
+                f"(division/F2I errors need a device sync)")
     streams = infer_shapes((config, inp, bound), sample)
     in_names = [n for n, _ in inp]
     if use_fp16:
@@ -1396,6 +1483,7 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
             shared_vars.append(f"int64_t {o}_N;")
     shared_vars.append("cublasHandle_t h;")
     shared_vars.append("void *_jotws;")
+    shared_vars.append("int *ierr;")
     if graph:
         shared_vars += ["cudaStream_t capStream;", "cudaGraph_t capGr;",
                         "cudaGraphExec_t capGrx;"]
@@ -1411,6 +1499,8 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
         parts.append("\n".join(decls))
     parts.append("static cublasHandle_t h;")
     parts.append("static void *_jotws = 0;")
+    if not chunked:
+        parts.append("static int *ierr;")
     if graph:
         parts.append("static cudaStream_t capStream;")
         parts.append("static cudaGraph_t capGr;")
@@ -1436,6 +1526,8 @@ def compile_cuda(text, sample=None, outputs=None, registry=None,
     n_argv = len(live_ins) + len(outputs)
     parts.append(f"  if (argc != {n_argv + 1}) return 9;")
     parts.append("  CE(cudaSetDevice(0)); BE(cublasCreate(&h));")
+    parts.append("  CE(cudaMallocManaged((void**)&ierr, sizeof(int)));")
+    parts.append("  *ierr = 0;")
     if time_ops:
         parts.append("  CE(cudaEventCreate(&_te0)); CE(cudaEventCreate(&_te1));")
     parts.append("  BE(cublasSetMathMode(h, CUBLAS_DEFAULT_MATH));")
