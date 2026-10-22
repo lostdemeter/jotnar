@@ -280,4 +280,50 @@ evidence + schema + capacity-check legs reading banked prototypes +
 banked math; heavy reruns are NOT routine). Neighbors: anatomy +
 assoc-memory legs green (read-only reuse — nothing moves underneath).
 
-### Harvest results (TBD — harvest lands here)
+### Harvest results (GPU solo, hooks only, no training)
+
+Run: `~/marigold-env/bin/python scripts/harvest_hopfield_prototypes.py`
+(clean env, GPU solo — zero compute procs pre-run, 451MiB
+display-only, 23.6GB free). VRAM measured alloc=13.7GB reserved=14.9GB
+(< 24GB 3090Ti — matches the ≈13GB pre-run math; text encoder never
+loaded, teacher+Qwen-7B co-load impossible by construction).
+Eval context mirrors `infer_one` exactly (no_grad + bf16 autocast,
+LANCZOS4 768x576, t=0.499, precomputed embeds).
+
+```text
+harvest points matched 1:1: ['transformer_blocks.29', 'transformer_blocks.59', 'norm_out']
+determinism ai_018_001/fr0000 x2: transformer_blocks.29=0.00e+00 transformer_blocks.59=0.00e+00 norm_out=0.00e+00
+harvested ai_018_001_fr0000..ai_023_005_fr0001 (8 frames, ~1s each)
+sha post == pre (7 files, nothing written)
+POINT dim=3072 K=20 requirement=d>=512: transformer_blocks.29=PASS transformer_blocks.59=PASS norm_out=PASS
+```
+
+Harvest table (per-point dims + capacity verdicts):
+
+| harvest point | capture | dim | N_exp(dim) | verdict |
+|---|---|---|---|---|
+| transformer_blocks.29 (block out[1], image stream) | [1,1728,3072] → mean-pool | 3072 | 1.3e+97 | PASS (3072≥512) |
+| transformer_blocks.59 (block out[1], image stream) | [1,1728,3072] → mean-pool | 3072 | 1.3e+97 | PASS (3072≥512) |
+| norm_out (head output, pre-proj_out) | [1,1728,3072] → mean-pool | 3072 | 1.3e+97 | PASS (3072≥512) |
+
+24 prototypes banked (`samples/marigold/hopfield_prototypes.json`,
+1.15MB): 8 frames × 3 points × 3072, all finite + nonzero.
+Determinism bar met exactly (0.00e+00 all points — same image twice
+bit-identical). Checksums pre==post (7 files).
+What the listing port inherits: (1) dims PASS with astronomic margin
+— capacity can never explain a future retrieval miss at these points
+(failures would be dynamics, stated as such); (2) L2-NORMALIZE before
+outer-product storage — banked pooled norms are raw residual-stream
+magnitudes (b29 ≈1.5e8, b59 ≈1.3e10, norm_out ≈148; no inf, but 8 orders
+apart across points), while Ramsauer patterns live on the sphere and the
+capacity math assumes radius-M geometry — storing raw would let b59
+swallow everything (assoc-memory collapse precedent: one flat winner);
+(3) point choice is a dynamics question now, not capacity — b29 (mid)
+vs b59/norm_out (late) differ in abstraction, identically in verdict.
+Gate `tests/test_hopfield_prototypes.py` (CPU, 0.03s): schema, values,
+shapes, determinism evidence, capacity recompute, checksums. Neighbors:
+anatomy + assoc-memory green (read-only reuse, nothing moves underneath).
+Bugs caught: none in-harvest (paths matched 1:1 first try, recipe mirror
+exact). Gaps named: basin→image map still absent (per-basin means remain
+unconstructible without invention); retrieval dynamics over these 24
+patterns untested (next round's question, not this one's).
