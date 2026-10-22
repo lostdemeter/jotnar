@@ -1067,3 +1067,32 @@ misread as grad bug (resolved by float64 + e-scaling, pre-run).
 Gaps named: tuned-λ/lr schedules (peeking-class here); bigger/spatial
 decoders (scope — minimal-first was frozen); basin-aware losses
 (separation of basins, not pairs — the actual next question, stated).
+
+## Basin-structured codes — STOP, premise void (no constitution enacted, no runs)
+
+Premise check (frozen FIRST, before any constitution could bind): basin
+supervision needs banked basin ground truth PER IMAGE. Verification
+against banked data:
+- `teacher_basins_H.json basins`: A–E members are `subset_*` lesion
+  targets, e.g. C = [subset_10_0, subset_20_2]; `teacher_lesion_H.json`
+  row subset_10_0 = block indices [2, 27, 30, 35, 36, 38, 39, 40].
+  Basins partition lesion-target BLOCK sets, not images.
+- Basin characterization members are the same block subsets
+  (C: members [subset_10_0, subset_20_2], structured-remnant) —
+  lesion-effect profiles, not image assignments.
+- No banked file maps any image → basin (grepped all banked JSONs;
+  frame mentions are evaluation rows, never membership).
+Conclusion: NO image has a banked basin label. "Encoder predicts basin
+assignment per image" has no targets. Deriving labels (nearest
+lesion-profile centroid, etc.) would be circular — training an encoder
+to predict our own prescription's outputs, peeking-class fabrication
+stated plainly. Per the train-ditnorm STOP and lesion-matched-original
+STOP precedents: STOP, premise void. Nothing ran (nothing CAN run —
+no targets exist); no gate legs added (vacuous legs would be theater —
+stated, not skipped); no weights touched; no downloads.
+Verdict: **basin-supervision dead on arrival — premise void, not
+empirically refuted.** The basin question stays open ONLY for a round
+that first banks per-image basin ground truth (e.g. per-image lesion
+behavior clustering with its own constitution — named, not run).
+The encoder arc stands as closed by the encoder-separated split
+finding (separability without retrieval).
