@@ -1,0 +1,111 @@
+{
+ "seed": 7,
+ "dims": {
+  "thumb": [
+   96,
+   72
+  ],
+  "patch": 12,
+  "hidden": 96,
+  "code": 128
+ },
+ "objective": "triplet(m=0.5)+0.1*MSE",
+ "lr": 0.01,
+ "steps": 2000,
+ "images": [
+  "/home/balrog/student_runs/hypersim_shard00/extract/test/ai_018_001/rgb_cam_00_fr0000.png",
+  "/home/balrog/student_runs/hypersim_shard00/extract/test/ai_018_001/rgb_cam_00_fr0001.png",
+  "/home/balrog/student_runs/hypersim_shard00/extract/test/ai_021_001/rgb_cam_00_fr0000.png",
+  "/home/balrog/student_runs/hypersim_shard00/extract/test/ai_021_001/rgb_cam_00_fr0001.png",
+  "/home/balrog/student_runs/hypersim_shard00/extract/test/ai_022_001/rgb_cam_00_fr0000.png",
+  "/home/balrog/student_runs/hypersim_shard00/extract/test/ai_022_001/rgb_cam_00_fr0001.png",
+  "/home/balrog/student_runs/hypersim_shard00/extract/test/ai_023_005/rgb_cam_00_fr0000.png",
+  "/home/balrog/student_runs/hypersim_shard00/extract/test/ai_023_005/rgb_cam_00_fr0001.png",
+  "/home/balrog/Documents/OpenCode/holographic_enhancement/samples/marigold/inputs/church.jpg",
+  "/home/balrog/Documents/OpenCode/holographic_enhancement/samples/marigold/inputs/dogs.png",
+  "/home/balrog/Documents/OpenCode/holographic_enhancement/samples/marigold/inputs/squirrel.jpg"
+ ],
+ "scenes": [
+  "ai_018_001",
+  "ai_018_001",
+  "ai_021_001",
+  "ai_021_001",
+  "ai_022_001",
+  "ai_022_001",
+  "ai_023_005",
+  "ai_023_005",
+  "fixture",
+  "fixture",
+  "fixture"
+ ],
+ "wall_s": 60.5,
+ "loss_curve": {
+  "1": {
+   "trip": 0.1352878212928772,
+   "recon": 0.21830669045448303,
+   "gnorm": 3.2303476226984547
+  },
+  "200": {
+   "trip": 0.0,
+   "recon": 0.21827878057956696,
+   "gnorm": 0.0015199255282396297
+  },
+  "500": {
+   "trip": 0.0,
+   "recon": 0.21821045875549316,
+   "gnorm": 0.0015192159750503213
+  },
+  "1000": {
+   "trip": 0.0,
+   "recon": 0.21809643507003784,
+   "gnorm": 0.0015162829118285962
+  },
+  "1500": {
+   "trip": 0.0,
+   "recon": 0.2179829180240631,
+   "gnorm": 0.001512377237998457
+  },
+  "2000": {
+   "trip": 0.0,
+   "recon": 0.21787115931510925,
+   "gnorm": 0.0015075887322774895
+  }
+ },
+ "W_path": "/home/balrog/student_runs/encoder/enc.npz",
+ "W_sha256": "694ce27023b4da88cbbd1648bf96862e2bf04deb7b0cf1a80e2c5f47a6b8bca4",
+ "separability": {
+  "maxcos": 0.7438217401504517,
+  "meancos": 0.11712154000997543,
+  "clears": true
+ },
+ "determinism_maxabs": 0.0,
+ "battery": {
+  "levels": {
+   "0.0": {
+    "hit": 5,
+    "tot": 40
+   },
+   "0.01": {
+    "hit": 5,
+    "tot": 40
+   },
+   "0.05": {
+    "hit": 5,
+    "tot": 40
+   },
+   "0.1": {
+    "hit": 5,
+    "tot": 40
+   },
+   "0.2": {
+    "hit": 5,
+    "tot": 40
+   }
+  },
+  "accuracy": 0.125,
+  "trials": 200,
+  "chance": 0.125,
+  "bar": 0.25,
+  "verdict": "dead"
+ }
+}
