@@ -327,3 +327,52 @@ Bugs caught: none in-harvest (paths matched 1:1 first try, recipe mirror
 exact). Gaps named: basin→image map still absent (per-basin means remain
 unconstructible without invention); retrieval dynamics over these 24
 patterns untested (next round's question, not this one's).
+
+## Hopfield retrieval dynamics — prove the product retrieves (constitution, FROZEN pre-run)
+
+Dynamics only: Ramsauer update on L2-normalized banked prototypes
+(normalize-before-store invariant from the harvest round), β=1
+(capacity-math default), ≤100 iterations, Δ<1e-6 convergence
+(non-convergence reported, not hidden). Three independent 8-pattern
+memories (one per harvest point: transformer_blocks.29/.59, norm_out);
+per-point tables; the listing port inherits the winning point(s).
+Queries frozen (exact construction, no peeking at which retrieves well):
+(a) corrupted variants — additive zero-mean Gaussian, σ = f×RMS of the
+query prototype, f ∈ {0, 0.01, 0.05, 0.1, 0.2} (f=0 = exact-query sanity,
+must self-retrieve), numpy RandomState(1000+10·seed+level_idx), seeds
+0–4 per (frame, level, point) → 8×5×5 = 200 trials/point, 600 total;
+(b) held-out LOO — each frame's exact harvested pattern queried against
+the other 7 of the same point; correct = same-scene sibling frame;
+chance 1/7 (7 stored, 1 sibling — derived); DIAGNOSTIC (no bar — stated,
+assoc-memory LOO precedent).
+Correctness (family a): retrieved frame == query frame. Chance 1/8 =
+0.125 (8 stored patterns, uniform random guess — derived). Bar 0.25 =
+2× chance (assoc-memory precedent: 2× chance at 1/5→0.40 — derived, not
+just stated).
+Depth tier, secondary and explicit: retrieved prototype's frame →
+banked baseline mean AbsRel (`teacher_baseline_H.json`) vs strata bars
+(`test_strata_marigold.py:34-35`: near/far/planar/smooth 0.09,
+nonplanar 0.08, tex 0.07 — every frame mean 0.20–0.40 misses them all,
+expected, teacher misses its own bars) AND vs the uniform-kill baseline
+operationalized as the random-frame expectation (uniform mean 0.2936 over
+the 8 frames — assoc-memory precedent). Reported alongside retrieval,
+never conflated — retrieval can succeed while depth lags, and that split
+is itself a finding.
+Winner rule: accuracy ≥ bar AND retrieved-depth directionally better
+(>0.05 lower mean AbsRel) than the uniform mean = product alive;
+accuracy at chance = dynamics dead for these prototypes (complete, not a
+failure to tune).
+Ruling: dynamics only (no training, no emitter/opcode/assembly changes,
+no new dependencies — numpy only); banked prototypes read-only
+(recompute-integrity leg, never re-harvest); production weights untouched
+(teacher AND Qwen-7B never loaded — banked data only); CPU-first
+(microsecond dynamics: 600 trials × ≤100 iters × 8×3072 MATMUL ≈
+milliseconds numpy — no GPU need exists, stated pre-run); no downloads.
+Gate: new `tests/test_hopfield_retrieval.py` (CPU-only, seconds):
+prototype-integrity (recomputed from banked harvests), correctness legs
+(per corruption level vs frozen bar), determinism (same query twice
+bit-identical), convergence legs (iters ≤ cap honored), fail-loud legs
+(malformed queries refuse). Neighbors: assoc-memory + prototypes +
+lesion-basin green (read-only reuse — nothing moves underneath).
+
+### Retrieval results (TBD — dynamics land here)
