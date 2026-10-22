@@ -175,6 +175,52 @@ def main():
           R.retrieve(fJ, q)[0] == R.retrieve(fJ, q)[0],
           "joint query twice, identical frame")
 
+    # -- token key (hopfield-tokens round; legs above untouched) ------------
+    tarr = np.load(os.path.join(ROOT, "samples", "marigold",
+                                "hopfield_tokens.npy"))
+    trep = json.load(open(os.path.join(
+        ROOT, "samples", "marigold", "hopfield_tokens.json")))
+    trows = [tuple(x) for x in trep["index_rows"]]
+    want_rows = [(p, f, t) for p in ("transformer_blocks.29",
+                                     "transformer_blocks.59", "norm_out")
+                 for f in ("ai_018_001_fr0000", "ai_018_001_fr0001",
+                           "ai_021_001_fr0000", "ai_021_001_fr0001",
+                           "ai_022_001_fr0000", "ai_022_001_fr0001",
+                           "ai_023_005_fr0000", "ai_023_005_fr0001")
+                 for t in range(0, 1728, 96)]
+    check("assoc-tok-integrity",
+          tarr.shape == (432, 3072) and str(tarr.dtype) == "float16"
+          and bool(np.isfinite(tarr).all()) and trows == want_rows
+          and trep["stride"] == 96,
+          "432x3072 fp16 finite, point/frame/stride-96 index exact")
+    tok_ok, con_ok = True, True
+    for pi, p in enumerate(("transformer_blocks.29",
+                            "transformer_blocks.59", "norm_out")):
+        M64 = tarr[pi * 144:(pi + 1) * 144].astype(np.float64)
+        M64 = M64 / np.linalg.norm(M64, axis=1, keepdims=True)
+        fr = np.array([i // 18 for i in range(144)])
+        G = M64 @ M64.T
+        iu = np.triu_indices(144, 1)
+        cr = fr[iu[0]] != fr[iu[1]]
+        mx, mn = float(G[iu][cr].max()), float(G[iu][cr].mean())
+        full = trep["separability_full"][p]
+        tok_ok &= mx <= full["cross_max"] + 1e-3
+        con_ok &= (full["cross_max"] >= 0.9 or full["cross_mean"] >= 0.5)
+    check("assoc-tok-separability", tok_ok and con_ok,
+          "subset Gram recomputed; full stats fail 0.9/0.5 at all points")
+    rok = trep["battery"] == {}
+    if trep["battery"]:
+        rok &= all(v["accuracy"] >= v["bar"]
+                   for v in trep["battery"].values())
+    check("assoc-tok-battery", rok, "none earned (dead, no runs — stated)")
+    check("assoc-tok-determinism",
+          all(v == 0.0 for v in trep["determinism_maxabs"].values()),
+          "frame0 x2 maxabs 0.0 all points")
+    check("assoc-tok-checksums",
+          trep["sha256"]["pre"] == trep["sha256"]["post"]
+          and len(trep["sha256"]["pre"]) == 7,
+          "7 weight files, pre==post")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 
