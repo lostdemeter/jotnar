@@ -1,0 +1,132 @@
+{
+ "points": [
+  "transformer_blocks.29",
+  "transformer_blocks.59",
+  "norm_out"
+ ],
+ "frames": [
+  "ai_018_001_fr0000",
+  "ai_018_001_fr0001",
+  "ai_021_001_fr0000",
+  "ai_021_001_fr0001",
+  "ai_022_001_fr0000",
+  "ai_022_001_fr0001",
+  "ai_023_005_fr0000",
+  "ai_023_005_fr0001"
+ ],
+ "beta": 1.0,
+ "maxit": 100,
+ "tol": 1e-06,
+ "report": {
+  "transformer_blocks.29": {
+   "levels": {
+    "0.0": {
+     "hit": 5,
+     "tot": 40
+    },
+    "0.01": {
+     "hit": 5,
+     "tot": 40
+    },
+    "0.05": {
+     "hit": 5,
+     "tot": 40
+    },
+    "0.1": {
+     "hit": 5,
+     "tot": 40
+    },
+    "0.2": {
+     "hit": 5,
+     "tot": 40
+    }
+   },
+   "accuracy": 0.125,
+   "trials": 200,
+   "chance": 0.125,
+   "bar": 0.25,
+   "loo_accuracy": 1.0,
+   "loo_chance": 0.14285714285714285,
+   "converged_frac": 1.0,
+   "max_iters": 4,
+   "retrieved_depth": 0.33338824416674767,
+   "uniform_mean": 0.2936402447484711,
+   "depth_delta": -0.03974799941827656
+  },
+  "transformer_blocks.59": {
+   "levels": {
+    "0.0": {
+     "hit": 5,
+     "tot": 40
+    },
+    "0.01": {
+     "hit": 5,
+     "tot": 40
+    },
+    "0.05": {
+     "hit": 5,
+     "tot": 40
+    },
+    "0.1": {
+     "hit": 5,
+     "tot": 40
+    },
+    "0.2": {
+     "hit": 5,
+     "tot": 40
+    }
+   },
+   "accuracy": 0.125,
+   "trials": 200,
+   "chance": 0.125,
+   "bar": 0.25,
+   "loo_accuracy": 1.0,
+   "loo_chance": 0.14285714285714285,
+   "converged_frac": 1.0,
+   "max_iters": 2,
+   "retrieved_depth": 0.33338824416674767,
+   "uniform_mean": 0.2936402447484711,
+   "depth_delta": -0.03974799941827656
+  },
+  "norm_out": {
+   "levels": {
+    "0.0": {
+     "hit": 5,
+     "tot": 40
+    },
+    "0.01": {
+     "hit": 5,
+     "tot": 40
+    },
+    "0.05": {
+     "hit": 5,
+     "tot": 40
+    },
+    "0.1": {
+     "hit": 5,
+     "tot": 40
+    },
+    "0.2": {
+     "hit": 5,
+     "tot": 40
+    }
+   },
+   "accuracy": 0.125,
+   "trials": 200,
+   "chance": 0.125,
+   "bar": 0.25,
+   "loo_accuracy": 1.0,
+   "loo_chance": 0.14285714285714285,
+   "converged_frac": 1.0,
+   "max_iters": 4,
+   "retrieved_depth": 0.33338824416674767,
+   "uniform_mean": 0.2936402447484711,
+   "depth_delta": -0.03974799941827656
+  }
+ },
+ "verdicts": {
+  "transformer_blocks.29": "dead",
+  "transformer_blocks.59": "dead",
+  "norm_out": "dead"
+ }
+}
