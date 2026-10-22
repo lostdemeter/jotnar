@@ -546,3 +546,85 @@ bug — symmetry + covariance diagnostics clear it; the failure is the
 geometry). Gaps named: joint-24 memory, β-sweep (explicit inheritors);
 PCA-whitening (rotation-arbitrary — NOT a loophole, it scrambles the
 frame identity the queries rely on, stated not run).
+
+## Hopfield follow-ups — β-sweep + joint-24 memory, CPU-only (constitution, FROZEN pre-run)
+
+Two inheritors from the separable round, both frozen pre-run. Analysis
+only (numpy; no training, no emitter/opcode/assembly changes, no new
+dependencies; banked prototypes read-only, never re-harvested;
+teacher AND Qwen-7B never loaded — banked data only; CPU-only —
+microsecond dynamics, no GPU need exists, stated pre-run; no downloads).
+(1) β-sweep: grid ADOPTED as {0.1, 0.5, 2, 5, 10} with reason —
+decade-span both sides of the frozen β=1 (0.1 soft-averaging → 10
+near-argmax dynamics; 0.5/2/5 fill the shoulders) — then frozen.
+Rerun the frozen 600-trial battery per β on the three per-point
+8-pattern memories (same queries/seeds/levels, same cap 100 + Δ<1e-6;
+non-convergence reported per β, not hidden). Winner = any (β, point)
+cell with accuracy above the frozen 0.25 bar (chance 0.125 unchanged).
+(2) Joint-24 memory: all 24 banked patterns in ONE store (3 points × 8
+frames — the untested construction vs per-point memories), retrieval
+battery rerun as-is with one frozen adaptation: queries per
+(frame, level, seed) from EACH point's pattern (3 origins × 8 × 5 × 5 =
+600 trials); correct = winner's FRAME == query frame regardless of
+point (any of the frame's 3 copies counts). Chance 3/24 = 1/8 = 0.125
+(24 stored, 3 correct-copies — derived); bar stays 0.25; LOO
+diagnostic same-scene (chance 1/23 ≈ 0.043 — 23 stored others, 1
+sibling... wait: 24-store LOO excludes the query copy, 23 remain, 1
+same-scene sibling → 1/23 — derived, diagnostic, no bar).
+Token-level EXPLICITLY excluded (needs re-harvest with GPU teacher runs
+— separate round with its own constitution, not smuggled in here).
+Empty on both (neither clears 0.25) is complete — the Hopfield arc
+closes with the hierarchy intact.
+Gate: EXTEND `tests/test_assoc_memory.py` in place (β-sweep legs:
+per-β accuracy table vs frozen bar; joint-24 legs: schema + accuracy vs
+bar + determinism; same integrity shape as established; existing legs
+untouched). Neighbors: assoc + prototypes + lesion-basin green.
+(NOTE, caught pre-run while writing this: the LOO chance above first
+read 1/7 — corrected to 1/23 before any computation; the per-point
+1/7 stands in its own round. Pre-run corrections are legal;
+post-run ones bounce.)
+
+### Follow-up results (TBD — computation lands here)
+
+### Follow-up results (CPU 0.7s, banked data only)
+
+`python3 scripts/hopfield_followups.py` — empty on both, which is
+complete (the arc closes with the hierarchy intact):
+
+β-sweep (15 cells, frozen battery per point = 200 trials, bar 0.25):
+
+| β | b29 | b59 | norm_out | conv | maxit |
+|---|---|---|---|---|---|
+| 0.1 | 25/200 | 25/200 | 25/200 | 1.000 | 2–3 |
+| 0.5 | 25/200 | 25/200 | 25/200 | 1.000 | 2–4 |
+| 2 | 25/200 | 25/200 | 25/200 | 1.000 | 2–5 |
+| 5 | 25/200 | 25/200 | 25/200 | 1.000 | 2–6 |
+| 10 | 25/200 | 25/200 | 25/200 | 1.000 | 2–7 |
+
+Every cell 0.1250 = chance exactly — β moves NOTHING (soft-averaging
+and near-argmax land on the same single winner, ai_021_001_fr0000 at
+every β — verified; the landscape has one basin, so sharpness is
+irrelevant). Iters grow slightly with β (2→7) but all converge within
+cap — dynamics healthy, separability absent. Winner: none.
+Joint-24 (600 trials, 3 origins × 200): acc = 75/600 = 0.1250 (chance
+3/24 = 0.1250, bar 0.25) — below; LOO same-scene 1.000 (chance 1/23 ≈
+0.043, diagnostic); conv 1.000, maxit 14. Winner frame again
+ai_021_001_fr0000, specifically its b59 copy all 600 times (the
+tightest clump member, cosine 1.0000 — more copies of the same clump
+don't help). Winner: none.
+Verdicts: **β-sweep empty, joint-24 empty — both inheritors complete.**
+The Hopfield arc closes: 6-dim died of capacity → 3072-dim of
+separability → separability survives whitening/centering/contrast →
+sharpness and pooling-scale change nothing. Remaining holder, named
+explicitly: token-level (needs re-harvest + GPU teacher runs — its own
+round, its own constitution).
+Gate: `tests/test_assoc_memory.py` extended in place (assoc-fol-*
+key: 15 sweep cells recomputed == banked, joint recomputed == banked,
+joint determinism; all 13 pre-existing legs untouched and green).
+Neighbors: assoc + prototypes + lesion-basin green (read-only reuse).
+Bugs caught: one MINE in the gate draft (asserted sweep hits == 75/600
+— the frozen battery is 200/point, 600 only across points/origins;
+banked accuracies were correct throughout, 25/200 = 75/600 = 0.125 —
+caught by the gate failing LOUD, fixed, rerun green). Gaps named:
+token-level (explicit next holder); joint-24 LOO depth tier (moot at
+chance, reported not run up).

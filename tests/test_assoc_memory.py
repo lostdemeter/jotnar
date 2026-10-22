@@ -137,6 +137,44 @@ def main():
     check("assoc-sep-reruns", rok,
           "none earned (vacuous); any clearing construction must beat 0.25")
 
+    # -- follow-ups key (hopfield-followups round; legs above untouched) ----
+    import hopfield_followups as F
+    import hopfield_retrieval as R
+    fids, fX = R.load_prototypes()
+    fXn = {p: fX[p] / np.linalg.norm(fX[p], axis=1, keepdims=True)
+           for p in R.POINTS}
+    fol = json.load(open(os.path.join(
+        ROOT, "samples", "marigold", "hopfield_followups.json")))
+    sweep_ok = True
+    for beta in F.BETAS:
+        for p in R.POINTS:
+            hit = sum(
+                fids[R.retrieve(
+                    fXn[p], R.corrupt(fXn[p][fi], fl, s, li),
+                    beta=beta)[0]] == fids[fi]
+                for li, fl in enumerate(R.LEVELS)
+                for fi in range(len(fids)) for s in R.SEEDS)
+            b = fol["sweep"][f"{p}:b={beta}"]
+            sweep_ok &= (b["accuracy"] == hit / 200 and hit == 25
+                         and not b["clears"])
+    check("assoc-fol-beta", sweep_ok and fol["betas"] == list(F.BETAS),
+          "15 cells recomputed == banked, all 25/200=0.125 below 0.25")
+    fJ = np.array([fXn[p] for p in R.POINTS]).reshape(-1, 3072)
+    jhit = sum(
+        (R.retrieve(fJ, R.corrupt(fJ[oi * 8 + fi], fl, s, li))[0] % 8) == fi
+        for oi in range(3) for li, fl in enumerate(R.LEVELS)
+        for fi in range(len(fids)) for s in R.SEEDS)
+    j = fol["joint"]
+    check("assoc-fol-joint",
+          j["patterns"] == 24 and j["trials"] == 600
+          and j["accuracy"] == jhit / 600 == 0.125
+          and abs(j["chance"] - 3 / 24) < 1e-12 and not j["clears"],
+          f"joint-24 recomputed {jhit}/600=0.125 below 0.25")
+    q = R.corrupt(fJ[0], 0.1, 1, 2)
+    check("assoc-fol-determinism",
+          R.retrieve(fJ, q)[0] == R.retrieve(fJ, q)[0],
+          "joint query twice, identical frame")
+
     print("RESULT:", "ALL OK" if not FAIL else f"FAILURES: {FAIL}")
     sys.exit(1 if FAIL else 0)
 
