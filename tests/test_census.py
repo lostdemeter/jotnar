@@ -3,7 +3,7 @@
 The census maps producer/consumer/fan-out per stream + access class per op,
 statically (zero execution). Gates: planted sharing recovered exactly,
 sharing-free control reports empty (tripwire against wallpaper censuses),
-ACCESS covers all 42 mnemonics (drift-proof like asm-lang-coverage), and
+ACCESS covers all 63 mnemonics (drift-proof like asm-lang-coverage), and
 the two production listings pin their real access maps (reuse made
 visible: flagship A fan-out 3, xf_block XN fan-out 3).
 Usage: python3 tests/test_census.py

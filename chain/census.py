@@ -23,6 +23,9 @@ ACCESS = {
     "SILU": "elementwise", "GELU": "elementwise", "CLIP": "elementwise",
     "PRELU": "elementwise", "SQRT": "elementwise", "STATIC": "elementwise",
     "GT": "elementwise",
+    "IADD": "elementwise", "ISUB": "elementwise", "IMUL": "elementwise",
+    "IMAD": "elementwise", "IDIV": "elementwise", "IMOD": "elementwise",
+    "F2I": "elementwise", "I2F": "elementwise",
     "BETA_V5": "elementwise", "SRGB_DECODE": "elementwise",
     "SRGB_ENCODE": "elementwise",
     # recurrence (order-sensitive state threading, one step per listing
@@ -35,6 +38,7 @@ ACCESS = {
     "PERMUTE3": "moves", "CONCAT": "moves", "SLICE": "moves",
     # reindex / selection / expansion
     "GATHER": "gather",
+    "GATHER3": "gather",
     "SCATTER": "gather",
     "SELECT": "select",
     "TOPK": "select",
