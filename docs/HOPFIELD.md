@@ -673,9 +673,11 @@ fixtures on disk suffice).
 Determinism: frame0 harvested twice, per-point max-abs-diff over FULL
 token captures banked (bar exactly 0.0).
 Gate: EXTEND `tests/test_assoc_memory.py` in place (token-bank
-integrity — subset == harvest slices recomputed... from banked subset +
-stats consistency — + separability legs + retrieval legs if earned;
-same shape as established; existing legs untouched). Neighbors: assoc +
+integrity — .npy loads with exact shape/dtype/finite/index-map —
++ separability legs: subset Gram recomputed in-gate vs banked subset
+stats, full-token stats vs frozen bar + retrieval legs if earned
+(full recompute — cheap at 144/point) + determinism evidence +
+checksums; same shape as established; existing legs untouched). Neighbors: assoc +
 prototypes + lesion-basin green (read-only reuse).
 
 ### Token results (TBD — harvest lands here)
