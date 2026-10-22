@@ -2378,3 +2378,67 @@ completed pre-claim (bit-identical table + same 6 cells).
 Executed notes: map regen 20/20 identical (~3 min GPU);
 training ~10 min/arm CPU; primaries guarded+restored
 byte-verified around every run; weights out-of-tree per tag.
+
+## Ordered readout — query-anchored sequential readout (constitution, FROZEN pre-run)
+
+Build + train ONLY what is frozen here (no emitter/opcode/assembly
+changes — gap hit = stop-finding).
+Host frozen: jattn attention, nctx=0 control config (registers round:
+nctx=4 numbed to 1.03, nctx=0 alive at 1.34 — the readout must not
+ride numbness; stated). mscale REJECTED with reason: token-free
+per-pixel MLPs have no sequence to traverse — building one confounds
+host+readout; jattn's stride-32 token grid (21×32=672 tokens) exists,
+so the readout is the ONLY delta. Recipe otherwise verbatim 8k-cos
+(W64/B2/stride32/feat rgb/8000 steps/lr0.01/cosine/seed7/splits
+church+dogs+squirrel+train / geo_webcam_0+1).
+Traversal orders frozen (≤3, exact algorithms — spiral REPLACED with
+reason: spirals smuggle center/region/winding choices; the
+nearest/farthest pair is exact, tie-broken, vectorizable, and inverts
+the information profile = strongest order discriminator; mid-round
+invention voids the round): T1 raster scan (row-major, SHARED order
+for all queries — control traversal: recurrence without anchoring);
+T2 nearest-first from anchor (Euclidean grid distance, ties → lower
+raster index); T3 farthest-first from anchor (ties → lower raster
+index; anchor-last profile). Precomputed 672×672 long maps, banked
+by algorithm (recomputed in gate from dims).
+Readout frozen: discounted-summary recurrence along traversal —
+S^{(i)} = Σ_k w_k·x_{π_i(k)}, w_k = α^{671−k}, α = sigmoid(a) learned
+scalar (init a=2 → α≈0.88), then linear B 64→64 + bias (init
+1/√64 Gaussian, seed-7 stream AFTER all host draws — init-order
+discipline, dino_proj precedent — stated). Elman rejected with reason:
+672×672 nonlinear recurrence ≈ 60× base wall (measured estimate
+~6h/arm); linear recurrence keeps full order-sensitivity at +5% wall.
+Per-op citations (all tabled): MATMUL (`README` row for B/A/projs),
+MUL (weights), ADD (bias/accumulate), GATHER (ordering); head
+UNCHANGED (h1/h2, same init order — body init bit-identical to
+control); ordering precompute host-side Python (sampling-on-host
+precedent). New machinery (RNN state α/B) DECLARED here, never
+smuggled. Gap check: none — op-clean (stated).
+Query definition frozen: PER-TOKEN queries (anchor = token's own grid
+cell; 672 queries/frame); prediction for the anchor's stride-32 cell
+via the unchanged head + pidx. α interpolates last-token (→0) to
+mean-pool (→1) — banked per arm as diagnostic (which regime wins).
+Winner rule — primary: arm mean_rel@p16 (36 cells, seed 7, probe
+metric verbatim) ≥ control 1.3382 (must move UP-or-hold — numbness-down
+fails explicitly) AND ≥ 1.0 teacher-scale floor (continuity with the
+registers bar). Secondary: held-out pass ≥ 0/12 AND held-out mean ≤
+0.4042×1.05 = 0.4244 (control mean, dissociation lesson). Winner =
+highest p16 among arms clearing both; retrain-match before claimed
+(same flags, distinct tag; cells within abs 0.05 + means within 5% —
+GPU same-model ceiling, stated; report exact). Empty (robustness
+flat-or-down, bars flat-or-worse) is complete.
+Ruling: readout + training only; weights out-of-tree
+(`~/student_runs/ordered-{raster,near,far}[/-retrain]/`, metrics +
+configs banked separately in `samples/marigold/ordered_readout.json`,
+primaries untouched); production weights untouched (teacher AND Qwen-7B
+never loaded — fixtures suffice); GPU box to itself, arms sequential
+(nvidia-smi pre-run stated; per-arm wall cap 30 min, expected ~8 min);
+no downloads; no new dependencies (marigold-env, CLEAN env).
+Gate: EXTEND the strata gate surface in place (new battery key: schema
++ winner/bars verdicts recomputed) AND the shuffle-probe gate
+(robustness legs recomputed from banked numbers — same ~1.2 criterion,
+direction asserted UP: below-control fails explicitly; existing legs
+untouched). Neighbors: teacher, strata, shuffle green (nothing moves
+underneath).
+
+### Ordered-readout results (TBD — training lands here)
