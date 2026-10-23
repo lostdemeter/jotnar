@@ -63,7 +63,7 @@ python3 tests/test_asm.py tests/test_census.py tests/test_topk.py \
   tests/test_xf_block.py tests/test_stabilize.py tests/test_emit.py \
   tests/test_emit_cuda.py tests/test_emit_nonfpu.py tests/test_emit_headt.py \
   tests/test_emit_widths.py tests/test_builder_block.py tests/test_serve.py \
-  tests/test_serve_c.py tests/test_img_demo.py
+  tests/test_serve_c.py tests/test_codec_c.py tests/test_img_demo.py
 python3 tests/test_decode.py tests/test_prefill.py      # serve path, GPU + snapshot
 python3 tests/test_sparse.py tests/test_resident.py     # sparse + resident, GPU + snapshot
 python3 tests/test_qwen7b_depth.py tests/test_cross_width.py  # scale pins, slow, SKIP-gated
@@ -73,6 +73,29 @@ python3 tests/test_qwen7b_depth.py tests/test_cross_width.py  # scale pins, slow
 (`gsl/gsl_cblas.h`) — pre-existing, environmental, not a code failure.
 Serve tests SKIP without the snapshot/GPU; CUDA legs SKIP without nvcc.
 `tests/test_serve_c.py` is the CPU-only residency gate (no GPU needed).
+`tests/test_codec_c.py` is the CPU-only codec-ABI gate (no GPU needed).
+
+## Codec mode
+
+`compile_program(..., mode="codec")` emits a small in-process codec ABI for
+fully static F/I programs:
+
+```c
+JotnarCodec *jotnar_codec_create(void);
+int jotnar_codec_bind(JotnarCodec *c, const char *name,
+                      void *data, size_t bytes, int mode);
+int jotnar_codec_step(JotnarCodec *c);
+void jotnar_codec_destroy(JotnarCodec *c);
+```
+
+Bindings are frozen-read (`0`), live-read-write (`1`), or
+output-write (`2`). `live=[...]` names the read-write bindings; all other
+non-const inputs are read-only; intermediates are allocated once in
+`create`. The contract is deliberately narrow — F/I only, fully static
+shapes, no T/dynamic/graph/pack — so the ABI stays boring. Use
+`build_shared` to compile it, or run `tests/test_codec_c.py` for the
+one-shot parity and loud bind failures. This is the seed for host codecs;
+the same lowering can be emitted for CUDA and non-FPU later.
 
 ## Demo 1: image pipeline (seconds, all three backends)
 
