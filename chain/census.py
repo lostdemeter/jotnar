@@ -36,6 +36,7 @@ ACCESS = {
     # exact moves (no arithmetic)
     "TRANSPOSE": "moves", "RESHAPE2": "moves", "RESHAPE3": "moves",
     "PERMUTE3": "moves", "CONCAT": "moves", "SLICE": "moves",
+    "IWINDOW": "moves",
     # reindex / selection / expansion
     "GATHER": "gather",
     "GATHER3": "gather",

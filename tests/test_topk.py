@@ -4,8 +4,9 @@ Sparse-attention primitive (phase 1): scores (R,S) -> (vals (R,k),
 idx (R,k) int64), k int literal, ties-first deterministic. Gates:
 lattice-ref vs torch (values 0-diff, indices gather-valid), ties
 fixture, k=S identity, k=1 == argmax, k>S/k=0/1D/T fail loud,
-builder tuple-out roundtrip, CUDA vs lattice 0-diff (SKIPs without
-nvcc/GPU), C + non-FPU refuse loud (contract).
+builder tuple-out roundtrip, C vs lattice 0-diff (values + ties-first
+indices), non-FPU refuses loud, CUDA vs lattice 0-diff (SKIPs without
+nvcc/GPU).
 Usage: python3 tests/test_topk.py
 """
 import os
@@ -95,16 +96,50 @@ def main():
     check("topk-run", bool((got["TV"] == v).all())
           and bool((got["TI"] == ix).all()), "run_text matches ref")
 
-    # -- backend refusal contract --------------------------------------
-    from chain.emit_c import CBackend, NoPattern
+    # -- C backend: exact values + ties-first indices -----------------
+    from chain.emit_c import NoPattern, build, compile_program
     from chain.emit_nonfpu import NonFPUBackend
-    for be, tag in ((CBackend(), "c"), (NonFPUBackend(), "nonfpu")):
-        try:
-            be.pattern("TOPK", ["TV", "TI"], ["X", str(K)], None,
-                       {"streams": {}, "config": {}, "ids_n": "1"})
-            check(f"topk-{tag}-refuses", False, "no raise")
-        except NoPattern:
-            check(f"topk-{tag}-refuses", True, "")
+    work = "/tmp/topk_c"
+    os.makedirs(work, exist_ok=True)
+    sdir = os.path.join(ROOT, "programs")
+    art = compile_program(t, "c", sample={"X": X},
+                          outputs=["TV", "TI"], basedir=sdir)
+    exe = build(art["source"], work, name="topk")
+    fx = os.path.join(work, "x.bin")
+    fv = os.path.join(work, "tv.bin")
+    fi = os.path.join(work, "ti.bin")
+    X.tofile(fx)
+    r = subprocess.run([exe, fx, fv, fi], capture_output=True, text=True)
+    check("topk-c-run", r.returncode == 0, r.stderr[:200])
+    if r.returncode == 0:
+        dv = np.fromfile(fv, dtype=np.float64).reshape(R, K)
+        di = np.fromfile(fi, dtype=np.int64).reshape(R, K)
+        check("topk-c-vals", bool((dv == v).all()),
+              f"maxabs={np.abs(dv - v).max():.2e}")
+        check("topk-c-idx", bool((di == ix).all()),
+              "C indices match lattice (ties-first)")
+
+    # Ties fixture: C selection order must equal lattice stable order.
+    tt = "IN X\nTV, TI = TOPK(X, 3)\n"
+    artt = compile_program(tt, "c", sample={"X": T},
+                           outputs=["TV", "TI"], basedir=sdir)
+    exet = build(artt["source"], work, name="topkt")
+    T.tofile(fx)
+    r = subprocess.run([exet, fx, fv, fi], capture_output=True, text=True)
+    check("topk-c-ties-run", r.returncode == 0, r.stderr[:200])
+    if r.returncode == 0:
+        dtv = np.fromfile(fv, dtype=np.float64).reshape(3, 3)
+        dti = np.fromfile(fi, dtype=np.int64).reshape(3, 3)
+        check("topk-c-ties", bool((dti == tix).all())
+              and bool((dtv == tv).all()), f"{dti.tolist()}")
+
+    # -- non-FPU refusal contract (integer-only target) ----------------
+    try:
+        NonFPUBackend().pattern("TOPK", ["TV", "TI"], ["X", str(K)], None,
+                                {"streams": {}, "config": {}, "ids_n": "1"})
+        check("topk-nonfpu-refuses", False, "no raise")
+    except NoPattern:
+        check("topk-nonfpu-refuses", True, "")
 
     # -- CUDA vs lattice -----------------------------------------------
     import torch as _t

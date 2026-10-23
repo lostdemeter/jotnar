@@ -1,14 +1,17 @@
 """Persistent-binary driver: weights-load-once, steps in-process.
 
-The loop binaries emitted with live=[...] (chain/emit_cuda.compile_cuda)
-read frozen inputs once, then serve steps: host rewrites the live files,
-sends a line on stdin, waits for READY on stdout, reads the outputs.
-Protocol failures (crash, EOF, timeout, missing READY) raise loudly
-with the stderr tail -- never silent wrong bytes.
+The loop binaries emitted with live=[...] (chain/emit_cuda.compile_cuda
+or chain/emit_c.compile_program(..., target="c")) read frozen inputs
+once, then serve steps: host rewrites the live files, sends a line on
+stdin, waits for READY on stdout, reads the outputs. Protocol failures
+(crash, EOF, timeout, missing READY) raise loudly with the stderr tail
+-- never silent wrong bytes.
 
 Timeouts: first READY covers the full weight load (default 900s);
 steps default 600s. Fixed-shape contract: live files keep their byte
-size across steps (re-malloc never happens in-loop).
+size across steps (re-malloc never happens in-loop). C serve binaries
+may additionally pack all output streams into one argv file per step
+(pack_outputs=True), removing the per-position output-file tax.
 """
 import os
 import subprocess

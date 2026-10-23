@@ -29,7 +29,8 @@ from chain.emit_c import Backend, CBackend, NoPattern
 
 INTEGER_MN = {"GATHER", "GATHER3", "ARGMAX", "TRANSPOSE", "SLICE", "CONCAT",
               "SELECT", "GT",
-              "IADD", "ISUB", "IMUL", "IMAD", "IDIV", "IMOD", "F2I", "I2F",
+              "IADD", "ISUB", "IMUL", "IMAD", "IDIV", "IMOD", "IWINDOW",
+              "F2I", "I2F",
               "MUL", "ADD", "SUB", "SQUARE", "MATMUL", "BATCH_MATMUL",
               "RMSNORM", "TSHIFT", "SOFTMAX_WIDE", "SOFTMAX",
               "TBETA", "BETA", "ROTARY", "SILU"}

@@ -182,6 +182,7 @@ loud-failure. Arithmetic core (`ADD SUB MUL DIV`) refuses float inputs
 - `PERMUTE3(*,s,s,s -> *)` — axis reorder, must be a permutation of (0,1,2) on 3D. Ex: `P = PERMUTE3(H3, 1, 0, 2)`.
 - `CONCAT($A,$A,F:SCALAR -> $A)` — concatenate along an axis literal; non-axis dims must match. Ex: `C = CONCAT(cache, row, 0)`.
 - `SLICE($A,s,s,s -> $A)` — `SLICE(X, AXIS, START, END)` half-open, bounds-checked (no silent clamp). Ex: `W = SLICE(X, 1, 1, 4)`.
+- `IWINDOW(I:1,s,s -> I:1)` — 1D integer window `IWINDOW(X, START, LEN)` half-open `[START, START+LEN)`, integral literals, bounds-checked (no silent clamp). The byte/index primitive for format kernels (fixed-offset field decode) that `SLICE` (2D F/T only) and `GATHER` ((V,C) table) do not cover. C/non-FPU exact. Ex: `b0 = IWINDOW(E, 12, 1)`.
 - `GATHER(*,I:* -> *)` — row gather by int ids (bounds-checked). Ex: `R = GATHER(table, ids)`.
 - `GATHER3(T/F (V1,V2,C), I (N,), I (N,) -> (N,C))` — two-index row gather: `R[n,:] = table[i[n], j[n], :]`, static table outer dims. C/non-FPU bounds-check ids and fail loud; CUDA F path assumes in-range ids at data-prep (same contract as GATHER). Native order-2/trigram primitive: no flattened bank, no host-side context arithmetic. Ex: `ROW = GATHER3(bank, prev, prev2)`.
 - `IADD/ISUB/IMUL(I:*, I:*|int -> I:*)` — exact I-kind elementwise arithmetic with 64-bit two's-complement wrap (unsigned intermediates; two's-complement target assumption, same as the existing int8 path); the second operand is an I stream (same shape, no broadcast) or an integral literal (broadcast). C/CUDA/non-FPU agree bit-for-bit. Ex: `D = ISUB(pos, 1)`.
@@ -196,7 +197,7 @@ loud-failure. Arithmetic core (`ADD SUB MUL DIV`) refuses float inputs
 
 **Reductions / pooling / conv:**
 - `ARGMAX($A,F:SCALAR -> I:*)` — exact lattice ordering WITHOUT decoding (class pos>zero>neg, then exponent); ties -> first; integral axis. Ex: `I = ARGMAX(X, 1)`.
-- `TOPK($A,F:SCALAR -> $A,I:*)` — row-wise top-k over 2D F scores: values + int64 indices, k int literal, ties -> first index (stable). k>S and k>64 fail loud (build-time constant; size k per smax). CUDA-only (C/non-FPU refuse loud). Ex: `TV, TI = TOPK(S, 8)`.
+- `TOPK($A,F:SCALAR -> $A,I:*)` — row-wise top-k over 2D F scores: values + int64 indices, k int literal, ties -> first index (stable). k>S fails loud; CUDA additionally caps k<=64 (kernel slots). C/CUDA emit; non-FPU refuses loud. Ex: `TV, TI = TOPK(S, 8)`.
 - `CLIP($A,s,s -> $A)` — clip to `[LO,HI]` literals. Ex: `C = CLIP(X, -1, 1)`.
 - `SIGMOID($A -> $A)` — EXPACT+LUT, any range, [0,1]. Ex: `S = SIGMOID(X)`.
 - `RESCALE($A,F:SCALAR -> $A)` — THE only scale changer (fixed@m_cov -> `rescale_` to M2 int literal 0..65535). Needed where listings cross m_acc/m_cov. Ex: `Y = RESCALE(X, 33280)`.
