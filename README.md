@@ -173,7 +173,7 @@ lattice node through the same controller. Gate:
 `tests/test_protocol.py` pipe legs (per-layer KV, LOGITS, choice
 bit-exact vs single-node).
 
-## Opcode table (64 mnemonics)
+## Opcode table (65 mnemonics)
 
 Kinds: F float, T lattice-triples, I integer. Backends admit per-kind
 overloads; missing = loud `NoPattern`, never silent.
@@ -205,6 +205,7 @@ overloads; missing = loud `NoPattern`, never silent.
 | F2I | 1 -> 1 | F | F | F | explicit float->int; trunc, range-checked; non-FPU bit-decoded |
 | I2F | 1 -> 1 | I | I | I | explicit int->float; round-to-even; non-FPU bit-built |
 | IWINDOW | 3 -> 1 | I | — | I | 1D integer window [START, START+LEN), integral literals, bounds-checked; byte/index primitive for format kernels (codec EOCD); C/non-FPU exact, CUDA loud NoPattern |
+| IGATHER1 | 2 -> 1 | I | — | I | 1D integer gather OUT[n] = TABLE[IDS[n]], static table length, ids bounds-checked loud (runtime return 4); non-contiguous companion to IWINDOW (xref rows, scattered fields); C/non-FPU exact, CUDA loud NoPattern |
 | GAUSS | 3 -> 1 | — | — | — | parked: drilled in test_asm, no listing/demo/builder workload |
 | GELU | 1 -> 1 | — | — | — | parked: drilled in test_asm, no workload (Qwen uses SILU/SwiGLU) |
 | INTERP | 3 -> 1 | F | F | — | bilinear half-pixel (align_corners=False, audited vs torch; nearest stays shipped degraded default); C `chain/emit_c.py` F64 loop + CUDA `k_interp_bilinear_f32` (`chain/emit_cuda.py`); dyadic-only, parity 333dB C / 156dB CUDA |
@@ -240,7 +241,7 @@ overloads; missing = loud `NoPattern`, never silent.
 | TSHIFT | 1 -> 1 | F | F | T | row-max; fuses into softmax |
 | WARP | 2 -> 1 | — | — | — | lattice-only (stabilize listing runs lattice, no emitted demand) |
 
-Coverage: C 37, CUDA 37, non-FPU 32. Refusal cells are gated
+Coverage: C 38, CUDA 37, non-FPU 33. Refusal cells are gated
 (`test_emit.py` loud-refusal row). Full per-mnemonic contracts with
 examples: `docs/LANGUAGE.md`. Extension recipe: registry row + shape
 rule + one pattern per backend (`chain/backends.py`).
