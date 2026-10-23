@@ -505,6 +505,17 @@ def infer_shapes(bound, sample):
                 raise AsmError(f"{where}: SLICE [{lo},{hi}) of dim {dd[ax]}")
             dd[ax] = hi - lo
             streams[o] = (sk, ssub, tuple(dd))
+        elif mn == "IWINDOW":
+            xk, xsub, xsh = streams[args[0]]
+            lo = _int_lit(args[1], f"{where} start")
+            ln = _int_lit(args[2], f"{where} len")
+            if xk != "I" or len(xsh) != 1:
+                raise NoPattern(f"{where}: IWINDOW handles 1D I")
+            if xsh[0] is not None and not (0 <= lo and 0 <= ln
+                                           and lo + ln <= xsh[0]):
+                raise AsmError(f"{where}: IWINDOW [{lo},{lo + ln}) of "
+                               f"dim {xsh[0]}")
+            streams[o] = ("I", xsub, (ln,))
         elif mn == "ROTARY":
             xk, xsub, xsh = streams[args[0]]
             pk, _, psh = streams[args[1]]
@@ -760,6 +771,23 @@ class CBackend(Backend):
                     f"{w} * sizeof(double));\n}}",
                     (o, str(w)))
             raise NoPattern("GATHER3 table must be T/F")
+        if mn == "IWINDOW":
+            x = args[0]
+            o = outs[0]
+            lo = _int_lit(args[1], "IWINDOW start")
+            ln = _int_lit(args[2], "IWINDOW len")
+            if S[x][0] != "I" or len(S[x][2]) != 1:
+                raise NoPattern("C backend IWINDOW needs 1D I")
+            if o not in ctx["count"]:
+                raise NoPattern(
+                    f"C backend IWINDOW: dynamic output '{o}' "
+                    f"(v0.1 needs a static shape)")
+            co = ctx["count"][o]
+            return (
+                f"/* {o} = IWINDOW({x}, {lo}, {ln}) exact */\n"
+                f"for (int64_t e_i = 0; e_i < {co}; ++e_i)\n"
+                f"  {o}[e_i] = {x}[{lo} + e_i];",
+                None)
         if mn in ("IADD", "ISUB", "IMUL", "IMAD", "IDIV", "IMOD"):
             a = args[0]
             o = outs[0]

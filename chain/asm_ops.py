@@ -930,6 +930,23 @@ def op_slice(vals, config, feeds):
     return np.ascontiguousarray(np.ascontiguousarray(t)[sl])
 
 
+def op_iwindow(vals, config, feeds):
+    """1D integer window: IWINDOW(X, START, LEN) with integral literals on
+    a 1D I vector, half-open [START, START+LEN). Exact move, bounds-checked
+    (fail loud -- silent clamping would hide index bugs). The byte/index
+    primitive for format kernels (fixed-offset field decode); it fills the
+    1D-I gap that SLICE (2D F/T only) and GATHER ((V,C) table) leave open."""
+    x = _int_stream(vals[0], "IWINDOW", "X")
+    start = _int_arg(vals[1], "IWINDOW start")
+    length = _int_arg(vals[2], "IWINDOW len")
+    if x.ndim != 1:
+        raise ValueError(f"IWINDOW: expected 1D I, got shape {x.shape}")
+    if start < 0 or length < 0 or start + length > x.shape[0]:
+        raise ValueError(
+            f"IWINDOW: [{start},{start + length}) out of range {x.shape[0]}")
+    return np.ascontiguousarray(x[start:start + length])
+
+
 def op_clip(vals, config, feeds):
     """Clip triples to [LO,HI] float literals (holo clip_fixed). Exact
     lattice compare, no float arithmetic on values."""
@@ -1160,6 +1177,7 @@ REGISTRY = {
     "TOPK": (op_topk, 2, 2),
     "GT": (op_gt, 2, 1),
     "SLICE": (op_slice, 4, 1),
+    "IWINDOW": (op_iwindow, 3, 1),
     "CLIP": (op_clip, 3, 1),
     "DIV": (op_div, 2, 1),
     "SIGMOID": (op_sigmoid, 1, 1),
@@ -1232,6 +1250,7 @@ SIGS = {
     "TOPK": (["$A", "F:SCALAR"], ["$A", "I:*"]),
     "GT": (["$A", "$A"], ["I:*"]),
     "SLICE": (["$A", "F:SCALAR", "F:SCALAR", "F:SCALAR"], ["$A"]),
+    "IWINDOW": (["I:*", "F:SCALAR", "F:SCALAR"], ["I:*"]),
     "CLIP": (["$A", "F:SCALAR", "F:SCALAR"], ["$A"]),
     "DIV": (["$A", "$A"], ["$A"]),
     "SIGMOID": (["$A"], ["$A"]),
