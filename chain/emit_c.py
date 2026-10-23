@@ -516,6 +516,14 @@ def infer_shapes(bound, sample):
                 raise AsmError(f"{where}: IWINDOW [{lo},{lo + ln}) of "
                                f"dim {xsh[0]}")
             streams[o] = ("I", xsub, (ln,))
+        elif mn == "IGATHER1":
+            tk, tsub, tsh = streams[args[0]]
+            ik, _, ish = streams[args[1]]
+            if tk != "I" or len(tsh) != 1:
+                raise NoPattern(f"{where}: IGATHER1 needs a 1D I table")
+            if ik != "I" or len(ish) != 1:
+                raise NoPattern(f"{where}: IGATHER1 needs 1D I ids")
+            streams[o] = ("I", tsub, (ish[0],))
         elif mn == "ROTARY":
             xk, xsub, xsh = streams[args[0]]
             pk, _, psh = streams[args[1]]
@@ -787,6 +795,30 @@ class CBackend(Backend):
                 f"/* {o} = IWINDOW({x}, {lo}, {ln}) exact */\n"
                 f"for (int64_t e_i = 0; e_i < {co}; ++e_i)\n"
                 f"  {o}[e_i] = {x}[{lo} + e_i];",
+                None)
+        if mn == "IGATHER1":
+            t, ids = args
+            o = outs[0]
+            if S[t][0] != "I" or len(S[t][2]) != 1:
+                raise NoPattern("C backend IGATHER1 needs a 1D I table")
+            if S[ids][0] != "I" or len(S[ids][2]) != 1:
+                raise NoPattern("C backend IGATHER1 needs 1D I ids")
+            vN = S[t][2][0]
+            if vN is None:
+                raise NoPattern("C backend IGATHER1: table length must be "
+                                "static (bounds check)")
+            if o not in ctx["count"]:
+                raise NoPattern(
+                    f"C backend IGATHER1: dynamic output '{o}' "
+                    f"(v0.1 needs a static shape)")
+            co = ctx["count"][o]
+            return (
+                f"/* {o} = IGATHER1({t}, {ids}) exact, bounds-checked */\n"
+                f"for (int64_t g_i = 0; g_i < {co}; ++g_i) {{\n"
+                f"  int64_t _b = {ids}[g_i];\n"
+                f"  if (_b < 0 || _b >= {vN}) return 4;\n"
+                f"  {o}[g_i] = {t}[_b];\n"
+                f"}}",
                 None)
         if mn in ("IADD", "ISUB", "IMUL", "IMAD", "IDIV", "IMOD"):
             a = args[0]
