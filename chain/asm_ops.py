@@ -947,6 +947,25 @@ def op_iwindow(vals, config, feeds):
     return np.ascontiguousarray(x[start:start + length])
 
 
+def op_igather1(vals, config, feeds):
+    """1D integer gather: IGATHER1(table, ids) -> table[ids], exact and
+    bounds-checked loud. Both operands are 1D I; the output has the ids
+    shape. The non-contiguous companion to IWINDOW: format kernels read
+    entries at arbitrary offsets (xref rows, scattered header fields)
+    without flattening or a (V,C) table."""
+    table = _int_stream(vals[0], "IGATHER1", "table")
+    ids = _int_stream(vals[1], "IGATHER1", "ids")
+    if table.ndim != 1:
+        raise ValueError(
+            f"IGATHER1: table must be 1D I, got shape {table.shape}")
+    if ids.ndim != 1:
+        raise ValueError(f"IGATHER1: ids must be 1D I, got shape {ids.shape}")
+    if ids.size and (int(ids.min()) < 0 or int(ids.max()) >= table.shape[0]):
+        raise ValueError(
+            f"IGATHER1: ids out of range [0,{table.shape[0]})")
+    return np.ascontiguousarray(table[ids])
+
+
 def op_clip(vals, config, feeds):
     """Clip triples to [LO,HI] float literals (holo clip_fixed). Exact
     lattice compare, no float arithmetic on values."""
@@ -1184,6 +1203,7 @@ REGISTRY = {
     "RESCALE": (op_rescale, 2, 1),
     "GATHER": (op_gather, 2, 1),
     "GATHER3": (op_gather3, 3, 1),
+    "IGATHER1": (op_igather1, 2, 1),
     "SCATTER": (op_scatter, 3, 1),
     "PRELU": (op_prelu, 2, 1),
     "POOLAVG": (op_poolavg, 1, 1),
@@ -1257,6 +1277,7 @@ SIGS = {
     "RESCALE": (["$A", "F:SCALAR"], ["$A"]),
     "GATHER": (["*", "I:*"], ["*"]),
     "GATHER3": (["*", "I:*", "I:*"], ["*"]),
+    "IGATHER1": (["I:*", "I:*"], ["I:*"]),
     "SCATTER": (["$A", "$A", "I:*"], ["$A"]),
     "PRELU": (["$A", "$A"], ["$A"]),
     "POOLAVG": (["*"], ["*"]),

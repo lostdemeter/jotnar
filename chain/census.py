@@ -36,10 +36,11 @@ ACCESS = {
     # exact moves (no arithmetic)
     "TRANSPOSE": "moves", "RESHAPE2": "moves", "RESHAPE3": "moves",
     "PERMUTE3": "moves", "CONCAT": "moves", "SLICE": "moves",
-    "IWINDOW": "moves",
+    "IWINDOW": "moves",   # exact 1D window; gate: tests/test_iwindow.py
     # reindex / selection / expansion
     "GATHER": "gather",
     "GATHER3": "gather",
+    "IGATHER1": "gather",  # exact 1D table read; gate: tests/test_igather1.py
     "SCATTER": "gather",
     "SELECT": "select",
     "TOPK": "select",
