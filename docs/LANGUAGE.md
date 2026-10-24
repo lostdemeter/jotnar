@@ -189,6 +189,23 @@ loud-failure. Arithmetic core (`ADD SUB MUL DIV`) refuses float inputs
 - `IASSEMBLE(I (V,),s,s -> I (1,))` — little-endian field assembly `IASSEMBLE(X, START, LEN)` = `sum((X[START+i] & 0xFF) << (8*i))`, LEN 1..8 (8 yields the int64 two's-complement value), bounds-checked. The reduce/combine member of the byte-index family: one op instead of N windows + `IMUL`/`IADD`. C/non-FPU exact. Ex: `sz = IASSEMBLE(E, 12, 4)`.
 - `ISUM(I (V,),s,s -> I (1,))` — integer window sum `ISUM(X, START, LEN)`, bounds-checked; for checksum folding / byte totals. C/non-FPU exact. Ex: `t = ISUM(E, 0, 4)`.
 - `ISCATTER1(I (V,), I (N,), I (N,) -> I (V,))` — 1D scatter write on a copy of OUT: `OUT[IDS[n]] = VALS[n]`; IDS/VALS equal length, ids bounds-checked loud (runtime `return 4`). The place/scatter member for header rebuild (`SCATTER` is F-only 2D). C/non-FPU exact. Ex: `H = ISCATTER1(H0, OFF, V)`.
+
+**Windowing rule (Q6).** Windowing is split by **rank**, not by one general
+op: rank-1 integer streams use `IWINDOW` (the non-FPU byte path); rank-≥2
+`F`/`T` streams use `SLICE`. `SLICE` is deliberately *not* extended to 1D
+`I`, and 1D-`I`/2D-`I` slices are not provided — this keeps the byte path
+exact and loud and keeps a dtype/rank branch out of the hot general op.
+The compiler errors point across: `SLICE` on 1D `I` says "use IWINDOW for
+1D I"; `IWINDOW` on rank ≥2 says "use SLICE for 2D+ F/T".
+
+| byte-index op | rank/dtype | class | C | non-FPU | CUDA | gate |
+|---|---|---|---|---|---|---|
+| `IWINDOW` | 1D `I` window | moves | yes | yes | refuse loud | `tests/test_iwindow.py` |
+| `IGATHER1` | 1D `I` gather | gather | yes | yes | refuse loud | `tests/test_igather1.py` |
+| `IASSEMBLE` | 1D `I` → `I(1,)` LE | reduce | yes | yes | refuse loud | `tests/test_ibyte.py` |
+| `ISUM` | 1D `I` → `I(1,)` sum | reduce | yes | yes | refuse loud | `tests/test_ibyte.py` |
+| `ISCATTER1` | 1D `I` scatter write | gather | yes | yes | refuse loud | `tests/test_ibyte.py` |
+
 - `IADD/ISUB/IMUL(I:*, I:*|int -> I:*)` — exact I-kind elementwise arithmetic with 64-bit two's-complement wrap (unsigned intermediates; two's-complement target assumption, same as the existing int8 path); the second operand is an I stream (same shape, no broadcast) or an integral literal (broadcast). C/CUDA/non-FPU agree bit-for-bit. Ex: `D = ISUB(pos, 1)`.
 - `IMAD(I:*, I:*|int, I:*|int -> I:*)` — exact fused multiply-add `a*b+c`, same wrap/scalar contract. The n-gram context primitive: `CTX = IMAD(prev, 256, prev2)`. Ex: `CTX = IMAD(prev, 256, prev2)`, then `ROW = GATHER(bank, CTX)`. Or use `GATHER3` and skip the flattening entirely.
 - `IDIV/IMOD(I:*, I:*|int -> I:*)` — exact C-style truncating divide/remainder (quotient toward zero; remainder sign follows the dividend). Zero divisors and the one unrepresentable pair `INT64_MIN / -1` fail loud in the reference and every emitted backend (C returns rc 30; CUDA checks device-side and returns rc 30 after a host sync). Scalar literals broadcast, streams must match. C/CUDA/non-FPU agree bit-for-bit. Ex: `Q = IDIV(pos, 2)`.
