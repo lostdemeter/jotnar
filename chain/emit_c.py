@@ -499,7 +499,8 @@ def infer_shapes(bound, sample):
             lo = _int_lit(args[2], f"{where} lo")
             hi = _int_lit(args[3], f"{where} hi")
             if sk not in ("F", "T") or len(ssh) != 2 or ax not in (0, 1):
-                raise NoPattern(f"{where}: v0.2 SLICE handles 2D ax0/1 F/T")
+                raise NoPattern(f"{where}: v0.2 SLICE handles 2D ax0/1 "
+                                f"F/T; use IWINDOW for 1D I")
             dd = list(ssh)
             if dd[ax] is not None and not (0 <= lo <= hi <= dd[ax]):
                 raise AsmError(f"{where}: SLICE [{lo},{hi}) of dim {dd[ax]}")
@@ -510,7 +511,8 @@ def infer_shapes(bound, sample):
             lo = _int_lit(args[1], f"{where} start")
             ln = _int_lit(args[2], f"{where} len")
             if xk != "I" or len(xsh) != 1:
-                raise NoPattern(f"{where}: IWINDOW handles 1D I")
+                raise NoPattern(f"{where}: IWINDOW handles 1D I; "
+                                f"use SLICE for 2D+ F/T")
             if xsh[0] is not None and not (0 <= lo and 0 <= ln
                                            and lo + ln <= xsh[0]):
                 raise AsmError(f"{where}: IWINDOW [{lo},{lo + ln}) of "

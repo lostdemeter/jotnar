@@ -917,6 +917,10 @@ def op_slice(vals, config, feeds):
     end = _int_arg(vals[3], "SLICE end")
     base = t[0] if isinstance(t, tuple) else np.ascontiguousarray(t)
     nd = base.ndim
+    if not isinstance(t, tuple) and nd == 1 \
+            and np.issubdtype(base.dtype, np.integer):
+        raise ValueError(
+            "SLICE: 1D I is not supported; use IWINDOW for 1D I")
     if not (0 <= axis < nd):
         raise ValueError(f"SLICE: bad axis {axis} for ndim {nd}")
     if not (0 <= start <= end <= base.shape[axis]):
