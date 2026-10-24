@@ -975,14 +975,27 @@ def op_slice(vals, config, feeds):
     return np.ascontiguousarray(np.ascontiguousarray(t)[sl])
 
 
+def _iwindow_start(v):
+    """IWINDOW start: an integral literal, or a 1-element I stream (dynamic
+    start). Dynamic starts are bounds-checked at run time (fail loud)."""
+    if hasattr(v, "shape"):
+        a = _int_stream(v, "IWINDOW", "start")
+        if a.size != 1 or a.ndim > 1:
+            raise ValueError(
+                f"IWINDOW: dynamic start must be scalar/1-elem, got {a.shape}")
+        return int(a.reshape(-1)[0])
+    return _int_arg(v, "IWINDOW start")
+
+
 def op_iwindow(vals, config, feeds):
-    """1D integer window: IWINDOW(X, START, LEN) with integral literals on
-    a 1D I vector, half-open [START, START+LEN). Exact move, bounds-checked
-    (fail loud -- silent clamping would hide index bugs). The byte/index
-    primitive for format kernels (fixed-offset field decode); it fills the
-    1D-I gap that SLICE (2D F/T/I) and GATHER ((V,C) table) leave open."""
+    """1D integer window: IWINDOW(X, START, LEN), half-open
+    [START, START+LEN). START is an integral literal or a 1-element I stream
+    (dynamic start, runtime bounds); LEN is a literal (static output shape).
+    Exact move, bounds-checked loud. The byte/index primitive for format
+    kernels (fixed- and data-dependent-offset field decode); fills the 1D-I
+    gap that SLICE (2D F/T/I) and GATHER ((V,C) table) leave open."""
     x = _int_stream(vals[0], "IWINDOW", "X")
-    start = _int_arg(vals[1], "IWINDOW start")
+    start = _iwindow_start(vals[1])
     length = _int_arg(vals[2], "IWINDOW len")
     if x.ndim != 1:
         raise ValueError(f"IWINDOW: expected 1D I, got shape {x.shape}")
@@ -1068,6 +1081,39 @@ def op_iscatter1(vals, config, feeds):
     o = base.copy()
     o[ids] = v
     return np.ascontiguousarray(o)
+
+
+def op_icrc32(vals, config, feeds):
+    """CRC-32 (reflected, poly 0xEDB88320) over a 1D I byte stream,
+    finalized (init and final 0xFFFFFFFF) -- matching ``zlib.crc32``. Exact;
+    the streaming op that unblocks full member/container CRC verification
+    without a general loop construct."""
+    x = _int_stream(vals[0], "ICRC32", "X")
+    if x.ndim != 1:
+        raise ValueError(f"ICRC32: expected 1D I, got shape {x.shape}")
+    crc = 0xFFFFFFFF
+    for b in x:
+        crc ^= int(b) & 0xFF
+        for _ in range(8):
+            crc = (crc >> 1) ^ (0xEDB88320 if (crc & 1) else 0)
+    return np.asarray([crc ^ 0xFFFFFFFF], dtype=np.int64)
+
+
+def op_ifind(vals, config, feeds):
+    """First offset of PATTERN in X (both 1D I), or -1 if absent. Exact;
+    the region-scan primitive (signature offsets). An empty pattern fails
+    loud (it would match everywhere)."""
+    x = _int_stream(vals[0], "IFIND", "X")
+    pat = _int_stream(vals[1], "IFIND", "PAT")
+    if x.ndim != 1 or pat.ndim != 1:
+        raise ValueError("IFIND: X and PAT must be 1D I")
+    if pat.size == 0:
+        raise ValueError("IFIND: empty pattern")
+    m = pat.size
+    for i in range(0, x.size - m + 1):
+        if np.array_equal(x[i:i + m], pat):
+            return np.asarray([i], dtype=np.int64)
+    return np.asarray([-1], dtype=np.int64)
 
 
 def op_clip(vals, config, feeds):
@@ -1306,6 +1352,8 @@ REGISTRY = {
     "GT": (op_gt, 2, 1),
     "SLICE": (op_slice, 4, 1),
     "IWINDOW": (op_iwindow, 3, 1),
+    "ICRC32": (op_icrc32, 1, 1),
+    "IFIND": (op_ifind, 2, 1),
     "CLIP": (op_clip, 3, 1),
     "DIV": (op_div, 2, 1),
     "SIGMOID": (op_sigmoid, 1, 1),
@@ -1387,7 +1435,9 @@ SIGS = {
     "TOPK": (["$A", "F:SCALAR"], ["$A", "I:*"]),
     "GT": (["$A", "$A"], ["I:*"]),
     "SLICE": (["$A", "F:SCALAR", "F:SCALAR", "F:SCALAR"], ["$A"]),
-    "IWINDOW": (["I:*", "F:SCALAR", "F:SCALAR"], ["I:*"]),
+    "IWINDOW": (["I:*", "*", "F:SCALAR"], ["I:*"]),
+    "ICRC32": (["I:*"], ["I:*"]),
+    "IFIND": (["I:*", "I:*"], ["I:*"]),
     "CLIP": (["$A", "F:SCALAR", "F:SCALAR"], ["$A"]),
     "DIV": (["$A", "$A"], ["$A"]),
     "SIGMOID": (["$A"], ["$A"]),
