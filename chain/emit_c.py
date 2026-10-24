@@ -241,9 +241,21 @@ def infer_shapes(bound, sample):
             return 1
         return "BAD"
 
+    pre_stack = []
     for outs, mn, _fn, args, ln, _sig in prog:
         o = outs[0] if outs else None
         where = f"line {ln} ({mn})"
+        if mn == "__REPEAT__":
+            pre_stack.append({k: v[2] for k, v in streams.items()})
+            continue
+        if mn == "__END__":
+            pre = pre_stack.pop() if pre_stack else {}
+            for k, sh in pre.items():
+                if k in streams and streams[k][2] != sh:
+                    raise AsmError(
+                        f"{where}: REPEAT changes geometry of '{k}' "
+                        f"({sh} -> {streams[k][2]}); shapes must be invariant")
+            continue
         if mn == "GATHER":
             tk, tsub, tsh = streams[args[0]]
             ik, _, ish = streams[args[1]]
@@ -1893,15 +1905,16 @@ def _emit_codec_c(be, ctx, bound, streams, in_names, consts, outputs,
         if n in consts:
             raise NoPattern(
                 f"C codec: live input '{n}' is const-folded")
-        if n in outputs:
-            raise NoPattern(f"C codec: live input '{n}' is also an output")
 
+    shadowed = set(in_names) & set(outputs)
     bindings: list[tuple[str, int]] = []
     for n in in_names:
         if n in consts:
             continue
-        bindings.append((n, 1 if n in live_set else 0))
+        bindings.append((n, 1 if (n in live_set or n in shadowed) else 0))
     for o in outputs:
+        if o in shadowed:
+            continue  # one read-write binding serves input + output
         bindings.append((o, 2))
 
     scratch = sorted(inter_f) + sorted(inter_i)
@@ -2006,12 +2019,29 @@ def _emit_codec_c(be, ctx, bound, streams, in_names, consts, outputs,
         step.append(f"  int64_t {n}_N = ({n_expr(n)}); (void){n}_N;")
     for n in scratch:
         step.append(f"  int64_t {n}_N = ({n_expr(n)}); (void){n}_N;")
-    for outs, mn, _fn, args, ln, sig in prog:
+    i = 0
+    while i < len(prog):
+        outs, mn, _fn, args, ln, sig = prog[i]
+        if mn == "__REPEAT__":
+            nv = args[0]
+            if nv in ctx["streams"]:
+                step.append(f"  int64_t _n = {nv}[0];")
+            else:
+                step.append(
+                    f"  int64_t _n = {_c_i64_lit(_int_lit(nv, 'REPEAT n'))};")
+            step.append("  for (int64_t _it = 0; _it < _n; ++_it) {")
+            i += 1
+            continue
+        if mn == "__END__":
+            step.append("  }")
+            i += 1
+            continue
         pat, gathered = be.pattern(mn, outs, args, sig, ctx)
         if gathered:
             ctx["gathered"][gathered[0]] = gathered[1]
         step.append(f"  /* L{_short_site(ln)}: {mn} */")
         step.append("  " + pat.replace("\n", "\n  "))
+        i += 1
     step.append("  return 0;")
     step.append("}")
     parts.append("\n".join(step))
@@ -2443,7 +2473,23 @@ def compile_program(text, target="c", sample=None, outputs=None,
             shadowed.append(n)
 
     compute = []
-    for outs, mn, _fn, args, ln, sig in prog:
+    i = 0
+    while i < len(prog):
+        outs, mn, _fn, args, ln, sig = prog[i]
+        if mn == "__REPEAT__":
+            nv = args[0]
+            if nv in ctx["streams"]:
+                compute.append(f"  int64_t _n = {nv}[0];")
+            else:
+                compute.append(
+                    f"  int64_t _n = {_c_i64_lit(_int_lit(nv, 'REPEAT n'))};")
+            compute.append("  for (int64_t _it = 0; _it < _n; ++_it) {")
+            i += 1
+            continue
+        if mn == "__END__":
+            compute.append("  }")
+            i += 1
+            continue
         pat, gathered = be.pattern(mn, outs, args, sig, ctx)
         if gathered:
             ctx["gathered"][gathered[0]] = gathered[1]
@@ -2453,6 +2499,7 @@ def compile_program(text, target="c", sample=None, outputs=None,
                     f"\n  fprintf(stderr, \"op {mn} %f\\n\", "
                     f"(double)(clock() - _t0) / CLOCKS_PER_SEC); }}")
         compute.append(f"  /* L{_short_site(ln)}: {mn} */\n  " + body)
+        i += 1
 
     stores = []
     if pack_outputs:

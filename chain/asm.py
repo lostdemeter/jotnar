@@ -336,18 +336,25 @@ def _expand_repeats(flat):
                 f = float(toks[1])
             except ValueError:
                 f = None
-            if f is None or not f.is_integer():
-                raise AsmError(
-                    f"line {flat[i][1]}: REPEAT count must be an integral "
-                    f"literal (runtime counts use ASM.repeat)")
-            n = int(f)
-            if n < 0:
-                raise AsmError(
-                    f"line {flat[i][1]}: REPEAT count must be >= 0")
-            body, i = _collect_repeat_body(flat, i + 1)
-            expanded = _expand_repeats(body)
-            for _ in range(n):
-                out.extend(expanded)
+            body, nxt = _collect_repeat_body(flat, i + 1)
+            if f is not None:
+                if not f.is_integer():
+                    raise AsmError(
+                        f"line {flat[i][1]}: REPEAT count must be an "
+                        f"integral literal")
+                n = int(f)
+                if n < 0:
+                    raise AsmError(
+                        f"line {flat[i][1]}: REPEAT count must be >= 0")
+                expanded = _expand_repeats(body)
+                for _ in range(n):
+                    out.extend(expanded)
+            else:
+                # runtime trip count: n is a stream name
+                out.append((f"__REPEAT__ {toks[1]}", flat[i][1], True))
+                out.extend(_expand_repeats(body))
+                out.append(("__END__", flat[i][1], True))
+            i = nxt
             continue
         if head == "END":
             raise AsmError(f"line {flat[i][1]}: END without REPEAT")
@@ -372,6 +379,12 @@ def parse(text, basedir=".", stdlib=None, origin=None):
             continue
         toks = line.split(None, 1)
         head = toks[0].upper()
+        if head == "__REPEAT__":
+            prog.append(([], "__REPEAT__", [toks[1]], ln))
+            continue
+        if head == "__END__":
+            prog.append(([], "__END__", [], ln))
+            continue
         if head == "CONFIG":
             kv = toks[1].split()
             if len(kv) != 2:
@@ -458,6 +471,16 @@ def assemble(text, registry, sigs=None, basedir=".", stdlib=None,
     config, inp, prog, state = parse(text, basedir, stdlib, origin)
     bound, defined = [], set(n for n, _ in inp)
     for outs, mn, args, ln in prog:
+        if mn in ("__REPEAT__", "__END__"):
+            if mn == "__REPEAT__":
+                if len(args) != 1:
+                    raise AsmError(f"line {ln}: REPEAT needs a count")
+                a = args[0]
+                if a not in defined and not _is_literal(a):
+                    raise AsmError(
+                        f"line {ln}: REPEAT count '{a}' not defined")
+            bound.append((outs, mn, None, args, ln, None))
+            continue
         if mn not in registry:
             raise AsmError(f"line {ln}: unknown mnemonic: {mn} "
                            f"(known: {len(registry)} ops)")
@@ -660,7 +683,30 @@ def run(bound, config, inp, payload, trace=None, overrides=None,
         layouts = dict(in_lay)
     view = ChainMap(store_hook.env, feeds) \
         if store_hook is not None else feeds
-    for outs, mn, fn, args, ln, sig in prog:
+    i = 0
+    loop_stack = []
+    while i < len(prog):
+        outs, mn, fn, args, ln, sig = prog[i]
+        if mn == "__REPEAT__":
+            nv = args[0]
+            n = (int(view[nv].reshape(-1)[0])
+                 if nv in view else int(float(nv)))
+            if n < 0:
+                raise AsmError(f"line {ln}: REPEAT count negative")
+            loop_stack.append((i, n))
+            i += 1
+            continue
+        if mn == "__END__":
+            if not loop_stack:
+                raise AsmError(f"line {ln}: END without REPEAT")
+            start, n = loop_stack[-1]
+            if n > 1:
+                loop_stack[-1] = (start, n - 1)
+                i = start + 1
+                continue
+            loop_stack.pop()
+            i += 1
+            continue
         vals = [view[a] if a in view else float(a) for a in args]
         out_lays = _check_layouts(outs, mn, args, ln, sig, layouts)
         # kind cross-check: a DECLARED layout's kind prefix must match the
@@ -714,6 +760,7 @@ def run(bound, config, inp, payload, trace=None, overrides=None,
                 ssum["layout"] = out_lays[name]
                 rec["out"][name] = ssum
             rec["sec"] = time.perf_counter() - rec.pop("_t0")
+        i += 1
     if pending:
         raise AsmError(f"overrides never assigned: {sorted(pending)} "
                        f"(typo, or stream optimized out -- probes must bite)")

@@ -283,20 +283,27 @@ streams take LISTS of length n (strict, no broadcast); STATE takes one seed.
 Growth is logged per iteration. Data-dependent termination (`WHILE`) is out
 of scope — stated (all current needs are bounded).
 
-### Static `REPEAT n ... END` (compiled unroll)
+### `REPEAT n ... END` (bounded loop: static geometry, dynamic trajectory)
 
 ```
-REPEAT 4
+REPEAT 4          # literal: unrolled at parse time
+  Y = IADD(Y, 1)
+END
+
+REPEAT N          # N a 1-element I stream: compiled for-loop
   Y = IADD(Y, 1)
 END
 ```
 
-`n` is an **integral literal**; the parser copies the body `n` times, so
-shapes, the codec ABI, and the emitters are unchanged (static geometry).
-Nested `REPEAT` is supported. Non-integral / negative / missing-`END` /
-stray-`END` fail loud. Runtime trip counts use `ASM.repeat()` (host-driven
-STATE threading); a *compiled* runtime loop is the next design item
-(`JOTNAR_LOOP_DESIGN.md`).
+- **Literal `n`** → the body is copied `n` times (static unroll); shapes
+  and the ABI are unchanged.
+- **Stream `n`** (a 1-element `I`) → one compiled `for` loop; `n` is a
+  runtime scalar. The body is emitted once, so **all stream shapes must be
+  invariant across iterations** (checked at `END`; fail loud). Nested
+  loops are supported.
+- Non-integral literal / negative / missing-`END` / stray-`END` fail loud.
+- This is the "static geometry, dynamic trajectory" loop: the space
+  (buffer shapes) is fixed; only the trip count and cursor vary.
 
 ## 7. Static checks
 
