@@ -334,6 +334,31 @@ def infer_shapes(bound, sample):
                         raise AsmError(f"{where}: {mn} literal outside "
                                        f"int64: {_lit}")
             streams[o] = ("I", "int64_t", ash)
+        elif mn in ("IXOR", "IAND", "IOR"):
+            ak, _, ash = streams[args[0]]
+            if ak != "I":
+                raise AsmError(f"{where}: {mn} needs I-kind first operand")
+            for _i, _a in enumerate(args[1:], 1):
+                if _a in streams:
+                    _k, _, _sh = streams[_a]
+                    if _k != "I" or tuple(_sh) != tuple(ash):
+                        raise AsmError(
+                            f"{where}: {mn} operand {_i} must be I with "
+                            f"shape {ash}, got {_k} {_sh}")
+                else:
+                    _lit = _int_lit(_a, f"{where} {mn} operand {_i}")
+                    if not (-(1 << 63) <= _lit < (1 << 63)):
+                        raise AsmError(f"{where}: {mn} literal outside "
+                                       f"int64: {_lit}")
+            streams[o] = ("I", "int64_t", ash)
+        elif mn in ("ISHL", "ISHR"):
+            ak, _, ash = streams[args[0]]
+            if ak != "I":
+                raise AsmError(f"{where}: {mn} needs I-kind first operand")
+            s = _int_lit(args[1], f"{where} {mn} shift")
+            if not (0 <= s <= 63):
+                raise AsmError(f"{where}: {mn} shift must be 0..63, got {s}")
+            streams[o] = ("I", "int64_t", ash)
         elif mn == "F2I":
             sk, _, ssh = streams[args[0]]
             if sk != "F":
@@ -979,6 +1004,54 @@ class CBackend(Backend):
                 f"/* {o} = {mn}({', '.join(args)}) 64-bit wrap */\n"
                 f"for (int64_t e_i = 0; e_i < {co}; ++e_i)\n"
                 f"  {o}[e_i] = (int64_t){expr};",
+                None)
+        if mn in ("IXOR", "IAND", "IOR"):
+            a = args[0]
+            o = outs[0]
+            if S[a][0] != "I":
+                raise NoPattern(f"C backend {mn} needs I first operand")
+            if o not in ctx["count"]:
+                raise NoPattern(
+                    f"C backend {mn}: dynamic intermediate '{o}' "
+                    f"(v0.1 needs a static shape)")
+            co = ctx["count"][o]
+
+            def _term(x, pos):
+                if x in S:
+                    if S[x][0] != "I" or tuple(S[x][2]) != tuple(S[a][2]):
+                        raise NoPattern(
+                            f"C backend {mn} operand {pos} must be I with "
+                            f"shape {S[a][2]}, got {S[x][0]} {S[x][2]}")
+                    return f"{x}[e_i]"
+                return _c_i64_lit(_int_lit(x, f"{mn} operand {pos}"))
+
+            ta = f"{a}[e_i]"
+            tb = _term(args[1], 1)
+            op = {"IXOR": "^", "IAND": "&", "IOR": "|"}[mn]
+            return (
+                f"/* {o} = {mn}({', '.join(args)}) 64-bit wrap */\n"
+                f"for (int64_t e_i = 0; e_i < {co}; ++e_i)\n"
+                f"  {o}[e_i] = (int64_t)(((uint64_t){ta}) {op} "
+                f"((uint64_t)({tb})));",
+                None)
+        if mn in ("ISHL", "ISHR"):
+            a = args[0]
+            o = outs[0]
+            if S[a][0] != "I":
+                raise NoPattern(f"C backend {mn} needs I first operand")
+            if o not in ctx["count"]:
+                raise NoPattern(
+                    f"C backend {mn}: dynamic intermediate '{o}' "
+                    f"(v0.1 needs a static shape)")
+            co = ctx["count"][o]
+            s = _int_lit(args[1], f"{mn} shift")
+            if not (0 <= s <= 63):
+                raise AsmError(f"{mn}: shift must be 0..63, got {s}")
+            op = "<<" if mn == "ISHL" else ">>"
+            return (
+                f"/* {o} = {mn}({a}, {s}) logical */\n"
+                f"for (int64_t e_i = 0; e_i < {co}; ++e_i)\n"
+                f"  {o}[e_i] = (int64_t)(((uint64_t){a}[e_i]) {op} {s});",
                 None)
         if mn in ("F2I", "I2F"):
             x = args[0]
