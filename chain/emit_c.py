@@ -1049,11 +1049,14 @@ class CBackend(Backend):
                     f"C backend ISCATTER1: dynamic output '{o}' "
                     f"(v0.1 needs a static shape)")
             co = ctx["count"][o]
-            return (
-                f"/* {o} = ISCATTER1({base}, {ids}, {vals}) exact, "
-                f"bounds-checked */\n"
+            inplace = base == o
+            copy = "" if inplace else (
                 f"for (int64_t s_i = 0; s_i < {co}; ++s_i) "
-                f"{o}[s_i] = {base}[s_i];\n"
+                f"{o}[s_i] = {base}[s_i];\n")
+            return (
+                f"/* {o} = ISCATTER1({base}, {ids}, {vals}) "
+                f"{'in-place' if inplace else 'exact'}, bounds-checked */\n"
+                + copy +
                 f"for (int64_t s_i = 0; s_i < {nids}; ++s_i) {{\n"
                 f"  int64_t _b = {ids}[s_i];\n"
                 f"  if (_b < 0 || _b >= {vn}) return 4;\n"
