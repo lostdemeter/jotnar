@@ -173,7 +173,7 @@ lattice node through the same controller. Gate:
 `tests/test_protocol.py` pipe legs (per-layer KV, LOGITS, choice
 bit-exact vs single-node).
 
-## Opcode table (73 mnemonics)
+## Opcode table (75 mnemonics)
 
 Kinds: F float, T lattice-triples, I integer. Backends admit per-kind
 overloads; missing = loud `NoPattern`, never silent.
@@ -204,7 +204,9 @@ overloads; missing = loud `NoPattern`, never silent.
 | IDIV/IMOD | 2 -> 1 | I | I | I | truncating div/rem; zero and `INT64_MIN / -1` loud |
 | F2I | 1 -> 1 | F | F | F | explicit float->int; trunc, range-checked; non-FPU bit-decoded |
 | I2F | 1 -> 1 | I | I | I | explicit int->float; round-to-even; non-FPU bit-built |
-| IWINDOW | 3 -> 1 | I | — | I | 1D integer window [START, START+LEN), integral literals, bounds-checked; byte/index primitive for format kernels (codec EOCD); C/non-FPU exact, CUDA loud NoPattern |
+| IWINDOW | 3 -> 1 | I | — | I | 1D integer window [START, START+LEN); START literal or 1-element I stream (dynamic, runtime rc 4), LEN literal; byte/index primitive for format kernels (codec EOCD); C/non-FPU exact, CUDA loud NoPattern |
+| ICRC32 | 1 -> 1 | I | — | I | CRC-32 reflected poly 0xEDB88320, finalized, matches zlib.crc32; internal loop; C/non-FPU exact, CUDA loud NoPattern |
+| IFIND | 2 -> 1 | I | — | I | first offset of PAT in X or -1; static lengths, empty PAT loud; internal loop; C/non-FPU exact, CUDA loud NoPattern |
 | IGATHER1 | 2 -> 1 | I | — | I | 1D integer gather OUT[n] = TABLE[IDS[n]], static table length, ids bounds-checked loud (runtime return 4); non-contiguous companion to IWINDOW (xref rows, scattered fields); C/non-FPU exact, CUDA loud NoPattern |
 | IASSEMBLE | 3 -> 1 | I | — | I | LE field assembly sum((X[START+i] & 0xFF) << (8*i)), LEN 1..8 (8 → int64 two's-complement); bounds-checked; C/non-FPU exact, CUDA loud NoPattern |
 | ISUM | 3 -> 1 | I | — | I | integer window sum for checksums/byte totals; bounds-checked; C/non-FPU exact, CUDA loud NoPattern |
@@ -246,7 +248,7 @@ overloads; missing = loud `NoPattern`, never silent.
 | TSHIFT | 1 -> 1 | F | F | T | row-max; fuses into softmax |
 | WARP | 2 -> 1 | — | — | — | lattice-only (stabilize listing runs lattice, no emitted demand) |
 
-Coverage: C 46, CUDA 37, non-FPU 41. Refusal cells are gated
+Coverage: C 48, CUDA 37, non-FPU 43. Refusal cells are gated
 (`test_emit.py` loud-refusal row). Full per-mnemonic contracts with
 examples: `docs/LANGUAGE.md`. Extension recipe: registry row + shape
 rule + one pattern per backend (`chain/backends.py`).
