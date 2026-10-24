@@ -507,15 +507,35 @@ def infer_shapes(bound, sample):
             streams[o] = (sk, ssub, tuple(dd))
         elif mn == "IWINDOW":
             xk, xsub, xsh = streams[args[0]]
-            lo = _int_lit(args[1], f"{where} start")
             ln = _int_lit(args[2], f"{where} len")
             if xk != "I" or len(xsh) != 1:
                 raise NoPattern(f"{where}: IWINDOW handles 1D I")
-            if xsh[0] is not None and not (0 <= lo and 0 <= ln
-                                           and lo + ln <= xsh[0]):
-                raise AsmError(f"{where}: IWINDOW [{lo},{lo + ln}) of "
-                               f"dim {xsh[0]}")
+            if args[1] in streams:
+                sk, _, ssh = streams[args[1]]
+                if sk != "I" or len(ssh) != 1 or ssh[0] not in (1, None):
+                    raise AsmError(
+                        f"{where}: IWINDOW dynamic start must be a 1-element "
+                        f"I, got {sk} {ssh}")
+            else:
+                lo = _int_lit(args[1], f"{where} start")
+                if xsh[0] is not None and not (0 <= lo and 0 <= ln
+                                               and lo + ln <= xsh[0]):
+                    raise AsmError(f"{where}: IWINDOW [{lo},{lo + ln}) of "
+                                   f"dim {xsh[0]}")
             streams[o] = ("I", xsub, (ln,))
+        elif mn == "ICRC32":
+            xk, xsub, xsh = streams[args[0]]
+            if xk != "I" or len(xsh) != 1:
+                raise NoPattern(f"{where}: ICRC32 handles 1D I")
+            streams[o] = ("I", xsub, (1,))
+        elif mn == "IFIND":
+            xk, xsub, xsh = streams[args[0]]
+            pk, _, psh = streams[args[1]]
+            if xk != "I" or len(xsh) != 1:
+                raise NoPattern(f"{where}: IFIND needs 1D I X")
+            if pk != "I" or len(psh) != 1:
+                raise NoPattern(f"{where}: IFIND needs 1D I PAT")
+            streams[o] = ("I", xsub, (1,))
         elif mn == "IGATHER1":
             tk, tsub, tsh = streams[args[0]]
             ik, _, ish = streams[args[1]]
@@ -818,7 +838,6 @@ class CBackend(Backend):
         if mn == "IWINDOW":
             x = args[0]
             o = outs[0]
-            lo = _int_lit(args[1], "IWINDOW start")
             ln = _int_lit(args[2], "IWINDOW len")
             if S[x][0] != "I" or len(S[x][2]) != 1:
                 raise NoPattern("C backend IWINDOW needs 1D I")
@@ -827,10 +846,75 @@ class CBackend(Backend):
                     f"C backend IWINDOW: dynamic output '{o}' "
                     f"(v0.1 needs a static shape)")
             co = ctx["count"][o]
+            if args[1] in S:
+                s = args[1]
+                if S[s][0] != "I" or len(S[s][2]) != 1:
+                    raise NoPattern(
+                        "C backend IWINDOW dynamic start needs 1-element I")
+                xn = S[x][2][0]
+                if xn is None:
+                    raise NoPattern(
+                        "C backend IWINDOW dynamic: X length must be static "
+                        "(bounds check)")
+                return (
+                    f"/* {o} = IWINDOW({x}, {s}[0], {ln}) dynamic, "
+                    f"bounds-checked */\n"
+                    f"{{ int64_t _s = {s}[0];\n"
+                    f"  if (_s < 0 || _s + {ln} > {xn}) return 4;\n"
+                    f"  for (int64_t e_i = 0; e_i < {co}; ++e_i)\n"
+                    f"    {o}[e_i] = {x}[_s + e_i]; }}",
+                    None)
+            lo = _int_lit(args[1], "IWINDOW start")
             return (
                 f"/* {o} = IWINDOW({x}, {lo}, {ln}) exact */\n"
                 f"for (int64_t e_i = 0; e_i < {co}; ++e_i)\n"
                 f"  {o}[e_i] = {x}[{lo} + e_i];",
+                None)
+        if mn == "ICRC32":
+            x = args[0]
+            o = outs[0]
+            if S[x][0] != "I" or len(S[x][2]) != 1:
+                raise NoPattern("C backend ICRC32 needs 1D I")
+            xn = S[x][2][0]
+            if xn is None:
+                raise NoPattern(
+                    "C backend ICRC32: input length must be static")
+            if o not in ctx["count"]:
+                raise NoPattern(f"C backend ICRC32: dynamic output '{o}'")
+            return (
+                f"/* {o} = ICRC32({x}) exact (reflected, finalized) */\n"
+                f"{{ uint32_t _crc = 0xFFFFFFFFu;\n"
+                f"  for (int64_t e_i = 0; e_i < {xn}; ++e_i) {{\n"
+                f"    _crc ^= (uint32_t)({x}[e_i] & 0xFF);\n"
+                f"    for (int _b = 0; _b < 8; ++_b)\n"
+                f"      _crc = (_crc >> 1) ^ "
+                f"(0xEDB88320u & ((uint32_t)-(int32_t)(_crc & 1u)));\n"
+                f"  }}\n"
+                f"  {o}[0] = (int64_t)(_crc ^ 0xFFFFFFFFu); }}",
+                None)
+        if mn == "IFIND":
+            x, pat = args
+            o = outs[0]
+            if S[x][0] != "I" or len(S[x][2]) != 1:
+                raise NoPattern("C backend IFIND needs 1D I X")
+            if S[pat][0] != "I" or len(S[pat][2]) != 1:
+                raise NoPattern("C backend IFIND needs 1D I PAT")
+            xn = S[x][2][0]
+            m = S[pat][2][0]
+            if xn is None or m is None:
+                raise NoPattern("C backend IFIND: static lengths required")
+            if o not in ctx["count"]:
+                raise NoPattern(f"C backend IFIND: dynamic output '{o}'")
+            return (
+                f"/* {o} = IFIND({x}, {pat}) exact */\n"
+                f"{{ int64_t _hit = -1;\n"
+                f"  for (int64_t i = 0; i + {m} <= {xn}; ++i) {{\n"
+                f"    int64_t _k = 0;\n"
+                f"    for (; _k < {m}; ++_k)\n"
+                f"      if ({x}[i + _k] != {pat}[_k]) break;\n"
+                f"    if (_k == {m}) {{ _hit = i; break; }}\n"
+                f"  }}\n"
+                f"  {o}[0] = _hit; }}",
                 None)
         if mn == "IGATHER1":
             t, ids = args
