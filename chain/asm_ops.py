@@ -966,6 +966,65 @@ def op_igather1(vals, config, feeds):
     return np.ascontiguousarray(table[ids])
 
 
+def op_iassemble(vals, config, feeds):
+    """Little-endian integer assembly: IASSEMBLE(X, START, LEN) =
+    sum((X[START+i] & 0xFF) << (8*i)), i in [0,LEN). Exact, bounds-checked.
+    LEN is 1..8; at 8 the result is the int64 two's-complement value (C
+    semantics). Collapses the N-window + IMUL/IADD LE-field composition into
+    one op -- the 'reduce/combine' member of the byte-index family."""
+    x = _int_stream(vals[0], "IASSEMBLE", "X")
+    start = _int_arg(vals[1], "IASSEMBLE start")
+    length = _int_arg(vals[2], "IASSEMBLE len")
+    if x.ndim != 1:
+        raise ValueError(f"IASSEMBLE: expected 1D I, got shape {x.shape}")
+    if not (1 <= length <= 8):
+        raise ValueError(f"IASSEMBLE: len must be 1..8, got {length}")
+    if start < 0 or start + length > x.shape[0]:
+        raise ValueError(
+            f"IASSEMBLE: [{start},{start + length}) out of range {x.shape[0]}")
+    v = 0
+    for i in range(length):
+        v |= (int(x[start + i]) & 0xFF) << (8 * i)
+    if length == 8 and v >= (1 << 63):
+        v -= 1 << 64
+    return np.asarray([v], dtype=np.int64)
+
+
+def op_isum(vals, config, feeds):
+    """Integer window sum: ISUM(X, START, LEN) = sum(X[START:START+LEN]).
+    Exact, bounds-checked. For checksum folding / byte totals."""
+    x = _int_stream(vals[0], "ISUM", "X")
+    start = _int_arg(vals[1], "ISUM start")
+    length = _int_arg(vals[2], "ISUM len")
+    if x.ndim != 1:
+        raise ValueError(f"ISUM: expected 1D I, got shape {x.shape}")
+    if start < 0 or length < 0 or start + length > x.shape[0]:
+        raise ValueError(
+            f"ISUM: [{start},{start + length}) out of range {x.shape[0]}")
+    return np.asarray([int(np.sum(x[start:start + length], dtype=np.int64))],
+                      dtype=np.int64)
+
+
+def op_iscatter1(vals, config, feeds):
+    """1D integer scatter write: ISCATTER1(OUT, IDS, VALS) returns a copy of
+    OUT with OUT[IDS[n]] = VALS[n]. Exact, bounds-checked; IDS/VALS 1D I of
+    equal length. The 'place/scatter' member of the byte-index family for
+    header rebuild (SCATTER is F-only and 2D)."""
+    base = _int_stream(vals[0], "ISCATTER1", "OUT")
+    ids = _int_stream(vals[1], "ISCATTER1", "IDS")
+    v = _int_stream(vals[2], "ISCATTER1", "VALS")
+    if base.ndim != 1 or ids.ndim != 1 or v.ndim != 1:
+        raise ValueError("ISCATTER1: OUT/IDS/VALS must be 1D I")
+    if ids.size != v.size:
+        raise ValueError(f"ISCATTER1: IDS {ids.shape} vs VALS {v.shape}")
+    if ids.size and (int(ids.min()) < 0 or int(ids.max()) >= base.shape[0]):
+        raise ValueError(
+            f"ISCATTER1: ids out of range [0,{base.shape[0]})")
+    o = base.copy()
+    o[ids] = v
+    return np.ascontiguousarray(o)
+
+
 def op_clip(vals, config, feeds):
     """Clip triples to [LO,HI] float literals (holo clip_fixed). Exact
     lattice compare, no float arithmetic on values."""
@@ -1204,6 +1263,9 @@ REGISTRY = {
     "GATHER": (op_gather, 2, 1),
     "GATHER3": (op_gather3, 3, 1),
     "IGATHER1": (op_igather1, 2, 1),
+    "IASSEMBLE": (op_iassemble, 3, 1),
+    "ISUM": (op_isum, 3, 1),
+    "ISCATTER1": (op_iscatter1, 3, 1),
     "SCATTER": (op_scatter, 3, 1),
     "PRELU": (op_prelu, 2, 1),
     "POOLAVG": (op_poolavg, 1, 1),
@@ -1278,6 +1340,9 @@ SIGS = {
     "GATHER": (["*", "I:*"], ["*"]),
     "GATHER3": (["*", "I:*", "I:*"], ["*"]),
     "IGATHER1": (["I:*", "I:*"], ["I:*"]),
+    "IASSEMBLE": (["I:*", "F:SCALAR", "F:SCALAR"], ["I:*"]),
+    "ISUM": (["I:*", "F:SCALAR", "F:SCALAR"], ["I:*"]),
+    "ISCATTER1": (["I:*", "I:*", "I:*"], ["I:*"]),
     "SCATTER": (["$A", "$A", "I:*"], ["$A"]),
     "PRELU": (["$A", "$A"], ["$A"]),
     "POOLAVG": (["*"], ["*"]),

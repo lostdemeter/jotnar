@@ -41,6 +41,9 @@ ACCESS = {
     "GATHER": "gather",
     "GATHER3": "gather",
     "IGATHER1": "gather",  # exact 1D table read; gate: tests/test_igather1.py
+    "IASSEMBLE": "reduce",  # LE field assembly; gate: tests/test_ibyte.py
+    "ISUM": "reduce",  # integer window sum; gate: tests/test_ibyte.py
+    "ISCATTER1": "gather",  # 1D scatter write; gate: tests/test_ibyte.py
     "SCATTER": "gather",
     "SELECT": "select",
     "TOPK": "select",

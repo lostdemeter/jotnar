@@ -524,6 +524,42 @@ def infer_shapes(bound, sample):
             if ik != "I" or len(ish) != 1:
                 raise NoPattern(f"{where}: IGATHER1 needs 1D I ids")
             streams[o] = ("I", tsub, (ish[0],))
+        elif mn == "IASSEMBLE":
+            xk, xsub, xsh = streams[args[0]]
+            lo = _int_lit(args[1], f"{where} start")
+            ln = _int_lit(args[2], f"{where} len")
+            if xk != "I" or len(xsh) != 1:
+                raise NoPattern(f"{where}: IASSEMBLE handles 1D I")
+            if not (1 <= ln <= 8):
+                raise AsmError(f"{where}: IASSEMBLE len must be 1..8, got {ln}")
+            if xsh[0] is not None and not (0 <= lo and lo + ln <= xsh[0]):
+                raise AsmError(f"{where}: IASSEMBLE [{lo},{lo + ln}) of "
+                               f"dim {xsh[0]}")
+            streams[o] = ("I", xsub, (1,))
+        elif mn == "ISUM":
+            xk, xsub, xsh = streams[args[0]]
+            lo = _int_lit(args[1], f"{where} start")
+            ln = _int_lit(args[2], f"{where} len")
+            if xk != "I" or len(xsh) != 1:
+                raise NoPattern(f"{where}: ISUM handles 1D I")
+            if xsh[0] is not None and not (0 <= lo and 0 <= ln
+                                           and lo + ln <= xsh[0]):
+                raise AsmError(f"{where}: ISUM [{lo},{lo + ln}) of "
+                               f"dim {xsh[0]}")
+            streams[o] = ("I", xsub, (1,))
+        elif mn == "ISCATTER1":
+            ok, osub, osh = streams[args[0]]
+            ik, _, ish = streams[args[1]]
+            vk, _, vsh = streams[args[2]]
+            if ok != "I" or len(osh) != 1:
+                raise NoPattern(f"{where}: ISCATTER1 needs a 1D I OUT")
+            if ik != "I" or len(ish) != 1 or vk != "I" or len(vsh) != 1:
+                raise NoPattern(f"{where}: ISCATTER1 needs 1D I IDS/VALS")
+            if ish[0] is not None and vsh[0] is not None \
+                    and ish[0] != vsh[0]:
+                raise AsmError(f"{where}: ISCATTER1 IDS {ish[0]} vs "
+                               f"VALS {vsh[0]}")
+            streams[o] = ("I", osub, osh)
         elif mn == "ROTARY":
             xk, xsub, xsh = streams[args[0]]
             pk, _, psh = streams[args[1]]
@@ -818,6 +854,75 @@ class CBackend(Backend):
                 f"  int64_t _b = {ids}[g_i];\n"
                 f"  if (_b < 0 || _b >= {vN}) return 4;\n"
                 f"  {o}[g_i] = {t}[_b];\n"
+                f"}}",
+                None)
+        if mn == "IASSEMBLE":
+            x = args[0]
+            o = outs[0]
+            lo = _int_lit(args[1], "IASSEMBLE start")
+            ln = _int_lit(args[2], "IASSEMBLE len")
+            if S[x][0] != "I" or len(S[x][2]) != 1:
+                raise NoPattern("C backend IASSEMBLE needs 1D I")
+            if o not in ctx["count"]:
+                raise NoPattern(
+                    f"C backend IASSEMBLE: dynamic output '{o}' "
+                    f"(v0.1 needs a static shape)")
+            return (
+                f"/* {o} = IASSEMBLE({x}, {lo}, {ln}) little-endian, exact */\n"
+                f"{{ uint64_t _v = 0;\n"
+                f"  for (int64_t e_i = 0; e_i < {ln}; ++e_i)\n"
+                f"    _v |= ((uint64_t)({x}[{lo} + e_i] & 0xFF)) << (8 * e_i);\n"
+                f"  {o}[0] = (int64_t)_v; }}",
+                None)
+        if mn == "ISUM":
+            x = args[0]
+            o = outs[0]
+            lo = _int_lit(args[1], "ISUM start")
+            ln = _int_lit(args[2], "ISUM len")
+            if S[x][0] != "I" or len(S[x][2]) != 1:
+                raise NoPattern("C backend ISUM needs 1D I")
+            if o not in ctx["count"]:
+                raise NoPattern(
+                    f"C backend ISUM: dynamic output '{o}' "
+                    f"(v0.1 needs a static shape)")
+            return (
+                f"/* {o} = ISUM({x}, {lo}, {ln}) exact */\n"
+                f"{{ int64_t _v = 0;\n"
+                f"  for (int64_t e_i = 0; e_i < {ln}; ++e_i)\n"
+                f"    _v += {x}[{lo} + e_i];\n"
+                f"  {o}[0] = _v; }}",
+                None)
+        if mn == "ISCATTER1":
+            base, ids, vals = args
+            o = outs[0]
+            if S[base][0] != "I" or len(S[base][2]) != 1:
+                raise NoPattern("C backend ISCATTER1 needs a 1D I OUT")
+            if S[ids][0] != "I" or len(S[ids][2]) != 1:
+                raise NoPattern("C backend ISCATTER1 needs 1D I IDS")
+            if S[vals][0] != "I" or len(S[vals][2]) != 1:
+                raise NoPattern("C backend ISCATTER1 needs 1D I VALS")
+            vn = S[base][2][0]
+            if vn is None:
+                raise NoPattern("C backend ISCATTER1: OUT length must be "
+                                "static (bounds check)")
+            nids = S[ids][2][0]
+            if nids is None:
+                raise NoPattern("C backend ISCATTER1: IDS length must be "
+                                "static (loop bound)")
+            if o not in ctx["count"]:
+                raise NoPattern(
+                    f"C backend ISCATTER1: dynamic output '{o}' "
+                    f"(v0.1 needs a static shape)")
+            co = ctx["count"][o]
+            return (
+                f"/* {o} = ISCATTER1({base}, {ids}, {vals}) exact, "
+                f"bounds-checked */\n"
+                f"for (int64_t s_i = 0; s_i < {co}; ++s_i) "
+                f"{o}[s_i] = {base}[s_i];\n"
+                f"for (int64_t s_i = 0; s_i < {nids}; ++s_i) {{\n"
+                f"  int64_t _b = {ids}[s_i];\n"
+                f"  if (_b < 0 || _b >= {vn}) return 4;\n"
+                f"  {o}[_b] = {vals}[s_i];\n"
                 f"}}",
                 None)
         if mn in ("IADD", "ISUB", "IMUL", "IMAD", "IDIV", "IMOD"):
