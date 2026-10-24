@@ -17,7 +17,7 @@ sys.path.insert(0, os.environ.get("PHI_CORE_DIR",
 sys.path.insert(0, ROOT)
 
 from chain import asm as ASM  # noqa: E402
-from chain.asm_ops import REGISTRY, SIGS  # noqa: E402
+from chain.asm_ops import REGISTRY, SIGS, op_slice  # noqa: E402
 from chain.census import ACCESS  # noqa: E402
 from chain.emit_c import NoPattern, compile_program  # noqa: E402
 from chain.emit_nonfpu import INTEGER_MN  # noqa: E402
@@ -57,6 +57,14 @@ def main():
         check("window-rule-iwindow-2d", False, "accepted")
     except (NoPattern, ASM.AsmError, ValueError) as exc:
         check("window-rule-iwindow-2d", "use SLICE for 2D+ F/T" in str(exc),
+              str(exc)[:100])
+
+    # the reference refuses 1D I SLICE too, pointing at IWINDOW
+    try:
+        op_slice([e1, 0, 0, 2], {}, {})
+        check("window-rule-slice-ref-1d", False, "accepted")
+    except ValueError as exc:
+        check("window-rule-slice-ref-1d", "use IWINDOW for 1D I" in str(exc),
               str(exc)[:100])
 
     # the family is registered consistently and each op has a gate file
