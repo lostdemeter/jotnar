@@ -173,7 +173,7 @@ lattice node through the same controller. Gate:
 `tests/test_protocol.py` pipe legs (per-layer KV, LOGITS, choice
 bit-exact vs single-node).
 
-## Opcode table (68 mnemonics)
+## Opcode table (73 mnemonics)
 
 Kinds: F float, T lattice-triples, I integer. Backends admit per-kind
 overloads; missing = loud `NoPattern`, never silent.
@@ -209,6 +209,8 @@ overloads; missing = loud `NoPattern`, never silent.
 | IASSEMBLE | 3 -> 1 | I | — | I | LE field assembly sum((X[START+i] & 0xFF) << (8*i)), LEN 1..8 (8 → int64 two's-complement); bounds-checked; C/non-FPU exact, CUDA loud NoPattern |
 | ISUM | 3 -> 1 | I | — | I | integer window sum for checksums/byte totals; bounds-checked; C/non-FPU exact, CUDA loud NoPattern |
 | ISCATTER1 | 3 -> 1 | I | — | I | 1D scatter write on a copy of OUT (OUT[IDS[n]] = VALS[n]); ids bounds-checked loud (runtime return 4); C/non-FPU exact, CUDA loud NoPattern |
+| IXOR/IAND/IOR | 2 -> 1 | I | — | I | exact bitwise XOR/AND/OR, 64-bit wrap, scalar literal broadcast; bitfields, CRC/GF(2), parity; C/non-FPU exact, CUDA loud NoPattern |
+| ISHL/ISHR | 2 -> 1 | I | — | I | logical shift by literal 0..63 (right is zero-fill); C/non-FPU exact, CUDA loud NoPattern |
 | GAUSS | 3 -> 1 | — | — | — | parked: drilled in test_asm, no listing/demo/builder workload |
 | GELU | 1 -> 1 | — | — | — | parked: drilled in test_asm, no workload (Qwen uses SILU/SwiGLU) |
 | INTERP | 3 -> 1 | F | F | — | bilinear half-pixel (align_corners=False, audited vs torch; nearest stays shipped degraded default); C `chain/emit_c.py` F64 loop + CUDA `k_interp_bilinear_f32` (`chain/emit_cuda.py`); dyadic-only, parity 333dB C / 156dB CUDA |
@@ -244,7 +246,7 @@ overloads; missing = loud `NoPattern`, never silent.
 | TSHIFT | 1 -> 1 | F | F | T | row-max; fuses into softmax |
 | WARP | 2 -> 1 | — | — | — | lattice-only (stabilize listing runs lattice, no emitted demand) |
 
-Coverage: C 41, CUDA 37, non-FPU 36. Refusal cells are gated
+Coverage: C 46, CUDA 37, non-FPU 41. Refusal cells are gated
 (`test_emit.py` loud-refusal row). Full per-mnemonic contracts with
 examples: `docs/LANGUAGE.md`. Extension recipe: registry row + shape
 rule + one pattern per backend (`chain/backends.py`).
