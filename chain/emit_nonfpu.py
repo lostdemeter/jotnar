@@ -27,7 +27,7 @@ import numpy as np
 from chain.asm import AsmError
 from chain.emit_c import Backend, CBackend, NoPattern
 
-INTEGER_MN = {"GATHER", "GATHER3", "IGATHER1", "ARGMAX", "TRANSPOSE", "SLICE", "CONCAT",
+INTEGER_MN = {"GATHER", "GATHER3", "IGATHER1", "IASSEMBLE", "ISUM", "ISCATTER1", "ARGMAX", "TRANSPOSE", "SLICE", "CONCAT",
               "SELECT", "GT",
               "IADD", "ISUB", "IMUL", "IMAD", "IDIV", "IMOD", "IWINDOW",
               "F2I", "I2F",
