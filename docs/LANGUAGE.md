@@ -181,7 +181,7 @@ loud-failure. Arithmetic core (`ADD SUB MUL DIV`) refuses float inputs
 - `RESHAPE2(*,s,s -> *)` / `RESHAPE3(*,s,s,s -> *)` — reshape to 2D/3D; element count must match. Ex: `H3 = RESHAPE3(X, 2, 3, 4)`.
 - `PERMUTE3(*,s,s,s -> *)` — axis reorder, must be a permutation of (0,1,2) on 3D. Ex: `P = PERMUTE3(H3, 1, 0, 2)`.
 - `CONCAT($A,$A,F:SCALAR -> $A)` — concatenate along an axis literal; non-axis dims must match. Ex: `C = CONCAT(cache, row, 0)`.
-- `SLICE($A,s,s,s -> $A)` — `SLICE(X, AXIS, START, END)` half-open, bounds-checked (no silent clamp). Ex: `W = SLICE(X, 1, 1, 4)`.
+- `SLICE($A,s,s,s -> $A)` — `SLICE(X, AXIS, START, END)` half-open, bounds-checked (no silent clamp). Supports 2D `F`/`T` **and 2D `I`** (the SQLite-page/bitmap case); 1D `I` windows use `IWINDOW`. Ex: `W = SLICE(X, 1, 1, 4)`, `P = SLICE(pages, 0, 0, 16)`.
 - `IWINDOW(I:1,s,s -> I:1)` — 1D integer window `IWINDOW(X, START, LEN)` half-open `[START, START+LEN)`, integral literals, bounds-checked (no silent clamp). The byte/index primitive for format kernels (fixed-offset field decode) that `SLICE` (2D F/T only) and `GATHER` ((V,C) table) do not cover. C/non-FPU exact. Ex: `b0 = IWINDOW(E, 12, 1)`.
 - `GATHER(*,I:* -> *)` — row gather by int ids (bounds-checked). Ex: `R = GATHER(table, ids)`.
 - `GATHER3(T/F (V1,V2,C), I (N,), I (N,) -> (N,C))` — two-index row gather: `R[n,:] = table[i[n], j[n], :]`, static table outer dims. C/non-FPU bounds-check ids and fail loud; CUDA F path assumes in-range ids at data-prep (same contract as GATHER). Native order-2/trigram primitive: no flattened bank, no host-side context arithmetic. Ex: `ROW = GATHER3(bank, prev, prev2)`.
