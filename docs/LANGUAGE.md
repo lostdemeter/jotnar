@@ -283,6 +283,21 @@ streams take LISTS of length n (strict, no broadcast); STATE takes one seed.
 Growth is logged per iteration. Data-dependent termination (`WHILE`) is out
 of scope — stated (all current needs are bounded).
 
+### Static `REPEAT n ... END` (compiled unroll)
+
+```
+REPEAT 4
+  Y = IADD(Y, 1)
+END
+```
+
+`n` is an **integral literal**; the parser copies the body `n` times, so
+shapes, the codec ABI, and the emitters are unchanged (static geometry).
+Nested `REPEAT` is supported. Non-integral / negative / missing-`END` /
+stray-`END` fail loud. Runtime trip counts use `ASM.repeat()` (host-driven
+STATE threading); a *compiled* runtime loop is the next design item
+(`JOTNAR_LOOP_DESIGN.md`).
+
 ## 7. Static checks
 
 - `ASM.verify(text, REGISTRY, SIGS)` — replays layout unification over

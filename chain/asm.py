@@ -292,6 +292,70 @@ def expand(text, basedir=".", origin="<?>", defs=None, stack=(), stdlib=None):
     return flat, defs
 
 
+def _line_of(entry):
+    raw, _org, pre = entry
+    return raw if pre else raw.split("#", 1)[0].strip()
+
+
+def _collect_repeat_body(flat, i):
+    """Collect lines until the matching END, tracking nested REPEAT/END."""
+    depth = 1
+    body = []
+    while i < len(flat):
+        line = _line_of(flat[i])
+        head = line.split(None, 1)[0].upper() if line else ""
+        if head == "REPEAT":
+            depth += 1
+        elif head == "END":
+            depth -= 1
+            if depth == 0:
+                return body, i + 1
+        body.append(flat[i])
+        i += 1
+    raise AsmError("REPEAT without END")
+
+
+def _expand_repeats(flat):
+    """Unroll static ``REPEAT n ... END`` blocks (n an integral literal).
+
+    Static geometry: the body is copied n times, so shapes, the codec ABI,
+    and the emitters are unchanged. Runtime trip counts use
+    ``ASM.repeat()`` (host-driven STATE threading); a compiled runtime
+    loop is a separate design (see JOTNAR_LOOP_DESIGN.md).
+    """
+    out = []
+    i = 0
+    while i < len(flat):
+        line = _line_of(flat[i])
+        toks = line.split(None, 1)
+        head = toks[0].upper() if toks else ""
+        if head == "REPEAT":
+            if len(toks) != 2:
+                raise AsmError(f"line {flat[i][1]}: REPEAT needs a count")
+            try:
+                f = float(toks[1])
+            except ValueError:
+                f = None
+            if f is None or not f.is_integer():
+                raise AsmError(
+                    f"line {flat[i][1]}: REPEAT count must be an integral "
+                    f"literal (runtime counts use ASM.repeat)")
+            n = int(f)
+            if n < 0:
+                raise AsmError(
+                    f"line {flat[i][1]}: REPEAT count must be >= 0")
+            body, i = _collect_repeat_body(flat, i + 1)
+            expanded = _expand_repeats(body)
+            for _ in range(n):
+                out.extend(expanded)
+            continue
+        if head == "END":
+            raise AsmError(f"line {flat[i][1]}: END without REPEAT")
+        out.append(flat[i])
+        i += 1
+    return out
+
+
 def parse(text, basedir=".", stdlib=None, origin=None):
     """text -> (config dict, [(name, layout|None)], [(outs, mn, args, ln)], [state]).
     DEF/IMPORT/CALL expand first (origins tracked); the listing below sees
@@ -300,6 +364,7 @@ def parse(text, basedir=".", stdlib=None, origin=None):
     config, inp, prog, state = {}, [], [], []
     flat, _ = expand(text, basedir, origin=origin or basedir,
                       stdlib=stdlib)
+    flat = _expand_repeats(flat)
     for raw, org, pre_stripped in flat:
         ln = org
         line = raw if pre_stripped else raw.split("#", 1)[0].strip()
