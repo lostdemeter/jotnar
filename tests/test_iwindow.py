@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """IWINDOW gate: 1D integer window (the format-kernel byte primitive).
 
-Covers the gap that SLICE (2D F/T only) and GATHER ((V,C) table) leave:
+Covers the gap that SLICE (2D F/T/I) and GATHER ((V,C) table) leave:
 
   * reference eval is an exact numpy slice, bounds-checked loud;
   * C and non-FPU one-shot agree with the reference bit-for-bit;

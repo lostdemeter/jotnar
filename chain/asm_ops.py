@@ -980,7 +980,7 @@ def op_iwindow(vals, config, feeds):
     a 1D I vector, half-open [START, START+LEN). Exact move, bounds-checked
     (fail loud -- silent clamping would hide index bugs). The byte/index
     primitive for format kernels (fixed-offset field decode); it fills the
-    1D-I gap that SLICE (2D F/T only) and GATHER ((V,C) table) leave open."""
+    1D-I gap that SLICE (2D F/T/I) and GATHER ((V,C) table) leave open."""
     x = _int_stream(vals[0], "IWINDOW", "X")
     start = _int_arg(vals[1], "IWINDOW start")
     length = _int_arg(vals[2], "IWINDOW len")

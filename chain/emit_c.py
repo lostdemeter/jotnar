@@ -523,9 +523,9 @@ def infer_shapes(bound, sample):
             ax = _int_lit(args[1], f"{where} axis")
             lo = _int_lit(args[2], f"{where} lo")
             hi = _int_lit(args[3], f"{where} hi")
-            if sk not in ("F", "T") or len(ssh) != 2 or ax not in (0, 1):
+            if sk not in ("F", "T", "I") or len(ssh) != 2 or ax not in (0, 1):
                 raise NoPattern(f"{where}: v0.2 SLICE handles 2D ax0/1 "
-                                f"F/T; use IWINDOW for 1D I")
+                                f"F/T/I; use IWINDOW for 1D I")
             dd = list(ssh)
             if dd[ax] is not None and not (0 <= lo <= hi <= dd[ax]):
                 raise AsmError(f"{where}: SLICE [{lo},{hi}) of dim {dd[ax]}")
@@ -1432,6 +1432,29 @@ class CBackend(Backend):
                         f"&{x}_{comp}[(s_i + {lo}) * {w1}], "
                         f"{w1} * sizeof({o}_{comp}[0]));")
                 return ("\n".join(L), None)
+            if S[x][0] == "I":
+                osh = S[o][2]
+                if ax == 1:
+                    rows = osh[0]
+                    if rows is None:
+                        raise NoPattern(
+                            "C backend: SLICE-I ax1 dynamic rows")
+                    return (
+                        f"/* {o} = SLICE({x},1,{lo},{hi}) int64 */\n"
+                        f"for (int64_t s_i = 0; s_i < {rows}; ++s_i)\n"
+                        f"  memcpy(&{o}[s_i * {hi - lo}], "
+                        f"&{x}[s_i * {in_d} + {lo}], "
+                        f"{hi - lo} * sizeof(int64_t));",
+                        None)
+                w1 = S[x][2][1]
+                if w1 is None:
+                    raise NoPattern(
+                        "C backend: SLICE-I ax0 dynamic width")
+                return (
+                    f"/* {o} = SLICE({x},0,{lo},{hi}) int64 rows */\n"
+                    f"memcpy({o}, &{x}[{lo} * {w1}], "
+                    f"{co} * sizeof(int64_t));",
+                    None)
             if ax == 1:
                 return (
                     f"/* {o} = SLICE({x},1,{lo},{hi}) */\n"

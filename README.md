@@ -231,7 +231,7 @@ overloads; missing = loud `NoPattern`, never silent.
 | SELECT | 3 -> 1 | F,T | F | T | runtime count guard |
 | SIGMOID | 1 -> 1 | — | — | — | LUT spans ahead; parked (SILU/SwiGLU cover live use, drilled only) |
 | SILU | 1 -> 1 | F | F | T | = x*sigmoid |
-| SLICE | 4 -> 1 | F,T | F | T | ax0/ax1 |
+| SLICE | 4 -> 1 | F,T,I | F | T | ax0/ax1; 2D I pages/bitmaps, 1D I stays IWINDOW |
 | SOFTMAX | 1 -> 1 | — | — | T | legacy narrow path |
 | SOFTMAX_WIDE | 1 -> 1 | F | F | T | online/stable; T via EXP LUT |
 | SPLAT_BLUR | 1 -> 2 | — | — | — | vision legacy; lattice-only (flagship runs lattice, no emitted demand) |
