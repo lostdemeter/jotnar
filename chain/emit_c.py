@@ -2247,6 +2247,8 @@ def compile_program(text, target="c", sample=None, outputs=None,
         else:
             decls.append(f"static int64_t *{n}; static int64_t {n}_N;")
     for o in outputs:
+        if o in in_names:
+            continue  # shadowed input: reuse the loaded buffer
         ok, osub, osh = streams[o]
         if ok == "F":
             decls.append(f"static {_frepr} *{o};")
@@ -2357,13 +2359,16 @@ def compile_program(text, target="c", sample=None, outputs=None,
         # define _N as elements, and SELECT's guard compares mask _N
         # against branch count -- same units or fail loud (rc 21).
         allocs.append(f"  int64_t {x}_N = ({cnt});")
-    for x in sorted(inter) + [o for o in outputs if streams[o][0] == "F"]:
+    for x in sorted(inter) + [o for o in outputs
+                              if streams[o][0] == "F" and o not in in_names]:
         _k, _s, xsh = streams[x]
         cnt = _dim_expr(xsh, ids_n)
         allocs.append(f"  {x} = malloc(({cnt}) * sizeof({_frepr}));")
         # per-stream ROW-count var for patterns (<stream>_N)
         allocs.append(f"  int64_t {x}_N = {_rows_expr(xsh, ids_n)};")
     for o in outputs:
+        if o in in_names:
+            continue  # shadowed input: loaded buffer is the output buffer
         if streams[o][0] == "I":
             _osh = streams[o][2]
             # ELEMENT count (not rows): matches file-load _N semantics
@@ -2372,7 +2377,8 @@ def compile_program(text, target="c", sample=None, outputs=None,
             _cnt = _dim_expr(_osh, ids_n)
             allocs.append(f"  {o}_N = ({_cnt}); "
                           f"{o} = malloc(({_cnt}) * 8);")
-    for x in sorted(interT) + [o for o in outputs if streams[o][0] == "T"]:
+    for x in sorted(interT) + [o for o in outputs
+                               if streams[o][0] == "T" and o not in in_names]:
         _k, _tsub, xsh = streams[x]
         _st, _et, _zt = _tsub
         cnt = _dim_expr(xsh, ids_n)
