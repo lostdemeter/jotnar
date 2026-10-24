@@ -315,6 +315,35 @@ def _collect_repeat_body(flat, i):
     raise AsmError("REPEAT without END")
 
 
+def _has_break(body):
+    """True if the body has a top-level BREAK (nested loops excluded)."""
+    depth = 0
+    for entry in body:
+        line = _line_of(entry)
+        toks = line.split(None, 1)
+        head = toks[0].upper() if toks else ""
+        if head == "REPEAT":
+            depth += 1
+        elif head == "END":
+            depth -= 1
+        elif head == "BREAK" and depth == 0:
+            return True
+    return False
+
+
+def _find_end(prog, i):
+    """Index of the __END__ matching the __REPEAT__ at i."""
+    depth = 0
+    for j in range(i, len(prog)):
+        if prog[j][1] == "__REPEAT__":
+            depth += 1
+        elif prog[j][1] == "__END__":
+            depth -= 1
+            if depth == 0:
+                return j
+    raise AsmError("REPEAT without END")
+
+
 def _expand_repeats(flat):
     """Unroll static ``REPEAT n ... END`` blocks (n an integral literal).
 
@@ -346,9 +375,15 @@ def _expand_repeats(flat):
                 if n < 0:
                     raise AsmError(
                         f"line {flat[i][1]}: REPEAT count must be >= 0")
-                expanded = _expand_repeats(body)
-                for _ in range(n):
-                    out.extend(expanded)
+                if _has_break(body):
+                    # BREAK needs a real loop: keep the region (literal bound)
+                    out.append((f"__REPEAT__ {toks[1]}", flat[i][1], True))
+                    out.extend(_expand_repeats(body))
+                    out.append(("__END__", flat[i][1], True))
+                else:
+                    expanded = _expand_repeats(body)
+                    for _ in range(n):
+                        out.extend(expanded)
             else:
                 # runtime trip count: n is a stream name
                 out.append((f"__REPEAT__ {toks[1]}", flat[i][1], True))
@@ -384,6 +419,11 @@ def parse(text, basedir=".", stdlib=None, origin=None):
             continue
         if head == "__END__":
             prog.append(([], "__END__", [], ln))
+            continue
+        if head == "BREAK":
+            if len(toks) != 2:
+                raise AsmError(f"line {ln}: BREAK needs a condition")
+            prog.append(([], "__BREAK__", [toks[1]], ln))
             continue
         if head == "CONFIG":
             kv = toks[1].split()
@@ -470,15 +510,30 @@ def assemble(text, registry, sigs=None, basedir=".", stdlib=None,
     sigs = sigs or {}
     config, inp, prog, state = parse(text, basedir, stdlib, origin)
     bound, defined = [], set(n for n, _ in inp)
+    loop_depth = 0
     for outs, mn, args, ln in prog:
-        if mn in ("__REPEAT__", "__END__"):
-            if mn == "__REPEAT__":
-                if len(args) != 1:
-                    raise AsmError(f"line {ln}: REPEAT needs a count")
-                a = args[0]
-                if a not in defined and not _is_literal(a):
-                    raise AsmError(
-                        f"line {ln}: REPEAT count '{a}' not defined")
+        if mn == "__REPEAT__":
+            if len(args) != 1:
+                raise AsmError(f"line {ln}: REPEAT needs a count")
+            a = args[0]
+            if a not in defined and not _is_literal(a):
+                raise AsmError(f"line {ln}: REPEAT count '{a}' not defined")
+            loop_depth += 1
+            bound.append((outs, mn, None, args, ln, None))
+            continue
+        if mn == "__END__":
+            loop_depth -= 1
+            bound.append((outs, mn, None, args, ln, None))
+            continue
+        if mn == "__BREAK__":
+            if loop_depth <= 0:
+                raise AsmError(f"line {ln}: BREAK outside REPEAT")
+            if len(args) != 1:
+                raise AsmError(f"line {ln}: BREAK needs a condition")
+            a = args[0]
+            if a not in defined and not _is_literal(a):
+                raise AsmError(
+                    f"line {ln}: BREAK condition '{a}' not defined")
             bound.append((outs, mn, None, args, ln, None))
             continue
         if mn not in registry:
@@ -693,18 +748,30 @@ def run(bound, config, inp, payload, trace=None, overrides=None,
                  if nv in view else int(float(nv)))
             if n < 0:
                 raise AsmError(f"line {ln}: REPEAT count negative")
-            loop_stack.append((i, n))
+            loop_stack.append((i, _find_end(prog, i), n))
             i += 1
             continue
         if mn == "__END__":
             if not loop_stack:
                 raise AsmError(f"line {ln}: END without REPEAT")
-            start, n = loop_stack[-1]
+            start, end, n = loop_stack[-1]
             if n > 1:
-                loop_stack[-1] = (start, n - 1)
+                loop_stack[-1] = (start, end, n - 1)
                 i = start + 1
                 continue
             loop_stack.pop()
+            i += 1
+            continue
+        if mn == "__BREAK__":
+            if not loop_stack:
+                raise AsmError(f"line {ln}: BREAK outside REPEAT")
+            cv = args[0]
+            cond = (int(view[cv].reshape(-1)[0])
+                    if cv in view else int(float(cv)))
+            if cond != 0:
+                _start, end, _n = loop_stack.pop()
+                i = end + 1
+                continue
             i += 1
             continue
         vals = [view[a] if a in view else float(a) for a in args]

@@ -302,6 +302,10 @@ END
   invariant across iterations** (checked at `END`; fail loud). Nested
   loops are supported.
 - Non-integral literal / negative / missing-`END` / stray-`END` fail loud.
+- **`BREAK cond`** exits the innermost `REPEAT` when `cond` (a 1-element
+  `I` stream or literal) is nonzero; it may appear anywhere in the body.
+  A literal-count `REPEAT` containing `BREAK` compiles as a loop (not an
+  unroll).
 - This is the "static geometry, dynamic trajectory" loop: the space
   (buffer shapes) is fixed; only the trip count and cursor vary.
 

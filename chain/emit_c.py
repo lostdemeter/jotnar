@@ -256,6 +256,18 @@ def infer_shapes(bound, sample):
                         f"{where}: REPEAT changes geometry of '{k}' "
                         f"({sh} -> {streams[k][2]}); shapes must be invariant")
             continue
+        if mn == "__BREAK__":
+            if len(args) != 1:
+                raise AsmError(f"{where}: BREAK needs a condition")
+            a = args[0]
+            if a in streams:
+                ak, _, ash = streams[a]
+                if ak != "I" or len(ash) != 1 or ash[0] not in (1, None):
+                    raise AsmError(
+                        f"{where}: BREAK condition must be a 1-element I")
+            else:
+                _int_lit(a, f"{where} BREAK cond")
+            continue
         if mn == "GATHER":
             tk, tsub, tsh = streams[args[0]]
             ik, _, ish = streams[args[1]]
@@ -2036,6 +2048,16 @@ def _emit_codec_c(be, ctx, bound, streams, in_names, consts, outputs,
             step.append("  }")
             i += 1
             continue
+        if mn == "__BREAK__":
+            cv = args[0]
+            if cv in ctx["streams"]:
+                step.append(f"  if ({cv}[0] != 0) break;")
+            else:
+                step.append(
+                    f"  if ({_c_i64_lit(_int_lit(cv, 'BREAK cond'))} != 0)"
+                    f" break;")
+            i += 1
+            continue
         pat, gathered = be.pattern(mn, outs, args, sig, ctx)
         if gathered:
             ctx["gathered"][gathered[0]] = gathered[1]
@@ -2488,6 +2510,16 @@ def compile_program(text, target="c", sample=None, outputs=None,
             continue
         if mn == "__END__":
             compute.append("  }")
+            i += 1
+            continue
+        if mn == "__BREAK__":
+            cv = args[0]
+            if cv in ctx["streams"]:
+                compute.append(f"  if ({cv}[0] != 0) break;")
+            else:
+                compute.append(
+                    f"  if ({_c_i64_lit(_int_lit(cv, 'BREAK cond'))} != 0)"
+                    f" break;")
             i += 1
             continue
         pat, gathered = be.pattern(mn, outs, args, sig, ctx)
