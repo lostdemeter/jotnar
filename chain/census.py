@@ -25,6 +25,8 @@ ACCESS = {
     "GT": "elementwise",
     "IADD": "elementwise", "ISUB": "elementwise", "IMUL": "elementwise",
     "IMAD": "elementwise", "IDIV": "elementwise", "IMOD": "elementwise",
+    "IXOR": "elementwise", "IAND": "elementwise", "IOR": "elementwise",
+    "ISHL": "elementwise", "ISHR": "elementwise",  # gate: tests/test_ibitwise.py
     "F2I": "elementwise", "I2F": "elementwise",
     "BETA_V5": "elementwise", "SRGB_DECODE": "elementwise",
     "SRGB_ENCODE": "elementwise",

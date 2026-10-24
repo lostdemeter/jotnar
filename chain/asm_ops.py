@@ -168,6 +168,47 @@ def op_imad(vals, config, feeds):
     return _iwrap(a * b + c)
 
 
+def op_ixor(vals, config, feeds):
+    """Exact I-kind bitwise XOR, 64-bit wrap; scalar literals broadcast."""
+    a = _int_stream(vals[0], "IXOR", "a")
+    b = _int_operand(vals[1], "IXOR", "b", a.shape)
+    return _iwrap(np.bitwise_xor(a, b))
+
+
+def op_iand(vals, config, feeds):
+    """Exact I-kind bitwise AND, 64-bit wrap; scalar literals broadcast."""
+    a = _int_stream(vals[0], "IAND", "a")
+    b = _int_operand(vals[1], "IAND", "b", a.shape)
+    return _iwrap(np.bitwise_and(a, b))
+
+
+def op_ior(vals, config, feeds):
+    """Exact I-kind bitwise OR, 64-bit wrap; scalar literals broadcast."""
+    a = _int_stream(vals[0], "IOR", "a")
+    b = _int_operand(vals[1], "IOR", "b", a.shape)
+    return _iwrap(np.bitwise_or(a, b))
+
+
+def op_ishl(vals, config, feeds):
+    """Exact I-kind logical left shift by an integral literal 0..63.
+    The bit-level primitive for bitfields and CRC/GF(2) kernels."""
+    a = _int_stream(vals[0], "ISHL", "a")
+    s = _int_arg(vals[1], "ISHL shift")
+    if not (0 <= s <= 63):
+        raise ValueError(f"ISHL: shift must be 0..63, got {s}")
+    return _iwrap(a.astype(np.uint64) << np.uint64(s))
+
+
+def op_ishr(vals, config, feeds):
+    """Exact I-kind *logical* (zero-fill) right shift by a literal 0..63.
+    Zero-fill (not arithmetic) is what CRC/bitfield/GF(2) kernels need."""
+    a = _int_stream(vals[0], "ISHR", "a")
+    s = _int_arg(vals[1], "ISHR shift")
+    if not (0 <= s <= 63):
+        raise ValueError(f"ISHR: shift must be 0..63, got {s}")
+    return _iwrap(a.astype(np.uint64) >> np.uint64(s))
+
+
 _INT64_MIN = -(1 << 63)
 
 
@@ -1215,6 +1256,11 @@ REGISTRY = {
     "IMAD": (op_imad, 3, 1),
     "IDIV": (op_idiv, 2, 1),
     "IMOD": (op_imod, 2, 1),
+    "IXOR": (op_ixor, 2, 1),
+    "IAND": (op_iand, 2, 1),
+    "IOR": (op_ior, 2, 1),
+    "ISHL": (op_ishl, 2, 1),
+    "ISHR": (op_ishr, 2, 1),
     "F2I": (op_f2i, 1, 1),
     "I2F": (op_i2f, 1, 1),
     "BETA_V5": (op_beta_v5, 2, 1),
@@ -1292,6 +1338,11 @@ SIGS = {
     "IMAD": (["I:*", "*", "*"], ["I:*"]),
     "IDIV": (["I:*", "*"], ["I:*"]),
     "IMOD": (["I:*", "*"], ["I:*"]),
+    "IXOR": (["I:*", "*"], ["I:*"]),
+    "IAND": (["I:*", "*"], ["I:*"]),
+    "IOR": (["I:*", "*"], ["I:*"]),
+    "ISHL": (["I:*", "F:SCALAR"], ["I:*"]),
+    "ISHR": (["I:*", "F:SCALAR"], ["I:*"]),
     "F2I": (["F:*"], ["I:*"]),
     "I2F": (["I:*"], ["F:*"]),
     "BETA_V5": (["T:HW", "T:HW"], ["T:HW"]),
