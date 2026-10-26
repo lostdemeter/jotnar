@@ -133,6 +133,12 @@ def main():
               all(bool((got2[n] == ref2[n]).all())
                   for n in ("C1", "C2", "C3")),
               ",".join(hex(int(got2[n][0])) for n in ("C1", "C2", "C3")))
+    # CUDA is not a target for the integer streaming op: it must refuse loud
+    try:
+        compile_program(text2, "cuda", sample=pay2, outputs=["C1"])
+        check("icrc32c-cuda-loud", False, "cuda compiled ICRC32C")
+    except NoPattern as e:
+        check("icrc32c-cuda-loud", "ICRC32C" in str(e), str(e)[:80])
 
     # loud: reference
     for tag, fn, args, want in (
