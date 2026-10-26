@@ -173,7 +173,7 @@ lattice node through the same controller. Gate:
 `tests/test_protocol.py` pipe legs (per-layer KV, LOGITS, choice
 bit-exact vs single-node).
 
-## Opcode table (76 mnemonics)
+## Opcode table (77 mnemonics)
 
 Kinds: F float, T lattice-triples, I integer. Backends admit per-kind
 overloads; missing = loud `NoPattern`, never silent.
@@ -207,6 +207,7 @@ overloads; missing = loud `NoPattern`, never silent.
 | IWINDOW | 3 -> 1 | I | — | I | 1D integer window [START, START+LEN); START literal or 1-element I stream (dynamic, runtime rc 4), LEN literal; byte/index primitive for format kernels (codec EOCD); C/non-FPU exact, CUDA loud NoPattern |
 | ICRC32 | 1 -> 1 | I | — | I | CRC-32 reflected poly 0xEDB88320, finalized, matches zlib.crc32; internal loop; C/non-FPU exact, CUDA loud NoPattern |
 | ICRC32C | 2 -> 1 | I | — | I | CRC-32C Castagnoli reflected poly 0x82F63B78, **seeded and raw** (no final xor), `ICRC32C(X, SEED)` chains; the ext4 metadata_csum primitive; internal loop; C/non-FPU exact, CUDA loud NoPattern |
+| IVARINT | 2 -> 2 | I | — | I | the SQLite varint at START -> (value, length); START literal or 1-element I; bounds loud (rc 32); internal loop; C/non-FPU exact, CUDA loud NoPattern |
 | IFIND | 2 -> 1 | I | — | I | first offset of PAT in X or -1; static lengths, empty PAT loud; internal loop; C/non-FPU exact, CUDA loud NoPattern |
 | IGATHER1 | 2 -> 1 | I | — | I | 1D integer gather OUT[n] = TABLE[IDS[n]], static table length, ids bounds-checked loud (runtime return 4); non-contiguous companion to IWINDOW (xref rows, scattered fields); C/non-FPU exact, CUDA loud NoPattern |
 | IASSEMBLE | 3 -> 1 | I | — | I | LE field assembly sum((X[START+i] & 0xFF) << (8*i)), LEN 1..8 (8 → int64 two's-complement); bounds-checked; C/non-FPU exact, CUDA loud NoPattern |
