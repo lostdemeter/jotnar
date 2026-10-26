@@ -1099,6 +1099,26 @@ def op_icrc32(vals, config, feeds):
     return np.asarray([crc ^ 0xFFFFFFFF], dtype=np.int64)
 
 
+def op_icrc32c(vals, config, feeds):
+    """CRC-32C (Castagnoli, reflected poly 0x82F63B78) over a 1D I byte
+    stream, **seeded and raw** (no final xor) -- the ext4 ``crc32c``.
+    ``ICRC32C(X, SEED)`` chains: the seed is the previous result, so the
+    ext4 metadata checksums (dir / inode / superblock) compose.  Exact;
+    the streaming op that unblocks the ext4 metadata_csum family."""
+    x = _int_stream(vals[0], "ICRC32C", "X")
+    if x.ndim != 1:
+        raise ValueError(f"ICRC32C: expected 1D I, got shape {x.shape}")
+    seed = _int_stream(vals[1], "ICRC32C", "SEED")
+    if seed.ndim != 1 or seed.size != 1:
+        raise ValueError("ICRC32C: SEED must be a 1-element I")
+    crc = int(seed[0]) & 0xFFFFFFFF
+    for b in x:
+        crc ^= int(b) & 0xFF
+        for _ in range(8):
+            crc = (crc >> 1) ^ (0x82F63B78 if (crc & 1) else 0)
+    return np.asarray([crc], dtype=np.int64)
+
+
 def op_ifind(vals, config, feeds):
     """First offset of PATTERN in X (both 1D I), or -1 if absent. Exact;
     the region-scan primitive (signature offsets). An empty pattern fails
@@ -1353,6 +1373,7 @@ REGISTRY = {
     "SLICE": (op_slice, 4, 1),
     "IWINDOW": (op_iwindow, 3, 1),
     "ICRC32": (op_icrc32, 1, 1),
+    "ICRC32C": (op_icrc32c, 2, 1),
     "IFIND": (op_ifind, 2, 1),
     "CLIP": (op_clip, 3, 1),
     "DIV": (op_div, 2, 1),
@@ -1437,6 +1458,7 @@ SIGS = {
     "SLICE": (["$A", "F:SCALAR", "F:SCALAR", "F:SCALAR"], ["$A"]),
     "IWINDOW": (["I:*", "*", "F:SCALAR"], ["I:*"]),
     "ICRC32": (["I:*"], ["I:*"]),
+    "ICRC32C": (["I:*", "I:*"], ["I:*"]),
     "IFIND": (["I:*", "I:*"], ["I:*"]),
     "CLIP": (["$A", "F:SCALAR", "F:SCALAR"], ["$A"]),
     "DIV": (["$A", "$A"], ["$A"]),

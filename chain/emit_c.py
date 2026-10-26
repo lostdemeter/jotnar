@@ -579,6 +579,11 @@ def infer_shapes(bound, sample):
             if xk != "I" or len(xsh) != 1:
                 raise NoPattern(f"{where}: ICRC32 handles 1D I")
             streams[o] = ("I", xsub, (1,))
+        elif mn == "ICRC32C":
+            xk, xsub, xsh = streams[args[0]]
+            if xk != "I" or len(xsh) != 1:
+                raise NoPattern(f"{where}: ICRC32C handles 1D I")
+            streams[o] = ("I", xsub, (1,))
         elif mn == "IFIND":
             xk, xsub, xsh = streams[args[0]]
             pk, _, psh = streams[args[1]]
@@ -942,6 +947,29 @@ class CBackend(Backend):
                 f"(0xEDB88320u & ((uint32_t)-(int32_t)(_crc & 1u)));\n"
                 f"  }}\n"
                 f"  {o}[0] = (int64_t)(_crc ^ 0xFFFFFFFFu); }}",
+                None)
+        if mn == "ICRC32C":
+            x, seed = args
+            o = outs[0]
+            if S[x][0] != "I" or len(S[x][2]) != 1:
+                raise NoPattern("C backend ICRC32C needs 1D I")
+            xn = S[x][2][0]
+            if xn is None:
+                raise NoPattern(
+                    "C backend ICRC32C: input length must be static")
+            if o not in ctx["count"]:
+                raise NoPattern(f"C backend ICRC32C: dynamic output '{o}'")
+            return (
+                f"/* {o} = ICRC32C({x}, {seed}) exact "
+                f"(Castagnoli, seeded, raw) */\n"
+                f"{{ uint32_t _crc = (uint32_t)({seed}[0] & 0xFFFFFFFF);\n"
+                f"  for (int64_t e_i = 0; e_i < {xn}; ++e_i) {{\n"
+                f"    _crc ^= (uint32_t)({x}[e_i] & 0xFF);\n"
+                f"    for (int _b = 0; _b < 8; ++_b)\n"
+                f"      _crc = (_crc >> 1) ^ "
+                f"(0x82F63B78u & ((uint32_t)-(int32_t)(_crc & 1u)));\n"
+                f"  }}\n"
+                f"  {o}[0] = (int64_t)_crc; }}",
                 None)
         if mn == "IFIND":
             x, pat = args
