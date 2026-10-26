@@ -1490,6 +1490,32 @@ def op_iinflate(vals, config, feeds):
         raise ValueError(f"IINFLATE: negative size {n}")
     raw = _inflate_raw(bytes(int(v) & 0xFF for v in x), n)
     return np.frombuffer(raw, dtype=np.uint8).astype(np.int64)
+def op_ivarint(vals, config, feeds):
+    """IVARINT(X, START): the SQLite varint at START -> (value, length).
+
+    SQLite's record/rowid encoding: 1-9 bytes, big-endian 7-bit groups,
+    the high bit = "more".  The 9th byte contributes the full 8 bits.
+    Exact; bounds-checked loud.  The decode primitive for the page/record
+    kernels (the host used to do this arithmetic)."""
+    x = _int_stream(vals[0], "IVARINT", "X")
+    start = _iwindow_start(vals[1])
+    if x.ndim != 1:
+        raise ValueError(f"IVARINT: expected 1D I, got shape {x.shape}")
+    if start < 0 or start >= x.shape[0]:
+        raise ValueError(f"IVARINT: start {start} out of range {x.shape[0]}")
+    v = 0
+    for i in range(8):
+        if start + i >= x.shape[0]:
+            raise ValueError("IVARINT: truncated")
+        b = int(x[start + i]) & 0xFF
+        v = (v << 7) | (b & 0x7F)
+        if not b & 0x80:
+            return (np.asarray([v], dtype=np.int64),
+                    np.asarray([i + 1], dtype=np.int64))
+    if start + 8 >= x.shape[0]:
+        raise ValueError("IVARINT: truncated")
+    v = (v << 8) | (int(x[start + 8]) & 0xFF)
+    return (np.asarray([v], dtype=np.int64), np.asarray([9], dtype=np.int64))
 
 
 REGISTRY = {
@@ -1553,6 +1579,7 @@ REGISTRY = {
     "ICRC32": (op_icrc32, 1, 1),
     "ICRC32C": (op_icrc32c, 2, 1),
     "IINFLATE": (op_iinflate, 2, 1),
+    "IVARINT": (op_ivarint, 2, 2),
     "IFIND": (op_ifind, 2, 1),
     "CLIP": (op_clip, 3, 1),
     "DIV": (op_div, 2, 1),
@@ -1639,6 +1666,7 @@ SIGS = {
     "ICRC32": (["I:*"], ["I:*"]),
     "ICRC32C": (["I:*", "I:*"], ["I:*"]),
     "IINFLATE": (["I:*", "F:SCALAR"], ["I:*"]),
+    "IVARINT": (["I:*", "*"], ["I:*", "I:*"]),
     "IFIND": (["I:*", "I:*"], ["I:*"]),
     "CLIP": (["$A", "F:SCALAR", "F:SCALAR"], ["$A"]),
     "DIV": (["$A", "$A"], ["$A"]),

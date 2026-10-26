@@ -780,6 +780,18 @@ def infer_shapes(bound, sample):
             if n < 0:
                 raise AsmError(f"{where}: IINFLATE negative size {n}")
             streams[o] = ("I", xsub, (n,))
+        elif mn == "IVARINT":
+            xk, xsub, xsh = streams[args[0]]
+            if xk != "I" or len(xsh) != 1:
+                raise NoPattern(f"{where}: IVARINT handles 1D I")
+            if args[1] in streams:
+                sk, _, ssh = streams[args[1]]
+                if sk != "I" or len(ssh) != 1 or ssh[0] not in (1, None):
+                    raise AsmError(
+                        f"{where}: IVARINT dynamic start must be a 1-element "
+                        f"I, got {sk} {ssh}")
+            streams[outs[0]] = ("I", xsub, (1,))
+            streams[outs[1]] = ("I", xsub, (1,))
         elif mn == "IFIND":
             xk, xsub, xsh = streams[args[0]]
             pk, _, psh = streams[args[1]]
@@ -1185,6 +1197,37 @@ class CBackend(Backend):
             return (
                 f"/* {o} = IINFLATE({x}, {n}) raw deflate, exact */\n"
                 f"if (jn_inflate({x}, {xn}, {o}, {n}) != 0) return 31;",
+                None)
+        if mn == "IVARINT":
+            x, st = args
+            vo, lo = outs[0], outs[1]
+            if S[x][0] != "I" or len(S[x][2]) != 1:
+                raise NoPattern("C backend IVARINT needs 1D I")
+            xn = S[x][2][0]
+            if xn is None:
+                raise NoPattern(
+                    "C backend IVARINT: input length must be static")
+            if st in S:
+                sk = st
+                if S[sk][0] != "I" or len(S[sk][2]) != 1:
+                    raise NoPattern(
+                        "C backend IVARINT dynamic start needs 1-element I")
+                p_expr = f"{sk}[0]"
+            else:
+                p_expr = str(_int_lit(st, "IVARINT start"))
+            return (
+                f"/* {vo},{lo} = IVARINT({x}, {st}) */\n"
+                f"{{ int64_t _p = {p_expr}; int64_t _v = 0, _n = 0;\n"
+                f"  if (_p < 0 || _p >= {xn}) return 32;\n"
+                f"  for (int _i = 0; _i < 8; _i++) {{\n"
+                f"    if (_p + _i >= {xn}) return 32;\n"
+                f"    int64_t _b = {x}[_p + _i] & 0xFF;\n"
+                f"    _v = (_v << 7) | (_b & 0x7F);\n"
+                f"    if (!(_b & 0x80)) {{ _n = _i + 1; break; }}\n"
+                f"  }}\n"
+                f"  if (_n == 0) {{ if (_p + 8 >= {xn}) return 32;\n"
+                f"    _v = (_v << 8) | ({x}[_p + 8] & 0xFF); _n = 9; }}\n"
+                f"  {vo}[0] = _v; {lo}[0] = _n; }}",
                 None)
         if mn == "IFIND":
             x, pat = args
