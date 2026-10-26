@@ -1314,6 +1314,184 @@ def op_mixdyad(vals, config, feeds):
             np.where(m, mixed[2], d[2]).astype(np.uint8))
 
 
+
+# --- deflate (RFC 1951) ----------------------------------------------------
+# The raw inflate primitive: a *streaming* op with an internal loop, the
+# decompression counterpart of ICRC32/IFIND.  It owns the bytes the host
+# used to get from zlib (the ZIP member / PNG IDAT / PDF stream).
+
+_LEN_BASE = [3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31,
+             35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258]
+_LEN_EXTRA = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2,
+              3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0]
+_DIST_BASE = [1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193,
+              257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193,
+              12289, 16385, 24577]
+_DIST_EXTRA = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6,
+               7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13]
+_CL_ORDER = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15]
+_FIXED_LIT = [8] * 144 + [9] * 112 + [7] * 24 + [8] * 8
+_FIXED_DIST = [5] * 32
+
+
+class _BitReader:
+    """LSB-first bit reader (the deflate bit order for non-Huffman fields)."""
+
+    __slots__ = ("d", "pos", "buf", "cnt")
+
+    def __init__(self, data):
+        self.d = data
+        self.pos = 0
+        self.buf = 0
+        self.cnt = 0
+
+    def bit(self):
+        if not self.cnt:
+            if self.pos >= len(self.d):
+                raise ValueError("IINFLATE: truncated stream")
+            self.buf = self.d[self.pos]
+            self.pos += 1
+            self.cnt = 8
+        b = self.buf & 1
+        self.buf >>= 1
+        self.cnt -= 1
+        return b
+
+    def bits(self, n):
+        v = 0
+        for i in range(n):
+            v |= self.bit() << i
+        return v
+
+    def align(self):
+        self.cnt = 0
+
+
+def _huff_table(lengths):
+    """Canonical Huffman: {(length, code): symbol}, max length."""
+    max_bits = max(lengths) if lengths else 0
+    count = [0] * (max_bits + 1)
+    for ln in lengths:
+        if ln:
+            count[ln] += 1
+    code = 0
+    next_code = [0] * (max_bits + 1)
+    for bits in range(1, max_bits + 1):
+        code = (code + count[bits - 1]) << 1
+        next_code[bits] = code
+    table = {}
+    for sym, ln in enumerate(lengths):
+        if ln:
+            table[(ln, next_code[ln])] = sym
+            next_code[ln] += 1
+    return table, max_bits
+
+
+def _huff_decode(br, table, max_bits):
+    """Huffman codes are packed MSB-first (the first bit is the MSB)."""
+    code = 0
+    for ln in range(1, max_bits + 1):
+        code = (code << 1) | br.bit()
+        sym = table.get((ln, code))
+        if sym is not None:
+            return sym
+    raise ValueError("IINFLATE: bad Huffman code")
+
+
+def _decode_block(br, out, lit, lmax, dist, dmax, limit):
+    while True:
+        sym = _huff_decode(br, lit, lmax)
+        if sym < 256:
+            out.append(sym)
+        elif sym == 256:
+            return
+        else:
+            li = sym - 257
+            if li >= 29:
+                raise ValueError("IINFLATE: bad length symbol")
+            length = _LEN_BASE[li] + br.bits(_LEN_EXTRA[li])
+            ds = _huff_decode(br, dist, dmax)
+            if ds >= 30:
+                raise ValueError("IINFLATE: bad distance symbol")
+            d = _DIST_BASE[ds] + br.bits(_DIST_EXTRA[ds])
+            if d > len(out):
+                raise ValueError("IINFLATE: distance beyond the output")
+            for _ in range(length):
+                out.append(out[-d])
+        if len(out) > limit:
+            raise ValueError(f"IINFLATE: output exceeds {limit}")
+
+
+def _inflate_raw(data, expected):
+    """Raw deflate -> exactly ``expected`` bytes (fail loud otherwise)."""
+    br = _BitReader(data)
+    out = bytearray()
+    while True:
+        final = br.bit()
+        btype = br.bits(2)
+        if btype == 0:
+            br.align()
+            ln = br.bits(16)
+            nln = br.bits(16)
+            if (ln ^ 0xFFFF) != nln:
+                raise ValueError("IINFLATE: stored LEN/NLEN mismatch")
+            for _ in range(ln):
+                out.append(br.bits(8))
+        elif btype == 1:
+            lit, lmax = _huff_table(_FIXED_LIT)
+            dist, dmax = _huff_table(_FIXED_DIST)
+            _decode_block(br, out, lit, lmax, dist, dmax, expected)
+        elif btype == 2:
+            hlit = br.bits(5) + 257
+            hdist = br.bits(5) + 1
+            hclen = br.bits(4) + 4
+            cl = [0] * 19
+            for i in range(hclen):
+                cl[_CL_ORDER[i]] = br.bits(3)
+            clt, clmax = _huff_table(cl)
+            lengths = []
+            while len(lengths) < hlit + hdist:
+                sym = _huff_decode(br, clt, clmax)
+                if sym < 16:
+                    lengths.append(sym)
+                elif sym == 16:
+                    if not lengths:
+                        raise ValueError("IINFLATE: repeat with no previous")
+                    lengths += [lengths[-1]] * (br.bits(2) + 3)
+                elif sym == 17:
+                    lengths += [0] * (br.bits(3) + 3)
+                elif sym == 18:
+                    lengths += [0] * (br.bits(7) + 11)
+                else:
+                    raise ValueError("IINFLATE: bad code-length symbol")
+            lit, lmax = _huff_table(lengths[:hlit])
+            dist, dmax = _huff_table(lengths[hlit:])
+            _decode_block(br, out, lit, lmax, dist, dmax, expected)
+        else:
+            raise ValueError("IINFLATE: bad block type")
+        if len(out) > expected:
+            raise ValueError(f"IINFLATE: output exceeds {expected}")
+        if final:
+            break
+    if len(out) != expected:
+        raise ValueError(f"IINFLATE: decoded {len(out)}, expected {expected}")
+    return bytes(out)
+
+
+def op_iinflate(vals, config, feeds):
+    """IINFLATE(X, N): raw deflate (RFC 1951) -> exactly N bytes. Exact;
+    the decompression primitive that lets the kernel own the deflate
+    payloads (ZIP members, PNG IDAT, PDF streams) instead of the host."""
+    x = _int_stream(vals[0], "IINFLATE", "X")
+    n = _int_arg(vals[1], "IINFLATE size")
+    if x.ndim != 1:
+        raise ValueError(f"IINFLATE: expected 1D I, got shape {x.shape}")
+    if n < 0:
+        raise ValueError(f"IINFLATE: negative size {n}")
+    raw = _inflate_raw(bytes(int(v) & 0xFF for v in x), n)
+    return np.frombuffer(raw, dtype=np.uint8).astype(np.int64)
+
+
 REGISTRY = {
     "SRGB_DECODE": (op_srgb_decode, 1, 1),
     "LUMA": (op_luma, 1, 1),
@@ -1374,6 +1552,7 @@ REGISTRY = {
     "IWINDOW": (op_iwindow, 3, 1),
     "ICRC32": (op_icrc32, 1, 1),
     "ICRC32C": (op_icrc32c, 2, 1),
+    "IINFLATE": (op_iinflate, 2, 1),
     "IFIND": (op_ifind, 2, 1),
     "CLIP": (op_clip, 3, 1),
     "DIV": (op_div, 2, 1),
@@ -1459,6 +1638,7 @@ SIGS = {
     "IWINDOW": (["I:*", "*", "F:SCALAR"], ["I:*"]),
     "ICRC32": (["I:*"], ["I:*"]),
     "ICRC32C": (["I:*", "I:*"], ["I:*"]),
+    "IINFLATE": (["I:*", "F:SCALAR"], ["I:*"]),
     "IFIND": (["I:*", "I:*"], ["I:*"]),
     "CLIP": (["$A", "F:SCALAR", "F:SCALAR"], ["$A"]),
     "DIV": (["$A", "$A"], ["$A"]),

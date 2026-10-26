@@ -41,6 +41,7 @@ ACCESS = {
     "IWINDOW": "moves",   # exact 1D window (literal or dynamic start); gate: tests/test_iwindow.py
     "ICRC32": "reduce",    # full CRC-32 over a byte stream; gate: tests/test_istream.py
     "ICRC32C": "reduce",   # the Castagnoli crc32c (seeded, raw); gate: tests/test_istream.py
+    "IINFLATE": "reduce",  # raw deflate decode (stream -> bytes); gate: tests/test_inflate.py
     "IFIND": "select",    # first pattern offset (region scan); gate: tests/test_istream.py
     # reindex / selection / expansion
     "GATHER": "gather",

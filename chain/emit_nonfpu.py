@@ -25,13 +25,13 @@ import re
 import numpy as np
 
 from chain.asm import AsmError
-from chain.emit_c import Backend, CBackend, NoPattern
+from chain.emit_c import INFLATE_C, Backend, CBackend, NoPattern
 
 INTEGER_MN = {"GATHER", "GATHER3", "IGATHER1", "IASSEMBLE", "ISUM", "ISCATTER1", "ARGMAX", "TRANSPOSE", "SLICE", "CONCAT",
               "SELECT", "GT",
               "IADD", "ISUB", "IMUL", "IMAD", "IDIV", "IMOD", "IWINDOW",
               "IXOR", "IAND", "IOR", "ISHL", "ISHR",
-              "ICRC32", "ICRC32C", "IFIND",
+              "ICRC32", "ICRC32C", "IFIND", "IINFLATE",
               "F2I", "I2F",
               "MUL", "ADD", "SUB", "SQUARE", "MATMUL", "BATCH_MATMUL",
               "RMSNORM", "TSHIFT", "SOFTMAX_WIDE", "SOFTMAX",
@@ -401,6 +401,8 @@ class NonFPUBackend(CBackend):
             L.append(NF_F2I_HELPER)
         if "I2F" in _mns:
             L.append(NF_I2F_HELPER)
+        if "IINFLATE" in _mns:
+            L.append(INFLATE_C)
         rope = ctx.get("rope")
         if rope is not None and any(mn == "ROTARY" for mn in ctx.get("mns", [])):
             import phi_core.lattice as _S
