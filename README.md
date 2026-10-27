@@ -28,6 +28,7 @@ gallery/      only figures the demos regenerate (see gallery/README.md)
 data/         9 small emission-gate fixtures, tracked (see data/README.md);
               everything else a run needs is rebuilt or downloaded, never committed
 docs/         LANGUAGE.md (the language reference) + VELOCITY.md (append-only log)
+              QTYPES.md (scale-typed authoring + ordered compositing)
 ```
 
 One-shot research scripts live on the `research` branch (preserved, never
