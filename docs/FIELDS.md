@@ -1,8 +1,8 @@
 # Fields and local refinement
 
-**Status:** builder prototype on `research/typed-scale-order`  
+**Status:** merged on `main`; field validity/liminality contract.  
 **Code:** `chain/fields.py`  
-**Tests:** `tests/test_fields.py` (`5/5`)
+**Tests:** `tests/test_fields.py` (`11/11`)
 
 This is the field-level companion to the scale-typed authoring layer and
 `chain.composite`. It is deliberately a builder API, not a new backend opcode.
@@ -43,7 +43,7 @@ composite_fields(qp, layers, zero, one, background)
   sampling metadata. `valid` is a validity mask; `boundary_distance` is the
   distance-to-texture/silhouette boundary. `liminality(field)` is the
   read-only accessor for that distance.
-- `sample_if` gathers a source field through a caller-supplied validity gate.
+- `sample_if` gathers a source field through a caller-supplied validity gate (builder-level; lowered to ordinary GATHER3/RESHAPE3/MUL/ADD/SUB, no compiled SAMPLE_IF opcode yet).
   Invalid samples have explicit `alpha=0`; they are never silently blended.
   Source validity and the gate are both enforced.
 - `refine` changes value but **preserves alpha/order, valid, and

@@ -1,6 +1,6 @@
 # Scale-typed authoring and ordered compositing
 
-**Status:** research PR for the `chain.builder` authoring layer.
+**Status:** merged on `main`; `chain.builder` authoring layer.
 
 The assembler remains the authority: `QProg` emits ordinary Jotnar text and
 never replaces `Prog`, `assemble`, or the backend gates. This layer adds
