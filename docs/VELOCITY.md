@@ -4543,3 +4543,26 @@ did. The log IS the extensibility answer; an honest gap beats a fake row.
 - Gaps (named, not branched): in-flight long EXEC still
   serializes the next connection (busy-refusal is between-frame);
   gate pins 2-way splits only (demo ferry loop generalizes).
+
+## 2026-10-30: TOPK single-pass — 8x/74x at the byte/word widths
+
+- Built: `chain/emit_c.py` TOPK pattern — one pass over the row into a
+  k-sorted buffer, inserting *after* any equal value so the lower index
+  wins a tie by construction. O(rows*S*k) instead of the
+  O(rows*k*S*k) "scan for the best not-yet-taken" form. Contract
+  unchanged (2D F -> F vals + I idx, k literal, stable descending,
+  ties-first); the lattice reference, the non-FPU refusal, and the CUDA
+  kernel are untouched.
+- Gate (`tests/test_topk.py`, exit=0): the existing 20 rows plus the new
+  scale fixture — S=2936, k=64, a quantized row with many ties — against
+  the ties-first **rule** (a stable descending argsort, not torch's tie
+  order): scale-vals 0-diff, scale-idx exact, scale-ties exact.  CUDA
+  parity green (`LD_LIBRARY_PATH=/usr/local/lib/ollama/cuda_v13`).
+- Measured (the compiled C, min of 3, process + file I/O included):
+  S=256 k=16 R=2048 **39.2 -> 4.9 ms (8.0x)**; S=2936 k=64 R=256
+  **375.2 -> 5.1 ms (73.6x)**.  Exact on both (the stable argsort).
+- Why: fillin's word bank is V=2936 and the budgeted frontier asks the
+  top-k per row; the word width is where the old scan hurt.  The top-k
+  is a *proposer* (the hash decides the bytes), so the C path is the
+  right home; the non-FPU `T` top-k stays a named gap (no T-score
+  workload yet).

@@ -1557,25 +1557,29 @@ class CBackend(Backend):
             if w is None or not (1 <= k <= w):
                 raise NoPattern(
                     f"C TOPK needs static width S>=k (k={k}, S={w})")
-            # Stable descending selection, ties first: scan the row for
-            # the best not-yet-taken index each slot. O(rows*k*S*k) but
-            # scores are tiny (256) and this is the exact lattice rule.
+            # Stable descending selection, ties first: ONE pass over the
+            # row into a k-sorted buffer, inserting after any equal value
+            # so the lower index wins a tie.  O(rows*S*k) instead of the
+            # O(rows*k*S*k) "scan for the best not-yet-taken" form; the
+            # order is identical by construction (the gate pins it).
             return (
-                f"/* {vo},{io} = TOPK({x},{k}) stable ties-first */\n"
+                f"/* {vo},{io} = TOPK({x},{k}) single-pass, ties-first */\n"
                 f"for (int64_t t_i = 0; t_i < {vo}_N; ++t_i) {{\n"
-                f"  for (int64_t t_j = 0; t_j < {k}; ++t_j) {{\n"
-                f"    int64_t best = -1;\n"
-                f"    for (int64_t t_c = 0; t_c < {w}; ++t_c) {{\n"
-                f"      int _used = 0;\n"
-                f"      for (int64_t t_p = 0; t_p < t_j; ++t_p)\n"
-                f"        if ({io}[t_i * {k} + t_p] == t_c) {{"
-                f" _used = 1; break; }}\n"
-                f"      if (_used) continue;\n"
-                f"      if (best < 0 || {x}[t_i * {w} + t_c] > "
-                f"{x}[t_i * {w} + best]) best = t_c;\n"
+                f"  int64_t t_n = 0;\n"
+                f"  for (int64_t t_c = 0; t_c < {w}; ++t_c) {{\n"
+                f"    const double t_v = {x}[t_i * {w} + t_c];\n"
+                f"    int64_t t_p = (t_n < {k}) ? t_n : {k};\n"
+                f"    while (t_p > 0 && t_v > {vo}[t_i * {k} + t_p - 1])\n"
+                f"      --t_p;\n"
+                f"    if (t_p >= {k}) continue;\n"
+                f"    int64_t t_m = (t_n < {k}) ? t_n : {k} - 1;\n"
+                f"    for (int64_t t_s = t_m; t_s > t_p; --t_s) {{\n"
+                f"      {vo}[t_i * {k} + t_s] = {vo}[t_i * {k} + t_s - 1];\n"
+                f"      {io}[t_i * {k} + t_s] = {io}[t_i * {k} + t_s - 1];\n"
                 f"    }}\n"
-                f"    {vo}[t_i * {k} + t_j] = {x}[t_i * {w} + best];\n"
-                f"    {io}[t_i * {k} + t_j] = best;\n"
+                f"    {vo}[t_i * {k} + t_p] = t_v;\n"
+                f"    {io}[t_i * {k} + t_p] = t_c;\n"
+                f"    if (t_n < {k}) ++t_n;\n"
                 f"  }}\n"
                 f"}}",
                 None)
