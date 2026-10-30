@@ -1,6 +1,6 @@
 # Fields and local refinement
 
-**Status:** merged on `main`; field validity/liminality contract.  
+**Status:** merged on `main`; field validity/liminality contract.
 **Code:** `chain/fields.py`  
 **Tests:** `tests/test_fields.py` (`11/11`)
 
