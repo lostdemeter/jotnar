@@ -185,6 +185,9 @@ def local_stencil(qp: QProg, field: Field,
     GATHER3 + RESHAPE3 + MUL/ADD/SUB.  The field must be padded and row/col
     must address every output pixel.  No implicit full-grid operation is
     introduced.
+
+    Only +1.0 taps are supported; -1.0 taps fail loud because the current
+    BETA lowering is a constant fill, not a negation.
     """
     h, w, c = field.shape
     if not taps:
@@ -201,10 +204,13 @@ def local_stencil(qp: QProg, field: Field,
         if ww == 1.0:
             pass
         elif ww == -1.0:
-            g3 = qp.op("BETA", g3, scale=field.value.scale)
+            raise ValueError(
+                "local_stencil: -1.0 taps are not supported; BETA is a "
+                "constant fill in this builder. Use +1 taps, or add an "
+                "explicit zero/negation path before claiming negative weights.")
         elif ww != 0.0:
             raise ValueError(
-                "local_stencil supports uniform +/-1 taps, or pass a "
+                "local_stencil supports uniform +1 taps, or pass a "
                 "same-shape weight field for arbitrary weights")
         if weight is not None:
             g3 = qp.op("MUL", g3, weight, scale=field.value.scale)

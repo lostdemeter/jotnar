@@ -83,6 +83,13 @@ class TestFields(unittest.TestCase):
         got = dec(qp.run(feeds)[out.value.name])
         np.testing.assert_allclose(got, v[1:-1, 1:-1], atol=1e-2)
 
+    def test_negative_tap_refuses_loud(self):
+        qp = QProg("neg", m_acc=36118, m_cov=35048)
+        s = QScale(35048, 36118, "value", "test")
+        f, v, a, rows, cols = make_field(qp, s, fill=2.0)
+        with self.assertRaises(ValueError):
+            local_stencil(qp, f, [(0, 0, -1.0)], out="NEG")
+
     def test_validity_and_liminality_metadata(self):
         qp = QProg("meta", m_acc=36118, m_cov=35048)
         s = QScale(35048, 36118, "value", "test")

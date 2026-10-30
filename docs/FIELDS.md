@@ -58,10 +58,12 @@ composite_fields(qp, layers, zero, one, background)
 
 ## Current limits
 
-- `local_stencil` supports uniform `+1/-1` taps and an optional same-shape
-  weight field for arbitrary weights. Scalar broadcast is not part of the
-  ISA.
-- The builder emits ordinary `GATHER3`/`RESHAPE3`/`MUL`/`ADD`/`SUB`/`BETA`;
+- `local_stencil` supports uniform `+1` taps and an optional same-shape
+  weight field for arbitrary weights. Scalar `-1` taps fail loud: the current
+  `BETA` lowering is a constant fill, not a negation. Scalar broadcast is not
+  part of the ISA.
+- The builder emits ordinary `GATHER3`/`RESHAPE3`/`MUL`/`ADD`/`SUB` (and
+  `BETA` only where a caller explicitly requests it);
   there is no compiled `LOCAL_STENCIL` or `COMPOSITE` opcode yet.
 - A field operation is still a dense grid program. Local support is expressed
   by the stencil, not by a sparse kernel.
