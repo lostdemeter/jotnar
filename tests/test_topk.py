@@ -133,6 +133,35 @@ def main():
         check("topk-c-ties", bool((dti == tix).all())
               and bool((dtv == tv).all()), f"{dti.tolist()}")
 
+    # -- scale: the word vocabulary (S=2936, k=64) ---------------------
+    # The grounded cost case: fillin's word bank is V=2936 and the
+    # budgeted frontier asks top-k per row.  Reference = the ties-first
+    # RULE (a stable descending argsort), not torch: the contract is
+    # "lower index wins a tie", and torch's tie order is not the rule.
+    S2, K2, R2 = 2936, 64, 6
+    rng2 = np.random.default_rng(11)
+    X2 = np.ascontiguousarray(
+        rng2.integers(0, 40, size=(R2, S2)).astype(np.float64))
+    X2[0] = np.round(X2[0] / 8.0) * 8.0     # a quantized row: many ties
+    ord2 = np.argsort(-X2, axis=1, kind="stable")[:, :K2]
+    ref2_v = X2[np.arange(R2)[:, None], ord2]
+    t2 = f"IN X\nTV, TI = TOPK(X, {K2})\n"
+    art2 = compile_program(t2, "c", sample={"X": X2},
+                           outputs=["TV", "TI"], basedir=sdir)
+    exe2 = build(art2["source"], work, name="topkscale")
+    X2.tofile(fx)
+    r = subprocess.run([exe2, fx, fv, fi], capture_output=True, text=True)
+    check("topk-scale-run", r.returncode == 0, r.stderr[:200])
+    if r.returncode == 0:
+        dv2 = np.fromfile(fv, dtype=np.float64).reshape(R2, K2)
+        di2 = np.fromfile(fi, dtype=np.int64).reshape(R2, K2)
+        check("topk-scale-vals", bool((dv2 == ref2_v).all()),
+              f"maxabs={np.abs(dv2 - ref2_v).max():.2e}")
+        check("topk-scale-idx", bool((di2 == ord2).all()),
+              f"S={S2} k={K2} ties-first")
+        check("topk-scale-ties", bool((di2[0] == ord2[0]).all()),
+              f"{di2[0, :8].tolist()}")
+
     # -- non-FPU refusal contract (integer-only target) ----------------
     try:
         NonFPUBackend().pattern("TOPK", ["TV", "TI"], ["X", str(K)], None,
